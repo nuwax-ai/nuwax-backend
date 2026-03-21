@@ -3,6 +3,7 @@ package com.xspaceagi.modelproxy.infra.proxy;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
+import com.xspaceagi.system.spec.utils.MD5;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -150,6 +151,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     request.headers().set("x-api-key", backendModelDto.getApiKey());
                 }
                 getRequestContext().put("backendApiKey", maskApiKey(backendModelDto.getApiKey()));
+                getRequestContext().put("backendApiKeyMd5", MD5.MD5Encode(backendModelDto.getApiKey()));
                 getRequestContext().put("apiProtocol", backendModelDto.getProtocol());
                 getRequestContext().put("apiScope", backendModelDto.getScope());
                 getRequestContext().put("backendBaseUrl", backendModelDto.getBaseUrl());

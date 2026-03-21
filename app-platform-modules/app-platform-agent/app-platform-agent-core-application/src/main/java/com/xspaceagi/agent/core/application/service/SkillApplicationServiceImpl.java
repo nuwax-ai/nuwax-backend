@@ -11,10 +11,15 @@ import com.xspaceagi.agent.core.adapter.repository.CopyIndexRecordRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.ConfigHistory;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.SkillConfig;
+import com.xspaceagi.agent.core.adapter.repository.entity.UserTargetRelation;
 import com.xspaceagi.agent.core.domain.service.ConfigHistoryDomainService;
+import com.xspaceagi.agent.core.domain.service.PublishDomainService;
 import com.xspaceagi.agent.core.domain.service.SkillDomainService;
+import com.xspaceagi.agent.core.domain.service.UserTargetRelationDomainService;
 import com.xspaceagi.agent.core.spec.utils.FileTypeUtils;
 import com.xspaceagi.agent.core.spec.utils.MarkdownExtractUtil;
+import com.xspaceagi.system.application.dto.SpaceDto;
+import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YnEnum;
@@ -22,11 +27,11 @@ import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -34,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -44,11 +50,17 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     @Resource
     private SkillDomainService skillDomainService;
     @Resource
+    private PublishDomainService publishDomainService;
+    @Resource
     private CopyIndexRecordRepository copyIndexRecordRepository;
     @Resource
     private PublishApplicationService publishApplicationService;
     @Resource
     private ConfigHistoryDomainService configHistoryDomainService;
+    @Resource
+    private UserTargetRelationDomainService userTargetRelationDomainService;
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
 
     // 单个文件最大大小100M
     private final static long MAX_SINGLE_FILE_SIZE = 100 * 1024 * 1024L;
@@ -184,6 +196,46 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     }
 
     @Override
+    public List<SkillConfigDto> queryUserRelatedPublishedSkillConfigs(Long userId, List<Long> skillIds) {
+        List<SkillConfigDto> result = new ArrayList<>();
+        if (CollectionUtils.isEmpty(skillIds)) {
+            return result;
+        }
+        // 获取用户有权限的空间id列表
+        Set<Long> spaceIds = spaceApplicationService.queryListByUserId(userId).stream().map(SpaceDto::getId).collect(Collectors.toSet());
+        skillIds.forEach(skillId -> {
+            PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Skill, skillId, true);
+            if (publishedDto == null) {
+                return;
+            }
+            SkillConfigDto skillConfigDto = JSON.parseObject(publishedDto.getConfig(), SkillConfigDto.class);
+            if (skillConfigDto == null || CollectionUtils.isEmpty(skillConfigDto.getFiles())) {
+                return;
+            }
+            if (publishedDto.getScope() != Published.PublishScope.Tenant && publishedDto.getPublishedSpaceIds().stream().noneMatch(spaceIds::contains)) {
+                log.info("用户 {} 无权限技能：{}", userId, skillId);
+                return;
+            }
+            if (StringUtils.isBlank(skillConfigDto.getEnName())) {
+                List<SkillFileDto> keyFiles = skillConfigDto.getFiles().stream().filter(file -> "SKILL.MD".equalsIgnoreCase(file.getName()) && !Boolean.TRUE.equals(file.getIsDir())).toList();
+                if (CollectionUtils.isNotEmpty(keyFiles)) {
+                    for (SkillFileDto file : keyFiles) {
+                        String name = MarkdownExtractUtil.extractFieldValue(file.getContents(), "name");
+                        if (StringUtils.isNotBlank(name)) {
+                            skillConfigDto.setEnName(name);
+                            break;
+                        }
+                    }
+                } else {
+                    return;
+                }
+            }
+            result.add(skillConfigDto);
+        });
+        return result;
+    }
+
+    @Override
     public List<SkillConfigDto> queryList(SkillQueryDto queryDto) {
         LambdaQueryWrapper<SkillConfig> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper
@@ -281,7 +333,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             break;
                         }
                         entryIndex++;
-                    } catch (java.util.zip.ZipException e) {
+                    } catch (ZipException e) {
                         // 处理不支持的 ZIP 压缩方法（如 STORED 方法带 EXT descriptor）
                         // 记录错误信息，继续处理下一个
                         entryIndex++;
@@ -351,7 +403,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                                 byte[] bytes = readZipEntryBytes(zipInputStream);
                                 content = Base64.getEncoder().encodeToString(bytes);
                             }
-                        } catch (java.util.zip.ZipException e) {
+                        } catch (ZipException e) {
                             // 处理读取条目内容时的 ZIP 异常，记录错误信息
                             String errorMsg = String.format("文件: %s, 错误: %s", entryName, e.getMessage());
                             errorFiles.add(errorMsg);
@@ -410,7 +462,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             } catch (Exception e) {
                 log.error("解析技能导入文件失败", e);
                 // 如果是 ZipException，提供更具体的错误信息
-                if (e instanceof java.util.zip.ZipException) {
+                if (e instanceof ZipException) {
                     throw new BizException("ZIP 文件格式错误或不兼容，请使用标准的 ZIP 压缩格式重新打包文件。错误详情: " + e.getMessage());
                 }
                 throw new BizException("文件格式错误，请上传正确的技能文件。错误详情: " + e.getMessage());
@@ -606,6 +658,62 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             log.error("处理上传文件失败", e);
             throw new BizException("处理上传文件失败: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void saveRecentlyUsedSkills(List<Long> skillIds) {
+        Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
+        if (userId == null) {
+            throw new BizException("用户未登录");
+        }
+        List<Long> targetIds = skillIds.stream().filter(Objects::nonNull).toList();
+        if (CollectionUtils.isEmpty(targetIds)) {
+            throw new BizException("skillIds不能为空");
+        }
+        for (Long skillId : targetIds) {
+            UserTargetRelation userTargetRelation = new UserTargetRelation();
+            userTargetRelation.setUserId(userId);
+            userTargetRelation.setTargetId(skillId);
+            userTargetRelation.setType(UserTargetRelation.OpType.Conversation);
+            userTargetRelation.setTargetType(Published.TargetType.Skill);
+            userTargetRelationDomainService.addOrUpdateRecentUsed(userTargetRelation);
+        }
+    }
+
+    @Override
+    public List<PublishedDto> queryRecentlyUsedSkills(String kw, Integer size) {
+        Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
+        if (userId == null) {
+            throw new BizException("用户未登录");
+        }
+        List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Skill, size, 1);
+        if (CollectionUtils.isEmpty(userTargetRelations)) {
+            return null;
+        }
+        List<Long> targetIdList = userTargetRelations.stream().map(UserTargetRelation::getTargetId).toList();
+        if (CollectionUtils.isEmpty(targetIdList)) {
+            return null;
+        }
+        List<Published> publishedList = publishDomainService.queryPublishedListWithoutConfig(Published.TargetType.Skill, targetIdList);
+        if (CollectionUtils.isEmpty(publishedList)) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(kw)) {
+            publishedList = publishedList.stream().filter(publishedDto -> publishedDto.getName().contains(kw)).toList();
+        }
+        List<PublishedDto> publishedDtos = List.of();
+        if (CollectionUtils.isNotEmpty(publishedList)) {
+            //去重
+            publishedList = publishedList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Published::getTargetId))), ArrayList::new));
+
+            publishedDtos = publishedList.stream().map(published -> {
+                PublishedDto publishedDto = new PublishedDto();
+                BeanUtils.copyProperties(published, publishedDto);
+                publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
+                return publishedDto;
+            }).toList();
+        }
+        return publishedDtos;
     }
 
     //
@@ -984,4 +1092,5 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                 .build();
         configHistoryDomainService.addConfigHistory(configHistory);
     }
+
 }

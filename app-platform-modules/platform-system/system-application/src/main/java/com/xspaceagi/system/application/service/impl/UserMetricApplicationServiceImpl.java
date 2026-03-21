@@ -18,12 +18,13 @@ public class UserMetricApplicationServiceImpl implements UserMetricApplicationSe
     private UserMetricDomainService userMetricDomainService;
 
     @Override
-    public List<UserMetricDto> queryByUserId(Long userId) {
-        List<UserMetric> userMetrics = userMetricDomainService.queryByUserId(userId);
+    public List<UserMetricDto> queryByUserId(Long userId, String period) {
+        List<UserMetric> userMetrics = userMetricDomainService.queryByUserId(userId, period);
         return userMetrics.stream()
                 .map(this::convert)
                 .collect(Collectors.toList());
     }
+
     private UserMetricDto convert(UserMetric userMetric) {
         if (userMetric == null) {
             return null;

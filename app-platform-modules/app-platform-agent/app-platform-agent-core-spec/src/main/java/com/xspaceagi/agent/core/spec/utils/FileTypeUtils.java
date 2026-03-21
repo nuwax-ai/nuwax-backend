@@ -2,6 +2,8 @@ package com.xspaceagi.agent.core.spec.utils;
 
 import org.springframework.http.MediaType;
 
+import java.nio.charset.StandardCharsets;
+
 public class FileTypeUtils {
 
     /**
@@ -30,24 +32,24 @@ public class FileTypeUtils {
         } else if (lowerFileName.endsWith(".bmp")) {
             return MediaType.parseMediaType("image/bmp");
         }
-        // 文本类型
+        // 文本类型 - 添加 UTF-8 编码以避免乱码
         else if (lowerFileName.endsWith(".html") || lowerFileName.endsWith(".htm")) {
-            return MediaType.TEXT_HTML;
+            return new MediaType("text", "html", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".css")) {
-            return MediaType.parseMediaType("text/css");
+            return new MediaType("text", "css", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".js")) {
-            return MediaType.parseMediaType("application/javascript");
+            return new MediaType("application", "javascript", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".json")) {
-            return MediaType.APPLICATION_JSON;
+            return new MediaType("application", "json", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".xml")) {
-            return MediaType.APPLICATION_XML;
+            return new MediaType("application", "xml", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".txt")) {
-            return MediaType.TEXT_PLAIN;
+            return new MediaType("text", "plain", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".md")
                 || lowerFileName.endsWith(".markdown")
                 || lowerFileName.endsWith(".mdown")
                 || lowerFileName.endsWith(".mkd")) {
-            return MediaType.parseMediaType("text/markdown");
+            return new MediaType("text", "markdown", StandardCharsets.UTF_8);
         }
         // 其他类型
         else if (lowerFileName.endsWith(".pdf")) {

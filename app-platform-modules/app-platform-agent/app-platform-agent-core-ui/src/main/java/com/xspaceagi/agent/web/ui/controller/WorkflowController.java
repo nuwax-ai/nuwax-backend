@@ -92,6 +92,9 @@ public class WorkflowController {
     @Resource
     private McpRpcService mcpRpcService;
 
+    @Resource
+    private WorkflowExecutor workflowExecutor;
+
     @RequireResource(COMPONENT_LIB_CREATE)
     @Operation(summary = "新增工作流接口")
     @RequestMapping(path = "/add", method = RequestMethod.POST)
@@ -310,8 +313,8 @@ public class WorkflowController {
                 emitter.complete();
                 return;
             }
-            Long startTimestamp = System.currentTimeMillis();
-            WorkflowExecutor.testExecuteNode(workflowContext1, nodeDto).doOnError(e -> {
+            long startTimestamp = System.currentTimeMillis();
+            workflowExecutor.testExecuteNode(workflowContext1, nodeDto).doOnError(e -> {
                 log.warn("工作流节点执行失败 {}", nodeDto.getName(), e);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setSuccess(false);

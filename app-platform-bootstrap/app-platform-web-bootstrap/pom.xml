@@ -20,6 +20,10 @@
         </dependency>
         <dependency>
             <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-im-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-knowledge-core-ui</artifactId>
         </dependency>
         <dependency>

@@ -27,5 +27,5 @@ public class AddSkillsToWorkspaceDto implements Serializable {
     private Long cId;
 
     @Schema(description = "技能ID列表", requiredMode = Schema.RequiredMode.REQUIRED)
-    private List<Long> skillIds;
+    private List<SkillConfigDto> skillConfigs;
 }

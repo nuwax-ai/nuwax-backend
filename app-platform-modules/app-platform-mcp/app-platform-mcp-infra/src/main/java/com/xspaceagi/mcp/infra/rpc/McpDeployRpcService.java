@@ -65,8 +65,10 @@ public class McpDeployRpcService {
         params.put("mcpType", persistentType.name());
         params.put("mcpJsonConfig", JSON.parseObject(serverConfig).toJSONString());
         String content = httpClient.post(statusApi, params.toJSONString(), new HashMap<>());
+        log.debug("Mcp deploy result: {}", content);
         ReqResult result = JSON.parseObject(content, ReqResult.class);
         if (!result.isSuccess()) {
+            log.warn("Mcp deploy failed: {}", result.getMessage());
             throw new BizException(result.getMessage());
         }
         McpDeployStatusResponse mcpDeployStatusResponse = ((JSONObject) result.getData()).toJavaObject(McpDeployStatusResponse.class);

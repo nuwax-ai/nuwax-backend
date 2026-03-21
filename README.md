@@ -254,7 +254,11 @@ cd nuwax-backend
 ### 2. Start Basic Services
 
 - **Milvus Vector Database**: https://github.com/milvus-io/milvus
+<<<<<<< HEAD
 - **MySQL**: Install and configure MySQL, create database `agent_platform`, import `sql/init.sql`, default username: `admin@nuwax.com`, password: `123456`
+=======
+- **MySQL**: Install and configure MySQL, create database `agent_platform`, import `sql/init.sql`
+>>>>>>> v3-main-path
 - **Elasticsearch**: Install and configure Elasticsearch 9.2.1, configure Chinese word segmentation plugin for Chinese environment
 - **mcp-proxy**: https://github.com/nuwax-ai/mcp-proxy
 - **Web development scheduling and agent sandbox service**: https://github.com/nuwax-ai/rcoder

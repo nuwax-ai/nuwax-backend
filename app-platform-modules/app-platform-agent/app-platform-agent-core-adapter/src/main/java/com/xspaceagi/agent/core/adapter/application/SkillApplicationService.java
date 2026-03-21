@@ -1,9 +1,6 @@
 package com.xspaceagi.agent.core.adapter.application;
 
-import com.xspaceagi.agent.core.adapter.dto.SkillConfigDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillExportResultDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillFileDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillQueryDto;
+import com.xspaceagi.agent.core.adapter.dto.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -40,6 +37,11 @@ public interface SkillApplicationService {
      * 查询已发布的技能配置
      */
     SkillConfigDto queryPublishedSkillConfig(Long skillId, Long spaceId, boolean loadFiles);
+
+    /**
+     * 查询用户相关的已发布的技能，过滤掉没有权限的技能
+     */
+    List<SkillConfigDto> queryUserRelatedPublishedSkillConfigs(Long userId, List<Long> skillIds);
 
     /**
      * 查询技能列表
@@ -82,4 +84,13 @@ public interface SkillApplicationService {
      */
     SkillFileDto processUploadFile(MultipartFile file, String filePath);
 
+    /**
+     * 记录最近使用的技能
+     */
+    void saveRecentlyUsedSkills(List<Long> skillIds);
+
+    /**
+     * 查询最近使用的技能
+     */
+    List<PublishedDto> queryRecentlyUsedSkills(String kw, Integer size);
 }

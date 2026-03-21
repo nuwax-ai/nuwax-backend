@@ -38,6 +38,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.exception.AgentException;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -375,16 +376,38 @@ public class SandboxAgentClient {
      * 执行任务
      */
     private void executeTask(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer, FluxSink<CallMessage> sink,
-                                    AtomicReference<SseSubscription> sseSubscriptionAtomicReference, StringBuilder finalText, boolean appendContextPrompt) {
+                             AtomicReference<SseSubscription> sseSubscriptionAtomicReference, StringBuilder finalText, boolean appendContextPrompt) {
         ModelConfigDto modelConfig = (ModelConfigDto) agentContext.getAgentConfig().getModelComponentConfig().getTargetConfig();
-        List<ModelConfigDto.ApiInfo> apiInfoList = modelConfig.getApiInfoList();
+
+        List<ModelConfigDto.ApiInfo> apiInfoList = new ArrayList<>();
+        modelConfig.getApiInfoList().forEach(apiInfo -> {
+            for (int i = 0; i < apiInfo.getWeight(); i++) {
+                apiInfoList.add(apiInfo);
+            }
+        });
         ModelConfigDto.ApiInfo apiInfo;
         try {
             long conversationId = Long.parseLong(agentContext.getConversationId());
             apiInfo = apiInfoList.get((int) (conversationId % apiInfoList.size()));
-        } catch (NumberFormatException e) {
+            if (modelConfig.getApiProtocol() == ModelApiProtocolEnum.Anthropic && apiInfoList.size() > 1) {
+                // 模型出现可用性异常，则从列表中移除 TokenLogService中记录是否可用
+                Object val = redisUtil.get("stop_account_" + MD5.MD5Encode(apiInfo.getKey()));
+                while (val != null) {
+                    apiInfoList.remove(apiInfo);
+                    if (apiInfoList.isEmpty()) {
+                        String error = "当前过于火爆，请稍后再试";
+                        sink.next(buildChatMessage(agentContext, "\n\n```\n" + error + "\n```\n\n"));
+                        sink.error(new AgentException("0001", error));
+                        return;
+                    }
+                    apiInfo = apiInfoList.get((int) (conversationId % apiInfoList.size()));
+                    val = redisUtil.get("stop_account_" + MD5.MD5Encode(apiInfo.getKey()));
+                }
+            }
+        } catch (Exception e) {
             apiInfo = apiInfoList.get(apiIndex.getAndIncrement() % apiInfoList.size());
         }
+
         if (weightedRoundRobinStrategy != null) {
             weightedRoundRobinStrategy.replaceKey(modelConfig, apiInfo);
         }

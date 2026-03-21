@@ -16,6 +16,9 @@ public class SandboxRegDto {
     @Schema(description = "曾经保存的密钥，首次登录不需要")
     private String savedKey;
 
+    @Schema(description = "设备ID")
+    private String deviceId;
+
     @Schema(description = "终端配置信息")
     private SandboxConfigValue sandboxConfigValue;
 }

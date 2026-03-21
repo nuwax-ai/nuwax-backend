@@ -85,6 +85,14 @@ public class TokenLogService implements TaskExecuteService {
                     AnthropicSSEParser.TokenUsage tokenUsage = AnthropicSSEParser.extractTokenUsage(responseBody);
                     inputTokens = tokenUsage.inputTokens;
                     outputTokens = tokenUsage.outputTokens;
+                    if (tokenUsage.stopAccount) {
+                        String backendApiKeyMd5 = jsonObject.getString("backendApiKeyMd5");
+                        if (StringUtils.isNotBlank(backendApiKeyMd5)) {
+                            redisUtil.set("stop_account_" + backendApiKeyMd5, "true", tokenUsage.stopTimeSeconds);
+                            log.warn("backendApiKeyMd5:{} stop account, stopTime:{}, backendApiKey {}, message {}",
+                                    backendApiKeyMd5, tokenUsage.stopTimeSeconds, jsonObject.getString("backendApiKey"), tokenUsage.message);
+                        }
+                    }
                 } else if ("OpenAi".equalsIgnoreCase(apiProtocol)) {
                     OpenAISSEParser.TokenUsage tokenUsage = OpenAISSEParser.extractTokenUsage(responseBody);
                     inputTokens = tokenUsage.promptTokens;

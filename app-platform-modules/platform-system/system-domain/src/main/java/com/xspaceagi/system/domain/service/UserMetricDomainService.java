@@ -26,7 +26,7 @@ public interface UserMetricDomainService {
     /**
      * 查询指定用户的所有计量数据
      */
-    List<UserMetric> queryByUserId(Long userId);
+    List<UserMetric> queryByUserId(Long userId, String period);
 
     /**
      * 根据唯一键查询用户计量数据（用户ID + 业务类型 + 时段类型 + 时段值）

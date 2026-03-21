@@ -107,6 +107,23 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         return SuperPage.build(publishedList, dataList);
     }
 
+    @Override
+    public SuperPage<PublishedDto> queryPublishedListForAt(PublishedQueryDto publishedQueryDto) {
+        SuperPage<Published> publishedPage = publishDomainService.queryPublishedList(publishedQueryDto);
+        List<Published> publishedList = publishedPage.getRecords();
+        if (CollectionUtils.isEmpty(publishedList)) {
+            return new SuperPage<>(publishedPage.getCurrent(), publishedPage.getSize(), publishedPage.getTotal(), null);
+        }
+
+        List<PublishedDto> dtoList = publishedList.stream().map(published -> {
+            PublishedDto publishedDto = new PublishedDto();
+            BeanUtils.copyProperties(published, publishedDto);
+            return publishedDto;
+        }).toList();
+
+        return new SuperPage<>(publishedPage.getCurrent(), publishedPage.getSize(), publishedPage.getTotal(), dtoList);
+    }
+
     private List<PublishedDto> convertPublishedList(Published.TargetType targetType, List<Published> publishedList) {
         // 从agentPublishedList中获取agentIds
         List<Long> targetIds = publishedList.stream().map(Published::getTargetId).collect(Collectors.toList());
@@ -185,6 +202,26 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     @Override
     public List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds) {
         return queryPublishedList(targetType, targetIds, null);
+    }
+
+    @Override
+    public List<PublishedDto> queryPublishedListWithoutConfig(Published.TargetType targetType, List<Long> targetIds, String kw) {
+        try {
+            RequestContext.addTenantIgnoreEntity(Published.class);
+            List<Published> publishedList = publishDomainService.queryPublishedListWithoutConfig(targetType, targetIds, kw);
+            if (CollectionUtils.isEmpty(publishedList)) {
+                return List.of();
+            }
+            //这里不能去重publishedList，因为调用方同时需要系统广场和空间广场的数据
+
+            return publishedList.stream().map(published -> {
+                    PublishedDto publishedDto = new PublishedDto();
+                    BeanUtils.copyProperties(published, publishedDto);
+                    return publishedDto;
+                }).toList();
+        } finally {
+            RequestContext.removeTenantIgnoreEntity(Published.class);
+        }
     }
 
     @Override
@@ -286,7 +323,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         if (targetId == null) {
             return null;
         }
-        List<Published> publishedList = null;
+        List<Published> publishedList;
 
         if (loadConfig) {
             publishedList = publishDomainService.queryPublishedList(targetType, List.of(targetId));
@@ -320,12 +357,12 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
                 List<UserTargetRelation> userTargetRelationList = userTargetRelationDomainService
                         .queryUserTargetRelationByTargetIds(RequestContext.get().getUserId(), targetType,
                                 UserTargetRelation.OpType.Collect, List.of(targetId));
-                if (userTargetRelationList != null && userTargetRelationList.size() > 0) {
+                if (userTargetRelationList != null && !userTargetRelationList.isEmpty()) {
                     publishedDto.setCollect(true);
                 }
             }
-            List<Published> collect = publishedList.stream().filter(published -> published.getScope() == Published.PublishScope.Tenant).collect(Collectors.toList());
-            if (collect.size() == 0) {
+            List<Published> collect = publishedList.stream().filter(published -> published.getScope() == Published.PublishScope.Tenant).toList();
+            if (collect.isEmpty()) {
                 publishedDto.setPublishedSpaceIds(publishedList.stream().map(Published::getSpaceId).collect(Collectors.toList()));
             } else {
                 publishedDto.setScope(Published.PublishScope.Tenant);

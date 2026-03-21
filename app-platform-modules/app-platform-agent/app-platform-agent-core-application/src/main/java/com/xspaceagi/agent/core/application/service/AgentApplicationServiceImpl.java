@@ -65,6 +65,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -143,6 +144,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
 
     @Resource
     private PluginExecutor pluginExecutor;
+    @Autowired
+    private ConversationApplicationServiceImpl conversationApplicationService;
 
     @Override
     @DSTransactional
@@ -1595,6 +1598,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 if (userTargetRelation.getExtra() != null && JSON.isValidObject(userTargetRelation.getExtra())) {
                     JSONObject extra = JSON.parseObject(userTargetRelation.getExtra());
                     userAgentDto.setLastConversationId(extra.getLong("conversationId"));
+                    // 判断会话是否已删除
+                    if (conversationApplicationService.getConversationByCid(userAgentDto.getLastConversationId()) == null) {
+                        userAgentDto.setLastConversationId(null);
+                    }
                 }
             } catch (Exception e) {
                 // 忽略

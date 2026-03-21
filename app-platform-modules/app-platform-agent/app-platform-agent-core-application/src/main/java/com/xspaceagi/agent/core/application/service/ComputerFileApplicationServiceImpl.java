@@ -328,7 +328,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                         HttpStatus status = e.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
                                 ? HttpStatus.NOT_FOUND
                                 : HttpStatus.INTERNAL_SERVER_ERROR;
-                        return buildErrorResponse(status, "获取静态文件失败: " + e.getMessage(), logId);
+                        return buildErrorResponse(status, e.getMessage(), logId);
                     } else if (error instanceof SpacePermissionException) {
                         SpacePermissionException e = (SpacePermissionException) error;
                         log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
@@ -346,7 +346,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                     HttpStatus status = webEx.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
                             ? HttpStatus.NOT_FOUND
                             : HttpStatus.INTERNAL_SERVER_ERROR;
-                    return buildErrorResponse(status, "获取静态文件失败: " + webEx.getMessage(), logId);
+                    return buildErrorResponse(status, webEx.getMessage(), logId);
                 } else if (e instanceof SpacePermissionException) {
                     SpacePermissionException permEx = (SpacePermissionException) e;
                     return buildErrorResponse(HttpStatus.FORBIDDEN, permEx.getMessage(), logId, permEx.getCode());

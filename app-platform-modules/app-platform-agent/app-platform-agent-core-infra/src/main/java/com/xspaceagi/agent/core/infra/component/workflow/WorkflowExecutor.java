@@ -475,7 +475,11 @@ public class WorkflowExecutor {
      * @param node            节点
      * @return 节点执行结果
      */
-    public static Mono<Object> testExecuteNode(WorkflowContext workflowContext, WorkflowNodeDto node) {
+    public Mono<Object> testExecuteNode(WorkflowContext workflowContext, WorkflowNodeDto node) {
+        if (workflowContext.getWorkflowContextServiceHolder() == null) {
+            WorkflowContextServiceHolder workflowContextServiceHolder = getWorkflowContextServiceHolder();
+            workflowContext.setWorkflowContextServiceHolder(workflowContextServiceHolder);
+        }
         return HandlerFactory.createNodeHandler(node).execute(workflowContext, node);
     }
 

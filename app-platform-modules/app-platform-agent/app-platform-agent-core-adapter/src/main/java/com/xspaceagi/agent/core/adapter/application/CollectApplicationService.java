@@ -27,4 +27,14 @@ public interface CollectApplicationService {
      * @return
      */
     List<PublishedDto> queryCollectList(Long userId, Published.TargetType targetType, Long spaceId);
+
+    /**
+     * 查询收藏列表
+     */
+    List<PublishedDto> queryCollectList(Long userId, Published.TargetType targetType, List<Long> spaceIds);
+
+    /**
+     * 查询收藏列表
+     */
+    List<PublishedDto> queryCollectListWithoutConfig(Long userId, Published.TargetType targetType, List<Long> spaceIds);
 }

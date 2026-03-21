@@ -9,6 +9,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishApply;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
+import com.xspaceagi.agent.core.spec.utils.MarkdownExtractUtil;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
 import com.xspaceagi.agent.web.ui.controller.dto.*;
 import com.xspaceagi.system.application.dto.SpaceDto;
@@ -96,10 +97,10 @@ public class PublishController extends BaseController {
         if (CollectionUtils.isEmpty(publishApplySubmitDto.getItems())) {
             throw new BizException("未选择发布范围");
         }
-        if (targetConfig instanceof PluginDto || targetConfig instanceof WorkflowConfigDto || targetConfig instanceof SkillConfigDto) {
-            String name = targetConfig instanceof PluginDto ? ((PluginDto) targetConfig).getName()
-                    : targetConfig instanceof WorkflowConfigDto ? ((WorkflowConfigDto) targetConfig).getName()
-                    : ((SkillConfigDto) targetConfig).getName();
+        if (targetConfig instanceof PluginDto || targetConfig instanceof WorkflowConfigDto) {
+            String name = targetConfig instanceof PluginDto
+                    ? ((PluginDto) targetConfig).getName()
+                    : ((WorkflowConfigDto) targetConfig).getName();
             name = name == null ? "" : name;
             try {
                 //判断是否为英文
@@ -110,16 +111,29 @@ public class PublishController extends BaseController {
                     if (enNameDto != null && StringUtils.isNotBlank(enNameDto.getEnName())) {
                         if (targetConfig instanceof PluginDto) {
                             ((PluginDto) targetConfig).setFunctionName(enNameDto.getEnName());
-                        } else if (targetConfig instanceof WorkflowConfigDto) {
-                            ((WorkflowConfigDto) targetConfig).setFunctionName(enNameDto.getEnName());
                         } else {
-                            ((SkillConfigDto) targetConfig).setEnName(enNameDto.getEnName());
+                            ((WorkflowConfigDto) targetConfig).setFunctionName(enNameDto.getEnName());
                         }
                     }
                 }
             } catch (Exception e) {
                 //忽略
                 log.error("调用模型转换接口异常", e);
+            }
+        }
+        if (targetConfig instanceof SkillConfigDto skillConfig) {
+            List<SkillFileDto> files = skillConfig.getFiles();
+            if (CollectionUtils.isNotEmpty(files)) {
+                List<SkillFileDto> keyFiles = files.stream().filter(file -> "SKILL.MD".equalsIgnoreCase(file.getName()) && !Boolean.TRUE.equals(file.getIsDir())).toList();
+                if (CollectionUtils.isNotEmpty(keyFiles)) {
+                    for (SkillFileDto file : keyFiles) {
+                        String name = MarkdownExtractUtil.extractFieldValue(file.getContents(), "name");
+                        if (StringUtils.isNotBlank(name)) {
+                            skillConfig.setEnName(name);
+                            break;
+                        }
+                    }
+                }
             }
         }
 

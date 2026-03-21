@@ -2,8 +2,8 @@
 <configuration debug="true">
     <springProperty name="LOG_LEVEL" scope="context" source="log.level"/>
     <springProperty name="DEV_MODE" scope="context" source="spring.profiles.active"/>
-    <!--如果是非tomcat应用，可以自己指定输出的绝对路径 -->
-    <property name="logPath" value="${catalina.home}"/>
+    <!-- 通过 logging.file.path 配置日志输出路径，默认输出到相对路径 logs/ -->
+    <springProperty name="logPath" scope="context" source="logging.file.path" defaultValue="logs"/>
     <property name="outPattern"
               value="[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%X{tid}] [%X{prefix}] - %m%n"/>
     <property name="maxHistory" value="7"/>
@@ -17,9 +17,9 @@
 
     <appender name="APP_LOG_FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/app.log</file>
+        <file>${logPath}/app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>logs/app.log.%d{yyyy-MM-dd}
+            <FileNamePattern>${logPath}/app.log.%d{yyyy-MM-dd}
             </FileNamePattern>
             <maxHistory>${maxHistory}</maxHistory>
         </rollingPolicy>
@@ -54,6 +54,7 @@
         <if condition='"${DEV_MODE}".equals("dev")'>
             <then>
                 <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="ASYNC_APP_LOG_FILE"/>
             </then>
         </if>
         <if condition='"${DEV_MODE}".equals("prod")'>

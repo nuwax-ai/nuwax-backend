@@ -1,6 +1,8 @@
 package com.xspaceagi.sandbox.ui.web.controller;
 
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.UserAgentDto;
 import com.xspaceagi.sandbox.application.dto.SandboxConfigDto;
 import com.xspaceagi.sandbox.application.service.SandboxConfigApplicationService;
@@ -12,6 +14,7 @@ import com.xspaceagi.sandbox.ui.web.dto.SandboxRegDto;
 import com.xspaceagi.sandbox.ui.web.dto.UserSandBoxSelectDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -39,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +54,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/sandbox/config")
 public class SandboxConfigController {
 
+    private static final int START_VERSION = 90000;
     @Resource
     private SandboxConfigApplicationService sandboxConfigApplicationService;
 
@@ -60,6 +66,12 @@ public class SandboxConfigController {
 
     @Resource
     private AgentApplicationService agentApplicationService;
+
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
+
+    @Resource
+    private AuthService authService;
 
     @Value("${installation-source}")
     private String installationSource;
@@ -135,6 +147,11 @@ public class SandboxConfigController {
     @Operation(summary = "客户端注册")
     @PostMapping("/reg")
     public ReqResult<SandboxConfigDto> create(@RequestBody SandboxRegDto sandboxRegDto, HttpServletRequest request) {
+        int versionNum = toVersionNumber(extractNuwaxVersion(request.getHeader("User-Agent")));
+        UserDto user = null;
+        if (versionNum > START_VERSION && StringUtils.isNotBlank(sandboxRegDto.getUsername()) && StringUtils.isNotBlank(sandboxRegDto.getPassword())) {
+            user = checkLoginInfo(sandboxRegDto);
+        }
         Assert.notNull(sandboxRegDto.getSandboxConfigValue(), "终端配置信息不能为空");
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         String host = request.getHeader("Host");
@@ -156,11 +173,37 @@ public class SandboxConfigController {
                 sandboxConfigUpdate.setConfigValue(sandboxRegDto.getSandboxConfigValue());
                 sandboxConfigApplicationService.update(sandboxConfigUpdate);
                 byKey.setConfigValue(sandboxRegDto.getSandboxConfigValue());
+                if (user != null) {
+                    String token = authService.createToken(user, StringUtils.isNotBlank(sandboxRegDto.getDeviceId()) ? sandboxRegDto.getDeviceId() : UUID.randomUUID().toString().replace("-", ""));
+                    byKey.setToken(token);
+                }
                 return ReqResult.success(byKey);
             }
         }
         Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getUsername()), "用户名、邮箱或手机号码不能为空");
         Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getPassword()), "动态认证吗或密码不能为空");
+        if (user == null) {
+            user = checkLoginInfo(sandboxRegDto);
+        }
+        RequestContext.get().setUser(user);
+        RequestContext.get().setUserId(user.getId());
+        SandboxConfigDto dto = new SandboxConfigDto();
+        dto.setUserId(user.getId());
+        dto.setScope(SandboxScopeEnum.USER);
+        dto.setConfigKey(UUID.randomUUID().toString().replace("-", ""));
+        dto.setName("我的电脑");
+        dto.setConfigValue(sandboxRegDto.getSandboxConfigValue());
+        dto.setDescription("");
+        dto.setIsActive(true);
+        dto.setOnline(false);
+        sandboxConfigApplicationService.create(dto, false);
+        String token = authService.createToken(user, StringUtils.isNotBlank(sandboxRegDto.getDeviceId()) ? sandboxRegDto.getDeviceId() : UUID.randomUUID().toString().replace("-", ""));
+        dto.setToken(token);
+        return ReqResult.success(sandboxConfigApplicationService.getByKey(dto.getConfigKey()));
+    }
+
+    private UserDto checkLoginInfo(SandboxRegDto sandboxRegDto) {
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         String key = "sb:reg:" + tenantConfigDto.getTenantId() + ":" + MD5.MD5Encode(sandboxRegDto.getUsername());
         Long increment = redisUtil.increment(key, 1);
         if (increment <= 5) {
@@ -183,21 +226,8 @@ public class SandboxConfigController {
             UserDto userDto = userApplicationService.queryUserByPhoneOrEmailWithPassword(sandboxRegDto.getUsername(), sandboxRegDto.getPassword().trim());
             Assert.isTrue(userDto != null, "用户不存在或认证码错误，失败5次将被锁定半小时，你已尝试" + increment + "次");
         }
-
         redisUtil.expire(key, 0);
-        RequestContext.get().setUser(user);
-        RequestContext.get().setUserId(user.getId());
-        SandboxConfigDto dto = new SandboxConfigDto();
-        dto.setUserId(user.getId());
-        dto.setScope(SandboxScopeEnum.USER);
-        dto.setConfigKey(UUID.randomUUID().toString().replace("-", ""));
-        dto.setName("我的电脑");
-        dto.setConfigValue(sandboxRegDto.getSandboxConfigValue());
-        dto.setDescription("");
-        dto.setIsActive(true);
-        dto.setOnline(false);
-        sandboxConfigApplicationService.create(dto, false);
-        return ReqResult.success(sandboxConfigApplicationService.getByKey(dto.getConfigKey()));
+        return user;
     }
 
     @Operation(summary = "创建个人电脑（客户端配置）")
@@ -236,9 +266,7 @@ public class SandboxConfigController {
     @Operation(summary = "跳转到具体的电脑会话界面")
     @GetMapping("/redirect/{id}")
     public void redirect(HttpServletResponse response, @Parameter(description = "配置ID") @PathVariable Long id) {
-        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
-        String siteUrl = tenantConfigDto.getSiteUrl();
-        siteUrl = siteUrl.trim().endsWith("/") ? siteUrl.trim() : siteUrl.trim() + "/";
+        String siteUrl = buildSiteUrl();
         SandboxConfigDto byId = sandboxConfigApplicationService.getById(id);
         if (byId == null) {
             try {
@@ -252,15 +280,62 @@ public class SandboxConfigController {
         String redirectUri;
         UserAgentDto userAgentDto = agentApplicationService.queryUserAgentRecentUse(byId.getUserId(), byId.getAgentId());
         if (userAgentDto != null && userAgentDto.getLastConversationId() != null) {
-            redirectUri = "home/chat/" + userAgentDto.getLastConversationId() + "/" + byId.getAgentId();
+            redirectUri = "home/chat/" + userAgentDto.getLastConversationId() + "/" + byId.getAgentId() + "?hideMenu=true";
         } else {
-            redirectUri = "agent/" + byId.getAgentId();
+            redirectUri = "agent/" + byId.getAgentId() + "?hideMenu=true";
         }
         try {
             response.sendRedirect(siteUrl + redirectUri);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Operation(summary = "跳转到具体的会话界面")
+    @GetMapping("/redirect/chat/{id}")
+    public void redirectConversation(HttpServletResponse response, @Parameter(description = "会话ID") @PathVariable Long id) {
+        String siteUrl = buildSiteUrl();
+        ConversationDto byId = conversationApplicationService.getConversationByCid(id);
+        if (byId == null) {
+            try {
+                response.sendRedirect(siteUrl);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+        try {
+            response.sendRedirect(siteUrl + "home/chat/" + id + "/" + byId.getAgentId() + "?hideMenu=true");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Operation(summary = "跳转到智能体的新会话界面")
+    @GetMapping("/redirect/new/{id}")
+    public void redirectNewChat(HttpServletResponse response, @Parameter(description = "配置ID") @PathVariable Long id) {
+        SandboxConfigDto byId = sandboxConfigApplicationService.getById(id);
+        String siteUrl = buildSiteUrl();
+        if (byId == null) {
+            try {
+                response.sendRedirect(siteUrl);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        try {
+            response.sendRedirect(siteUrl + "agent/" + byId.getAgentId() + "?hideMenu=true");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String buildSiteUrl() {
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        String siteUrl = tenantConfigDto.getSiteUrl();
+        return siteUrl.trim().endsWith("/") ? siteUrl.trim() : siteUrl.trim() + "/";
     }
 
 
@@ -311,5 +386,66 @@ public class SandboxConfigController {
         }
         SandboxConfigDto byId = sandboxConfigApplicationService.getById(id);
         Assert.isTrue(byId != null && byId.getUserId().equals(user.getId()), "无权限");
+    }
+
+
+    /**
+     * 从User-Agent字符串中提取指定包的版本号
+     *
+     * @param userAgent User-Agent字符串
+     * @param packageName 包名，如 "@nuwax-ai/nuwaclaw"
+     * @return 版本号，如果未找到则返回null
+     */
+    private static String extractVersion(String userAgent, String packageName) {
+        // 转义包名中的特殊字符（如 @ 和 /）
+        String escapedPackageName = Pattern.quote(packageName);
+        // 构建正则表达式：包名/版本号
+        String regex = escapedPackageName + "/([^\\s/]+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(userAgent);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    /**
+     * 从User-Agent字符串中提取 @nuwax-ai/nuwaclaw 的版本号
+     *
+     * @param userAgent User-Agent字符串
+     * @return 版本号，如果未找到则返回null
+     */
+    private static String extractNuwaxVersion(String userAgent) {
+        return extractVersion(userAgent, "@nuwax-ai/nuwaclaw");
+    }
+
+    /**
+     * 将版本号转换为整数，可用于版本对比
+     * 支持1-4位版本号，统一格式：每位版本号占2位数字，不足补0
+     * 例如：0.9.1 -> 000901，1.2.3 -> 010203，0.9.1.2 -> 00090102
+     *
+     * @param version 版本号字符串，如 "0.9.1"
+     * @return 整数，可直接用于版本大小对比
+     */
+    private static int toVersionNumber(String version) {
+        if (version == null || version.isEmpty()) {
+            return 0;
+        }
+
+        // 按点号分割版本号
+        String[] parts = version.split("\\.");
+
+        int result = 0;
+
+        // 统一处理：每部分占2位数字，不足部分补0
+        for (int i = 0; i < 4; i++) {
+            result *= 100;  // 每次左移2位
+            if (i < parts.length) {
+                result += Integer.parseInt(parts[i]);
+            }
+        }
+
+        return result;
     }
 }

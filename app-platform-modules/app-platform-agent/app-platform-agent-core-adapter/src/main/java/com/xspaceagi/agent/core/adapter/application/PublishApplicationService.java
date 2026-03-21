@@ -15,7 +15,11 @@ public interface PublishApplicationService {
      */
     SuperPage<PublishedDto> queryPublishedList(PublishedQueryDto publishedQueryDto);
 
+    SuperPage<PublishedDto> queryPublishedListForAt(PublishedQueryDto publishedQueryDto);
+
     List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds);
+
+    List<PublishedDto> queryPublishedListWithoutConfig(Published.TargetType targetType, List<Long> targetIds, String kw);
 
     List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw);
 

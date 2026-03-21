@@ -219,6 +219,7 @@ public class McpServerSession implements McpSession {
                 // initialization happening first
                 var handler = this.requestHandlers.get(request.method());
                 if (handler == null) {
+                    logger.warn("Method not found: {}", request.method());
                     MethodNotFoundError error = getMethodNotFoundError(request.method());
                     return Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), null,
                             new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,

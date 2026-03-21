@@ -14,6 +14,7 @@ import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -80,6 +81,9 @@ public class ModelClientFactory {
 
     private ModelApiProxyRpcService modelApiProxyRpcService;
 
+    @Resource
+    private WeightedRoundRobinStrategy weightedRoundRobinStrategy;
+
     @PostConstruct
     private void init() {
         // 禁用HttpClient的keep-alive功能，有些网络环境下可能会导致连接超时
@@ -104,7 +108,7 @@ public class ModelClientFactory {
 
     public EmbeddingModel createEmbeddingModel(ModelConfigDto model) {
         Assert.isTrue(!model.getApiInfoList().isEmpty(), "模型配置异常");
-        ModelConfigDto.ApiInfo apiInfo = new WeightedRoundRobinStrategy().selectApi(model);
+        ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
         if (apiInfo == null) {
             return null;
         }
@@ -127,7 +131,7 @@ public class ModelClientFactory {
 
     public ChatClient createChatClient(ModelContext modelContext, ModelConfigDto model, List<ToolCallback> functionCallbacks, Boolean withProxyToolCalls) {
         Assert.isTrue(!model.getApiInfoList().isEmpty(), "模型配置异常");
-        ModelConfigDto.ApiInfo apiInfo = new WeightedRoundRobinStrategy().selectApi(model);
+        ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
         if (apiInfo == null) {
             return null;
         }
@@ -164,7 +168,11 @@ public class ModelClientFactory {
             apiInfo.setKey(frontendModelDto.getApiKey());
             apiInfo.setUrl(frontendModelDto.getBaseUrl());
         } else {
-            String baseUrl = completeBaseUrl(apiInfo.getUrl());
+            String baseUrl = model.getApiProtocol() == ModelApiProtocolEnum.OpenAI
+                    ? completeBaseUrl(apiInfo.getUrl())
+                    : model.getApiProtocol() == ModelApiProtocolEnum.Anthropic
+                    ? normalizeAnthropicBaseUrl(apiInfo.getUrl())
+                    : apiInfo.getUrl();
             String apiKey = apiInfo.getKey();
             apiInfo = new ModelConfigDto.ApiInfo();
             apiInfo.setKey(apiKey);
@@ -227,6 +235,13 @@ public class ModelClientFactory {
             if (!hasVersion(baseUrl)) {
                 baseUrl = baseUrl + "/v1";
             }
+        }
+        return baseUrl;
+    }
+
+    private static String normalizeAnthropicBaseUrl(String baseUrl) {
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
         return baseUrl;
     }

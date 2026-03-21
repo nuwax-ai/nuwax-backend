@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface AuthService {
 
+    String createToken(UserDto userDto, String clientId);
+
     String loginWithCode(String emailOrPhone, String code);
 
     String loginWithMpCode(String code);

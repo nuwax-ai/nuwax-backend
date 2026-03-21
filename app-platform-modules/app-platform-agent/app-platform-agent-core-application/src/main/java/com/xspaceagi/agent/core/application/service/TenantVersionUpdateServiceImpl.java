@@ -86,6 +86,10 @@ public class TenantVersionUpdateServiceImpl {
             permissionImportService.importToTenant(tenant, "0.0");
         });
 
+        tenantVersionUpgradeMap.put("1.0.7.4", (tenant) -> {
+            permissionImportService.importDiffToTenant(tenant, "0.1");
+        });
+
         new Thread(() -> {
             //升级版本需要的定制化内容
             while (true) {

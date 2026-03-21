@@ -51,9 +51,9 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         }
 
         List<SkillConfigDto> toPushSkills = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(skillIds)) {
+        if (CollectionUtils.isNotEmpty(skillIds)) {
             List<SkillConfig> skillConfigs = skillDomainService.listByIds(skillIds);
-            if (!CollectionUtils.isEmpty(skillConfigs)) {
+            if (CollectionUtils.isNotEmpty(skillConfigs)) {
                 for (SkillConfig skillConfig : skillConfigs) {
                     Published.PublishStatus publishStatus = skillConfig.getPublishStatus();
                     if (publishStatus != Published.PublishStatus.Published) {
@@ -73,6 +73,18 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
                         log.warn("[createWorkspace] userId={} cId={} skillId={} 技能无文件，跳过", userId, cId, skillConfig.getId());
                         continue;
                     }
+
+                    List<SkillFileDto> keyFiles = dto.getFiles().stream().filter(file -> "SKILL.MD".equalsIgnoreCase(file.getName()) && !Boolean.TRUE.equals(file.getIsDir())).toList();
+                    if (CollectionUtils.isNotEmpty(keyFiles)) {
+                        for (SkillFileDto file : keyFiles) {
+                            String name = MarkdownExtractUtil.extractFieldValue(file.getContents(), "name");
+                            if (StringUtils.isNotBlank(name)) {
+                                dto.setEnName(name);
+                                break;
+                            }
+                        }
+                    }
+
                     log.info("[createWorkspace] userId={} cId={} skillId={}, skillName={} 技能打包开始", userId, cId, dto.getId(), dto.getName());
                     toPushSkills.add(dto);
                 }
@@ -80,7 +92,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         }
 
         MultipartFile zipFile = null;
-        if (!CollectionUtils.isEmpty(toPushSkills) || !CollectionUtils.isEmpty(subagents)) {
+        if (CollectionUtils.isNotEmpty(toPushSkills) || CollectionUtils.isNotEmpty(subagents)) {
             zipFile = buildZip(toPushSkills, subagents);
         }
 
@@ -103,64 +115,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
     public void addSkillsToWorkspace(AddSkillsToWorkspaceDto addSkillsToWorkspaceDto) {
         Long userId = addSkillsToWorkspaceDto.getUserId();
         Long cId = addSkillsToWorkspaceDto.getCId();
-        List<Long> skillIds = addSkillsToWorkspaceDto.getSkillIds();
-
-        log.info("[addSkills] userId={} cId={} skillIds={} 动态增加技能开始", userId, cId, skillIds);
-
-        if (userId == null || cId == null) {
-            throw new BizException("必传参数为空");
-        }
-        if (CollectionUtils.isEmpty(skillIds)) {
-            log.warn("[addSkills] userId={} cId={} 技能ID列表为空，跳过", userId, cId);
-            return;
-        }
-
-        List<SkillConfig> skillConfigs = skillDomainService.listByIds(skillIds);
-        if (CollectionUtils.isEmpty(skillConfigs)) {
-            log.warn("[addSkills] userId={} cId={} 未找到有效技能配置", userId, cId);
-            return;
-        }
-
-        List<SkillConfigDto> toPushSkills = new ArrayList<>();
-        for (SkillConfig skillConfig : skillConfigs) {
-            Published.PublishStatus publishStatus = skillConfig.getPublishStatus();
-            if (publishStatus != Published.PublishStatus.Published) {
-                log.warn("[addSkills] userId={} cId={} skillId={} 技能未发布，跳过", userId, cId, skillConfig.getId());
-                continue;
-            }
-
-            PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Skill, skillConfig.getId(), true);
-            if (publishedDto == null) {
-                log.warn("[addSkills] userId={} cId={} skillId={} 技能无发布信息，跳过", userId, cId, skillConfig.getId());
-                continue;
-            }
-
-            String config = publishedDto.getConfig();
-            SkillConfigDto dto = JSON.parseObject(config, SkillConfigDto.class);
-
-            if (CollectionUtils.isEmpty(dto.getFiles())) {
-                log.warn("[addSkills] userId={} cId={} skillId={} 技能无文件，跳过", userId, cId, skillConfig.getId());
-                continue;
-            }
-
-            if (StringUtils.isBlank(dto.getName())) {
-                log.warn("[addSkills] userId={} cId={} skillId={} 技能名称为空，跳过", userId, cId, skillConfig.getId());
-                continue;
-            }
-
-            List<SkillFileDto> filesWithLock = new ArrayList<>(dto.getFiles());
-            filesWithLock.add(buildDynamicAddLockFile());
-            dto.setFiles(filesWithLock);
-            toPushSkills.add(dto);
-            log.info("[addSkills] userId={} cId={} skillId={} skillName={} 技能打包", userId, cId, dto.getId(), dto.getName());
-        }
-
-        if (CollectionUtils.isEmpty(toPushSkills)) {
-            log.warn("[addSkills] userId={} cId={} 无有效技能可推送", userId, cId);
-            return;
-        }
-
-        MultipartFile zipFile = buildZip(toPushSkills, Collections.emptyList());
+        MultipartFile zipFile = buildZip(addSkillsToWorkspaceDto.getSkillConfigs(), Collections.emptyList());
         if (zipFile == null) {
             throw new BizException("打包技能 zip 失败");
         }
@@ -225,17 +180,18 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             addedEntries.add("agents/");
 
             // 处理 skills
-            if (!CollectionUtils.isEmpty(skills)) {
+            if (CollectionUtils.isNotEmpty(skills)) {
                 for (SkillConfigDto skill : skills) {
                     if (skill == null || CollectionUtils.isEmpty(skill.getFiles())) {
                         continue;
                     }
 
-                    if (skill.getName() == null) {
+                    String skillName = StringUtils.isNotBlank(skill.getEnName()) ? skill.getEnName() : skill.getName();
+                    if (StringUtils.isBlank(skillName)) {
                         continue;
                     }
 
-                    String skillDir = "skills/" + skill.getName() + "/";
+                    String skillDir = "skills/" + skillName + "/";
 
                     // 确保技能目录被创建
                     if (!addedEntries.contains(skillDir)) {

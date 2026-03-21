@@ -91,6 +91,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (request.getMethod().equals("OPTIONS")) {
             return true;
         }
+
         String domainName = request.getHeader("Host");
         if (domainName == null) {
             return false;
@@ -108,7 +109,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
         }
         if (tenantId == null) {
-            if (domainName.contains("nuwax.com")) {
+            // 对于无需鉴权的路径（如飞书/钉钉 webhook），使用默认租户，不要求登录
+            if (isExcludedPath(request.getRequestURI())) {
+                tenantId = 1L;
+            } else if (domainName.contains("nuwax.com")) {
                 throw new BizException("4011", "https://nuwax.com");
             }
             String headerTenantId = request.getHeader("x-tenant-id");
@@ -228,13 +232,19 @@ public class AuthInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private void checkAndThrowAuthException(String uri) {
+    private boolean isExcludedPath(String uri) {
         List<String> excludePath = userAuthProperties.getExcludePath();
-        //判断uri是否在忽略登录的uri列表中
         for (String ignoreLoginUri : excludePath) {
             if (uri.startsWith(ignoreLoginUri)) {
-                return;
+                return true;
             }
+        }
+        return false;
+    }
+
+    private void checkAndThrowAuthException(String uri) {
+        if (isExcludedPath(uri)) {
+            return;
         }
         throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
     }

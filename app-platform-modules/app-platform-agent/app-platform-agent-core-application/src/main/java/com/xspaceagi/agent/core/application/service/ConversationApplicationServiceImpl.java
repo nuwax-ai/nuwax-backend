@@ -167,6 +167,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     @Resource
     private SandboxAgentClient sandboxAgentClient;
 
+    @Resource
+    private SkillApplicationService skillApplicationService;
+
     @PostConstruct
     private void init() {
         scheduleTaskApiService.start(ScheduleTaskDto.builder()
@@ -985,7 +988,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             BigDecimal tokenCount = metricRpcService.queryMetricCurrent(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), BizType.TOKEN_USAGE.getCode(), PeriodType.DAY);
             if (userDataPermission.getTokenLimit() != null && userDataPermission.getTokenLimit().getLimitPerDay() != null && userDataPermission.getTokenLimit().getLimitPerDay() >= 0
                     && tokenCount.compareTo(BigDecimal.valueOf(userDataPermission.getTokenLimit().getLimitPerDay())) >= 0) {
-                errorOutput.setError("你已超过今日的token使用次数限制，你当前每日token的上限为" + tokenCount + "，自有模型不受限制");
+                errorOutput.setError("你已超过今日的token使用数量限制，你当前每日token的上限为" + userDataPermission.getTokenLimit().getLimitPerDay() + "，自有模型不受限制");
                 agentExecuteResult.setError(errorOutput.getError());
                 return errorOutput(errorOutput, conversationDto);
             }
@@ -995,7 +998,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 BigDecimal promptCount = metricRpcService.queryMetricCurrent(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), BizType.GENERAL_AGENT_CHAT.getCode(), PeriodType.DAY);
                 if (userDataPermission.getAgentDailyPromptLimit() != null && userDataPermission.getAgentDailyPromptLimit() >= 0
                         && promptCount.compareTo(BigDecimal.valueOf(userDataPermission.getAgentDailyPromptLimit())) >= 0) {
-                    errorOutput.setError("你已超过今日的对话次数限制，你当前每日对话的上限次数为" + promptCount + "，自有模型不受限制");
+                    errorOutput.setError("你已超过今日的对话次数限制，你当前每日对话的上限次数为" + userDataPermission.getAgentDailyPromptLimit() + "，自有模型不受限制");
                     agentExecuteResult.setError(errorOutput.getError());
                     return errorOutput(errorOutput, conversationDto);
                 }
@@ -1206,13 +1209,18 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             }
             return false;
         });
+        List<SkillConfigDto> userAtSkillConfigs = null;
+        if (CollectionUtils.isNotEmpty(tryReqDto.getSkillIds())) {
+            userAtSkillConfigs = skillApplicationService.queryUserRelatedPublishedSkillConfigs(RequestContext.get().getUserId(), tryReqDto.getSkillIds());
+            userSelectedSkills.addAll(userAtSkillConfigs);
+        }
 
         if (!userSelectedSkills.isEmpty()) {
             StringBuilder userPromptBuilder = new StringBuilder();
             if (null != agentConfigDto.getUserPrompt()) {
                 userPromptBuilder.append(agentConfigDto.getUserPrompt());
             }
-            userPromptBuilder.append("\nPlease use the following skills to complete user tasks\n");
+            userPromptBuilder.append("\nPlease use the following skills to complete user tasks. The following skills may be newly added. If there are no relevant definitions in the context, please load them from the working directory.\n");
             userSelectedSkills.forEach(skillConfigDto -> {
                 userPromptBuilder.append("- ").append(skillConfigDto.getEnName() == null ? skillConfigDto.getName() : skillConfigDto.getEnName()).append("\n");
             });
@@ -1331,7 +1339,14 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 }
                 log.info("创建workspace推送Skill完成， agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds);
             }
-
+            if (CollectionUtils.isNotEmpty(userAtSkillConfigs)) {
+                AddSkillsToWorkspaceDto addSkillsToWorkspaceDto = AddSkillsToWorkspaceDto.builder()
+                        .userId(RequestContext.get().getUserId())
+                        .cId(conversationDto.getId())
+                        .skillConfigs(userAtSkillConfigs).build();
+                agentWorkspaceApplicationService.addSkillsToWorkspace(addSkillsToWorkspaceDto);
+                skillApplicationService.saveRecentlyUsedSkills(userAtSkillConfigs.stream().map(SkillConfigDto::getId).collect(Collectors.toList()));
+            }
             //创建沙箱访问平台的accessKey，针对UserAccessKeyDto.AKTargetType.Sandbox已控制可访问范围
             UserAccessKeyDto userAccessKey = userAccessKeyApiService.queryAccessKey(agentContext.getUserId(), UserAccessKeyDto.AKTargetType.Sandbox, agentConfigDto.getId().toString());
             if (userAccessKey == null) {

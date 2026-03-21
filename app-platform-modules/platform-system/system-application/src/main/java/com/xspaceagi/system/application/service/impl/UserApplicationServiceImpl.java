@@ -10,6 +10,7 @@ import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.dto.UserQueryDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
+import com.xspaceagi.system.application.service.SysGroupApplicationService;
 import com.xspaceagi.system.application.service.SysRoleApplicationService;
 import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
 import com.xspaceagi.system.application.service.UserApplicationService;
@@ -17,8 +18,11 @@ import com.xspaceagi.system.domain.service.UserDomainService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.dao.service.UserService;
+import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
+import com.xspaceagi.system.spec.enums.GroupEnum;
 import com.xspaceagi.system.spec.enums.AuthTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.utils.MD5;
@@ -53,6 +57,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
     @Resource
     private RedisUtil redisUtil;
+
+    @Resource
+    private SysGroupApplicationService sysGroupApplicationService;
 
     @Override
     @DSTransactional
@@ -109,6 +116,36 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         spaceDto.setType(Space.Type.Personal);
         spaceDto.setDescription("个人空间");
         spaceApplicationService.add(spaceDto);
+
+        // 新增用户后，为其绑定默认用户组（若当前无用户组绑定）
+        Long userId = user.getId();
+        List<SysGroup> groups = sysGroupApplicationService.getGroupListByUserId(userId);
+        if (groups == null || groups.isEmpty()) {
+            SysGroup defaultGroup = sysGroupApplicationService.getGroupByCode(GroupEnum.DEFAULT_GROUP.getCode());
+            if (defaultGroup != null && defaultGroup.getId() != null) {
+                UserContext userContext = buildUserContext(userId, userDto);
+                sysGroupApplicationService.userBindGroup(userId, List.of(defaultGroup.getId()), userContext);
+            }
+        }
+    }
+
+    private UserContext buildUserContext(Long userId, UserDto userDto) {
+        RequestContext<?> ctx = RequestContext.get();
+        if (ctx != null && ctx.getUserContext() != null) {
+            return ctx.getUserContext();
+        }
+
+        Long tenantId = ctx != null ? ctx.getTenantId() : null;
+        if (tenantId == null) {
+            tenantId = userDto.getTenantId();
+        }
+
+        return UserContext.builder()
+                .userId(userId)
+                .uid(userDto.getUid())
+                .userName(userDto.getUserName())
+                .tenantId(tenantId)
+                .build();
     }
 
     @Override
@@ -199,13 +236,10 @@ public class UserApplicationServiceImpl implements UserApplicationService {
                 .map(user1 -> convert(user1))
                 .collect(Collectors.toList());
 
-        // 创建一个IPage对象，用于返回分页数据
-        IPage<UserDto> userDtoPage = new Page<>();
-        userDtoPage.setCurrent(userPage.getCurrent());
-        userDtoPage.setSize(userPage.getSize());
+        // 创建分页对象，用于返回分页数据
+        Page<UserDto> userDtoPage = new Page<>(userPage.getCurrent(), userPage.getSize());
         userDtoPage.setTotal(userPage.getTotal());
         userDtoPage.setRecords(userDtoList);
-        userDtoPage.setPages(userPage.getPages());
 
         return userDtoPage;
     }

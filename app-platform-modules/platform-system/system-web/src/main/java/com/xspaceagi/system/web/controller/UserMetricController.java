@@ -6,9 +6,11 @@ import com.xspaceagi.system.application.service.UserMetricApplicationService;
 import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
+import com.xspaceagi.system.sdk.service.dto.PeriodUtils;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.PeriodTypeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -40,7 +42,7 @@ public class UserMetricController {
     public ReqResult<UsageDto> usage() {
         UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
         UsageDto usageDto = new UsageDto();
-        List<UserMetricDto> userMetricDtos = userMetricApplicationService.queryByUserId(RequestContext.get().getUserId());
+        List<UserMetricDto> userMetricDtos = userMetricApplicationService.queryByUserId(RequestContext.get().getUserId(), PeriodUtils.getCurrentPeriod(PeriodTypeEnum.DAY.getCode()));
         Map<String, BigInteger> bizMap = userMetricDtos.stream().collect(Collectors.toMap(userMetricDto -> userMetricDto.getBizType() + "-" + userMetricDto.getPeriodType(), val -> val.getValue().toBigInteger(), (v1, v2) -> v1));
         Object todayTokenUsage = bizMap.get(BizType.TOKEN_USAGE.name() + "-" + PeriodType.DAY);
         if (todayTokenUsage == null) {

@@ -9,6 +9,7 @@ import com.xspaceagi.system.infra.dao.entity.*;
 import com.xspaceagi.system.infra.dao.service.*;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.constants.PermissionSyncConstants;
+import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
 import com.xspaceagi.system.spec.exception.BizException;
@@ -64,6 +65,22 @@ public class PermissionImportServiceImpl implements PermissionImportService {
             }
             RequestContext.setThreadTenantId(tenant.getId());
             doImport(tenant, version);
+
+            sysUserPermissionCacheService.clearCacheAllByTenant(tenant.getId());
+        } finally {
+            RequestContext.remove();
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void importDiffToTenant(Tenant tenant, String version) {
+        try {
+            if (tenant == null || tenant.getId() == null) {
+                throw new BizException("菜单权限差异导入失败,租户ID无效");
+            }
+            RequestContext.setThreadTenantId(tenant.getId());
+            doImportDiff(tenant, version);
 
             sysUserPermissionCacheService.clearCacheAllByTenant(tenant.getId());
         } finally {
@@ -158,6 +175,304 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         log.info("权限导入完成，租户ID：{}，版本：{}", tenantId, version);
     }
 
+    /**
+     * 基于差异 JSON 导入：只对差异中的新增 / 修改记录做 upsert，不处理删除
+     */
+    @SuppressWarnings("unchecked")
+    private void doImportDiff(Tenant tenant, String version) {
+        Long tenantId = tenant.getId();
+        Map<String, Object> diff = loadDiffFromClasspath(version);
+        if (diff == null) {
+            log.warn("权限差异导入：未找到版本 {} 的差异 JSON，跳过", version);
+            return;
+        }
+
+        // 预加载当前租户下的代码-ID 映射，便于 parentCode / 关联关系解析
+        Map<String, Long> resourceCodeToId = sysResourceService.list(Wrappers.<SysResource>lambdaQuery()
+                        .eq(SysResource::getTenantId, tenantId)
+                        .eq(SysResource::getYn, YnEnum.Y.getKey()))
+                .stream().collect(Collectors.toMap(SysResource::getCode, SysResource::getId, (a, b) -> a));
+        Map<String, Long> menuCodeToId = sysMenuService.list(Wrappers.<SysMenu>lambdaQuery()
+                        .eq(SysMenu::getTenantId, tenantId)
+                        .eq(SysMenu::getYn, YnEnum.Y.getKey()))
+                .stream().collect(Collectors.toMap(SysMenu::getCode, SysMenu::getId, (a, b) -> a));
+        Map<String, Long> roleCodeToId = sysRoleService.list(Wrappers.<SysRole>lambdaQuery()
+                        .eq(SysRole::getTenantId, tenantId)
+                        .eq(SysRole::getYn, YnEnum.Y.getKey()))
+                .stream().collect(Collectors.toMap(SysRole::getCode, SysRole::getId, (a, b) -> a));
+        Map<String, Long> groupCodeToId = sysGroupService.list(Wrappers.<SysGroup>lambdaQuery()
+                        .eq(SysGroup::getTenantId, tenantId)
+                        .eq(SysGroup::getYn, YnEnum.Y.getKey()))
+                .stream().collect(Collectors.toMap(SysGroup::getCode, SysGroup::getId, (a, b) -> a));
+
+        // 1. Resource
+        Map<String, Object> resources = (Map<String, Object>) diff.get("resources");
+        if (resources != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) resources.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    ResourceExportDto r = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), ResourceExportDto.class);
+                    SysResource entity = resolveOrCreateResource(tenantId, r, resourceCodeToId);
+                    if (entity != null) {
+                        resourceCodeToId.put(r.getCode(), entity.getId());
+                    }
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) resources.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    ResourceExportDto r = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), ResourceExportDto.class);
+                    SysResource entity = resolveOrCreateResource(tenantId, r, resourceCodeToId);
+                    if (entity != null) {
+                        resourceCodeToId.put(r.getCode(), entity.getId());
+                    }
+                }
+            }
+        }
+
+        // 2. Menu
+        Map<String, Object> menus = (Map<String, Object>) diff.get("menus");
+        if (menus != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) menus.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    MenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), MenuExportDto.class);
+                    SysMenu entity = resolveOrCreateMenu(tenantId, dto, menuCodeToId);
+                    if (entity != null) {
+                        menuCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) menus.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    MenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), MenuExportDto.class);
+                    SysMenu entity = resolveOrCreateMenu(tenantId, dto, menuCodeToId);
+                    if (entity != null) {
+                        menuCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+        }
+
+        // 3. Role
+        Map<String, Object> roles = (Map<String, Object>) diff.get("roles");
+        if (roles != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) roles.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    RoleExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), RoleExportDto.class);
+                    SysRole entity = resolveOrCreateRole(tenantId, dto);
+                    if (entity != null) {
+                        roleCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) roles.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    RoleExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), RoleExportDto.class);
+                    SysRole entity = resolveOrCreateRole(tenantId, dto);
+                    if (entity != null) {
+                        roleCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+        }
+
+        // 4. Group
+        Map<String, Object> groups = (Map<String, Object>) diff.get("groups");
+        if (groups != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) groups.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    GroupExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), GroupExportDto.class);
+                    SysGroup entity = resolveOrCreateGroup(tenantId, dto);
+                    if (entity != null) {
+                        groupCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) groups.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    GroupExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), GroupExportDto.class);
+                    SysGroup entity = resolveOrCreateGroup(tenantId, dto);
+                    if (entity != null) {
+                        groupCodeToId.put(dto.getCode(), entity.getId());
+                    }
+                }
+            }
+        }
+
+        // 5. MenuResource
+        Map<String, Object> menuResources = (Map<String, Object>) diff.get("menuResources");
+        if (menuResources != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) menuResources.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    MenuResourceExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), MenuResourceExportDto.class);
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    Long resourceId = resourceCodeToId.get(dto.getResourceCode());
+                    if (menuId == null || resourceId == null) {
+                        continue;
+                    }
+                    resolveOrCreateMenuResource(tenantId, menuId, resourceId, dto);
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) menuResources.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    MenuResourceExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), MenuResourceExportDto.class);
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    Long resourceId = resourceCodeToId.get(dto.getResourceCode());
+                    if (menuId == null || resourceId == null) {
+                        continue;
+                    }
+                    resolveOrCreateMenuResource(tenantId, menuId, resourceId, dto);
+                }
+            }
+        }
+
+        // 6. RoleMenu
+        Map<String, Object> roleMenus = (Map<String, Object>) diff.get("roleMenus");
+        if (roleMenus != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) roleMenus.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    RoleMenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), RoleMenuExportDto.class);
+                    Long roleId = roleCodeToId.get(dto.getRoleCode());
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    if (roleId == null || menuId == null) {
+                        continue;
+                    }
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    resolveOrCreateRoleMenu(tenantId, roleId, menuId, dto, resourceTreeJson);
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) roleMenus.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    RoleMenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), RoleMenuExportDto.class);
+                    Long roleId = roleCodeToId.get(dto.getRoleCode());
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    if (roleId == null || menuId == null) {
+                        continue;
+                    }
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    resolveOrCreateRoleMenu(tenantId, roleId, menuId, dto, resourceTreeJson);
+                }
+            }
+        }
+
+        // 7. GroupMenu
+        Map<String, Object> groupMenus = (Map<String, Object>) diff.get("groupMenus");
+        if (groupMenus != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) groupMenus.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    GroupMenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), GroupMenuExportDto.class);
+                    Long groupId = groupCodeToId.get(dto.getGroupCode());
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    if (groupId == null || menuId == null) {
+                        continue;
+                    }
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    resolveOrCreateGroupMenu(tenantId, groupId, menuId, dto, resourceTreeJson);
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) groupMenus.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    GroupMenuExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), GroupMenuExportDto.class);
+                    Long groupId = groupCodeToId.get(dto.getGroupCode());
+                    Long menuId = menuCodeToId.get(dto.getMenuCode());
+                    if (groupId == null || menuId == null) {
+                        continue;
+                    }
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    resolveOrCreateGroupMenu(tenantId, groupId, menuId, dto, resourceTreeJson);
+                }
+            }
+        }
+
+        // 8. DataPermission
+        Map<String, Object> dataPermissions = (Map<String, Object>) diff.get("dataPermissions");
+        if (dataPermissions != null) {
+            List<Map<String, Object>> added = (List<Map<String, Object>>) dataPermissions.get("added");
+            if (CollectionUtils.isNotEmpty(added)) {
+                for (Map<String, Object> m : added) {
+                    DataPermissionExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), DataPermissionExportDto.class);
+                    Long targetId = resolveTargetId(dto, roleCodeToId, groupCodeToId);
+                    if (targetId == null) {
+                        continue;
+                    }
+                    resolveOrCreateDataPermission(tenantId, dto, targetId);
+                }
+            }
+            List<Map<String, Object>> modified = (List<Map<String, Object>>) dataPermissions.get("modified");
+            if (CollectionUtils.isNotEmpty(modified)) {
+                for (Map<String, Object> item : modified) {
+                    Map<String, Object> newVal = (Map<String, Object>) item.get("new");
+                    if (newVal == null) {
+                        continue;
+                    }
+                    DataPermissionExportDto dto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(newVal), DataPermissionExportDto.class);
+                    Long targetId = resolveTargetId(dto, roleCodeToId, groupCodeToId);
+                    if (targetId == null) {
+                        continue;
+                    }
+                    resolveOrCreateDataPermission(tenantId, dto, targetId);
+                }
+            }
+        }
+
+        log.info("权限差异导入完成，租户ID：{}，版本：{}", tenantId, version);
+    }
+
+    private Long resolveTargetId(DataPermissionExportDto dto,
+            Map<String, Long> roleCodeToId,
+            Map<String, Long> groupCodeToId) {
+        if (dto == null || dto.getTargetType() == null) {
+            return null;
+        }
+
+        if (PermissionTargetTypeEnum.ROLE.getCode().equals(dto.getTargetType())) {
+            return roleCodeToId.get(dto.getTargetCode());
+        } else if (PermissionTargetTypeEnum.GROUP.getCode().equals(dto.getTargetType())) {
+            return groupCodeToId.get(dto.getTargetCode());
+        }
+        return null;
+    }
+
     private PermissionExportDto loadFromClasspath(String version) {
         String path = PermissionSyncConstants.buildClasspathPath(version);
         try {
@@ -169,6 +484,22 @@ public class PermissionImportServiceImpl implements PermissionImportService {
             return JsonSerializeUtil.parseObject(json, PermissionExportDto.class);
         } catch (IOException e) {
             log.warn("读取权限JSON失败：{}", path, e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> loadDiffFromClasspath(String version) {
+        String path = "permission/permission-" + version + "-diff.json";
+        try {
+            ClassPathResource resource = new ClassPathResource(path);
+            if (!resource.exists()) {
+                return null;
+            }
+            String json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            return JsonSerializeUtil.parseObject(json, Map.class);
+        } catch (IOException e) {
+            log.warn("读取权限差异 JSON 失败：{}", path, e);
             return null;
         }
     }

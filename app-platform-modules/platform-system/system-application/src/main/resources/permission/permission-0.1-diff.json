@@ -1,0 +1,492 @@
+{
+  "fromVersion": "0.0",
+  "toVersion": "0.1",
+  "resources": {
+    "added": [
+      {
+        "code": "im_config",
+        "name": "IM渠道配置模块",
+        "description": "IM渠道配置模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 7,
+        "status": 1
+      },
+      {
+        "code": "im_config_query_list",
+        "name": "查询配置列表",
+        "description": "查询配置列表",
+        "source": 1,
+        "type": 2,
+        "parentCode": "im_config",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "im_config_query_detail",
+        "name": "查询配置详情",
+        "description": "查询配置详情",
+        "source": 1,
+        "type": 2,
+        "parentCode": "im_config",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "im_config_add",
+        "name": "添加配置",
+        "description": "添加配置",
+        "source": 1,
+        "type": 2,
+        "parentCode": "im_config",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "im_config_modify",
+        "name": "编辑配置",
+        "description": "编辑配置",
+        "source": 1,
+        "type": 2,
+        "parentCode": "im_config",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "im_config_delete",
+        "name": "删除配置",
+        "description": "删除配置",
+        "source": 1,
+        "type": 2,
+        "parentCode": "im_config",
+        "sortIndex": 5,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "category_config",
+        "old": {
+          "code": "category_config",
+          "name": "分类管理模块",
+          "description": "分类管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 16,
+          "status": 1
+        },
+        "new": {
+          "code": "category_config",
+          "name": "分类管理模块",
+          "description": "分类管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 17,
+          "status": 1
+        }
+      },
+      {
+        "key": "content_manage",
+        "old": {
+          "code": "content_manage",
+          "name": "内容管理模块",
+          "description": "内容管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 21,
+          "status": 1
+        },
+        "new": {
+          "code": "content_manage",
+          "name": "内容管理模块",
+          "description": "内容管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 22,
+          "status": 1
+        }
+      },
+      {
+        "key": "model_manage",
+        "old": {
+          "code": "model_manage",
+          "name": "模型管理模块",
+          "description": "模型管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 12,
+          "status": 1
+        },
+        "new": {
+          "code": "model_manage",
+          "name": "模型管理模块",
+          "description": "模型管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 13,
+          "status": 1
+        }
+      },
+      {
+        "key": "permission_manage",
+        "old": {
+          "code": "permission_manage",
+          "name": "权限管理模块",
+          "description": "权限管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 19,
+          "status": 1
+        },
+        "new": {
+          "code": "permission_manage",
+          "name": "权限管理模块",
+          "description": "权限管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 20,
+          "status": 1
+        }
+      },
+      {
+        "key": "publish_audit",
+        "old": {
+          "code": "publish_audit",
+          "name": "发布审核模块",
+          "description": "发布审核模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "code": "publish_audit",
+          "name": "发布审核模块",
+          "description": "发布审核模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "published_manage",
+        "old": {
+          "code": "published_manage",
+          "name": "已发布管理模块",
+          "description": "已发布管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 11,
+          "status": 1
+        },
+        "new": {
+          "code": "published_manage",
+          "name": "已发布管理模块",
+          "description": "已发布管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 12,
+          "status": 1
+        }
+      },
+      {
+        "key": "sandbox_config",
+        "old": {
+          "code": "sandbox_config",
+          "name": "沙盒配置模块",
+          "description": "沙盒配置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 15,
+          "status": 1
+        },
+        "new": {
+          "code": "sandbox_config",
+          "name": "沙盒配置模块",
+          "description": "沙盒配置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 16,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_log_query",
+        "old": {
+          "code": "space_log_query",
+          "name": "空间日志查询模块",
+          "description": "空间日志查询模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 8,
+          "status": 1
+        },
+        "new": {
+          "code": "space_log_query",
+          "name": "空间日志查询模块",
+          "description": "空间日志查询模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 9,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_task_dev",
+        "old": {
+          "code": "space_task_dev",
+          "name": "任务中心模块",
+          "description": "任务中心模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 7,
+          "status": 1
+        },
+        "new": {
+          "code": "space_task_dev",
+          "name": "任务中心模块",
+          "description": "任务中心模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 8,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_dashboard",
+        "old": {
+          "code": "system_dashboard",
+          "name": "系统概览查询",
+          "description": "系统概览模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 17,
+          "status": 1
+        },
+        "new": {
+          "code": "system_dashboard",
+          "name": "系统概览查询",
+          "description": "系统概览模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 18,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_log",
+        "old": {
+          "code": "system_log",
+          "name": "系统日志模块",
+          "description": "系统日志模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 20,
+          "status": 1
+        },
+        "new": {
+          "code": "system_log",
+          "name": "系统日志模块",
+          "description": "系统日志模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 21,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_setting",
+        "old": {
+          "code": "system_setting",
+          "name": "系统设置模块",
+          "description": "系统设置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 13,
+          "status": 1
+        },
+        "new": {
+          "code": "system_setting",
+          "name": "系统设置模块",
+          "description": "系统设置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 14,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_task_manage",
+        "old": {
+          "code": "system_task_manage",
+          "name": "系统任务管理模块",
+          "description": "系统任务管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 18,
+          "status": 1
+        },
+        "new": {
+          "code": "system_task_manage",
+          "name": "系统任务管理模块",
+          "description": "系统任务管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 19,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_theme_config",
+        "old": {
+          "code": "system_theme_config",
+          "name": "主题配置模块",
+          "description": "主题配置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 14,
+          "status": 1
+        },
+        "new": {
+          "code": "system_theme_config",
+          "name": "主题配置模块",
+          "description": "主题配置模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 15,
+          "status": 1
+        }
+      },
+      {
+        "key": "user_manage",
+        "old": {
+          "code": "user_manage",
+          "name": "用户管理模块",
+          "description": "用户管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "code": "user_manage",
+          "name": "用户管理模块",
+          "description": "用户管理模块",
+          "source": 1,
+          "type": 1,
+          "sortIndex": 10,
+          "status": 1
+        }
+      }
+    ]
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "workspace",
+        "code": "im_channel",
+        "name": "IM 机器人",
+        "description": "IM 机器人",
+        "source": 1,
+        "path": "/space/:spaceId/im-channel",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 6,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "member_setting",
+        "old": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "sortIndex": 9
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "sortIndex": 10
+        }
+      },
+      {
+        "key": "space_log_query",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "sortIndex": 7
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "sortIndex": 8
+        }
+      },
+      {
+        "key": "space_square",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "sortIndex": 8
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "sortIndex": 9
+        }
+      },
+      {
+        "key": "space_task_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "sortIndex": 6
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "sortIndex": 7
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "im_channel",
+        "resourceCode": "im_config",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

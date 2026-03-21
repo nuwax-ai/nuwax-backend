@@ -14,18 +14,18 @@ import java.util.List;
 @Component
 public class WeightedRoundRobinStrategy implements ApiSelectStrategy {
 
-    private static RedisUtil redisUtil;
+    private RedisUtil redisUtil;
 
-    private static MarketClientRpcService marketClientRpcService;
+    private MarketClientRpcService marketClientRpcService;
 
     @Autowired
     public void setRedisUtil(RedisUtil redisUtil) {
-        WeightedRoundRobinStrategy.redisUtil = redisUtil;
+        this.redisUtil = redisUtil;
     }
 
     @Autowired
     public void setMarketClientRpcService(MarketClientRpcService marketClientRpcService) {
-        WeightedRoundRobinStrategy.marketClientRpcService = marketClientRpcService;
+        this.marketClientRpcService = marketClientRpcService;
     }
 
     @Override

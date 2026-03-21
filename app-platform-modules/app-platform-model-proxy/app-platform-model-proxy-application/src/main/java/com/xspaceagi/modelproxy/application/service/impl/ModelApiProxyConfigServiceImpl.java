@@ -6,7 +6,6 @@ import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
-import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -77,15 +76,6 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
             frontendModelDto.setApiKey(backendModel.getApiKey());
             return frontendModelDto;
         }
-        //将这些参数生成一个唯一的key：Long tenantId, Long userId, Long agentId, BackendModelDto backendModel, String siteUrl，在都没有变化的时候不更新数据库
-        String key = MD5.MD5Encode(tenantId + ":" + userId + ":" + agentId + ":" + JSON.toJSONString(backendModel) + ":" + siteUrl);
-        Object val = redisUtil.get(key);
-        if (val != null && JSON.isValidObject(val.toString())) {
-            FrontendModelDto frontendModelDto = JSON.parseObject(val.toString(), FrontendModelDto.class);
-            if (frontendModelDto != null) {
-                return frontendModelDto;
-            }
-        }
         UserAccessKeyDto userAccessKeyDto = userAccessKeyRpcService.queryAgentModelAccessKey(userId, agentId, backendModel.getModelId());
         if (userAccessKeyDto == null) {
             userAccessKeyDto = userAccessKeyRpcService.newAccessKey(tenantId, userId, UserAccessKeyDto.AKTargetType.AgentModel, agentId.toString(),
@@ -102,19 +92,21 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                             .requestId(backendModel.getRequestId())
                             .build());
         } else {
-            userAccessKeyRpcService.updateAccessKey(userAccessKeyDto.getId(), UserAccessKeyDto.UserAccessKeyConfig.builder()
-                    .modelId(backendModel.getModelId())
-                    .modelApiKey(backendModel.getApiKey())
-                    .modelBaseUrl(backendModel.getBaseUrl())
-                    .modelName(backendModel.getModelName())
-                    .protocol(backendModel.getProtocol())
-                    .scope(backendModel.getScope())
-                    .enabled(true)
-                    .userName(backendModel.getUserName())
-                    .conversationId(backendModel.getConversationId())
-                    .requestId(backendModel.getRequestId())
-                    .build());
-            redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
+            if (!backendModel.getApiKey().equals(userAccessKeyDto.getConfig().getModelApiKey()) || !backendModel.getBaseUrl().equals(userAccessKeyDto.getConfig().getModelBaseUrl())) {
+                userAccessKeyRpcService.updateAccessKey(userAccessKeyDto.getId(), UserAccessKeyDto.UserAccessKeyConfig.builder()
+                        .modelId(backendModel.getModelId())
+                        .modelApiKey(backendModel.getApiKey())
+                        .modelBaseUrl(backendModel.getBaseUrl())
+                        .modelName(backendModel.getModelName())
+                        .protocol(backendModel.getProtocol())
+                        .scope(backendModel.getScope())
+                        .enabled(true)
+                        .userName(backendModel.getUserName())
+                        .conversationId(backendModel.getConversationId())
+                        .requestId(backendModel.getRequestId())
+                        .build());
+                redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
+            }
         }
         if (StringUtils.isNotBlank(baseApiUrl)) {
             siteUrl = baseApiUrl;
@@ -125,7 +117,6 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         FrontendModelDto frontendModelDto = new FrontendModelDto();
         frontendModelDto.setBaseUrl(siteUrl + "/api/proxy/model");
         frontendModelDto.setApiKey(userAccessKeyDto.getAccessKey());
-        redisUtil.set(key, JSON.toJSONString(frontendModelDto), 600); // 缓存10分钟
         return frontendModelDto;
     }
 }

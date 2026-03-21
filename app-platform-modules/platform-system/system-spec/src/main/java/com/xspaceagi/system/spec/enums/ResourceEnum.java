@@ -111,6 +111,15 @@ public enum ResourceEnum {
     MCP_DELETE(ResourceTypeEnum.OPERATION, "mcp_delete", "删除", "mcp_dev"),
     MCP_STOP(ResourceTypeEnum.OPERATION, "mcp_stop", "停止服务", "mcp_dev"),
 
+    // ================== IM渠道 ==================
+    IM_CONFIG(ResourceTypeEnum.MODULE, "im_config", "IM渠道配置模块", "root"),
+    IM_CONFIG_QUERY_LIST(ResourceTypeEnum.MODULE, "im_config_query_list", "查询配置列表", "im_config"),
+    IM_CONFIG_QUERY_DETAIL(ResourceTypeEnum.MODULE, "im_config_query_detail", "查询配置详情", "im_config"),
+    IM_CONFIG_ADD(ResourceTypeEnum.MODULE, "im_config_add", "添加配置", "im_config"),
+    IM_CONFIG_MODIFY(ResourceTypeEnum.MODULE, "im_config_modify", "编辑配置", "im_config"),
+    IM_CONFIG_DELETE(ResourceTypeEnum.MODULE, "im_config_delete", "删除配置", "im_config"),
+//    IM_CONFIG_ENABLE(ResourceTypeEnum.MODULE, "im_config_enable", "启用/禁用配置", "im_config"),
+
     // ================== 任务中心模块 ==================
     SPACE_TASK_DEV(ResourceTypeEnum.MODULE, "space_task_dev", "任务中心模块", "root"),
 

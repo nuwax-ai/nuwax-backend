@@ -38,6 +38,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -107,8 +109,8 @@ public class AgentTempChatController {
 
     @Operation(summary = "创建临时会话")
     @RequestMapping(path = "/conversation/create", method = RequestMethod.POST)
-    public ReqResult<ConversationDto> createConversation(@RequestBody @Valid TempConversationCreateDto conversationCreateDto) {
-        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(conversationCreateDto.getChatKey());
+    public ReqResult<ConversationDto> createConversation(@RequestBody @Valid TempConversationCreateDto conversationCreateDto, HttpServletRequest request) {
+        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(request, conversationCreateDto.getChatKey());
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         boolean allowAgentTempChat = tenantConfigDto.getAllowAgentTempChat() == null || tenantConfigDto.getAllowAgentTempChat().equals(YesOrNoEnum.Y.getKey());
@@ -121,8 +123,8 @@ public class AgentTempChatController {
 
     @Operation(summary = "查询临时会话详细")
     @RequestMapping(path = "/conversation/query", method = RequestMethod.POST)
-    public ReqResult<ConversationDto> createConversation(@RequestBody @Valid TempConversationQueryDto tempConversationQueryDto) {
-        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(tempConversationQueryDto.getChatKey());
+    public ReqResult<ConversationDto> createConversation(@RequestBody @Valid TempConversationQueryDto tempConversationQueryDto, HttpServletRequest request) {
+        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(request, tempConversationQueryDto.getChatKey());
         ConversationDto conversation = conversationApplicationService.getConversationByUid(tempConversationQueryDto.getConversationUid());
         if (conversation.getType() != Conversation.ConversationType.TempChat || !conversation.getAgentId().equals(agentTempChatDto.getAgentId())) {
             throw new BizException("会话不存在");
@@ -143,7 +145,7 @@ public class AgentTempChatController {
     @RequestMapping(path = "/completions", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<AgentOutputDto> chat(@RequestBody @Valid TempChatMessage chatMessage, HttpServletRequest request, HttpServletResponse response) {
         response.setCharacterEncoding("utf-8");
-        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(chatMessage.getChatKey());
+        AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(request, chatMessage.getChatKey());
         ConversationDto conversation = conversationApplicationService.getConversationByUid(chatMessage.getConversationUid());
         if (conversation == null || conversation.getType() != Conversation.ConversationType.TempChat) {
             throw new BizException("会话不存在");
@@ -164,7 +166,7 @@ public class AgentTempChatController {
         return conversationApplicationService.chat(tryReqDto, headersFromRequest, true);
     }
 
-    private AgentTempChatDto queryAndCheckTempChatByChatKey(String chatKey) {
+    private AgentTempChatDto queryAndCheckTempChatByChatKey(HttpServletRequest request, String chatKey) {
         Assert.isTrue(StringUtils.isNotBlank(chatKey), "chatKey must be non-null");
         AgentTempChatDto agentTempChatDto = agentTempChatApplicationService.queryTempChatByChatKey(chatKey);
         if (agentTempChatDto == null) {
@@ -175,8 +177,13 @@ public class AgentTempChatController {
         }
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         if (agentTempChatDto.getRequireLogin() == 1) {
+            String referer = request.getHeader("Referer");
             if (userDto == null) {
-                throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+                if (StringUtils.isNotBlank(referer)) {
+                    throw new BizException("4011", "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
+                }else{
+                    throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+                }
             }
         }
         if (userDto == null) {

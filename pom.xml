@@ -419,6 +419,28 @@
                 <artifactId>app-platform-memory-application</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
+
+            <!-- im -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-im-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-im-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-im-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-im-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

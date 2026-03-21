@@ -256,6 +256,7 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
                 String sessionId = request.param("sessionId").get();
                 McpServerSession session = this.sessions.get(sessionId);
                 if (session == null) {
+                    logger.debug("Session not found: {}", sessionId);
                     sink.success(ServerResponse.status(HttpStatus.NOT_FOUND).body(new McpError("Session not found: " + sessionId)));
                 } else {
                     try {

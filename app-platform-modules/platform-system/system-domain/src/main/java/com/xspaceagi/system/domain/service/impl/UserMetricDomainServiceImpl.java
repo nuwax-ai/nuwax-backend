@@ -40,9 +40,10 @@ public class UserMetricDomainServiceImpl implements UserMetricDomainService {
     }
 
     @Override
-    public List<UserMetric> queryByUserId(Long userId) {
+    public List<UserMetric> queryByUserId(Long userId, String period) {
         LambdaQueryWrapper<UserMetric> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserMetric::getUserId, userId);
+        queryWrapper.eq(UserMetric::getPeriod, period);
         queryWrapper.orderByDesc(UserMetric::getPeriodType)
                 .orderByDesc(UserMetric::getPeriod);
         return userMetricService.list(queryWrapper);

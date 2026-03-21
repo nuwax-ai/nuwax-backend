@@ -42,8 +42,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
@@ -569,6 +569,30 @@ public class PublishedController extends BaseController {
         return ReqResult.success(page);
     }
 
+    @Operation(summary = "查询技能列表-用于@技能")
+    @RequestMapping(path = "/skill/list-for-at", method = RequestMethod.POST)
+    public ReqResult<SuperPage<PublishedDto>> skillListForAt(@RequestBody PublishedQueryDto publishedQueryDto) {
+        PublishedQueryDto queryDto = new PublishedQueryDto();
+        queryDto.setTargetType(Published.TargetType.Skill);
+        queryDto.setPage(publishedQueryDto.getPage());
+        queryDto.setPageSize(publishedQueryDto.getPageSize());
+        queryDto.setKw(publishedQueryDto.getKw());
+        queryDto.setJustReturnSpaceData(false);
+        queryDto.setShowRecommend(false);
+
+        //查询用户有权限的空间
+        var spaceIds = this.obtainAuthSpaceIds();
+        queryDto.setSpaceIds(spaceIds);
+
+        SuperPage<PublishedDto> page = publishApplicationService.queryPublishedListForAt(publishedQueryDto);
+        if (CollectionUtils.isNotEmpty(page.getRecords())) {
+            page.getRecords().forEach(publishedDto -> {
+                publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
+            });
+        }
+        return ReqResult.success(page);
+    }
+
     @Operation(summary = "已发布的技能详情接口")
     @RequestMapping(path = "/skill/{skillId}", method = RequestMethod.GET)
     public ReqResult<SkillDetailDto> skillDetail(@PathVariable Long skillId) {
@@ -625,9 +649,15 @@ public class PublishedController extends BaseController {
     @Operation(summary = "已收藏的技能列表接口")
     @RequestMapping(path = "/skill/collect/list", method = RequestMethod.POST)
     public ReqResult<List<PublishedDto>> skillCollectList(@RequestBody PublishedQueryDto publishedQueryDto) {
-        List<PublishedDto> publishedDtos = collectApplicationService.queryCollectList(RequestContext.get().getUserId(), Published.TargetType.Skill, publishedQueryDto.getSpaceId());
-        publishedDtos = filter(publishedQueryDto, publishedDtos);
-        publishedDtos.forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name())));
+        publishedQueryDto.setPage(1);
+        publishedQueryDto.setPageSize(1000);
+        //查询用户有权限的空间
+        var spaceIds = this.obtainAuthSpaceIds();
+        List<PublishedDto> publishedDtos = collectApplicationService.queryCollectListWithoutConfig(RequestContext.get().getUserId(), Published.TargetType.Skill, spaceIds);
+        if (CollectionUtils.isNotEmpty(publishedDtos)) {
+            publishedDtos = filter(publishedQueryDto, publishedDtos);
+            publishedDtos.forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name())));
+        }
         return ReqResult.success(publishedDtos);
     }
 
@@ -643,6 +673,14 @@ public class PublishedController extends BaseController {
     public ReqResult<Void> skillUnCollect(@PathVariable Long skillId) {
         collectApplicationService.unCollect(RequestContext.get().getUserId(), Published.TargetType.Skill, skillId);
         return ReqResult.success();
+    }
+
+    @Operation(summary = "最近使用的技能列表")
+    @RequestMapping(path = "/skill/recentlyUsed/list", method = RequestMethod.POST)
+    public ReqResult<List<PublishedDto>> skillRecentlyUsedList(@RequestBody PublishedQueryDto publishedQueryDto) {
+        Integer size = publishedQueryDto.getPageSize() != null && publishedQueryDto.getPageSize() > 0 ? publishedQueryDto.getPageSize() : 50;
+        List<PublishedDto> publishedDtos = skillApplicationService.queryRecentlyUsedSkills(publishedQueryDto.getKw(), size);
+        return ReqResult.success(publishedDtos);
     }
 
     @Operation(summary = "智能体、插件、工作流下架")
@@ -662,7 +700,7 @@ public class PublishedController extends BaseController {
 
     private List<PublishedDto> filter(PublishedQueryDto publishedQueryDto, List<PublishedDto> publishedDtos) {
         //根据PublishedQueryDto中的page和pageSize对publishedDtos分页
-        if (publishedQueryDto.getPage() < 1) {
+        if (publishedQueryDto.getPage() == null || publishedQueryDto.getPage() < 1) {
             publishedQueryDto.setPage(1);
         }
         publishedDtos = publishedDtos.stream().skip((long) (publishedQueryDto.getPage() - 1) * publishedQueryDto.getPageSize()).limit(publishedQueryDto.getPageSize()).toList();

@@ -63,6 +63,9 @@ public class SandboxConfigDto {
     @Schema(description = "穿透服务端端口")
     private int serverPort;
 
+    @Schema(description = "会话密钥，仅首次注册时有效")
+    private String token;
+
     @Schema(description = "创建时间")
     private Date created;
 

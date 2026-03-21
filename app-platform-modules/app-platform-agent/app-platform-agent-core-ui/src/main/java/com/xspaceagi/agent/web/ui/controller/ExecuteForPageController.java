@@ -168,17 +168,17 @@ public class ExecuteForPageController {
             throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "页面数据源错误");
         }
 
-        if (!RequestContext.get().isLogin()) {
-            if (pageDto.getNeedLogin()) {
+        if (pageDto.getNeedLogin()) {
+            if (!RequestContext.get().isLogin()) {
                 throw new BizException(ErrorCodeEnum.UNAUTHORIZED.getCode(), "未登录或登录超时");
-            } else {
-                UserDto userDto = userApplicationService.queryById(pageDto.getCreatorId());
-                if (userDto == null) {
-                    throw new BizException(ErrorCodeEnum.UNAUTHORIZED.getCode(), "未登录或登录超时");
-                }
-                RequestContext.get().setUser(userDto);
-                RequestContext.get().setUserId(userDto.getId());
             }
+        } else {
+            UserDto userDto = userApplicationService.queryById(pageDto.getCreatorId());
+            if (userDto == null) {
+                throw new BizException(ErrorCodeEnum.UNAUTHORIZED.getCode(), "未登录或登录超时");
+            }
+            RequestContext.get().setUser(userDto);
+            RequestContext.get().setUserId(userDto.getId());
         }
 
         AgentConfigDto agentConfigDto = agentApplicationService.queryPublishedConfigForExecute(refererParseVo.getAgentId());

@@ -72,6 +72,7 @@ auth:
     - /api/sandbox/config/reg
     - /api/sandbox/config/health/
     - /api/sandbox/config/redirect/
+    - /api/im/
 
 # DataSource Config
 mybatis-plus:
@@ -108,7 +109,7 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 1.0.7.1
+  version: 1.0.7.5
 
 stt:
   api:

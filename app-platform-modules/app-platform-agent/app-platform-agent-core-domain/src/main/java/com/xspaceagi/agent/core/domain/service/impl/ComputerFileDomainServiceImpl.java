@@ -29,13 +29,75 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     public Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId) {
         log.info("[Domain] logId={}, 获取静态文件, targetPrefix={}, relativePath={}", logId, targetPrefix, relativePath);
         return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId)
+                .doOnError(WebClientResponseException.NotFound.class, e -> {
+                    handleFileNotFound(logId, targetPrefix, relativePath, e);
+                })
                 .doOnError(WebClientResponseException.class, e -> {
-                    log.error("[Domain] logId={}, 获取静态文件失败, targetPrefix={}, relativePath={}, status={}",
-                            logId, targetPrefix, relativePath, e.getStatusCode());
+                    handleHttpError(logId, targetPrefix, relativePath, e);
                 })
                 .doOnError(Throwable.class, e -> {
-                    log.error("[Domain] logId={}, 获取静态文件异常, targetPrefix={}, relativePath={}", logId, targetPrefix, relativePath, e);
+                    handleGenericError(logId, targetPrefix, relativePath, e);
                 });
+    }
+
+    /**
+     * 处理文件未找到错误（404）
+     */
+    private void handleFileNotFound(String logId, String targetPrefix, String relativePath, WebClientResponseException.NotFound e) {
+        String fullFilePath = targetPrefix + relativePath;
+        String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
+
+        log.warn("[Domain] logId={}, 文件不存在, fullPath={}, errorDetail={}",
+                logId, fullFilePath, errorMessage);
+
+        log.debug("[Domain] logId={}, 404错误详情, status={}, responseBody={}",
+                logId, e.getStatusCode(), e.getResponseBodyAsString());
+    }
+
+    /**
+     * 处理HTTP错误（4xx, 5xx）
+     */
+    private void handleHttpError(String logId, String targetPrefix, String relativePath, WebClientResponseException e) {
+        String fullFilePath = targetPrefix + relativePath;
+        String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
+
+        log.error("[Domain] logId={}, 获取静态文件HTTP错误, fullPath={}, status={}, errorMessage={}",
+                logId, fullFilePath, e.getStatusCode(), errorMessage);
+    }
+
+    /**
+     * 处理通用异常
+     */
+    private void handleGenericError(String logId, String targetPrefix, String relativePath, Throwable e) {
+        String fullFilePath = targetPrefix + relativePath;
+        log.error("[Domain] logId={}, 获取静态文件异常, fullPath={}, errorType={}, errorMessage={}",
+                logId, fullFilePath, e.getClass().getSimpleName(), e.getMessage(), e);
+    }
+
+    /**
+     * 从错误响应体中提取错误信息
+     */
+    private String extractErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isEmpty()) {
+            return "无详细错误信息";
+        }
+
+        try {
+            if (responseBody.contains("message")) {
+                int messageIndex = responseBody.indexOf("\"message\"");
+                if (messageIndex != -1) {
+                    int startIndex = responseBody.indexOf(":\"", messageIndex);
+                    int endIndex = responseBody.indexOf("\"", startIndex + 2);
+                    if (startIndex != -1 && endIndex != -1) {
+                        return responseBody.substring(startIndex + 2, endIndex);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("[Domain] 解析错误消息失败, 使用原始响应", e);
+        }
+
+        return responseBody.length() > 100 ? responseBody.substring(0, 100) + "..." : responseBody;
     }
 
     @Override
@@ -66,12 +128,44 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext) {
         log.info("[Domain] 下载全部文件, logId={}, userId={}, cId={}", logId, userId, cId);
         return computerFileClient.downloadAllFiles(userId, cId, logId)
+                .doOnError(WebClientResponseException.NotFound.class, e -> {
+                    handleDownloadFileNotFound(logId, userId, cId, e);
+                })
                 .doOnError(WebClientResponseException.class, e -> {
-                    log.error("[Domain] 下载全部文件失败, logId={}, status={}", logId, e.getStatusCode());
+                    handleDownloadHttpError(logId, userId, cId, e);
                 })
                 .doOnError(Throwable.class, e -> {
-                    log.error("[Domain] 下载全部文件异常, logId={}", logId, e);
+                    handleDownloadGenericError(logId, userId, cId, e);
                 });
+    }
+
+    /**
+     * 处理下载文件未找到错误（404）
+     */
+    private void handleDownloadFileNotFound(String logId, Long userId, Long cId, WebClientResponseException.NotFound e) {
+        String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
+        log.warn("[Domain] logId={}, 下载文件不存在, userId={}, cId={}, errorDetail={}",
+                logId, userId, cId, errorMessage);
+
+        log.debug("[Domain] logId={}, 下载404错误详情, status={}, responseBody={}",
+                logId, e.getStatusCode(), e.getResponseBodyAsString());
+    }
+
+    /**
+     * 处理下载HTTP错误
+     */
+    private void handleDownloadHttpError(String logId, Long userId, Long cId, WebClientResponseException e) {
+        String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
+        log.error("[Domain] logId={}, 下载文件HTTP错误, userId={}, cId={}, status={}, errorMessage={}",
+                logId, userId, cId, e.getStatusCode(), errorMessage);
+    }
+
+    /**
+     * 处理下载通用异常
+     */
+    private void handleDownloadGenericError(String logId, Long userId, Long cId, Throwable e) {
+        log.error("[Domain] logId={}, 下载文件异常, userId={}, cId={}, errorType={}, errorMessage={}",
+                logId, userId, cId, e.getClass().getSimpleName(), e.getMessage(), e);
     }
 }
 

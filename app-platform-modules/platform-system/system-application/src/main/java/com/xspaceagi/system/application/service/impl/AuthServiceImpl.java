@@ -99,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
         userApplicationService.update(update);
     }
 
-    private String createToken(UserDto userDto, String clientId) {
+    public String createToken(UserDto userDto, String clientId) {
         //过期token检查
         Map<String, Object> map = redisUtil.hashGetAll("user-token:" + userDto.getId());
         //不能无限膨胀，一个账号同时最多100个token
