@@ -187,11 +187,18 @@ public class PermissionImportServiceImpl implements PermissionImportService {
             return;
         }
 
-        // 预加载当前租户下的代码-ID 映射，便于 parentCode / 关联关系解析
-        Map<String, Long> resourceCodeToId = sysResourceService.list(Wrappers.<SysResource>lambdaQuery()
+        // 预加载当前租户下资源的 code->id、code->parentId 映射，便于重建 resource_tree_json
+        List<SysResource> tenantResources = sysResourceService.list(Wrappers.<SysResource>lambdaQuery()
                         .eq(SysResource::getTenantId, tenantId)
-                        .eq(SysResource::getYn, YnEnum.Y.getKey()))
-                .stream().collect(Collectors.toMap(SysResource::getCode, SysResource::getId, (a, b) -> a));
+                        .eq(SysResource::getYn, YnEnum.Y.getKey()));
+        Map<String, Long> resourceCodeToId = tenantResources.stream()
+                .collect(Collectors.toMap(SysResource::getCode, SysResource::getId, (a, b) -> a));
+        Map<String, Long> resourceCodeToParentId = tenantResources.stream()
+                // HashMap 不允许 value 为 null；同时与正常绑定中 root parentId=0 的表现保持一致
+                .collect(Collectors.toMap(
+                        SysResource::getCode,
+                        r -> r.getParentId() != null ? r.getParentId() : 0L,
+                        (a, b) -> a));
         Map<String, Long> menuCodeToId = sysMenuService.list(Wrappers.<SysMenu>lambdaQuery()
                         .eq(SysMenu::getTenantId, tenantId)
                         .eq(SysMenu::getYn, YnEnum.Y.getKey()))
@@ -215,6 +222,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     SysResource entity = resolveOrCreateResource(tenantId, r, resourceCodeToId);
                     if (entity != null) {
                         resourceCodeToId.put(r.getCode(), entity.getId());
+                        resourceCodeToParentId.put(r.getCode(), entity.getParentId());
                     }
                 }
             }
@@ -229,6 +237,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     SysResource entity = resolveOrCreateResource(tenantId, r, resourceCodeToId);
                     if (entity != null) {
                         resourceCodeToId.put(r.getCode(), entity.getId());
+                        resourceCodeToParentId.put(r.getCode(), entity.getParentId());
                     }
                 }
             }
@@ -366,7 +375,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (roleId == null || menuId == null) {
                         continue;
                     }
-                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId, resourceCodeToParentId);
                     resolveOrCreateRoleMenu(tenantId, roleId, menuId, dto, resourceTreeJson);
                 }
             }
@@ -383,7 +392,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (roleId == null || menuId == null) {
                         continue;
                     }
-                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId, resourceCodeToParentId);
                     resolveOrCreateRoleMenu(tenantId, roleId, menuId, dto, resourceTreeJson);
                 }
             }
@@ -401,7 +410,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (groupId == null || menuId == null) {
                         continue;
                     }
-                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId, resourceCodeToParentId);
                     resolveOrCreateGroupMenu(tenantId, groupId, menuId, dto, resourceTreeJson);
                 }
             }
@@ -418,7 +427,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (groupId == null || menuId == null) {
                         continue;
                     }
-                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId);
+                    String resourceTreeJson = buildResourceTreeJson(dto.getResourceTree(), resourceCodeToId, resourceCodeToParentId);
                     resolveOrCreateGroupMenu(tenantId, groupId, menuId, dto, resourceTreeJson);
                 }
             }
@@ -804,8 +813,17 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         if (CollectionUtils.isEmpty(tree)) {
             return null;
         }
+        return buildResourceTreeJson(tree, resourceCodeToId, null);
+    }
+
+    private String buildResourceTreeJson(List<ResourceNodeExportDto> tree,
+                                          Map<String, Long> resourceCodeToId,
+                                          Map<String, Long> resourceCodeToParentId) {
+        if (CollectionUtils.isEmpty(tree)) {
+            return null;
+        }
         List<ResourceNode> nodes = tree.stream()
-                .map(n -> convertExportToNode(n, resourceCodeToId))
+                .map(n -> convertExportToNode(n, resourceCodeToId, resourceCodeToParentId))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (nodes.isEmpty()) {
@@ -814,7 +832,9 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         return JsonSerializeUtil.toJSONString(nodes);
     }
 
-    private ResourceNode convertExportToNode(ResourceNodeExportDto dto, Map<String, Long> resourceCodeToId) {
+    private ResourceNode convertExportToNode(ResourceNodeExportDto dto,
+                                            Map<String, Long> resourceCodeToId,
+                                            Map<String, Long> resourceCodeToParentId) {
         if (dto == null || StringUtils.isBlank(dto.getCode())) {
             return null;
         }
@@ -824,10 +844,14 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         }
         ResourceNode node = new ResourceNode();
         node.setId(id);
+        node.setCode(dto.getCode());
+        if (resourceCodeToParentId != null) {
+            node.setParentId(resourceCodeToParentId.get(dto.getCode()));
+        }
         node.setResourceBindType(dto.getResourceBindType());
         if (CollectionUtils.isNotEmpty(dto.getChildren())) {
             node.setChildren(dto.getChildren().stream()
-                    .map(c -> convertExportToNode(c, resourceCodeToId))
+                    .map(c -> convertExportToNode(c, resourceCodeToId, resourceCodeToParentId))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
         }

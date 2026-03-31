@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.model.ModelContext;
@@ -19,6 +20,8 @@ import com.xspaceagi.agent.web.ui.controller.dto.SQLOptimizeDto;
 import com.xspaceagi.compose.sdk.request.DorisTableDefineRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
 import com.xspaceagi.compose.sdk.vo.define.TableDefineVo;
+import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.exception.BizException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -450,10 +453,14 @@ public class AssistantController extends BaseController {
     }
 
     private ModelContext buildModelContext(String convId, String systemPrompt, String msg) {
+        ModelConfigDto modelConfigDto = modelApplicationService.queryDefaultModelConfig();
         ModelContext modelContext = new ModelContext();
-        modelContext.setAgentContext(new AgentContext());
+        AgentContext agentContext = new AgentContext();
+        agentContext.setUser((UserDto) RequestContext.get().getUser());
+        agentContext.setUserId(RequestContext.get().getUserId());
+        modelContext.setAgentContext(agentContext);
         modelContext.getAgentContext().setConversationId("optimize:" + convId);
-        modelContext.setModelConfig(modelApplicationService.queryDefaultModelConfig());
+        modelContext.setModelConfig(modelConfigDto);
         modelContext.setConversationId("optimize:" + convId);
         ModelCallConfigDto modelCallConfigDto = new ModelCallConfigDto();
         modelCallConfigDto.setUserPrompt(msg);
@@ -462,6 +469,7 @@ public class AssistantController extends BaseController {
         modelCallConfigDto.setTopP(0.7);
         modelCallConfigDto.setSystemPrompt(systemPrompt);
         modelCallConfigDto.setChatRound(5);
+        modelCallConfigDto.setMaxTokens(modelConfigDto.getMaxTokens());
         modelContext.setModelCallConfig(modelCallConfigDto);
         return modelContext;
     }

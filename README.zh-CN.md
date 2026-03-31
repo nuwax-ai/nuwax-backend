@@ -190,7 +190,7 @@ Nuwax AI 智能体平台由多个相互关联的仓库组成：
 | 仓库名称 | 描述 | 地址 |
 |---------|------|------|
 | **rcoder** | 沙箱与容器调度（含通用智能体引擎）| [https://github.com/nuwax-ai/rcoder](https://github.com/nuwax-ai/rcoder) |
-| **mcp-proxy** | MCP 服务（沙箱使用）| [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
+| **mcp-proxy** | MCP 服务（nuwaclaw 和沙箱均使用）| [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
 | **nuwax-file-server** | 文件服务（沙箱和 nuwaclaw 使用，含 skill 同步）| [https://github.com/nuwax-ai/nuwax-file-server](https://github.com/nuwax-ai/nuwax-file-server) |
 
 #### **网页应用开发**
@@ -246,11 +246,7 @@ cd nuwax-backend
 ### 2. 启动基础服务
 
 - Milvus 向量数据库 https://github.com/milvus-io/milvus
-<<<<<<< HEAD
-- 安装配置mysql，创建数据库 `agent_platform`，导入 sql/init.sql，默认 username: `admin@nuwax.com`, password: `123456`
-=======
 - 安装配置mysql，创建数据库 `agent_platform`，导入 sql/init.sql
->>>>>>> v3-main-path
 - 安装配置 Elasticsearch 9.2.1，中文环境需要配置中文分词插件
 - mcp-proxy项目部署 https://github.com/nuwax-ai/mcp-proxy
 - 网页开发调度以及智能体沙箱服务 https://github.com/nuwax-ai/rcoder

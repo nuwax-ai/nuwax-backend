@@ -1,0 +1,316 @@
+[
+  {
+    "name": "用户与认证",
+    "key": "api.system.user",
+    "role": "Admin",
+    "apiList": [
+      {
+        "key": "api.v1.system.user.add",
+        "name": "新增用户",
+        "role": "Admin",
+        "path": "/api/v1/system/user/add"
+      },
+      {
+        "key": "api.v1.system.user.disable",
+        "name": "禁用用户",
+        "role": "Admin",
+        "path": "/api/v1/system/user/disable"
+      },
+      {
+        "key": "api.v1.system.user.enable",
+        "name": "启用用户",
+        "role": "Admin",
+        "path": "/api/v1/system/user/enable"
+      },
+      {
+        "key": "api.v1.system.user.detail",
+        "name": "查询指定用户详细信息",
+        "role": "Admin",
+        "path": "/api/v1/system/user/detail"
+      },
+      {
+        "key": "api.v1.system.user.list",
+        "name": "分页查询用户列表",
+        "role": "Admin",
+        "path": "/api/v1/system/user/list"
+      },
+      {
+        "key": "api.v1.system.user.ticket.create",
+        "name": "创建指定用户的认证ticket",
+        "role": "Admin",
+        "path": "/api/v1/system/user/ticket/create"
+      },
+      {
+        "key": "api.v1.system.user.ticket.clear",
+        "name": "清除用户通过ticket获得的认证",
+        "role": "Admin",
+        "path": "/api/v1/system/user/ticket/clear"
+      }
+    ]
+  },
+  {
+    "name": "系统大模型管理",
+    "key": "api.system.model",
+    "role": "Admin",
+    "apiList": [
+      {
+        "key": "api.v1.system.model.add",
+        "name": "新增模型",
+        "role": "Admin",
+        "path": "/api/v1/system/model/add"
+      },
+      {
+        "key": "api.v1.system.model.update",
+        "name": "更新模型",
+        "role": "Admin",
+        "path": "/api/v1/system/model/update"
+      },
+      {
+        "key": "api.v1.system.model.delete",
+        "name": "删除模型",
+        "role": "Admin",
+        "path": "/api/v1/system/model/delete"
+      },
+      {
+        "key": "api.v1.system.model.detail",
+        "name": "查询指定模型详细信息",
+        "role": "Admin",
+        "path": "/api/v1/system/model/detail"
+      },
+      {
+        "key": "api.v1.system.model.list",
+        "name": "查询所有模型列表",
+        "role": "Admin",
+        "path": "/api/v1/system/model/list"
+      }
+    ]
+  },
+  {
+    "name": "工作空间管理",
+    "key": "api.space",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.space.add",
+        "name": "新增空间",
+        "role": "User",
+        "path": "/api/v1/space/add"
+      },
+      {
+        "key": "api.v1.space.update",
+        "name": "更新空间信息",
+        "role": "User",
+        "path": "/api/v1/space/update"
+      },
+      {
+        "key": "api.v1.space.delete",
+        "name": "删除工作空间",
+        "role": "User",
+        "path": "/api/v1/space/delete"
+      },
+      {
+        "key": "api.v1.space.list",
+        "name": "查询用户所有空间列表",
+        "role": "User",
+        "path": "/api/v1/space/list"
+      }
+    ]
+  },
+  {
+    "name": "组件库-大模型",
+    "key": "api.component.model",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.model.add",
+        "name": "新增模型",
+        "role": "User",
+        "path": "/api/v1/model/add"
+      },
+      {
+        "key": "api.v1.model.update",
+        "name": "更新模型信息",
+        "role": "User",
+        "path": "/api/v1/model/update"
+      },
+      {
+        "key": "api.v1.model.delete",
+        "name": "删除模型",
+        "role": "User",
+        "path": "/api/v1/model/delete"
+      },
+      {
+        "key": "api.v1.model.detail",
+        "name": "查询模型配置信息",
+        "role": "User",
+        "path": "/api/v1/model/:id"
+      },
+      {
+        "key": "api.v1.model.list",
+        "name": "查询用户有权限的模型列表",
+        "role": "User",
+        "path": "/api/v1/model/list"
+      },
+      {
+        "key": "api.v1.model.message",
+        "name": "模型代理调用",
+        "role": "User",
+        "path": "/api/v1/model/message/:id"
+      }
+    ]
+  },
+  {
+    "name": "组件库-知识库",
+    "key": "api.component.kb",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.kb.add",
+        "name": "新增知识库",
+        "role": "User",
+        "path": "/api/v1/kb/add"
+      },
+      {
+        "key": "api.v1.kb.update",
+        "name": "更新知识库信息",
+        "role": "User",
+        "path": "/api/v1/kb/update"
+      },
+      {
+        "key": "api.v1.kb.delete",
+        "name": "删除知识库",
+        "role": "User",
+        "path": "/api/v1/kb/delete"
+      },
+      {
+        "key": "api.v1.kb.list",
+        "name": "查询用户有权限的知识库列表",
+        "role": "User",
+        "path": "/api/v1/kb/list"
+      },
+      {
+        "key": "api.v1.kb.doc.add",
+        "name": "新增文档",
+        "role": "User",
+        "path": "/api/v1/kb/doc/add"
+      },
+      {
+        "key": "api.v1.kb.doc.delete",
+        "name": "删除文档",
+        "role": "User",
+        "path": "/api/v1/kb/doc/delete"
+      },
+      {
+        "key": "api.v1.kb.search",
+        "name": "知识检索",
+        "role": "User",
+        "path": "/api/v1/kb/doc/search"
+      }
+    ]
+  },
+  {
+    "name": "组件库-插件与工作流",
+    "key": "api.component.plugin",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.plugin.execute",
+        "name": "插件调用",
+        "role": "User",
+        "path": "/api/v1/plugin/:id/execute"
+      },
+      {
+        "key": "api.v1.workflow.execute",
+        "name": "工作流调用",
+        "role": "User",
+        "path": "/api/v1/workflow/:id/execute"
+      },
+      {
+        "key": "api.v1.workflow.sse.execute",
+        "name": "工作流流式调用",
+        "role": "User",
+        "path": "/api/v1/workflow/:id/sse/execute"
+      }
+    ]
+  },
+  {
+    "name": "智能体会话",
+    "key": "api.chat",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.conversation.add",
+        "name": "新增会话",
+        "role": "User",
+        "path": "/api/v1/conversation/add"
+      },
+      {
+        "key": "api.v1.conversation.update",
+        "name": "更新会话信息",
+        "role": "User",
+        "path": "/api/v1/conversation/update"
+      },
+      {
+        "key": "api.v1.conversation.delete",
+        "name": "删除会话信息",
+        "role": "User",
+        "path": "/api/v1/conversation/delete"
+      },
+      {
+        "key": "api.v1.conversation.detail",
+        "name": "查询会话信息",
+        "role": "User",
+        "path": "/api/v1/conversation/:id"
+      },
+      {
+        "key": "api.v1.conversation.list",
+        "name": "查询会话列表",
+        "role": "User",
+        "path": "/api/v1/conversation/list"
+      },
+      {
+        "key": "api.v1.chat",
+        "name": "发起会话",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId"
+      },
+      {
+        "key": "api.v1.chat.openai",
+        "name": "发起会话（openai协议）",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId/openai"
+      },
+      {
+        "key": "api.v1.chat.stop",
+        "name": "停止会话",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId/stop"
+      },
+      {
+        "key": "api.v1.chat.messages",
+        "name": "查询会话历史消息",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId/messages"
+      }
+    ]
+  },
+  {
+    "name": "文件管理",
+    "key": "api.file",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.file.upload",
+        "name": "文件上传",
+        "role": "User",
+        "path": "/api/v1/file/upload"
+      },
+      {
+        "key": "api.v1.file.authorization",
+        "name": "生成包含认证信息的文件地址",
+        "role": "User",
+        "path": "/api/v1/file/authorization"
+      }
+    ]
+  }
+]

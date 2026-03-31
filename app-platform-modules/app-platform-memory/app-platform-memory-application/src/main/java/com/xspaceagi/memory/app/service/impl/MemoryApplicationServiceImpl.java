@@ -439,7 +439,7 @@ public class MemoryApplicationServiceImpl implements MemoryApplicationService {
             }
             List<String> newTags = new ArrayList<>();
             JSONArray tags = jsonObject.getJSONArray("tags");
-            if (CollectionUtils.isNotEmpty(tags)) {
+            if (CollectionUtils.isNotEmpty(tags) && CollectionUtils.isNotEmpty(updateTags)) {
                 updateTags.forEach(tag -> {
                     if (!tags.contains(tag)) {
                         newTags.add(tag);

@@ -33,6 +33,20 @@ public class ImChannelConfigDomainServiceImpl implements ImChannelConfigDomainSe
     }
 
     @Override
+    public ImChannelConfig findOneIgnoreEnabled(String channel, String targetType, String imTargetId) {
+        Assert.hasText(channel, "platform不能为空");
+        Assert.hasText(targetType, "targetType不能为空");
+        Assert.hasText(imTargetId, "imTargetId不能为空");
+
+        LambdaQueryWrapper<ImChannelConfig> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ImChannelConfig::getChannel, channel)
+                .eq(ImChannelConfig::getTargetType, targetType)
+                .eq(ImChannelConfig::getTargetId, imTargetId)
+                .eq(ImChannelConfig::getYn, 1);
+        return imChannelConfigRepository.getOne(wrapper, false);
+    }
+
+    @Override
     public ImChannelConfig add(ImChannelConfig config) {
         checkParams(config);
 
@@ -93,6 +107,9 @@ public class ImChannelConfigDomainServiceImpl implements ImChannelConfigDomainSe
             if (query.getSpaceId() != null) {
                 wrapper.eq(ImChannelConfig::getSpaceId, query.getSpaceId());
             }
+            if (query.getTenantId() != null) {
+                wrapper.eq(ImChannelConfig::getTenantId, query.getTenantId());
+            }
         }
 
         wrapper.orderByDesc(ImChannelConfig::getModified);
@@ -128,6 +145,12 @@ public class ImChannelConfigDomainServiceImpl implements ImChannelConfigDomainSe
             }
             if (StringUtils.isNotBlank(query.getTargetId())) {
                 wrapper.eq(ImChannelConfig::getTargetId, query.getTargetId());
+            }
+            if (query.getSpaceId() != null) {
+                wrapper.eq(ImChannelConfig::getSpaceId, query.getSpaceId());
+            }
+            if (query.getTenantId() != null) {
+                wrapper.eq(ImChannelConfig::getTenantId, query.getTenantId());
             }
         }
 

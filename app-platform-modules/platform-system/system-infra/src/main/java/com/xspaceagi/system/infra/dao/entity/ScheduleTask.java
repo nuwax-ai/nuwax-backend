@@ -59,6 +59,8 @@ public class ScheduleTask {
 
     private String error;
 
+    private String serverInfo;
+
     @Schema(description = "任务修改时间")
     private Date modified;
 

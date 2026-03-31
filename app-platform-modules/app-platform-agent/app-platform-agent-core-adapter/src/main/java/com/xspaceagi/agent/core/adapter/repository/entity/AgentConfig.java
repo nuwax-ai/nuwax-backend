@@ -74,6 +74,12 @@ public class AgentConfig {
 
     private Integer hideDesktop;
 
+    private Integer allowOtherModel;
+
+    private Integer allowAtSkill;
+
+    private Integer allowPrivateSandbox;
+
     public enum OpenStatus {
         Open, Close;
     }

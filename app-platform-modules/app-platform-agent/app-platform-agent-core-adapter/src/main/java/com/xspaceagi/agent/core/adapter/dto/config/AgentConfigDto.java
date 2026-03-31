@@ -155,6 +155,15 @@ public class AgentConfigDto implements Serializable {
     @Schema(description = "代理MCP SSE地址", hidden = true)
     private String proxyMcpServerConfig;
 
+    @Schema(description = "是否允许用户在对话框中选择其他模型, 1 允许，其他不允许")
+    private Integer allowOtherModel;
+
+    @Schema(description = "是否允许用户在对话框中@技能， 1 允许，其他不允许")
+    private Integer allowAtSkill;
+
+    @Schema(description = "是否允许用户在对话框中选择自己的电脑， 1 允许，其他不允许")
+    private Integer allowPrivateSandbox;
+
     public String getPageHomeIndex() {
         //设置默认页面首页
         if (getAgentComponentConfigList() != null) {

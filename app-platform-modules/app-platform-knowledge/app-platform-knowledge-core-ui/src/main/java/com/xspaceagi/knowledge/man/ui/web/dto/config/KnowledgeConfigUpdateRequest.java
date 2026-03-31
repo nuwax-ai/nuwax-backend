@@ -55,6 +55,9 @@ public class KnowledgeConfigUpdateRequest implements Serializable {
     @Schema(description = "工作流ID")
     private Long workflowId;
 
+    @Schema(description = "模型编号")
+    private Long embeddingModelId;
+
     public static KnowledgeConfigModel convert2Model(
             KnowledgeConfigUpdateRequest updateDto
     ) {
@@ -71,7 +74,8 @@ public class KnowledgeConfigUpdateRequest implements Serializable {
         if (Objects.nonNull(updateDto.getDataType())) {
             knowledgeConfigModel.setDataType(updateDto.getDataType());
         }
-        knowledgeConfigModel.setEmbeddingModelId(null);
+        //knowledgeConfigModel.setEmbeddingModelId(null);
+        knowledgeConfigModel.setEmbeddingModelId(updateDto.getEmbeddingModelId());
         knowledgeConfigModel.setChatModelId(null);
 
         if (Objects.nonNull(updateDto.getSpaceId())) {

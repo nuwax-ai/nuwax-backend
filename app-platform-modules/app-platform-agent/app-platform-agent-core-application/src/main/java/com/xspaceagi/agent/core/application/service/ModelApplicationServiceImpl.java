@@ -15,6 +15,7 @@ import com.xspaceagi.agent.core.infra.component.model.ModelClientFactory;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
 import com.xspaceagi.agent.core.spec.constant.Prompts;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
+import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.dto.permission.BindRestrictionTargetsDto;
@@ -94,8 +95,11 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         modelDto.setTenantId(RequestContext.get().getTenantId());
         ModelConfig model = new ModelConfig();
         BeanUtils.copyProperties(modelDto, model);
-        if (modelDto.getApiInfoList() != null && modelDto.getApiInfoList().size() > 0) {
+        if (modelDto.getApiInfoList() != null && !modelDto.getApiInfoList().isEmpty()) {
             model.setApiInfo(JSONObject.toJSONString(modelDto.getApiInfoList()));
+        }
+        if (modelDto.getUsageScenarios() != null) {
+            model.setUsageScenario(JSONObject.toJSONString(modelDto.getUsageScenarios()));
         }
         ModelConfigDto modelConfigDto = null;
         if (modelDto.getId() != null) {
@@ -219,6 +223,11 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         ModelConfigDto modelDto = new ModelConfigDto();
         BeanUtils.copyProperties(model, modelDto);
+        if (model.getUsageScenario() != null && JSON.isValidArray(model.getUsageScenario())) {
+            modelDto.setUsageScenarios(JSON.parseArray(model.getUsageScenario(), UsageScenarioEnum.class));
+        } else {
+            modelDto.setUsageScenarios(List.of(UsageScenarioEnum.Workflow, UsageScenarioEnum.TaskAgent, UsageScenarioEnum.PageApp, UsageScenarioEnum.ChatBot, UsageScenarioEnum.OpenApi));
+        }
         modelDto.setApiInfoList(convert(model.getApiInfo()));
         modelDto.setNatInfoList(convertNatInfo(model.getNatInfo()));
         completeCreator(List.of(modelDto));
@@ -283,6 +292,11 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             ModelConfigDto modelDto = new ModelConfigDto();
             BeanUtils.copyProperties(model1, modelDto);
             modelDto.setApiInfoList(null);
+            if (model1.getUsageScenario() != null && JSON.isValidArray(model1.getUsageScenario())) {
+                modelDto.setUsageScenarios(JSON.parseArray(model1.getUsageScenario(), UsageScenarioEnum.class));
+            } else {
+                modelDto.setUsageScenarios(List.of(UsageScenarioEnum.Workflow, UsageScenarioEnum.TaskAgent, UsageScenarioEnum.PageApp, UsageScenarioEnum.ChatBot, UsageScenarioEnum.OpenApi));
+            }
             modelDtos.add(modelDto);
         });
         //modelDtos中的creatorIdList

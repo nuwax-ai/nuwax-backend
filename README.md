@@ -198,7 +198,7 @@ The Nuwax AI Agent Platform consists of multiple interconnected repositories:
 | Repository | Description | URL |
 |-----------|-------------|-----|
 | **rcoder** | Sandbox & Container Scheduling (includes General Agent Engine) | [https://github.com/nuwax-ai/rcoder](https://github.com/nuwax-ai/rcoder) |
-| **mcp-proxy** | MCP Service (used by sandbox) | [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
+| **mcp-proxy** | MCP Service (used by nuwaclaw and sandbox) | [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
 | **nuwax-file-server** | File Service (used by sandbox and nuwaclaw, includes skill sync) | [https://github.com/nuwax-ai/nuwax-file-server](https://github.com/nuwax-ai/nuwax-file-server) |
 
 #### **Web Application Development**
@@ -254,11 +254,7 @@ cd nuwax-backend
 ### 2. Start Basic Services
 
 - **Milvus Vector Database**: https://github.com/milvus-io/milvus
-<<<<<<< HEAD
-- **MySQL**: Install and configure MySQL, create database `agent_platform`, import `sql/init.sql`, default username: `admin@nuwax.com`, password: `123456`
-=======
 - **MySQL**: Install and configure MySQL, create database `agent_platform`, import `sql/init.sql`
->>>>>>> v3-main-path
 - **Elasticsearch**: Install and configure Elasticsearch 9.2.1, configure Chinese word segmentation plugin for Chinese environment
 - **mcp-proxy**: https://github.com/nuwax-ai/mcp-proxy
 - **Web development scheduling and agent sandbox service**: https://github.com/nuwax-ai/rcoder

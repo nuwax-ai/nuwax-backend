@@ -11,7 +11,12 @@ import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationServ
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.im.application.FeishuAgentApplicationService;
 import com.xspaceagi.im.application.ImChannelConfigApplicationService;
+import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.ImChannelConfigDto;
+import com.xspaceagi.im.infra.dao.enitity.ImSession;
+import com.xspaceagi.im.infra.enums.ImChannelEnum;
+import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
+import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.im.infra.enums.ImOutputModeEnum;
 import com.xspaceagi.im.web.dto.FeishuChatDto;
 import com.xspaceagi.im.web.dto.FeishuChatListRespDto;
@@ -66,6 +71,8 @@ public class IMFeishuController {
     private FeishuAttachmentService feishuAttachmentService;
     @Resource
     private FeishuAgentApplicationService feishuAgentApplicationService;
+    @Resource
+    private ImSessionApplicationService imSessionApplicationService;
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
@@ -501,6 +508,25 @@ public class IMFeishuController {
             userMessage = "[用户发送了附件]";
         }
 
+        if (isNewCommand(userMessage)) {
+            String sessionId;
+            if ("p2p".equals(chatType)) {
+                sessionId = extractOpenId(sender);
+                if (StringUtils.isBlank(sessionId) && StringUtils.isNotBlank(chatId)) {
+                    sessionId = chatId;
+                }
+            } else {
+                sessionId = StringUtils.isNotBlank(chatId) ? chatId : extractOpenId(sender);
+            }
+            if (StringUtils.isBlank(sessionId)) {
+                sessionId = "unknown_" + messageId;
+            }
+            String sessionName = resolveSessionName(chatType, chatId, sender, botConfig);
+            createNewConversationForFeishu(sessionId, chatType, sessionName, botConfig);
+            reply(messageId, buildCard("已为你创建新会话，后续消息默认走新会话", false), botConfig);
+            return;
+        }
+
         // 下载飞书附件并上传到项目存储，获取可访问的 URL
         List<AttachmentDto> attachments = new ArrayList<>();
         List<String> unsupportedKeys = new ArrayList<>();
@@ -803,6 +829,24 @@ public class IMFeishuController {
             return null;
         }
         return sender.getSenderId().getOpenId();
+    }
+
+    private static boolean isNewCommand(String userMessage) {
+        return "/new".equals(StringUtils.trimToEmpty(userMessage));
+    }
+
+    private void createNewConversationForFeishu(String sessionId, String chatType, String sessionName, FeishuBotConfig botConfig) {
+        ImSession imSession = ImSession.builder()
+                .channel(ImChannelEnum.FEISHU.getCode())
+                .targetType(ImTargetTypeEnum.BOT.getCode())
+                .sessionKey(sessionId)
+                .sessionName(sessionName)
+                .chatType("p2p".equals(chatType) ? ImChatTypeEnum.PRIVATE.getCode() : ImChatTypeEnum.GROUP.getCode())
+                .userId(botConfig.getUserId())
+                .agentId(botConfig.getAgentId())
+                .tenantId(botConfig.getTenantId())
+                .build();
+        imSessionApplicationService.createNewConversationId(imSession);
     }
 
     // 回复到飞书，支持多种消息类型：text（文本）、post（富文本）、image（图片）、interactive（互动卡片）

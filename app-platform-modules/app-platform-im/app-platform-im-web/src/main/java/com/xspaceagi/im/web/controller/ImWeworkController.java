@@ -3,18 +3,20 @@ package com.xspaceagi.im.web.controller;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
+import com.xspaceagi.im.application.ImAgentOutputProcessService;
 import com.xspaceagi.im.application.ImChannelConfigApplicationService;
+import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.WeworkAgentApplicationService;
 import com.xspaceagi.im.application.dto.ImChannelConfigDto;
+import com.xspaceagi.im.infra.dao.enitity.ImSession;
+import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.im.web.service.WeworkAttachmentService;
-import com.xspaceagi.im.web.service.ImFileShareService;
-import com.xspaceagi.im.web.util.ImOutputProcessor;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -76,13 +78,13 @@ public class ImWeworkController {
     @Resource
     private WeworkAgentApplicationService weworkAgentApplicationService;
     @Resource
+    private ImSessionApplicationService imSessionApplicationService;
+    @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
     private ImChannelConfigApplicationService imChannelConfigApplicationService;
     @Resource
-    private ImFileShareService imFileShareService;
-    @Resource
-    private IComputerFileApplicationService computerFileApplicationService;
+    private ImAgentOutputProcessService imAgentOutputProcessService;
 
     /**
      * 企业微信消息幂等 Redis Key 前缀
@@ -306,6 +308,13 @@ public class ImWeworkController {
 
                     if (StringUtils.isBlank(userMessage)) {
                         userMessage = "[用户发送了非文本内容]";
+                    }
+
+                    if (isNewCommand(userMessage)) {
+                        String sessionName = resolveSessionName(finalFromUserName, chatType, chatId, finalConfig);
+                        createNewConversationForWework(finalFromUserName, chatType, chatId, ImTargetTypeEnum.APP.getCode(), sessionName, finalConfig);
+                        sendAppTextMessage(finalConfig, finalFromUserName, "已为你创建新会话，后续消息默认走新会话");
+                        return;
                     }
 
                     // 调用智能体
@@ -578,6 +587,13 @@ public class ImWeworkController {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
+        if (isNewCommand(userMessage)) {
+            String sessionName = resolveSessionName(senderId, chatType, chatId, botConfig);
+            createNewConversationForWework(senderId, chatType, chatId, ImTargetTypeEnum.BOT.getCode(), sessionName, botConfig);
+            replyByResponseUrl(responseUrl, "已为你创建新会话，后续消息默认走新会话");
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
 
         log.info("处理企业微信消息: senderId={}, chatType={}, chatId={}, content={}",
                 senderId, chatType, chatId, userMessage);
@@ -650,6 +666,43 @@ public class ImWeworkController {
             return "[用户发送了" + ("image".equals(msgtype) ? "图片" : "文件") + "]";
         }
         return "";
+    }
+
+    private static boolean isNewCommand(String userMessage) {
+        return "/new".equals(StringUtils.trimToEmpty(userMessage));
+    }
+
+    private void createNewConversationForWework(String senderId, String chatType, String chatId, String targetType,
+                                                String sessionName, WeworkBotConfig config) {
+        // /new 可能在异步线程执行，无 HTTP RequestContext，需补齐最小租户上下文
+        boolean hasRequestContext = RequestContext.get() != null;
+        if (!hasRequestContext) {
+            RequestContext<Object> requestContext = new RequestContext<>();
+            requestContext.setTenantId(config.getTenantId());
+            RequestContext.set(requestContext);
+        }
+        ImChatTypeEnum chatTypeEnum = ImChatTypeEnum.fromCode(chatType);
+        if (chatTypeEnum == null) {
+            chatTypeEnum = ImChatTypeEnum.PRIVATE;
+        }
+        try {
+            String sessionKey = chatTypeEnum == ImChatTypeEnum.GROUP && StringUtils.isNotBlank(chatId) ? chatId : senderId;
+            ImSession imSession = ImSession.builder()
+                    .channel(ImChannelEnum.WEWORK.getCode())
+                    .targetType(targetType)
+                    .sessionKey(sessionKey)
+                    .sessionName(sessionName)
+                    .chatType(chatTypeEnum.getCode())
+                    .userId(config.getUserId())
+                    .agentId(config.getNuwaxAgentId())
+                    .tenantId(config.getTenantId())
+                    .build();
+            imSessionApplicationService.createNewConversationId(imSession);
+        } finally {
+            if (!hasRequestContext) {
+                RequestContext.remove();
+            }
+        }
     }
 
     /**
@@ -962,27 +1015,6 @@ public class ImWeworkController {
     }
 
     /**
-     * 处理智能体输出内容，使用统一的处理工具
-     */
-    private String processAgentOutput(String text, Long conversationId, Long nuwaxAgentId, WeworkBotConfig config) {
-        Long tenantId = config != null ? config.getTenantId() : null;
-        TenantConfigDto tenantConfig = tenantId != null ? tenantConfigApplicationService.getTenantConfig(tenantId) : null;
-        String domain = tenantConfig != null ? tenantConfig.getSiteUrl() : null;
-        if (domain != null) {
-            domain = domain.trim();
-            if (!domain.startsWith("http://") && !domain.startsWith("https://")) {
-                domain = "https://" + domain;
-            }
-            if (domain.endsWith("/")) {
-                domain = domain.substring(0, domain.length() - 1);
-            }
-        }
-        Long userId = config != null ? config.getUserId() : null;
-        return ImOutputProcessor.processOutput(text, conversationId, nuwaxAgentId, domain, userId, tenantId,
-                imFileShareService, computerFileApplicationService);
-    }
-
-    /**
      * 公共处理：根据 senderId / userMessage / 附件 / 会话信息 调用企业微信智能体，并做统一输出处理。
      * 被 /webhook 和 /app-callback 复用。
      */
@@ -1011,7 +1043,9 @@ public class ImWeworkController {
             log.info("企业微信智能体执行完成: senderId={}, chatType={}, chatId={}, conversationId={}, agentId={}",
                     senderId, chatType, chatId, result.getConversationId(), result.getAgentId());
 
-            String processedText = processAgentOutput(result.getText(), result.getConversationId(), result.getAgentId(), config);
+            String processedText = imAgentOutputProcessService.processAgentOutput(
+                    result.getText(), result.getConversationId(), result.getAgentId(),
+                    config.getTenantId(), config.getUserId());
             if (StringUtils.isBlank(processedText)) {
                 processedText = "已处理";
             }

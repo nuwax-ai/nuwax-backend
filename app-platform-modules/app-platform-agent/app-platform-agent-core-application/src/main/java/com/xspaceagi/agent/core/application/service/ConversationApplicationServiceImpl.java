@@ -988,7 +988,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             BigDecimal tokenCount = metricRpcService.queryMetricCurrent(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), BizType.TOKEN_USAGE.getCode(), PeriodType.DAY);
             if (userDataPermission.getTokenLimit() != null && userDataPermission.getTokenLimit().getLimitPerDay() != null && userDataPermission.getTokenLimit().getLimitPerDay() >= 0
                     && tokenCount.compareTo(BigDecimal.valueOf(userDataPermission.getTokenLimit().getLimitPerDay())) >= 0) {
-                errorOutput.setError("你已超过今日的token使用数量限制，你当前每日token的上限为" + userDataPermission.getTokenLimit().getLimitPerDay() + "，自有模型不受限制");
+                errorOutput.setError("你已超过今日的token使用数量限制，你当前每日token的上限为" + userDataPermission.getTokenLimit().getLimitPerDay() + "，自有模型不受限制，可在工作空间添加自己的模型API");
                 agentExecuteResult.setError(errorOutput.getError());
                 return errorOutput(errorOutput, conversationDto);
             }
@@ -1484,7 +1484,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         ChatMessageDto chatMessageDto = ChatMessageDto.builder()
                 .role(ChatMessageDto.Role.ASSISTANT)
                 .type(MessageTypeEnum.CHAT)
-                .text("```\n" + errorOutput.getError() + "\n```")
+                .text("**" + errorOutput.getError() + "**")
                 .finished(true)
                 .finishReason("ERROR")
                 .build();

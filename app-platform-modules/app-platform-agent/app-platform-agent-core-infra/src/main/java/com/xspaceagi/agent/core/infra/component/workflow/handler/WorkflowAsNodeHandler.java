@@ -29,6 +29,7 @@ public class WorkflowAsNodeHandler extends AbstractNodeHandler {
         workflowContext1.setOriginalWorkflowId(workflowContext.getOriginalWorkflowId());
         workflowContext1.setUseResultCache(workflowContext.isUseResultCache());
         workflowContext1.setWorkflowAsNodeId(node.getId());
+        workflowContext1.setWorkflowContextServiceHolder(workflowContext.getWorkflowContextServiceHolder());
         Map<String, Object> params = extraBindValueMap(workflowContext, node, workflowAsNodeConfigDto.getInputArgs());
         workflowContext1.setParams(params);
         AtomicReference<Set<Disposable>> disposableAtomicReference = new AtomicReference<>(new ConcurrentHashSet<>());

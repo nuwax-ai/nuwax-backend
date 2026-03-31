@@ -6,4 +6,6 @@ public interface ImSessionApplicationService {
 
     Long getConversationId(ImSession imSession);
 
+    Long createNewConversationId(ImSession imSession);
+
 }

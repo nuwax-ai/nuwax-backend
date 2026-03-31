@@ -146,6 +146,7 @@ public class KnowledgeConfigRpcService implements IKnowledgeConfigRpcService {
         queryWrapper.like(StringUtils.isNotBlank(name), KnowledgeConfig::getName, name);
         queryWrapper.eq(spaceId != null, KnowledgeConfig::getSpaceId, spaceId);
         queryWrapper.in(creatorIds != null && !creatorIds.isEmpty(), KnowledgeConfig::getCreatorId, creatorIds);
+        queryWrapper.inSql(KnowledgeConfig::getSpaceId, "SELECT id FROM space where yn=0 ");
         queryWrapper.orderByDesc(KnowledgeConfig::getId);
         return knowledgeConfigService.page(new Page<>(pageNo, pageSize), queryWrapper).convert(knowledgeConfig -> {
             return KnowledgeConfigModel.convertFromModel(iKnowledgeConfigTranslator.convertToModel(knowledgeConfig));

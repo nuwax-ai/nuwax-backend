@@ -34,6 +34,7 @@ public class ModelBindConfigDto implements Serializable {
     @Schema(description = "推理模型ID")
     private Long reasoningModelId;
 
+    // 已废弃
     @Schema(description = "代理引擎")
     private AgentEngine agentEngine;
 

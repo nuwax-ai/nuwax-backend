@@ -3,6 +3,7 @@ package com.xspaceagi.modelproxy.infra.proxy;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
+import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.utils.MD5;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -99,23 +100,27 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             try {
                 // 获取代理配置并校验key是否合法或可用
                 if (modelApiProxyConfigService == null) {
-                    sendError(ctx, "ModelApiProxyConfigService not initialized", msg);
+                    sendError(ctx, "ModelApiProxyConfigService not initialized", msg, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     return;
                 }
 
                 backendModelDto = modelApiProxyConfigService.getBackendModelConfig(apiKey);
                 if (backendModelDto == null) {
-                    sendError(ctx, "Invalid API Key", msg);
+                    sendError(ctx, "Invalid API Key", msg, HttpResponseStatus.FORBIDDEN);
                     return;
                 }
 
                 if (!backendModelDto.isEnabled()) {
-                    sendError(ctx, "API Key is disabled", msg);
+                    sendError(ctx, "API Key is disabled", msg, HttpResponseStatus.FORBIDDEN);
                     return;
                 }
             } catch (Exception e) {
                 logger.error("Failed to get proxy config for apiKey: {}", apiKey, e);
-                sendError(ctx, "Failed to get proxy configuration", msg);
+                if (e instanceof BizException) {
+                    sendError(ctx, e.getMessage(), msg, HttpResponseStatus.FORBIDDEN);
+                } else {
+                    sendError(ctx, "Failed to get proxy configuration", msg, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                }
                 return;
             }
 
@@ -162,7 +167,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 getRequestContext().put("conversationId", backendModelDto.getConversationId());
                 getRequestContext().put("requestId", backendModelDto.getRequestId());
             } catch (Exception e) {
-                sendError(ctx, e.getMessage(), msg);
+                sendError(ctx, e.getMessage(), msg, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 return;
             }
 
@@ -301,9 +306,9 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void sendError(ChannelHandlerContext ctx, String mcp_id_error, Object msg) {
-        FullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND,
-                Unpooled.copiedBuffer("{\"error\":{\"message\":\"" + mcp_id_error + "\"}}", CharsetUtil.UTF_8));
+    private void sendError(ChannelHandlerContext ctx, String error, Object msg, HttpResponseStatus status) {
+        FullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
+                Unpooled.copiedBuffer("{\"error\":{\"message\":\"" + error + "\"}}", CharsetUtil.UTF_8));
         resp.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
         ctx.channel().writeAndFlush(resp).addListener(ChannelFutureListener.CLOSE);
         ReferenceCountUtil.release(msg);

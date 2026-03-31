@@ -35,6 +35,6 @@ public interface UserMapper extends BaseMapper<User> {
             "FROM user " +
             "WHERE created >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) " +
             "GROUP BY DATE_FORMAT(created, '%Y-%m') " +
-            "ORDER BY month DESC")
+            "ORDER BY month")
     List<Map<String, Object>> getMonthlyNewUserTrend();
 }

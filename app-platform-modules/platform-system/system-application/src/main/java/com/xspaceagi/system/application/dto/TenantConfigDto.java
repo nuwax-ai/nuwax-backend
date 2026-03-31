@@ -88,6 +88,9 @@ public class TenantConfigDto implements Serializable {
     @Schema(description = "站点域名")
     private List<String> domainNames;
 
+    @Schema(description = "最大上传文件大小，例如 100MB")
+    private String maxFileSize;
+
     private String casClientHostUrl;
     private String casValidateUrl;
     private String casLoginUrl;

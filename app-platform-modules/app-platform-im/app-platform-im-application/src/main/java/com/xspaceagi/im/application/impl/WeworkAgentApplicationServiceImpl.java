@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -103,7 +102,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
                     .filter(o -> o.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT)
                     .map(o -> (AgentExecuteResult) o.getData())
                     .next()
-                    .block(Duration.ofMinutes(5));
+                    .block();
 
             if (finalResult == null) {
                 return new AgentExecuteResultWithConv("执行超时或未返回结果", convId, agentId);

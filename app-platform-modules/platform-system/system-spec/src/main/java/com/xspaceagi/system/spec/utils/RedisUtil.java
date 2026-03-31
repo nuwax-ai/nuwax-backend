@@ -96,6 +96,18 @@ public class RedisUtil {
     }
 
     /**
+     * 仅在键不存在时设置（带过期），用于分布式锁等场景。
+     *
+     * @return true 表示设置成功（获得锁）
+     */
+    public boolean setIfAbsent(String key, String value, long timeSeconds) {
+        if (timeSeconds > 0) {
+            return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, value, timeSeconds, TimeUnit.SECONDS));
+        }
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, value));
+    }
+
+    /**
      * 批量添加 key (重复的键会覆盖)
      *
      * @param keyAndValue
@@ -565,5 +577,15 @@ public class RedisUtil {
 
     public void unlock(String key) {
         redisTemplate.delete(key);
+    }
+
+    /**
+     * 删除指定 key（String / Hash / 等任意 Redis 类型）
+     */
+    public Boolean deleteKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        return Boolean.TRUE.equals(redisTemplate.delete(key));
     }
 }

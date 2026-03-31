@@ -33,6 +33,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -61,6 +63,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Value("${server.port:8080}")
     private Integer port;
+
+    @Value("${license:}")
+    private String license;
 
     /**
      * 请求处理完之后
@@ -91,6 +96,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (request.getMethod().equals("OPTIONS")) {
             return true;
         }
+
+        //license check
+        checkLicense();
 
         String domainName = request.getHeader("Host");
         if (domainName == null) {
@@ -230,6 +238,64 @@ public class AuthInterceptor implements HandlerInterceptor {
             throw e;
         }
         return true;
+    }
+
+    private void checkLicense() {
+        if (StringUtils.isNotBlank(license)) {
+            String expireDate;
+            try {
+                String hexKey = "a0189de032115b6b7031a8fb5194ed68b3c716d3e09c21592fe4187b4586048b"; // 256位
+                String hexIV = "0ac97ac7d1081ebae42bfd987c5739eb";
+                expireDate = AESCrypto.decryptWithHexKey(license, hexKey, hexIV);
+            } catch (Exception e) {
+                log.error("license error: {}", e.getMessage());
+                throw new BizException("0400", "error license content");
+            }
+            if (parseToTimestamp(expireDate) * 1000L < System.currentTimeMillis()) {
+                throw new BizException("4011", "/license-expired");
+            }
+
+        }
+    }
+
+    public static long parseToTimestamp(String expireDate) {
+        if (expireDate == null || expireDate.isEmpty()) return -1;
+
+        try {
+            // 标准化分隔符
+            String normalized = expireDate
+                    .replace('/', '-')
+                    .replace('.', '-');
+
+            // 处理 8 位纯数字
+            if (normalized.matches("\\d{8}")) {
+                return LocalDate.parse(normalized, DateTimeFormatter.BASIC_ISO_DATE)
+                        .atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+            }
+
+            // 处理带 T 和时区的 ISO 格式
+            if (normalized.contains("T")) {
+                if (normalized.endsWith("Z")) {
+                    return Instant.parse(normalized).getEpochSecond();
+                }
+                return OffsetDateTime.parse(normalized, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                        .toInstant().getEpochSecond();
+            }
+
+            // 处理日期 + 时间（空格分隔）
+            if (normalized.contains(" ")) {
+                return LocalDateTime.parse(normalized,
+                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        .atZone(ZoneId.systemDefault()).toEpochSecond();
+            }
+
+            // 仅日期
+            return LocalDate.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     private boolean isExcludedPath(String uri) {

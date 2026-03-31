@@ -62,6 +62,9 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
     @Resource
     private VectorDBService vectorDBService;
 
+    @Resource
+    private KnowledgeRawSegmentDomainService knowledgeRawSegmentDomainService;
+
     /**
      * 当前对象
      */
@@ -203,13 +206,13 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
     @Override
     public List<KnowledgeQaSegmentModel> queryListForEmbeddingQaAndEmbeddings(Integer days, Integer pageSize,
-            Integer pageNum) {
+                                                                              Integer pageNum) {
         return this.knowledgeQaSegmentRepository.queryListForEmbeddingQaAndEmbeddings(days, pageSize, pageNum);
     }
 
     @Override
     public List<KnowledgeQaSegmentModel> queryListForEmbeddingQaAndEmbeddingsAndRawIdIsNull(Integer days,
-            Integer pageSize, Integer pageNum) {
+                                                                                            Integer pageSize, Integer pageNum) {
         return this.knowledgeQaSegmentRepository.queryListForEmbeddingQaAndEmbeddingsAndRawIdIsNull(days, pageSize,
                 pageNum);
     }
@@ -225,13 +228,19 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         // 删除向量数据库中的问答
         var docId = this.knowledgeRawSegmentRepository.queryOneInfoById(rawId).getDocId();
         // 修改编辑的问题，交换顺序
-
-        if(qaIds == null || qaIds.size() == 0 ) {
+        //KnowledgeQaSegmentModel knowledgeQaSegmentModel = this.knowledgeQaSegmentRepository.queryOneInfoById(rawId);
+        //knowledgeQaSegmentModel.getQuestion()
+        //Integer qaStatus = knowledgeQaSegmentModel.getQaStatus();
+        /*
+        var existObj = this.knowledgeRawSegmentDomainService.queryOneInfoById(rawId);
+        //if(qaIds == null || qaIds.size() == 0 ) {
+        if(existObj.getQaStatus() != null && existObj.getQaStatus() != 1) {
             throw new BizException("操作失败：当前数据正在生成问答，请稍后重试！");
+        }*/
+        if(qaIds != null && qaIds.size() > 0) {
+            this.vectorDBService.removeEmbeddingQaIds(docId, qaIds);
+            this.knowledgeQaSegmentRepository.deleteByRawId(rawId);
         }
-
-        this.vectorDBService.removeEmbeddingQaIds(docId, qaIds);
-        this.knowledgeQaSegmentRepository.deleteByRawId(rawId);
     }
 
 
@@ -263,10 +272,10 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
-                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.builder()
-                        .setHeader("问题", "答案")
-                        .setSkipHeaderRecord(true)
-                        .build())) {
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.builder()
+                     .setHeader("问题", "答案")
+                     .setSkipHeaderRecord(true)
+                     .build())) {
 
             for (CSVRecord record : csvParser) {
                 if (record.size() < 2) {
@@ -326,55 +335,55 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
             final AtomicInteger currentRowNumber = new AtomicInteger(1); // 使用AtomicInteger来确保线程安全和准确计数
 
             FastExcelFactory.read(file.getInputStream(), KnowledgeQaExcelModel.class,
-                    new PageReadListener<KnowledgeQaExcelModel>(dataList -> {
-                        for (KnowledgeQaExcelModel excelModel : dataList) {
-                            // 增加行号计数
-                            int rowNumber = currentRowNumber.incrementAndGet();
-                            
-                            // 验证问题和答案不为空
-                            String question = excelModel.getQuestion();
-                            String answer = excelModel.getAnswer();
+                            new PageReadListener<KnowledgeQaExcelModel>(dataList -> {
+                                for (KnowledgeQaExcelModel excelModel : dataList) {
+                                    // 增加行号计数
+                                    int rowNumber = currentRowNumber.incrementAndGet();
 
-                            // 检查是否为空行
-                            if (StringUtils.isBlank(question) && StringUtils.isBlank(answer)) {
-                                continue;
-                            }
+                                    // 验证问题和答案不为空
+                                    String question = excelModel.getQuestion();
+                                    String answer = excelModel.getAnswer();
 
-                            // 验证问题和答案的长度
-                            if (StringUtils.isNotBlank(question) && question.trim().length() > 500) {
-                                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
-                                        String.format("第%d行数据校验失败：问题长度不能超过500字符，当前长度：%d",
-                                                rowNumber, question.trim().length()));
-                            }
+                                    // 检查是否为空行
+                                    if (StringUtils.isBlank(question) && StringUtils.isBlank(answer)) {
+                                        continue;
+                                    }
 
-                            if (StringUtils.isNotBlank(answer) && answer.trim().length() > 5000) {
-                                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
-                                        String.format("第%d行数据校验失败：答案长度不能超过5000字符，当前长度：%d",
-                                                rowNumber, answer.trim().length()));
-                            }
+                                    // 验证问题和答案的长度
+                                    if (StringUtils.isNotBlank(question) && question.trim().length() > 500) {
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                                String.format("第%d行数据校验失败：问题长度不能超过500字符，当前长度：%d",
+                                                        rowNumber, question.trim().length()));
+                                    }
 
-                            // 如果问题或答案为空，则抛出异常
-                            if (StringUtils.isBlank(question)) {
-                                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
-                                        String.format("第%d行数据校验失败：问题不能为空", rowNumber));
-                            }
+                                    if (StringUtils.isNotBlank(answer) && answer.trim().length() > 5000) {
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                                String.format("第%d行数据校验失败：答案长度不能超过5000字符，当前长度：%d",
+                                                        rowNumber, answer.trim().length()));
+                                    }
 
-                            if (StringUtils.isBlank(answer)) {
-                                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
-                                        String.format("第%d行数据校验失败：答案不能为空", rowNumber));
-                            }
+                                    // 如果问题或答案为空，则抛出异常
+                                    if (StringUtils.isBlank(question)) {
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                                String.format("第%d行数据校验失败：问题不能为空", rowNumber));
+                                    }
 
-                            // 创建问答模型
-                            KnowledgeQaSegmentModel qaSegment = new KnowledgeQaSegmentModel();
-                            qaSegment.setKbId(kbId);
-                            qaSegment.setSpaceId(spaceId);
-                            qaSegment.setQuestion(question.trim());
-                            qaSegment.setAnswer(answer.trim());
-                            qaSegment.setDocId(0L); // 手动添加的问答，默认docId为0
+                                    if (StringUtils.isBlank(answer)) {
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                                String.format("第%d行数据校验失败：答案不能为空", rowNumber));
+                                    }
 
-                            qaSegmentList.add(qaSegment);
-                        }
-                    }, 100))
+                                    // 创建问答模型
+                                    KnowledgeQaSegmentModel qaSegment = new KnowledgeQaSegmentModel();
+                                    qaSegment.setKbId(kbId);
+                                    qaSegment.setSpaceId(spaceId);
+                                    qaSegment.setQuestion(question.trim());
+                                    qaSegment.setAnswer(answer.trim());
+                                    qaSegment.setDocId(0L); // 手动添加的问答，默认docId为0
+
+                                    qaSegmentList.add(qaSegment);
+                                }
+                            }, 100))
                     .headRowNumber(1)
                     .sheet()
                     .doRead();
@@ -406,7 +415,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
     /**
      * 批量对新增的问答,进行向量化
-     * 
+     *
      * @param models 新增的问答列表
      */
     @Override
@@ -419,7 +428,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
                 .filter(item -> Objects.nonNull(item.getEmbeddingModelId()))
                 .collect(Collectors.toMap(KnowledgeConfigModel::getId, KnowledgeConfigModel::getEmbeddingModelId, (a, b) -> a));
 
-        
+
 
         try {
             for (KnowledgeQaSegmentModel model : models) {

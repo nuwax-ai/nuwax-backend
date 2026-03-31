@@ -7,7 +7,12 @@ import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationServ
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.im.application.DingtalkAgentApplicationService;
 import com.xspaceagi.im.application.ImChannelConfigApplicationService;
+import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.ImChannelConfigDto;
+import com.xspaceagi.im.infra.dao.enitity.ImSession;
+import com.xspaceagi.im.infra.enums.ImChannelEnum;
+import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
+import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.im.infra.enums.ImOutputModeEnum;
 import com.xspaceagi.im.web.dto.DingtalkAttachmentCodeDto;
 import com.xspaceagi.im.web.service.DingtalkAttachmentService;
@@ -57,6 +62,8 @@ public class IMDingtalkController {
     private DingtalkAgentApplicationService dingtalkAgentApplicationService;
     @Resource
     private DingtalkAttachmentService dingtalkAttachmentService;
+    @Resource
+    private ImSessionApplicationService imSessionApplicationService;
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
@@ -270,6 +277,12 @@ public class IMDingtalkController {
                 }
             }
         }
+        if (isNewCommand(userMessage)) {
+            createNewConversationForDingtalk(senderId, conversationType, conversationId, sessionName, config);
+            replyBySessionWebhook(sessionWebhook, "已为你创建新会话，后续消息默认走新会话", null, senderNick, senderStaffId, conversationType);
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
 
         if (ImOutputModeEnum.ONCE == ImOutputModeEnum.fromCode(config.getOutputMode())) {
             // 一次性输出：非流式，使用 sessionWebhook 发送 Markdown（非互动卡片）
@@ -477,6 +490,27 @@ public class IMDingtalkController {
     private static String sanitizeFileName(String name) {
         if (name == null) return null;
         return name.replaceAll("[\\\\/:*?\"<>|]", "_");
+    }
+
+    private static boolean isNewCommand(String userMessage) {
+        return "/new".equals(StringUtils.trimToEmpty(userMessage));
+    }
+
+    private void createNewConversationForDingtalk(String senderId, String conversationType, String conversationId,
+                                                  String sessionName, DingtalkBotConfig config) {
+        String sessionKey = "2".equals(conversationType) && StringUtils.isNotBlank(conversationId)
+                ? conversationId : senderId;
+        ImSession imSession = ImSession.builder()
+                .channel(ImChannelEnum.DINGTALK.getCode())
+                .targetType(ImTargetTypeEnum.BOT.getCode())
+                .sessionKey(sessionKey)
+                .sessionName(sessionName)
+                .chatType("2".equals(conversationType) ? ImChatTypeEnum.GROUP.getCode() : ImChatTypeEnum.PRIVATE.getCode())
+                .userId(config.getUserId())
+                .agentId(config.getAgentId())
+                .tenantId(config.getTenantId())
+                .build();
+        imSessionApplicationService.createNewConversationId(imSession);
     }
 
     /**

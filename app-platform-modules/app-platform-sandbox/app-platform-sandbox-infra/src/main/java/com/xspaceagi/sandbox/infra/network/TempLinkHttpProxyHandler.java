@@ -56,7 +56,8 @@ public class TempLinkHttpProxyHandler extends ChannelInboundHandlerAdapter {
             if (cmdChannel == null) {
                 log.warn("no cmd channel {}", sandboxProxyBackend);
                 // 该端口还没有代理客户端
-                ctx.channel().close();
+                sendError(ctx, "Claw is offline", msg);
+                return;
             } else {
                 String userId = newUserId();
                 Channel userChannel = ctx.channel();
@@ -143,21 +144,6 @@ public class TempLinkHttpProxyHandler extends ChannelInboundHandlerAdapter {
             return;
         }
         super.exceptionCaught(ctx, cause);
-    }
-
-    private static String resolveDns(String domain) {
-        Object dns = SimpleJvmHashCache.getHash("dns", domain);
-        if (dns != null) {
-            return dns.toString();
-        }
-        String ip = domain;
-        try {
-            InetAddress address = InetAddress.getByName(domain);
-            ip = address.getHostAddress();
-        } catch (Exception ignored) {
-        }
-        SimpleJvmHashCache.putHash("dns", domain, ip, SimpleJvmHashCache.DEFAULT_EXPIRE_AFTER_SECONDS);
-        return ip;
     }
 
     private static String extractDomainPrefix(String domain) {

@@ -5,13 +5,22 @@ import com.xspaceagi.modelproxy.infra.rpc.UserAccessKeyRpcService;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
+import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.server.IUserMetricRpcService;
+import com.xspaceagi.system.sdk.service.dto.BizType;
+import com.xspaceagi.system.sdk.service.dto.PeriodType;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
+import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 /**
  * 模型API代理配置服务实现
@@ -26,6 +35,12 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
 
     @Resource
     private UserAccessKeyRpcService userAccessKeyRpcService;
+
+    @Resource
+    private IUserMetricRpcService iUserMetricRpcService;
+
+    @Resource
+    private IUserDataPermissionRpcService userDataPermissionRpcService;
 
     @Value("${model-api-proxy.base-api-url:}")
     private String baseApiUrl;
@@ -64,8 +79,26 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         backendModelDto.setUserName(userAccessKeyDto.getConfig().getUserName());
         backendModelDto.setConversationId(userAccessKeyDto.getConfig().getConversationId());
         backendModelDto.setRequestId(userAccessKeyDto.getConfig().getRequestId());
-        redisUtil.set(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), JSON.toJSONString(backendModelDto), 600);
+        checkTokenLimit(backendModelDto);
+        // 缓存1分钟，1分钟内如果token超了无法实时体现
+        redisUtil.set(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), JSON.toJSONString(backendModelDto), 60);
         return backendModelDto;
+    }
+
+    /**
+     * 检查token限制，未来支持订阅后取消改实现
+     *
+     * @param backendModelDto 后端模型配置
+     */
+    private void checkTokenLimit(BackendModelDto backendModelDto) {
+        // 用户数据权限
+        UserDataPermissionDto userDataPermission = TenantFunctions.callWithIgnoreCheck(() -> userDataPermissionRpcService.getUserDataPermission(backendModelDto.getUserId()));
+        BigDecimal tokenCount = iUserMetricRpcService.queryMetricCurrent(backendModelDto.getTenantId(), backendModelDto.getUserId(), BizType.TOKEN_USAGE.getCode(), PeriodType.DAY);
+        if (userDataPermission.getTokenLimit() != null && userDataPermission.getTokenLimit().getLimitPerDay() != null && userDataPermission.getTokenLimit().getLimitPerDay() >= 0
+                && tokenCount.compareTo(BigDecimal.valueOf(userDataPermission.getTokenLimit().getLimitPerDay())) >= 0) {
+            log.warn("token limit exceeded, userId: {}, modelId: {}, tokenCount: {}, limitPerDay: {}", backendModelDto.getUserId(), backendModelDto.getModelId(), tokenCount, userDataPermission.getTokenLimit().getLimitPerDay());
+            throw new BizException("token limit exceeded");
+        }
     }
 
     @Override
@@ -92,21 +125,19 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                             .requestId(backendModel.getRequestId())
                             .build());
         } else {
-            if (!backendModel.getApiKey().equals(userAccessKeyDto.getConfig().getModelApiKey()) || !backendModel.getBaseUrl().equals(userAccessKeyDto.getConfig().getModelBaseUrl())) {
-                userAccessKeyRpcService.updateAccessKey(userAccessKeyDto.getId(), UserAccessKeyDto.UserAccessKeyConfig.builder()
-                        .modelId(backendModel.getModelId())
-                        .modelApiKey(backendModel.getApiKey())
-                        .modelBaseUrl(backendModel.getBaseUrl())
-                        .modelName(backendModel.getModelName())
-                        .protocol(backendModel.getProtocol())
-                        .scope(backendModel.getScope())
-                        .enabled(true)
-                        .userName(backendModel.getUserName())
-                        .conversationId(backendModel.getConversationId())
-                        .requestId(backendModel.getRequestId())
-                        .build());
-                redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
-            }
+            userAccessKeyRpcService.updateAccessKey(userAccessKeyDto.getId(), UserAccessKeyDto.UserAccessKeyConfig.builder()
+                    .modelId(backendModel.getModelId())
+                    .modelApiKey(backendModel.getApiKey())
+                    .modelBaseUrl(backendModel.getBaseUrl())
+                    .modelName(backendModel.getModelName())
+                    .protocol(backendModel.getProtocol())
+                    .scope(backendModel.getScope())
+                    .enabled(true)
+                    .userName(backendModel.getUserName())
+                    .conversationId(backendModel.getConversationId())
+                    .requestId(backendModel.getRequestId())
+                    .build());
+            redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
         }
         if (StringUtils.isNotBlank(baseApiUrl)) {
             siteUrl = baseApiUrl;

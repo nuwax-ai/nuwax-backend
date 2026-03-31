@@ -16,6 +16,7 @@
         <module>app-platform-im-application</module>
         <module>app-platform-im-domain</module>
         <module>app-platform-im-infra</module>
+        <module>app-platform-im-wechat</module>
     </modules>
 
     <properties>

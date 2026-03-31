@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Builder
@@ -20,13 +21,23 @@ public class UserAccessKeyDto {
 
     private Long userId;
 
+    @Schema(description = "名称")
+    private String name;
+
     private AKTargetType targetType;
 
     private String targetId;
 
+    @Schema(description = "API Key")
     private String accessKey;
 
     private UserAccessKeyConfig config;
+
+    @Schema(description = "状态 0 停用; 1 启用")
+    private Integer status;
+
+    @Schema(description = "过期时间")
+    private Date expire;
 
     private Creator creator;
 
@@ -50,6 +61,17 @@ public class UserAccessKeyDto {
         private String scope;
         private String userName;// 用户名临时记录
         private String requestId;
+
+        @Schema(description = "API 授权配置")
+        private List<ApiConfig> apiConfigs;
+    }
+
+    @Data
+    public static class ApiConfig {
+        @Schema(description = "接口唯一Key")
+        private String key;
+        @Schema(description = "接口调用频率限制，每分钟调用次数")
+        private Integer rpm;
     }
 
     @Data
@@ -59,6 +81,6 @@ public class UserAccessKeyDto {
     }
 
     public enum AKTargetType {
-        Mcp, Agent, Sandbox, TempChat, Tenant, AgentModel
+        Mcp, Agent, Sandbox, TempChat, Tenant, AgentModel, OpenApi
     }
 }

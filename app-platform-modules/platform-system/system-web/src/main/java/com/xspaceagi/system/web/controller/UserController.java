@@ -24,7 +24,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
@@ -49,9 +48,6 @@ public class UserController {
 
     @Resource
     private SysUserPermissionCacheServiceImpl sysUserPermissionCacheService;
-
-    @Value("${jwt.secretKey}")
-    private String jwtSecretKey;
 
     @Resource
     private AuthService authService;

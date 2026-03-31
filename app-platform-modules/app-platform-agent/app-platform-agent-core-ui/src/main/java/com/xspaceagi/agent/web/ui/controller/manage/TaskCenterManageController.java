@@ -22,8 +22,12 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -66,8 +70,31 @@ public class TaskCenterManageController extends BaseManageController {
         ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
         BeanUtils.copyProperties(scheduleTaskUpdateDto, scheduleTaskDto);
         createAgentTaskConversationIfNeed(scheduleTaskUpdateDto.getKeepConversation(), scheduleTaskDto);
+        if (scheduleTaskUpdateDto.getMaxExecTimes() != null && scheduleTaskUpdateDto.getMaxExecTimes() == 1) {
+            Assert.notNull(scheduleTaskUpdateDto.getLockTime(), "锁定时间不能为空");
+            scheduleTaskDto.setMaxExecTimes(1L);
+            scheduleTaskDto.setCron(toCron(scheduleTaskUpdateDto.getLockTime().getTime()));
+        } else {
+            scheduleTaskDto.setMaxExecTimes(Long.MAX_VALUE);
+        }
         scheduleTaskApiService.updateById(scheduleTaskDto);
         return ReqResult.success();
+    }
+
+    private static String toCron(long timestamp) {
+        try {
+            // 转换为本地时间
+            LocalDateTime dateTime = LocalDateTime.ofEpochSecond(timestamp / 1000, 0, ZoneId.systemDefault().getRules().getOffset(Instant.now()));
+            // 生成 Cron 表达式（Spring 格式：秒 分 时 日 月 周 年）
+            return String.format("%d %d %d %d %d ?",
+                    dateTime.getSecond(),
+                    dateTime.getMinute(),
+                    dateTime.getHour(),
+                    dateTime.getDayOfMonth(),
+                    dateTime.getMonthValue());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void createAgentTaskConversationIfNeed(Integer keepConversation, ScheduleTaskDto scheduleTaskDto) {

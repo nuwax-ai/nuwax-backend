@@ -26,7 +26,7 @@ public class ImChannelConfigSaveRequest {
     private Long spaceId;
 
     @NotBlank(message = "渠道类型不能为空")
-    @Schema(description = "渠道类型：feishu/dingtalk/wework")
+    @Schema(description = "渠道类型：feishu/dingtalk/wework/wechat_ilink")
     private String channel;
 
     @NotBlank(message = "目标类型不能为空")

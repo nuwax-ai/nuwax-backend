@@ -9,6 +9,11 @@ public interface ImChannelConfigDomainService {
     ImChannelConfig findOne(String channel, String targetType, String imTargetId);
 
     /**
+     * 按渠道+目标类型+targetId 查找（不限制 enabled），用于同一 iLink 账号重复扫码刷新 token
+     */
+    ImChannelConfig findOneIgnoreEnabled(String channel, String targetType, String imTargetId);
+
+    /**
      * 新增配置
      */
     ImChannelConfig add(ImChannelConfig config);

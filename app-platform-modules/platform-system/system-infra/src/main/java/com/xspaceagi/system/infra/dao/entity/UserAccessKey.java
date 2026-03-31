@@ -22,6 +22,8 @@ public class UserAccessKey {
     @TableField(value = "user_id")
     private Long userId;
 
+    private String name;
+
     private UserAccessKeyDto.AKTargetType targetType;
 
     private String targetId;
@@ -30,6 +32,10 @@ public class UserAccessKey {
 
     @TableField(value = "config", typeHandler = JsonTypeHandler.class)
     private UserAccessKeyDto.UserAccessKeyConfig config;
+
+    private Integer status;
+
+    private Date expire;
 
     private Date created;
 }

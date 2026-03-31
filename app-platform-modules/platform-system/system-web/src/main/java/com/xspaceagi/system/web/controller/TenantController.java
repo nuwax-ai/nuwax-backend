@@ -28,6 +28,9 @@ public class TenantController {
     @Value("${supportCustomDomain:false}")
     private String supportCustomDomain;
 
+    @Value("${spring.servlet.multipart.max-file-size:100MB}")
+    private String maxFileSize;
+
     @Operation(summary = "租户配置信息查询接口")
     @RequestMapping(path = "/config", method = RequestMethod.GET)
     public ReqResult<TenantConfigDto> getConfig() {
@@ -57,6 +60,7 @@ public class TenantController {
         tenantConfigDto.setSupportCustomDomain(StringUtils.equals(supportCustomDomain, "true"));
         tenantConfigDto.setEnabledSandbox(true);
         tenantConfigDto.setSiteLogo(fileAkUtil.getFileUrlWithAk(tenantConfigDto.getSiteLogo()));
+        tenantConfigDto.setMaxFileSize(maxFileSize);
         if (StringUtils.isBlank(tenantConfigDto.getTemplateConfig()) || tenantConfigDto.getTemplateConfig().equals("{}")) {
             tenantConfigDto.setTemplateConfig("{\"primaryColor\":\"#5147ff\",\"backgroundId\":\"bg-variant-1\",\"antdTheme\":\"light\",\"layoutStyle\":\"light\",\"navigationStyle\":\"style1\",\"timestamp\":1757425328082}");
         }

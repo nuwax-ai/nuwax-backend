@@ -950,6 +950,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDetailDto.setExpandPageArea(agentConfigDto.getExpandPageArea());
         agentDetailDto.setHideChatArea(agentConfigDto.getHideChatArea());
         agentDetailDto.setHideDesktop(agentConfigDto.getHideDesktop() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getHideDesktop());
+        agentDetailDto.setAllowAtSkill(agentConfigDto.getAllowAtSkill() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowAtSkill());
+        agentDetailDto.setAllowOtherModel(agentConfigDto.getAllowOtherModel() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowOtherModel());
+        agentDetailDto.setAllowPrivateSandbox(agentConfigDto.getAllowPrivateSandbox() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowPrivateSandbox());
         if ("PageApp".equals(agentConfigDto.getType())) {
             agentDetailDto.setExpandPageArea(1);
             agentDetailDto.setHideChatArea(1);

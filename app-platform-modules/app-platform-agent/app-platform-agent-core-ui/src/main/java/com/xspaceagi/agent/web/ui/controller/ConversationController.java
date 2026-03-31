@@ -142,7 +142,6 @@ public class ConversationController {
         return ReqResult.success();
     }
 
-    @RequireResource(AGENT_QUERY_DETAIL)
     @Operation(summary = "查询会话")
     @RequestMapping(path = "/{conversationId}", method = RequestMethod.POST)
     public ReqResult<ConversationDto> get(@PathVariable Long conversationId) {

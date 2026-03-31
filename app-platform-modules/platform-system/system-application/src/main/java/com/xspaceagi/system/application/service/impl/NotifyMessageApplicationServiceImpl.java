@@ -146,6 +146,7 @@ public class NotifyMessageApplicationServiceImpl implements NotifyMessageApplica
         authService.getUserClientIds(userId).forEach(clientId -> {
             if (StringUtils.isNotBlank(clientId)) {
                 redisUtil.leftPush("event_queue:" + clientId, JsonSerializeUtil.toJSONStringGeneric(eventDto));
+                redisUtil.expire("event_queue:" + clientId, 60 * 60 * 24);
             }
         });
     }

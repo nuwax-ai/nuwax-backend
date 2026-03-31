@@ -72,7 +72,10 @@ auth:
     - /api/sandbox/config/reg
     - /api/sandbox/config/health/
     - /api/sandbox/config/redirect/
-    - /api/im/
+    # IM：三方回调免登录
+    - /api/im/feishu
+    - /api/im/dingtalk
+    - /api/im/wework
 
 # DataSource Config
 mybatis-plus:
@@ -109,7 +112,7 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 1.0.7.5
+  version: 1.0.7.6
 
 stt:
   api:

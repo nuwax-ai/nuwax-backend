@@ -65,6 +65,7 @@ public class ScheduleTaskApplicationServiceImpl implements ScheduleTaskApiServic
         scheduleTask.setCron(scheduleTaskDto.getCron());
         scheduleTask.setParams(scheduleTaskDto.getParams());
         scheduleTask.setMaxExecTimes(scheduleTaskDto.getMaxExecTimes());
+        scheduleTask.setLockTime(scheduleTaskDto.getLockTime());
         scheduleTaskDomainService.update(scheduleTask);
     }
 

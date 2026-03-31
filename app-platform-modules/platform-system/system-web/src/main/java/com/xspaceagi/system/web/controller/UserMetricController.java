@@ -71,7 +71,7 @@ public class UserMetricController {
         usageDto.setNewKnowledgeBaseUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxKnowledgeCount() == -1 ? "不限" : userDataPermission.getMaxKnowledgeCount().toString()).build());
         usageDto.setKnowledgeBaseStorageUsage(UsageDto.Usage.builder().description(userDataPermission.getKnowledgeStorageLimitGb().compareTo(BigDecimal.valueOf(-1L)) == 0 ? "不限" : userDataPermission.getKnowledgeStorageLimitGb().toBigInteger() + "GB").build());
         usageDto.setNewWorkspaceUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxSpaceCount() == -1 ? "不限" : userDataPermission.getMaxSpaceCount().toString()).build());
-        usageDto.setSandboxMemoryLimit(UsageDto.Usage.builder().description(userDataPermission.getAgentComputerMemoryGb() == null ? "不限" : userDataPermission.getAgentComputerMemoryGb().toString()).build());
+        usageDto.setSandboxMemoryLimit(UsageDto.Usage.builder().description(userDataPermission.getAgentComputerMemoryGb() == null ? "不限" : userDataPermission.getAgentComputerMemoryGb() + "GB").build());
         usageDto.setNewPageAppUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxPageAppCount() == -1 ? "不限" : userDataPermission.getMaxPageAppCount().toString()).build());
 
         return ReqResult.success(usageDto);

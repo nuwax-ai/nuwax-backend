@@ -109,9 +109,15 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
     }
 
     private ScheduleTask queryOneAndLock() {
+        String taskServerInfo = System.getenv("TASK_SERVER_INFO");
         LambdaQueryWrapper<ScheduleTask> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.lt(ScheduleTask::getLockTime, new Date());
         lambdaQueryWrapper.in(ScheduleTask::getStatus, List.of(ScheduleTaskDto.Status.CREATE, ScheduleTaskDto.Status.FAIL, ScheduleTaskDto.Status.CONTINUE));
+        if (StringUtils.isNotBlank(taskServerInfo)) {
+            lambdaQueryWrapper.eq(ScheduleTask::getServerInfo, taskServerInfo);
+        } else {
+            lambdaQueryWrapper.isNull(ScheduleTask::getServerInfo);
+        }
         lambdaQueryWrapper.last("LIMIT 1");
         lambdaQueryWrapper.orderByAsc(ScheduleTask::getLockTime);
         ScheduleTask scheduleTask = scheduleTaskService.getOne(lambdaQueryWrapper);
@@ -122,7 +128,9 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
         updateWrapper.eq(ScheduleTask::getId, scheduleTask.getId());
         updateWrapper.eq(ScheduleTask::getExecTimes, scheduleTask.getExecTimes());
         updateWrapper.set(ScheduleTask::getStatus, ScheduleTaskDto.Status.EXECUTING);
-        updateWrapper.set(ScheduleTask::getLockTime, getNextExecDate(scheduleTask.getCron()));
+        if (StringUtils.isNotBlank(scheduleTask.getCron())) {
+            updateWrapper.set(ScheduleTask::getLockTime, getNextExecDate(scheduleTask.getCron()));
+        }
         updateWrapper.set(ScheduleTask::getExecTimes, scheduleTask.getExecTimes() + 1);
         updateWrapper.set(ScheduleTask::getLatestExecTime, new Date());
         if (!scheduleTaskService.update(updateWrapper)) {
@@ -162,10 +170,43 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
     public Long start(ScheduleTask scheduleTask) {
         ScheduleTask scheduleTask1 = queryOne(scheduleTask.getTaskId());
         if (null != scheduleTask1) {
+            // 曾按 taskId 注销后，再次 register 时若仅 return，
+            // 记录仍为 CANCEL，重新start需把同 taskId 任务拉回到 CREATE。
+            if (scheduleTask1.getStatus() == ScheduleTaskDto.Status.CANCEL) {
+                if (StringUtils.isNotBlank(scheduleTask.getCron())) {
+                    scheduleTask1.setCron(scheduleTask.getCron());
+                }
+                if (StringUtils.isNotBlank(scheduleTask.getBeanId())) {
+                    scheduleTask1.setBeanId(scheduleTask.getBeanId());
+                }
+                if (scheduleTask.getParams() != null) {
+                    scheduleTask1.setParams(scheduleTask.getParams());
+                }
+                if (scheduleTask.getMaxExecTimes() != null) {
+                    scheduleTask1.setMaxExecTimes(scheduleTask.getMaxExecTimes());
+                }
+                if (StringUtils.isNotBlank(scheduleTask.getTaskName())) {
+                    scheduleTask1.setTaskName(scheduleTask.getTaskName());
+                }
+                if (StringUtils.isNotBlank(scheduleTask.getTargetType())) {
+                    scheduleTask1.setTargetType(scheduleTask.getTargetType());
+                }
+                if (StringUtils.isNotBlank(scheduleTask.getTargetId())) {
+                    scheduleTask1.setTargetId(scheduleTask.getTargetId());
+                }
+                scheduleTask1.setStatus(ScheduleTaskDto.Status.CREATE);
+                scheduleTask1.setExecTimes(0L);
+                scheduleTask1.setError("");
+                scheduleTask1.setLockTime(getNextExecDate(scheduleTask1.getCron()));
+                scheduleTaskService.updateById(scheduleTask1);
+                return scheduleTask1.getId();
+            }
             return scheduleTask1.getId();
         }
         scheduleTask.setStatus(ScheduleTaskDto.Status.CREATE);
-        scheduleTask.setLockTime(getNextExecDate(scheduleTask.getCron()));
+        if (scheduleTask.getLockTime() == null) {
+            scheduleTask.setLockTime(getNextExecDate(scheduleTask.getCron()));
+        }
         scheduleTaskService.save(scheduleTask);
         return scheduleTask.getId();
     }

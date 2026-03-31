@@ -83,11 +83,11 @@ public class TenantVersionUpdateServiceImpl {
         tenantVersionUpgradeMap.put("1.0.6.1", (tenant) -> {
             log.info("初始化菜单权限，租户ID：{}", tenant.getId());
             // 权限相关表如果在执行此方法时还未创建完成，会抛出异常，升级管控会等待并重试，此处不需特殊处理
-            permissionImportService.importToTenant(tenant, "0.0");
+            permissionImportService.importToTenant(tenant, "1.0");
         });
 
-        tenantVersionUpgradeMap.put("1.0.7.4", (tenant) -> {
-            permissionImportService.importDiffToTenant(tenant, "0.1");
+        tenantVersionUpgradeMap.put("1.0.7.6", (tenant) -> {
+            permissionImportService.importDiffToTenant(tenant, "1.1");
         });
 
         new Thread(() -> {

@@ -8,6 +8,11 @@ import lombok.Data;
 @Data
 public class ImChannelConfigDto {
 
+    /** 配置主键（列表/长轮询等场景） */
+    private Long id;
+
+    private Boolean enabled;
+
     // 通用元信息
     private Long tenantId;
     private Long userId;
@@ -25,6 +30,7 @@ public class ImChannelConfigDto {
     private DingtalkConfig dingtalk;
     private WeworkBotConfig weworkBot;
     private WeworkAppConfig weworkApp;
+    private WechatIlinkConfig wechatIlink;
 
     @Data
     public static class FeishuConfig {
@@ -57,6 +63,21 @@ public class ImChannelConfigDto {
         private String corpSecret;
         private String token;
         private String encodingAesKey;
+    }
+
+    @Data
+    public static class WechatIlinkConfig {
+        /** 网关基址，如 https://ilinkai.weixin.qq.com */
+        private String baseUrl;
+        private String botToken;
+        /** 默认与 openclaw 插件一致为 "3" */
+        private String botType;
+        /** CDN 基址，默认可用 IlinkConstants.CDN_BASE_URL */
+        private String cdnBaseUrl;
+        /** 规范后的账号 id，作为 targetId */
+        private String ilinkAccountId;
+        /** 扫码绑定的微信用户 id（可选） */
+        private String ilinkUserId;
     }
 }
 

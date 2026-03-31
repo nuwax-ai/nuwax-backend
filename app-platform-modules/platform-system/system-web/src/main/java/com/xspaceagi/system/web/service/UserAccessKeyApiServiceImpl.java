@@ -115,6 +115,9 @@ public class UserAccessKeyApiServiceImpl implements UserAccessKeyApiService {
                             .accessKey(userAccessKey.getAccessKey())
                             .config(userAccessKey.getConfig())
                             .created(userAccessKey.getCreated())
+                            .status(userAccessKey.getStatus())
+                            .expire(userAccessKey.getExpire())
+                            .name(userAccessKey.getName())
                             .creator(creator)
                             .build();
                 }
@@ -155,12 +158,15 @@ public class UserAccessKeyApiServiceImpl implements UserAccessKeyApiService {
         return UserAccessKeyDto.builder()
                 .id(userAccessKey.getId())
                 .tenantId(userAccessKey.getTenantId())
+                .name(userAccessKey.getName())
                 .userId(userAccessKey.getUserId())
                 .targetType(userAccessKey.getTargetType())
                 .targetId(userAccessKey.getTargetId())
                 .accessKey(userAccessKey.getAccessKey())
                 .config(userAccessKey.getConfig())
                 .created(userAccessKey.getCreated())
+                .expire(userAccessKey.getExpire())
+                .status(userAccessKey.getStatus())
                 .build();
     }
 

@@ -1,7 +1,5 @@
 package com.xspaceagi.agent.core.adapter.repository.entity;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -9,8 +7,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
-
 import lombok.Data;
+
+import java.util.Date;
 
 @TableName("model_config")
 @Data
@@ -57,6 +56,7 @@ public class ModelConfig {
 
     private Integer enabled; // 是否启用，0-否，1-是
     private Integer accessControl;
+    private String usageScenario;
     public enum ModelScopeEnum {
         Space,
         Tenant,

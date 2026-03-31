@@ -60,6 +60,15 @@ public class AgentConfigUpdateDto implements Serializable {
     @Schema(description = "是否隐藏远程桌面，1 隐藏；0 不隐藏")
     private Integer hideDesktop;
 
+    @Schema(description = "是否允许用户在对话框中选择其他模型, 1 允许，其他不允许")
+    private Integer allowOtherModel;
+
+    @Schema(description = "是否允许用户在对话框中@技能， 1 允许，其他不允许")
+    private Integer allowAtSkill;
+
+    @Schema(description = "是否允许用户在对话框中选择自己的电脑， 1 允许，其他不允许")
+    private Integer allowPrivateSandbox;
+
     @Schema(description = "是否默认展开扩展页面区域, 1 展开；0 不展开")
     private Integer expandPageArea;
 

@@ -1,17 +1,17 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
-
+import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class ModelConfigAddDto implements Serializable {
@@ -66,4 +66,7 @@ public class ModelConfigAddDto implements Serializable {
 
     @Schema(description = "访问控制，可选值：0-不管控，1-管控")
     private Integer accessControl;
+
+    @Schema(description = "可使用的业务场景")
+    private List<UsageScenarioEnum> usageScenarios;
 }

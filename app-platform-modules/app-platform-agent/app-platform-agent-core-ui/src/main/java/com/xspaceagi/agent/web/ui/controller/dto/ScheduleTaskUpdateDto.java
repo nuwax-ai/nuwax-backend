@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotNull;
+import java.util.Date;
 
 @Builder
 @Schema(name = "更新任务信息")
@@ -41,4 +42,9 @@ public class ScheduleTaskUpdateDto {
     @Schema(description = "智能体任务执行时是否在上次会话中继续执行，0-不保留，1-保留")
     private Integer keepConversation;
 
+    @Schema(description = "任务最大执行次数，不传不限制，针对指定时间的固定填1")
+    private Long maxExecTimes;
+
+    @Schema(description = "任务锁定时间，传时间戳（毫秒），固定周期的可以不传")
+    private Date lockTime;
 }

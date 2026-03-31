@@ -29,7 +29,7 @@ public class TaskCron {
                 CronDto.builder().typeName("每周").items(getEveryWeek()).build(),
                 CronDto.builder().typeName("每天").items(getEveryDay()).build(),
                 CronDto.builder().typeName("每小时").items(getEveryHour()).build(),
-                CronDto.builder().typeName("固定").items(getUserFixed()).build());
+                CronDto.builder().typeName("固定周期").items(getUserFixed()).build());
     }
 
     public static String getCronDesc(String cron) {

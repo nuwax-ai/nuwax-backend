@@ -61,7 +61,11 @@ public class ComputerFileClient {
      * 获取文件列表
      */
     public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath) {
-        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId) + "/computer/get-file-list").queryParam("userId", userId).queryParam("cId", cId).queryParam("proxyPath", proxyPath).toUriString();
+        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId) + "/computer/get-file-list")
+                .queryParam("userId", userId)
+                .queryParam("cId", cId)
+                .queryParam("proxyPath", proxyPath)
+                .toUriString();
         log.info("[computer-client] userId={} cId={} 调用获取文件列表接口, url={}", userId, cId, url);
 
         RestTemplate restTemplate = new RestTemplate();
