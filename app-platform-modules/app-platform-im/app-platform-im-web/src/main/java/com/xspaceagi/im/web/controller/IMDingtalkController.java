@@ -206,7 +206,7 @@ public class IMDingtalkController {
             }
             var tenantConfig = tenantConfigApplicationService.getTenantConfig(config.getTenantId());
             var attachmentResult = dingtalkAttachmentService.downloadAndUpload(
-                    apiClient, attachmentCodes, robotCode, null, config.getTenantId(), tenantConfig);
+                    apiClient, attachmentCodes, robotCode, null, tenantConfig);
             attachments = attachmentResult.getAttachments();
             // 仅当全部附件下载失败时提示；有任一成功则只显示 [附件]
             if (!attachmentResult.getUnsupportedKeys().isEmpty() && attachmentResult.getAttachments().isEmpty()) {

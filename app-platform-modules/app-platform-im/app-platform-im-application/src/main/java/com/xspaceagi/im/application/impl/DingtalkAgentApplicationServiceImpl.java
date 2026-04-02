@@ -109,14 +109,14 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
                 return AgentExecuteResultWithConv.builder().text("执行超时或未返回结果").conversationId(convId).agentId(agentId).build();
             }
             if (Boolean.FALSE.equals(finalResult.getSuccess())) {
-                String err = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "执行失败";
+                String err = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "模型执行失败";
                 return AgentExecuteResultWithConv.builder().text(err).conversationId(convId).agentId(agentId).build();
             }
-            String out = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "已处理";
+            String out = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return AgentExecuteResultWithConv.builder().text(out).conversationId(convId).agentId(agentId).build();
         } catch (Exception e) {
             log.error("钉钉智能体执行异常: senderId={}", senderId, e);
-            String err = "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
+            String err = "模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
             return AgentExecuteResultWithConv.builder().text(err).conversationId(null).agentId(agentId).build();
         } finally {
             RequestContext.remove();
@@ -196,11 +196,11 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
                             if (finalText == null) {
                                 finalText = accumulated.toString();
                             }
-                            chunk = new StreamChunk(finalText != null ? finalText : "已处理", true, convId);
+                            chunk = new StreamChunk(finalText != null ? finalText : "模型终止执行", true, convId);
                         }
                         return Mono.justOrEmpty(chunk);
                     })
-                    .onErrorResume(e -> Flux.just(new StreamChunk("执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), true, null)))
+                    .onErrorResume(e -> Flux.just(new StreamChunk("模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), true, null)))
                     .doFinally(s -> RequestContext.remove());
         });
     }

@@ -67,7 +67,7 @@ public class ImFileUploadService {
         }
         try {
             return uploadBytes(file.getBytes(), file.getOriginalFilename(), file.getContentType(),
-                    type, tenantConfig, file.getInputStream());
+                    type, null, tenantConfig, file.getInputStream());
         } catch (IOException e) {
             log.error("文件上传失败", e);
             return null;
@@ -86,18 +86,40 @@ public class ImFileUploadService {
      */
     public ImUploadResultDto uploadBytes(byte[] bytes, String originalFilename, String contentType,
                                          String type, TenantConfigDto tenantConfig) {
-        return uploadBytes(bytes, originalFilename, contentType, type, tenantConfig, new ByteArrayInputStream(bytes));
+        return uploadBytes(bytes, originalFilename, contentType, type, null, tenantConfig, new ByteArrayInputStream(bytes));
+    }
+
+    /**
+     * 上传文件字节到项目存储（带子路径）。
+     *
+     * @param bytes            文件字节
+     * @param originalFilename 原始文件名
+     * @param contentType      文件 MIME 类型
+     * @param type             存储类型：tmp 临时；store 永久
+     * @param subPath          子路径（如 "wework/attachments"），可为 null
+     * @param tenantConfig     租户配置，可为 null
+     * @return 上传结果，失败返回 null
+     */
+    public ImUploadResultDto uploadBytes(byte[] bytes, String originalFilename, String contentType,
+                                         String type, String subPath, TenantConfigDto tenantConfig) {
+        return uploadBytes(bytes, originalFilename, contentType, type, subPath, tenantConfig, new ByteArrayInputStream(bytes));
     }
 
     private ImUploadResultDto uploadBytes(byte[] bytes, String originalFilename, String contentType,
-                                          String type, TenantConfigDto tenantConfig, InputStream inputStream) {
+                                          String type, String subPath, TenantConfigDto tenantConfig, InputStream inputStream) {
         try {
             String fileExtension = "";
             int i = originalFilename != null ? originalFilename.lastIndexOf('.') : -1;
             if (i > 0 && i < originalFilename.length() - 1) {
                 fileExtension = originalFilename.substring(i + 1).toLowerCase();
             }
-            String newFileName = type + "/" + UUID.randomUUID().toString().replace("-", "") + "." + (StringUtils.isNotBlank(fileExtension) ? fileExtension : "bin");
+
+            // 构建路径前缀：type + subPath（如 "tmp/wework/attachments"）
+            String pathPrefix = type;
+            if (StringUtils.isNotBlank(subPath)) {
+                pathPrefix = type.endsWith("/") ? type + subPath : type + "/" + subPath;
+            }
+            String newFileName = pathPrefix + "/" + UUID.randomUUID().toString().replace("-", "") + "." + (StringUtils.isNotBlank(fileExtension) ? fileExtension : "bin");
             String safeContentType = StringUtils.isNotBlank(contentType) ? contentType : "application/octet-stream";
 
             String url;

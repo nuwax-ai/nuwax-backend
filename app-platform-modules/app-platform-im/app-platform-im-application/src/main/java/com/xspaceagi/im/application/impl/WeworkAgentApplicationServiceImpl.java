@@ -108,14 +108,14 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
                 return new AgentExecuteResultWithConv("执行超时或未返回结果", convId, agentId);
             }
             if (Boolean.FALSE.equals(finalResult.getSuccess())) {
-                String errorText = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "执行失败";
+                String errorText = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "模型执行失败";
                 return new AgentExecuteResultWithConv(errorText, convId, agentId);
             }
-            String outputText = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "已处理";
+            String outputText = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return new AgentExecuteResultWithConv(outputText, convId, agentId);
         } catch (Exception e) {
             log.error("企业微信智能体执行异常: senderId={}", senderId, e);
-            String errorText = "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
+            String errorText = "模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
             return new AgentExecuteResultWithConv(errorText, null, agentId);
         } finally {
             RequestContext.remove();
@@ -195,11 +195,11 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
                             if (finalText == null) {
                                 finalText = accumulated.toString();
                             }
-                            chunk = new StreamChunk(finalText != null ? finalText : "已处理", true, convId);
+                            chunk = new StreamChunk(finalText != null ? finalText : "模型终止执行", true, convId);
                         }
                         return Mono.justOrEmpty(chunk);
                     })
-                    .onErrorResume(e -> Flux.just(new StreamChunk("执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), true, null)))
+                    .onErrorResume(e -> Flux.just(new StreamChunk("模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), true, null)))
                     .doFinally(s -> RequestContext.remove());
         });
     }

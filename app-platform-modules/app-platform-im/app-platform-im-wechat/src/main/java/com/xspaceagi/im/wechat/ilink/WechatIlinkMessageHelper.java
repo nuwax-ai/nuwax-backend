@@ -60,9 +60,17 @@ public final class WechatIlinkMessageHelper {
             return "";
         }
         for (MessageItem it : msg.getItemList()) {
-            if (it != null && it.getType() != null && it.getType() == ITEM_TEXT
+            if (it == null || it.getType() == null) {
+                continue;
+            }
+            if (it.getType() == ITEM_TEXT
                     && it.getTextItem() != null && StringUtils.isNotBlank(it.getTextItem().getText())) {
                 return it.getTextItem().getText();
+            }
+            // 对齐 openclaw-weixin：语音消息若已携带转写文本，则优先作为正文输入。
+            if (it.getType() == ITEM_VOICE
+                    && it.getVoiceItem() != null && StringUtils.isNotBlank(it.getVoiceItem().getText())) {
+                return it.getVoiceItem().getText();
             }
         }
         return "";

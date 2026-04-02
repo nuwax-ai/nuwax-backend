@@ -730,7 +730,7 @@ public class WechatIlinkLongPollService {
                                         result.getText(), result.getConversationId(), result.getAgentId(),
                                         channelDto.getTenantId(), channelDto.getUserId(), ImChannelEnum.WECHAT_ILINK.getCode());
                                 if (StringUtils.isBlank(processed)) {
-                                    processed = "已处理";
+                                    processed = "模型终止执行";
                                 }
                                 String replyToken = effectiveContextTokenForReply(channelDto.getId(), fromUserId, contextToken);
                                 WeixinMessage reply = WechatIlinkMessageHelper.buildTextReply(fromUserId, replyToken, processed);

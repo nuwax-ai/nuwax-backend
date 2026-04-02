@@ -11,6 +11,8 @@ import com.xspaceagi.im.wechat.ilink.dto.MessageItem;
 import com.xspaceagi.im.wechat.ilink.dto.VideoItem;
 import com.xspaceagi.im.wechat.ilink.dto.VoiceItem;
 import com.xspaceagi.im.wechat.ilink.dto.WeixinMessage;
+import com.xspaceagi.im.wechat.ilink.WechatIlinkMessageHelper;
+import com.xspaceagi.im.application.util.MimeTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +30,7 @@ import java.util.List;
 public class WechatIlinkInboundMediaService {
 
     @Autowired(required = false)
-    private WechatIlinkAttachmentUploader attachmentUploader;
+    private WechatIlinkAttachmentService attachmentUploader;
 
     public List<AttachmentDto> buildAttachmentsFromMessage(WeixinMessage msg, ImChannelConfigDto channelDto) {
         if (msg == null || msg.getItemList() == null || msg.getItemList().isEmpty()) {
@@ -52,14 +54,31 @@ public class WechatIlinkInboundMediaService {
             }
             try {
                 switch (it.getType()) {
-                    case 2 -> {
+                    case WechatIlinkMessageHelper.ITEM_IMAGE -> {
                         byte[] raw = downloadImage(it.getImageItem(), cdnBase);
-                        addOne(out, raw, guessImageFileName(it.getImageItem()), guessImageMime(raw), tenantId);
+                        addOne(out, raw, null, null, tenantId);
                     }
-                    case 3 -> addOne(out, downloadVoice(it.getVoiceItem(), cdnBase), "voice.sil", "audio/silk", tenantId);
-                    case 4 -> addOne(out, downloadFile(it.getFileItem(), cdnBase), fileNameOrDefault(it.getFileItem()), null, tenantId);
-                    case 5 -> addOne(out, downloadVideo(it.getVideoItem(), cdnBase), "video.mp4", "video/mp4", tenantId);
+                    case WechatIlinkMessageHelper.ITEM_VOICE -> {
+                        byte[] voiceBytes = downloadVoice(it.getVoiceItem(), cdnBase);
+                        String voiceMime = inferVoiceMimeType(it.getVoiceItem());
+                        if (isSilkVoice(it.getVoiceItem())) {
+                            byte[] wavBytes = WechatIlinkSilkTranscoder.tryConvertSilkToWav(voiceBytes);
+                            if (wavBytes != null && wavBytes.length > 0) {
+                                voiceBytes = wavBytes;
+                                voiceMime = "audio/wav";
+                            }
+                        }
+                        addOne(out, voiceBytes, null, voiceMime, tenantId);
+                    }
+                    case WechatIlinkMessageHelper.ITEM_FILE -> {
+                        byte[] fileBytes = downloadFile(it.getFileItem(), cdnBase);
+                        String fileName = it.getFileItem() != null ? it.getFileItem().getFileName() : null;
+                        String mime = MimeTypeUtils.inferMimeTypeFromFileName(fileName);
+                        addOne(out, fileBytes, fileName, mime, tenantId);
+                    }
+                    case WechatIlinkMessageHelper.ITEM_VIDEO -> addOne(out, downloadVideo(it.getVideoItem(), cdnBase), null, "video/mp4", tenantId);
                     default -> {
+                        // ITEM_TEXT 或未知类型，不处理附件
                     }
                 }
             } catch (Exception e) {
@@ -73,65 +92,10 @@ public class WechatIlinkInboundMediaService {
         if (bytes == null || bytes.length == 0) {
             return;
         }
-        String mime = mimeOverride;
-        if (StringUtils.isBlank(mime) && filename != null) {
-            String f = filename.toLowerCase();
-            if (f.endsWith(".jpg") || f.endsWith(".jpeg")) {
-                mime = "image/jpeg";
-            } else if (f.endsWith(".png")) {
-                mime = "image/png";
-            } else if (f.endsWith(".gif")) {
-                mime = "image/gif";
-            } else if (f.endsWith(".mp4")) {
-                mime = "video/mp4";
-            } else if (f.endsWith(".amr")) {
-                mime = "audio/amr";
-            }
-        }
-        if (StringUtils.isBlank(mime)) {
-            mime = "application/octet-stream";
-        }
-        String fn = StringUtils.isNotBlank(filename) ? filename : "file.bin";
-        AttachmentDto dto = attachmentUploader.upload(bytes, fn, mime, tenantId);
+        AttachmentDto dto = attachmentUploader.upload(bytes, filename, mimeOverride, tenantId);
         if (dto != null) {
             out.add(dto);
         }
-    }
-
-    private static String guessImageMime(byte[] b) {
-        if (b == null || b.length < 3) {
-            return "image/jpeg";
-        }
-        if (b[0] == (byte) 0xFF && b[1] == (byte) 0xD8) {
-            return "image/jpeg";
-        }
-        if (b.length >= 8 && b[0] == (byte) 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G') {
-            return "image/png";
-        }
-        if (b.length >= 6 && b[0] == 'G' && b[1] == 'I' && b[2] == 'F') {
-            return "image/gif";
-        }
-        if (b.length >= 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F') {
-            return "image/webp";
-        }
-        return "image/jpeg";
-    }
-
-    private static String fileNameOrDefault(FileItem fileItem) {
-        if (fileItem == null) {
-            return "file.bin";
-        }
-        if (StringUtils.isNotBlank(fileItem.getFileName())) {
-            return fileItem.getFileName();
-        }
-        return "file.bin";
-    }
-
-    private static String guessImageFileName(ImageItem img) {
-        if (img == null) {
-            return "image.jpg";
-        }
-        return "image.jpg";
     }
 
     private static byte[] downloadImage(ImageItem img, String cdnBase) throws Exception {
@@ -161,6 +125,25 @@ public class WechatIlinkInboundMediaService {
             return null;
         }
         return decryptMedia(video.getMedia(), cdnBase);
+    }
+
+    private static String inferVoiceMimeType(VoiceItem voice) {
+        if (voice == null || voice.getEncodeType() == null) {
+            return "audio/silk";
+        }
+        return switch (voice.getEncodeType()) {
+            case 1 -> "audio/L16";
+            case 4 -> "audio/speex";
+            case 5 -> "audio/amr";
+            case 6 -> "audio/silk";
+            case 7 -> "audio/mpeg";
+            case 8 -> "audio/ogg";
+            default -> "audio/silk";
+        };
+    }
+
+    private static boolean isSilkVoice(VoiceItem voice) {
+        return voice != null && voice.getEncodeType() != null && voice.getEncodeType() == 6;
     }
 
     private static CdnMedia firstNonBlankMedia(CdnMedia primary, CdnMedia fallback) {

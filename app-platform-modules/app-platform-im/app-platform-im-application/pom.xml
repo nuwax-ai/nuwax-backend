@@ -52,5 +52,11 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-im-wechat</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.kasukusakura</groupId>
+            <artifactId>silk-codec</artifactId>
+            <version>0.0.5</version>
+        </dependency>
     </dependencies>
 </project>

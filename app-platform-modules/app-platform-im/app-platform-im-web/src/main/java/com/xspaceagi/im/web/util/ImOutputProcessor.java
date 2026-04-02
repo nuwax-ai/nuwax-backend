@@ -389,25 +389,23 @@ public class ImOutputProcessor {
     }
 
     /**
-     * 替换工具调用标签
-     * 将 <div><markdown-custom-process type="ToolCall" name="..."></markdown-custom-process></div>
-     * 替换为 *工具调用：...*
+     * 收集每个工具调用之后的候选内容，按出现顺序返回。
+     * 如果没有工具调用标签，则仅返回原文。
      */
-    private static String replaceToolCallTags(String text) {
+    private static List<String> collectContentAfterToolCalls(String text) {
+        List<String> candidates = new ArrayList<>();
         if (text == null || text.isEmpty()) {
-            return text;
+            candidates.add(text);
+            return candidates;
         }
         Matcher matcher = TOOL_CALL_PATTERN.matcher(text);
-        StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
-            String toolName = matcher.group(1);
-            // 使用引用块，让工具调用更明显
-            // 引用块后面必须加换行符，否则企业微信会把后续内容也渲染成引用块
-            String replacement = "> 🔧 工具调用：" + toolName + "\n";
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+            candidates.add(matcher.end() >= text.length() ? "" : text.substring(matcher.end()));
         }
-        matcher.appendTail(sb);
-        return sb.toString();
+        if (candidates.isEmpty()) {
+            candidates.add(text);
+        }
+        return candidates;
     }
 
     /**
@@ -696,7 +694,6 @@ public class ImOutputProcessor {
      * - 将识别到的“路径/文件名”与文件列表的 `name`（以及其 basename 后缀）做匹配
      * - 匹配不到时保持原样（不会生成 Markdown 链接）
      * <p>
-     * 如果存在任意文件候选且 agentId 不为空，追加会话链接：[点此链接查看会话]({fileUrlDomain}/home/chat/{conversationId}/{agentId})
      */
     private static String replaceFileTagsWithUrl(String text, Long conversationId, Long agentId, String fileUrlDomain, Long userId, Long tenantId,
                                                  ImFileShareService fileShareService, IComputerFileApplicationService computerFileApplicationService) {
@@ -830,15 +827,6 @@ public class ImOutputProcessor {
         markdownLinkMatcher.appendTail(sbWithMarkdownLink);
         processed = sbWithMarkdownLink.toString();
 
-        boolean hasAnyFile = (fileTagCount + filePathCount + fileNameCount + backtickCount + markdownLinkCount) > 0;
-        if (hasAnyFile && agentId != null) {
-            String sessionUrl = domain + "/home/chat/" + conversationId + "/" + agentId;
-            if (!(processed.endsWith("\n") || processed.endsWith("\r\n"))) {
-                processed = processed + "\n";
-            }
-            processed = processed + "[点此链接查看会话](" + sessionUrl + ")";
-        }
-
         return processed;
     }
 
@@ -923,10 +911,26 @@ public class ImOutputProcessor {
             return "";
         }
 
-        // 1. 替换工具调用标签
-        text = replaceToolCallTags(text);
+        List<String> candidates = collectContentAfterToolCalls(text);
+        String processed = "";
+        for (int i = candidates.size() - 1; i >= 0; i--) {
+            processed = processOutputCandidate(candidates.get(i), conversationId, agentId, fileUrlDomain, userId, tenantId,
+                    fileShareService, computerFileApplicationService, imChannelCode);
+            if (StringUtils.isNotBlank(processed)) {
+                break;
+            }
+        }
 
-        // 2. 替换文件标签为 URL（必须在移除内部标签之前）
+        text = processed;
+        log.info("处理后: {}", text);
+        log.info("==================== ImOutputProcessor end ====================");
+        return text;
+    }
+
+    private static String processOutputCandidate(String text, Long conversationId, Long agentId, String fileUrlDomain, Long userId, Long tenantId,
+                                                 ImFileShareService fileShareService, IComputerFileApplicationService computerFileApplicationService,
+                                                 String imChannelCode) {
+        // 1. 替换文件标签为 URL（必须在移除内部标签之前）
         if (conversationId != null && StringUtils.isNotBlank(fileUrlDomain)) {
             text = replaceFileTagsWithUrl(text, conversationId, agentId, fileUrlDomain.trim(), userId, tenantId, fileShareService, computerFileApplicationService);
         } else {
@@ -934,40 +938,35 @@ public class ImOutputProcessor {
             text = FILE_TAG_PATTERN.matcher(text).replaceAll("$1");
         }
 
-        // 3. 移除内部标签和分隔符（如 <description>、<div> 等）
+        // 2. 移除内部标签和分隔符（如 <description>、<div> 等）
         text = removeInternalTags(text);
 
-        // 4. 去重纯链接行（同一路径在多个内部标签中重复时保留一条）
+        // 3. 去重纯链接行（同一路径在多个内部标签中重复时保留一条）
         text = deduplicatePureLinkLines(text);
 
-        // 5. 移除可能包裹文件名的内联代码标记（反引号）
-        // 智能体可能输出：文件：`filename.md`，这会导致链接无法在代码块中渲染
+        // 4. 移除可能包裹文件名的内联代码标记（反引号）
         text = removeInlineCodeAroundLinks(text);
 
-        // 6 移除包裹Markdown链接的代码块标记
-        // 智能体可能输出：```[link](url)```，导致链接无法渲染
+        // 5. 移除包裹Markdown链接的代码块标记
         text = removeCodeBlocksAroundLinks(text);
 
-        // 7. 还原工具输出中的转义字符
+        // 6. 还原工具输出中的转义字符
         text = unescapeToolOutput(text);
 
-        // 8. 再次移除包裹链接的代码块（处理转义字符还原后才出现的 ``` 场景）
+        // 7. 再次移除包裹链接的代码块（处理转义字符还原后才出现的 ``` 场景）
         text = removeCodeBlocksAroundLinks(text);
 
-        // 9. 规范化 Markdown 内容
+        // 8. 规范化 Markdown 内容
         text = normalizeMarkdownContent(text);
-        // 10. 合并连续多行空行：最多保留 1 个空行
+        // 9. 合并连续多行空行：最多保留 1 个空行
         text = collapseConsecutiveBlankLines(text);
-        // 11. 去掉开头/结尾的纯空行
+        // 10. 去掉开头/结尾的纯空行
         text = stripLeadingTrailingBlankLines(text);
 
         if (ImChannelEnum.WECHAT_ILINK.getCode().equals(imChannelCode)) {
             text = flattenMarkdownLinksToPlainText(text);
             text = injectZeroWidthBeforeStandaloneFileExtensionsForWechat(text);
         }
-
-        log.info("处理后: {}", text);
-        log.info("==================== ImOutputProcessor end ====================");
         return text;
     }
 

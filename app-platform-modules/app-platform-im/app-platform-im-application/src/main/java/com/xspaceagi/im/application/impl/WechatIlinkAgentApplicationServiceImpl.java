@@ -136,10 +136,10 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
             if (accumulated.length() > 0) {
                 return new WeworkAgentApplicationService.AgentExecuteResultWithConv(accumulated.toString(), convId, agentId);
             }
-            return new WeworkAgentApplicationService.AgentExecuteResultWithConv("执行超时或未返回结果", convId, agentId);
+            return new WeworkAgentApplicationService.AgentExecuteResultWithConv("模型执行超时或未返回结果", convId, agentId);
         }
         if (Boolean.FALSE.equals(finalResult.getSuccess())) {
-            String errorText = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "执行失败";
+            String errorText = StringUtils.isNotBlank(finalResult.getError()) ? finalResult.getError() : "模型执行失败";
             return new WeworkAgentApplicationService.AgentExecuteResultWithConv(errorText, convId, agentId);
         }
         String outputText = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : null;
@@ -147,7 +147,7 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
             outputText = accumulated.toString();
         }
         if (StringUtils.isBlank(outputText)) {
-            outputText = "已处理";
+            outputText = "模型终止执行";
         }
         return new WeworkAgentApplicationService.AgentExecuteResultWithConv(outputText, convId, agentId);
     }

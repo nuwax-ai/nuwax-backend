@@ -294,7 +294,7 @@ public class ImWeworkController {
                                 TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(finalConfig.getTenantId());
                                 var attachmentResult = weworkAttachmentService.downloadAndUpload(
                                         finalConfig.getCorpId(), finalConfig.getCorpSecret(), finalMediaId, finalMsgType,
-                                        finalConfig.getTenantId(), tenantConfig);
+                                        tenantConfig);
                                 attachments = attachmentResult.getAttachments();
                                 if (!attachmentResult.getUnsupportedKeys().isEmpty()) {
                                     userMessage = userMessage + "\n\n[系统提示：部分附件类型不支持下载，请发送具体文件。]";
@@ -559,7 +559,7 @@ public class ImWeworkController {
             try {
                 TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(botConfig.getTenantId());
                 var attachmentResult = weworkAttachmentService.downloadAndUploadFromUrl(
-                        attachmentUrl, msgtype, botConfig.getEncodingAesKey(), botConfig.getTenantId(), tenantConfig);
+                        attachmentUrl, msgtype, botConfig.getEncodingAesKey(), tenantConfig);
                 attachments = attachmentResult.getAttachments();
                 log.info("企业微信附件处理完成: url={}, 附件数量={}", attachmentUrl, attachments.size());
             } catch (Exception e) {
@@ -1047,7 +1047,7 @@ public class ImWeworkController {
                     result.getText(), result.getConversationId(), result.getAgentId(),
                     config.getTenantId(), config.getUserId());
             if (StringUtils.isBlank(processedText)) {
-                processedText = "已处理";
+                processedText = "模型终止执行";
             }
             return processedText;
         } catch (Exception e) {

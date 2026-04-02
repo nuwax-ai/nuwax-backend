@@ -540,7 +540,7 @@ public class IMFeishuController {
             var tenantConfig = tenantConfigApplicationService.getTenantConfig(botConfig.getTenantId());
             var attachmentResult = feishuAttachmentService.downloadAndUpload(
                     botConfig.getAppId(), botConfig.getAppSecret(), messageId,
-                    fileKeys, types, botConfig.getTenantId(), tenantConfig);
+                    fileKeys, types, tenantConfig);
             attachments = attachmentResult.getAttachments();
             unsupportedKeys = attachmentResult.getUnsupportedKeys();
         }
