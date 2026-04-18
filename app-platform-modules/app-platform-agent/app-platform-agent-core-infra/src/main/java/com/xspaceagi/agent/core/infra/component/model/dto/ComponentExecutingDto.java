@@ -22,6 +22,9 @@ public class ComponentExecutingDto implements Serializable {
 
     private String name;
 
+    // 通用智能体工具执行原始标题
+    private String originalTitle;
+
     private ComponentTypeEnum type;
 
     private ExecuteStatusEnum status;

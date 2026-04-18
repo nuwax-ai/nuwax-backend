@@ -5,6 +5,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.ModelBindConfigDto;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.system.sdk.retry.utils.GeneratorUtils;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -19,7 +20,7 @@ import java.util.List;
 public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
 
     @Schema(description = "LLM模型ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "LLM模型ID不能为空")
+    @NotNull(message = "LLM model ID is required")
     private Long modelId;
 
     @Schema(description = "模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义")
@@ -90,7 +91,7 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
         List<IntentConfigDto> intentConfigs = new ArrayList<>();
         IntentConfigDto intentConfigDto = new IntentConfigDto();
         intentConfigDto.setUuid(GeneratorUtils.generateUUID());
-        intentConfigDto.setIntent("其他意图");
+        intentConfigDto.setIntent(I18nUtil.systemMessage("Backend.Workflow.Intent.Other"));
         intentConfigDto.setIntentType(IntentTypeEnum.OTHER);
         intentConfigDto.setNextNodeIds(new ArrayList<>());
         intentConfigs.add(intentConfigDto);
@@ -102,7 +103,7 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
     }
 
     /**
-     * 获取系统默认的意图识别出参
+     * Get default system output arguments for intent recognition
      *
      * @return
      */
@@ -110,7 +111,7 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
         List<Arg> outputArgs = new ArrayList<>();
         Arg outArg = new Arg();
         outArg.setName("classificationId");
-        outArg.setDescription("意图编号");
+        outArg.setDescription("Intent classification ID");
         outArg.setDataType(DataTypeEnum.Integer);
         outArg.setSystemVariable(true);
         outArg.setRequire(true);
@@ -118,7 +119,7 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
 
         outArg = new Arg();
         outArg.setName("reason");
-        outArg.setDescription("选择该意图的理由");
+        outArg.setDescription("Reason for selecting this intent");
         outArg.setDataType(DataTypeEnum.String);
         outArg.setSystemVariable(true);
         outArg.setRequire(true);

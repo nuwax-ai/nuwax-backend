@@ -32,7 +32,7 @@ public class RedisUtil {
      * @param key
      * @return
      */
-    public long getTime(String key) {
+    public Long getTime(String key) {
         return redisTemplate.getExpire(key, TimeUnit.SECONDS);
     }
 

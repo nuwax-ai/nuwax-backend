@@ -64,7 +64,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
             result.setCostTimeMs(costTime);
             result.setMessage("所有未同步知识库同步完成");
             
-            log.info("========== 所有知识库同步完成，耗时: {}ms ==========", costTime);
+            log.info("========== 所有知识库同步完成，Elapsed: {}ms ==========", costTime);
             
             return ReqResult.success(result);
             
@@ -96,7 +96,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
     public ReqResult<SyncResult> syncKnowledgeBase(
             @Parameter(description = "知识库ID") @PathVariable Long kbId) {
         
-        log.info("开始同步知识库: kbId={}", kbId);
+        log.info("Starting knowledge base sync: kbId={}", kbId);
         
         Long tenantId = getUser().getTenantId();
         long startTime = System.currentTimeMillis();
@@ -112,13 +112,13 @@ public class KnowledgeFullTextMigrationController extends BaseController {
             result.setCostTimeMs(costTime);
             result.setMessage("知识库同步成功");
             
-            log.info("知识库同步成功: kbId={}, syncedCount={}, costTime={}ms", 
+            log.info("Knowledge base sync succeeded: kbId={}, syncedCount={}, costTime={}ms", 
                 kbId, syncedCount, costTime);
             
             return ReqResult.success(result);
             
         } catch (Exception e) {
-            log.error("知识库同步失败: kbId={}", kbId, e);
+            log.error("Knowledge base sync failed: kbId={}", kbId, e);
             
             SyncResult result = new SyncResult();
             result.setKbId(kbId);
@@ -168,7 +168,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
                 
                 successCount++;
                 
-                log.info("知识库同步成功: kbId={}, syncedCount={}", kbId, syncedCount);
+                log.info("Knowledge base sync succeeded: kbId={}, syncedCount={}", kbId, syncedCount);
                 
             } catch (Exception e) {
                 SyncResult result = new SyncResult();
@@ -179,7 +179,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
                 
                 failCount++;
                 
-                log.error("知识库同步失败: kbId={}", kbId, e);
+                log.error("Knowledge base sync failed: kbId={}", kbId, e);
             }
         }
         
@@ -212,7 +212,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
     )
     @PostMapping("/validate")
     public ReqResult<ValidateResult> validate() {
-        log.info("开始验证同步结果");
+        log.info("Starting sync result verification");
         
         Long tenantId = getUser().getTenantId();
         long startTime = System.currentTimeMillis();
@@ -226,7 +226,7 @@ public class KnowledgeFullTextMigrationController extends BaseController {
             result.setCostTimeMs(costTime);
             result.setMessage("验证完成，详情请查看日志");
             
-            log.info("验证同步结果完成，耗时: {}ms", costTime);
+            log.info("验证同步结果完成，Elapsed: {}ms", costTime);
             
             return ReqResult.success(result);
             

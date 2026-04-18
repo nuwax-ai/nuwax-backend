@@ -3,9 +3,14 @@ package com.xspaceagi.system.application.converter;
 import com.xspaceagi.system.application.dto.permission.SysDataPermissionBindDto;
 import com.xspaceagi.system.infra.dao.entity.SysDataPermission;
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
+import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 数据权限转换器
@@ -35,6 +40,20 @@ public final class SysDataPermissionConverter {
         entity.setModelIds(dto.getModelIds());
         entity.setAgentIds(dto.getAgentIds());
         entity.setPageAgentIds(dto.getPageAgentIds());
+        Map<String, String> openApiConfigMap = new LinkedHashMap<>();
+        if (CollectionUtils.isNotEmpty(dto.getOpenApiConfigs())) {
+            for (SysDataPermissionBindDto.OpenApiConfig config : dto.getOpenApiConfigs()) {
+                if (config == null || StringUtils.isBlank(config.getKey())) {
+                    continue;
+                }
+                Map<String, Integer> configValue = new LinkedHashMap<>();
+                configValue.put("rpm", config.getRpm());
+                configValue.put("rpd", config.getRpd());
+                openApiConfigMap.put(config.getKey(), JsonSerializeUtil.toJSONString(configValue));
+            }
+        }
+        entity.setOpenApiConfigMap(openApiConfigMap);
+        entity.setKnowledgeIds(dto.getKnowledgeIds());
 
         // 数量类型不传默认 -1（不限制）
         entity.setTokenLimit(dto.getTokenLimit() != null ? dto.getTokenLimit() : new TokenLimit(-1L));

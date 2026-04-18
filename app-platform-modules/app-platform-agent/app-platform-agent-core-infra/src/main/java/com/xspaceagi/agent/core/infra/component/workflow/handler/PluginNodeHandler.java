@@ -1,6 +1,5 @@
 package com.xspaceagi.agent.core.infra.component.workflow.handler;
 
-import com.xspaceagi.agent.core.adapter.dto.PluginExecuteResultDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.PluginNodeConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
@@ -22,6 +21,12 @@ public class PluginNodeHandler extends AbstractNodeHandler {
         pluginContext.setPluginDto(pluginNodeConfigDto.getPluginConfig());
         Map<String, Object> params = extraBindValueMap(workflowContext, node, pluginNodeConfigDto.getInputArgs());
         pluginContext.setParams(params);
-        return workflowContext.getWorkflowContextServiceHolder().getPluginExecutor().execute(pluginContext).map(PluginExecuteResultDto::getResult);
+        return workflowContext.getWorkflowContextServiceHolder().getPluginExecutor().execute(pluginContext).flatMap(pluginExecuteResultDto -> {
+            if (pluginExecuteResultDto.isSuccess() && pluginExecuteResultDto.getResult() != null) {
+                return Mono.just(pluginExecuteResultDto.getResult());
+            } else {
+                return Mono.error(new Exception(pluginExecuteResultDto.getError()));
+            }
+        });
     }
 }

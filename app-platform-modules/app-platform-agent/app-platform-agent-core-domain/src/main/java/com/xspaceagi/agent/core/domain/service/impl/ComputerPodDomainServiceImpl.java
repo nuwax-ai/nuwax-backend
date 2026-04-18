@@ -3,7 +3,9 @@ package com.xspaceagi.agent.core.domain.service.impl;
 import com.xspaceagi.agent.core.adapter.dto.ComputerPodResultDto;
 import com.xspaceagi.agent.core.domain.service.ComputerPodDomainService;
 import com.xspaceagi.agent.core.infra.rpc.ComputerPodClient;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +50,7 @@ public class ComputerPodDomainServiceImpl implements ComputerPodDomainService {
     private void checkParams(Long cId, Long userId, String action) {
         if (cId == null || userId == null) {
             log.error("[ComputerPodDomainService] {} 参数为空, cId={}, userId={}", action, cId, userId);
-            throw new BizException("必传参数为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentRequiredParamEmpty);
         }
     }
 
@@ -56,7 +58,7 @@ public class ComputerPodDomainServiceImpl implements ComputerPodDomainService {
     private ComputerPodResultDto parseResult(Map<String, Object> result, String action, Long cId, Long userId) {
         if (result == null) {
             log.error("[ComputerPodDomainService] {} 结果为空, cId={}, userId={}", action, cId, userId);
-            throw new BizException("容器服务调用失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentContainerServiceCallFailed);
         }
 
         ComputerPodResultDto dto = new ComputerPodResultDto();

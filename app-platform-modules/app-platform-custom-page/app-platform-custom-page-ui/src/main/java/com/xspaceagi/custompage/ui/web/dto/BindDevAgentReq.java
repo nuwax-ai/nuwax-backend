@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "绑定开发智能体请求体")
+@Schema(description = "Bind dev Agent request body")
 public class BindDevAgentReq {
 
-    @NotNull(message = "projectId 不能为空")
-    @Schema(description = "项目ID")
+    @NotNull(message = "projectId is required")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @NotNull(message = "devAgentId 不能为空")
-    @Schema(description = "开发智能体ID")
+    @NotNull(message = "devAgentId is required")
+    @Schema(description = "Dev Agent ID")
     private Long devAgentId;
 
 }

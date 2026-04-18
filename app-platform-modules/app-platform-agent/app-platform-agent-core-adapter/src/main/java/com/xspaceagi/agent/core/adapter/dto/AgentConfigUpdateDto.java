@@ -18,7 +18,7 @@ import java.util.List;
 public class AgentConfigUpdateDto implements Serializable {
 
     @Schema(description = "智能体ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "id不能为空")
+    @NotNull(message = "id is required")
     private Long id; // 智能体ID
 
     @Schema(description = "Agent名称")

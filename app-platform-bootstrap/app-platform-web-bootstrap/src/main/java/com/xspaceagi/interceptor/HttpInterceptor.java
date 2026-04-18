@@ -2,9 +2,14 @@ package com.xspaceagi.interceptor;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
+import com.xspaceagi.log.sdk.service.ILogRpcService;
+import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.infra.dao.entity.OpenApiDefinition;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +35,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 请求参数记录
@@ -48,13 +55,16 @@ public class HttpInterceptor implements HandlerInterceptor, ResponseBodyAdvice, 
     @Autowired
     private jakarta.servlet.http.HttpServletRequest request;
 
+    @Resource
+    private ILogRpcService iLogRpcService;
+
     @Override
     public boolean preHandle(jakarta.servlet.http.HttpServletRequest request,
                              jakarta.servlet.http.HttpServletResponse response, Object handler) {
         String origin = request.getHeader("Origin");
         // 如果配置是 "*" 或者 origin 包含配置的值，则允许跨域
-        boolean allowOrigin = StringUtils.isNotBlank(origin) && 
-                             ("*".equals(accessControlAllowOrigin) || origin.contains(accessControlAllowOrigin));
+        boolean allowOrigin = StringUtils.isNotBlank(origin) &&
+                ("*".equals(accessControlAllowOrigin) || origin.contains(accessControlAllowOrigin));
         if (allowOrigin) {
             response.setHeader("Vary", "Origin");
             response.setHeader("Access-Control-Allow-Origin", origin);
@@ -76,7 +86,7 @@ public class HttpInterceptor implements HandlerInterceptor, ResponseBodyAdvice, 
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         Method method = handlerMethod.getMethod();
         request.setAttribute("methodName", method.getDeclaringClass().getName() + "." + method.getName());
-        log.info("请求URI {}, X-Client-Type {}", uri, request.getHeader("X-Client-Type"));
+        log.info("Request URI {}, X-Client-Type {}", uri, request.getHeader("X-Client-Type"));
         return true;
     }
 
@@ -111,24 +121,58 @@ public class HttpInterceptor implements HandlerInterceptor, ResponseBodyAdvice, 
         long reqBeginTime = (long) httpServletRequest.getAttribute("reqBeginTime");
         String methodName = (String) httpServletRequest.getAttribute("methodName");
 
+        OpenApiDefinition openApiDefinition = (OpenApiDefinition) httpServletRequest.getAttribute("currentAPI");
+        UserAccessKeyDto userAccessKey = (UserAccessKeyDto) httpServletRequest.getAttribute("userAccessKey");
         try {
-            if (log.isInfoEnabled()) {
+            if (log.isInfoEnabled() || openApiDefinition != null) {
                 // 启用 LargeObject 特性，支持序列化包含大文件内容的请求和响应体
                 String requestBodyStr = JSON.toJSONString(req, JSONWriter.Feature.LargeObject);
                 String responseBody = JSON.toJSONString(body, JSONWriter.Feature.LargeObject);
-                log.info("HTTP接口调用日志\n服务接口 {}\n请求数据 {}\n响应数据 {}\n请求耗时 {}ms", methodName, requestBodyStr.length() > 1024 * 8 ? requestBodyStr.substring(0, 1024 * 8) : requestBodyStr, responseBody.length() > 1024 * 8 ? responseBody.substring(0, 1024 * 8) : responseBody
+                if (openApiDefinition != null) {
+                    requestBodyStr = httpServletRequest.getMethod() + " " + httpServletRequest.getRequestURI() + "\n" + requestBodyStr;
+                }
+                buildAndSendLogDocument(openApiDefinition, userAccessKey, requestBodyStr, responseBody, reqBeginTime, httpResult);
+                log.info("HTTP API call log\nService {}\nRequest {}\nResponse {}\nElapsed {}ms", methodName, requestBodyStr.length() > 1024 * 8 ? requestBodyStr.substring(0, 1024 * 8) : requestBodyStr, responseBody.length() > 1024 * 8 ? responseBody.substring(0, 1024 * 8) : responseBody
                         , System.currentTimeMillis() - reqBeginTime);
             }
             httpResult.setTid(MDC.get("tid"));
             return httpResult;
         } catch (Exception e) {
-            log.error("记录Http日志报错", e);
+            log.error("Failed to record HTTP access log", e);
             // 使用 LargeObject 特性序列化请求参数，避免大文件内容导致序列化失败
             String paramsStr = JSON.toJSONString(params, JSONWriter.Feature.LargeObject);
-            log.error("HTTP接口调用日志\n服务接口 {}\n请求数据 {}\n错误信息 {}\n请求耗时 {}ms", methodName, paramsStr.length() > 1024 * 8 ? paramsStr.substring(0, 1024 * 8) : paramsStr,
+            log.error("HTTP API call log\nService {}\nRequest {}\nError {}\nElapsed {}ms", methodName, paramsStr.length() > 1024 * 8 ? paramsStr.substring(0, 1024 * 8) : paramsStr,
                     e.getMessage(), System.currentTimeMillis() - reqBeginTime);
             throw e;
         }
+    }
+
+    private void buildAndSendLogDocument(OpenApiDefinition openApiDefinition, UserAccessKeyDto userAccessKey, String requestBodyStr, String responseBody, Long reqBeginTime, ReqResult httpResult) {
+        if (openApiDefinition == null) {
+            return;
+        }
+        UserDto user = (UserDto) RequestContext.get().getUser();
+        LogDocument logDocument = LogDocument.builder()
+                .id(UUID.randomUUID().toString().replace("-", ""))
+                .tenantId(RequestContext.get().getTenantId())
+                .spaceId(-1L)
+                .userId(RequestContext.get().getUserId())
+                .userName(user.getUserName())
+                .targetType("ApiKey")
+                .targetName(userAccessKey.getName())
+                .targetId(userAccessKey.getId().toString())
+                .input(requestBodyStr)
+                .output(responseBody)
+                .requestStartTime(reqBeginTime)
+                .requestEndTime(System.currentTimeMillis())
+                .resultCode(httpResult.getCode())
+                .resultMsg(httpResult.getMessage())
+                .conversationId(openApiDefinition.getPath())
+                .requestId(MDC.get("tid"))
+                .createTime(System.currentTimeMillis())
+                .from("ApiKey")
+                .build();
+        iLogRpcService.bulkIndex(List.of(logDocument));
     }
 
     @Override

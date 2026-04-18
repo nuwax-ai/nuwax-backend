@@ -11,19 +11,19 @@ public class TaskConversationAddOrUpdateDto {
     private Long id;
 
     @Schema(description = "任务会话主题")
-    @NotNull(message = "任务会话主题不能为空")
+    @NotNull(message = "Task conversation subject is required")
     private String topic;
 
     @Schema(description = "任务会话内容")
-    @NotNull(message = "任务会话内容不能为空")
+    @NotNull(message = "Task conversation content is required")
     private String summary;
 
     @Schema(description = "任务会话定时配置")
-    @NotNull(message = "任务会话定时配置不能为空")
+    @NotNull(message = "Task conversation schedule configuration is required")
     private String taskCron;
 
     @Schema(description = "智能体ID")
-    @NotNull(message = "智能体ID不能为空")
+    @NotNull(message = "Agent ID is required")
     private Long agentId;
 
     @Schema(description = "开发模式")

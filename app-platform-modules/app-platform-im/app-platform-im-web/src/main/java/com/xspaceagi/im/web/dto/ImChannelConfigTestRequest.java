@@ -18,11 +18,11 @@ import lombok.NoArgsConstructor;
 @Schema(description = "IM 渠道配置连通性测试请求")
 public class ImChannelConfigTestRequest {
 
-    @NotBlank(message = "渠道类型不能为空")
+    @NotBlank(message = "Channel type is required")
     @Schema(description = "渠道类型：feishu/dingtalk/wework")
     private String channel;
 
-    @NotBlank(message = "目标类型不能为空")
+    @NotBlank(message = "Target type is required")
     @Schema(description = "目标类型：bot/app")
     private String targetType;
 

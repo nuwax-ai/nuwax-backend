@@ -29,10 +29,10 @@ public class PluginConfigDto implements Serializable {
     private CodeLanguageEnum codeLang;
 
     @Schema(description = "插件输入参数", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "插件输入参数不能为空")
+    @NotNull(message = "Plugin input parameters are required")
     private List<Arg> inputArgs;
 
     @Schema(description = "插件输出参数", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "插件输出参数不能为空")
+    @NotNull(message = "Plugin output parameters are required")
     private List<Arg> outputArgs;
 }

@@ -36,7 +36,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
 
     @Override
     public List<FullTextSearchResultModel> search(FullTextSearchRequestModel request) {
-        log.info("执行全文检索: kbIds={}, query={}, topK={}",
+        log.info("Full-text search: kbIds={}, query={}, topK={}",
                 request.getKbIds(), request.getQueryText(), request.getTopK());
 
         // 1. 参数校验
@@ -51,7 +51,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
         // 4. 转换结果
         List<FullTextSearchResultModel> results = convertSearchResults(searchResult);
 
-        log.info("全文检索完成: kbIds={}, resultCount={}, tookMs={}",
+        log.info("Full-text done: kbIds={}, resultCount={}, tookMs={}",
                 request.getKbIds(), results.size(), searchResult.getTookMs());
 
         return results;
@@ -60,14 +60,14 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
     @Override
     public PushResult pushSegments(List<RawSegmentFullTextModel> segments) {
         if (CollectionUtils.isEmpty(segments)) {
-            log.warn("推送分段列表为空，跳过推送");
+            log.warn("Empty segments, skip push");
             PushResult emptyResult = new PushResult();
             emptyResult.setIndexedCount(0L);
             emptyResult.setSuccessRawIds(Collections.emptyList());
             return emptyResult;
         }
 
-        log.info("推送分段数据: segmentCount={}", segments.size());
+        log.info("Push segments: segmentCount={}", segments.size());
 
         // 1. 转换为 Adapter DTO
         List<KnowledgeRawSegment> adapterSegments = segments.stream()
@@ -94,7 +94,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
             result.setSuccessRawIds(Collections.emptyList());
         }
 
-        log.info("推送完成: indexedCount={}, successRawIdsCount={}",
+        log.info("Push done: indexedCount={}, successRawIdsCount={}",
                 result.getIndexedCount(), result.getSuccessRawIds().size());
 
         return result;
@@ -102,7 +102,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
 
     @Override
     public Long deleteByKbId(Long kbId, Long tenantId) {
-        log.info("删除知识库全文检索数据: kbId={}, tenantId={}", kbId, tenantId);
+        log.info("Delete KB full-text: kbId={}, tenantId={}", kbId, tenantId);
         List<Long> segmentIds = fullTextSearchDomainService.queryAllSegmentIds(
                 kbId, tenantId, null
         );
@@ -117,14 +117,14 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
                 ? result.getDeletedCount()
                 : 0L;
 
-        log.info("删除完成: kbId={}, deletedCount={}", kbId, deletedCount);
+        log.info("Delete done: kbId={}, deletedCount={}", kbId, deletedCount);
 
         return deletedCount;
     }
 
     @Override
     public Long deleteByDocId(Long docId, Long kbId, Long tenantId) {
-        log.info("删除文档全文检索数据: docId={}, kbId={}, tenantId={}", docId, kbId, tenantId);
+        log.info("Delete doc full-text: docId={}, kbId={}, tenantId={}", docId, kbId, tenantId);
         List<Long> segmentIds = fullTextSearchDomainService.queryAllSegmentIdsByDocId(
                 kbId, tenantId, null, docId
         );
@@ -140,7 +140,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
                 ? result.getDeletedCount()
                 : 0L;
 
-        log.info("删除完成: docId={}, kbId={}, deletedCount={}", docId, kbId, deletedCount);
+        log.info("Delete done: docId={}, kbId={}, deletedCount={}", docId, kbId, deletedCount);
 
         return deletedCount;
     }
@@ -148,11 +148,11 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
     @Override
     public Long deleteByRawIds(List<Long> rawSegmentIds, Long tenantId) {
         if (CollectionUtils.isEmpty(rawSegmentIds)) {
-            log.warn("删除分段ID列表为空，跳过删除");
+            log.warn("Empty rawIds, skip delete");
             return 0L;
         }
 
-        log.info("删除分段全文检索数据: rawIds={}, tenantId={}", rawSegmentIds, tenantId);
+        log.info("Delete segment full-text: rawIds={}, tenantId={}", rawSegmentIds, tenantId);
 
         DeleteParams deleteParams = new DeleteParams();
         deleteParams.setTenantId(tenantId);
@@ -164,14 +164,14 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
                 ? result.getDeletedCount()
                 : 0L;
 
-        log.info("删除完成: rawIds={}, deletedCount={}", rawSegmentIds, deletedCount);
+        log.info("Delete done: rawIds={}, deletedCount={}", rawSegmentIds, deletedCount);
 
         return deletedCount;
     }
 
     @Override
     public Long updateSegmentText(Long rawSegmentId, String newText, Long tenantId, Long spaceId) {
-        log.info("更新分段文本: rawId={}, tenantId={}", rawSegmentId, tenantId);
+        log.info("Update segment text: rawId={}, tenantId={}", rawSegmentId, tenantId);
 
         UpdateRequest updateRequest = new UpdateRequest();
         updateRequest.setRawId(rawSegmentId);
@@ -187,14 +187,14 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
                 ? result.getUpdatedCount()
                 : 0L;
 
-        log.info("更新完成: rawId={}, updatedCount={}", rawSegmentId, updatedCount);
+        log.info("Update done: rawId={}, updatedCount={}", rawSegmentId, updatedCount);
 
         return updatedCount;
     }
 
     @Override
     public FullTextStatsModel getStats(Long tenantId, Long kbId, Long spaceId) {
-        log.info("获取统计信息: tenantId={}, kbId={}, spaceId={}", tenantId, kbId, spaceId);
+        log.info("Stats: tenantId={}, kbId={}, spaceId={}", tenantId, kbId, spaceId);
 
         StatsParams statsParams = new StatsParams();
         statsParams.setTenantId(tenantId);
@@ -210,7 +210,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
         // 转换为 Domain 模型
         FullTextStatsModel statsModel = convertToStatsModel(result);
 
-        log.info("统计完成: docCount={}, totalSegments={}",
+        log.info("Stats done: docCount={}, totalSegments={}",
                 statsModel.getDocCount(), statsModel.getTotalSegments());
 
         return statsModel;
@@ -219,21 +219,21 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
     @Override
     public void validateSearchRequest(FullTextSearchRequestModel request) {
         if (request == null) {
-            throw new IllegalArgumentException("检索请求不能为空");
+            throw new IllegalArgumentException("Search request cannot be empty");
         }
         // kbId 和 kbIds 至少要有一个（或者都不传，表示检索所有知识库）
         // 这里不强制要求，允许不传知识库ID
         if (!StringUtils.hasText(request.getQueryText())) {
-            throw new IllegalArgumentException("查询文本不能为空");
+            throw new IllegalArgumentException("Query text cannot be empty");
         }
         if (request.getTenantId() == null) {
-            throw new IllegalArgumentException("租户ID不能为空");
+            throw new IllegalArgumentException("Tenant ID cannot be empty");
         }
         if (request.getTopK() != null && (request.getTopK() < 1 || request.getTopK() > 100)) {
-            throw new IllegalArgumentException("返回结果数量必须在1-100之间");
+            throw new IllegalArgumentException("Result size must be between 1 and 100");
         }
         if (request.getOffset() != null && request.getOffset() < 0) {
-            throw new IllegalArgumentException("分页偏移量不能为负数");
+            throw new IllegalArgumentException("Page offset cannot be negative");
         }
     }
 
@@ -251,11 +251,11 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
         if (request.getKbIds() != null && !request.getKbIds().isEmpty()) {
             // 优先使用 kbIds
             params.setKbIds(request.getKbIds());
-            log.debug("设置 kbIds：{}", request.getKbIds());
+            log.debug("Set kbIds: {}", request.getKbIds());
         } else if (request.getKbId() != null) {
             // 兼容旧版本的单个 kbId
             params.setKbIds(Arrays.asList(request.getKbId()));
-            log.debug("设置 kbIds（单个，兼容）: {}", request.getKbId());
+            log.debug("Set kbIds (single compat): {}", request.getKbId());
         }
         // 如果都不传，则不设置 kbIds，表示检索所有知识库
 
@@ -336,7 +336,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
 
     @Override
     public List<Long> queryAllSegmentIds(Long kbId, Long tenantId, Long spaceId) {
-        log.info("查询知识库所有分段ID: kbId={}, tenantId={}, spaceId={}", kbId, tenantId, spaceId);
+        log.info("List all segment IDs: kbId={}, tenantId={}, spaceId={}", kbId, tenantId, spaceId);
 
         // 构建查询参数
         SegmentIdsParams params = new SegmentIdsParams();
@@ -355,14 +355,14 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
             segmentIds = result.getSegmentIds();
         }
 
-        log.info("查询完成: kbId={}, totalCount={}", kbId, segmentIds.size());
+        log.info("Query done: kbId={}, totalCount={}", kbId, segmentIds.size());
 
         return segmentIds;
     }
 
     @Override
     public List<Long> queryAllSegmentIdsByDocId(Long kbId, Long tenantId, Long spaceId, Long docId) {
-        log.info("查询知识库/文档所有分段ID: kbId={}, tenantId={}, spaceId={}, docId={}", kbId, tenantId, spaceId, docId);
+        log.info("List segment IDs (kb/doc): kbId={}, tenantId={}, spaceId={}, docId={}", kbId, tenantId, spaceId, docId);
 
         // 构建查询参数
         SegmentIdsParams params = new SegmentIdsParams();
@@ -384,7 +384,7 @@ public class KnowledgeFullTextSearchDomainServiceImpl implements IKnowledgeFullT
             segmentIds = result.getSegmentIds();
         }
 
-        log.info("查询完成: kbId={}, docId={}, totalCount={}", kbId, docId, segmentIds.size());
+        log.info("Query done: kbId={}, docId={}, totalCount={}", kbId, docId, segmentIds.size());
 
         return segmentIds;
     }

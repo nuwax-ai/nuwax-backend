@@ -43,14 +43,14 @@ public class ExceptionHandleWrappedNodeHandler implements NodeHandler {
         ExceptionHandleConfigDto exceptionHandleConfig = node.getNodeConfig().getExceptionHandleConfig();
         int timeout = exceptionHandleConfig.getTimeout() == null ? 180 : exceptionHandleConfig.getTimeout();
         if (node.getType() == WorkflowNodeConfig.NodeType.Loop) {
-            //循环节点不超时
+            // Loop node does not timeout
             timeout = Integer.MAX_VALUE;
         }
 
         Disposable disposable = nodeHandler.execute(workflowContext, node).timeout(Duration.ofSeconds(timeout))
                 .onErrorResume(throwable -> {
                     if (throwable instanceof TimeoutException) {
-                        return Mono.error(new TimeoutException("执行等待超时"));
+                        return Mono.error(new TimeoutException("Execution timeout"));
                     }
                     return Mono.error(throwable);
                 })
@@ -78,12 +78,12 @@ public class ExceptionHandleWrappedNodeHandler implements NodeHandler {
                         result.put("ERROR_MESSAGE", throwable.getMessage());
                         monoSink.success(result);
                     } else if (exceptionHandleConfig.getExceptionHandleType() == ExceptionHandleConfigDto.ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW) {
-                        //执行异常流程
+                        // Execute exception flow
                         List<Long> exceptionHandleNodeIds = exceptionHandleConfig.getExceptionHandleNodeIds();
                         Set<Long> unreachableNextNodeIds = new HashSet<>();
                         if (CollectionUtils.isNotEmpty(node.getNextNodeIds())) {
                             node.getNextNodeIds().forEach(nextNodeId -> {
-                                //如果下级节点不在异常处理节点列表中，则添加到无法再执行到的下级节点ID集合中
+                                // If child node is not in exception handling node list, add it to the unreachable child node ID set
                                 if (exceptionHandleNodeIds != null && !exceptionHandleNodeIds.contains(nextNodeId)) {
                                     unreachableNextNodeIds.add(nextNodeId);
                                 }
@@ -96,11 +96,11 @@ public class ExceptionHandleWrappedNodeHandler implements NodeHandler {
                     }
                 }).doOnSuccess(result -> {
                     if (!node.isVirtualExecute() && exceptionHandleConfig.getExceptionHandleType() == ExceptionHandleConfigDto.ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW) {
-                        //移除异常流程的执行
+                        // Remove execution of exception flow
                         List<Long> originalNextNodeIds = node.getOriginalNextNodeIds();
                         Set<Long> unreachableNextNodeIds = new HashSet<>();
                         node.getNextNodeIds().forEach(nextNodeId -> {
-                            //如果下级节点不在异常处理节点列表中，则添加到无法再执行到的下级节点ID集合中
+                            // If child node is not in exception handling node list, add it to the unreachable child node ID set
                             if (originalNextNodeIds != null && !originalNextNodeIds.contains(nextNodeId)) {
                                 unreachableNextNodeIds.add(nextNodeId);
                             }

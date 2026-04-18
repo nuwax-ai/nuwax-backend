@@ -6,25 +6,25 @@ import lombok.Data;
 @Data
 public class PageFileInfo {
 
-    @Schema(description = "文件名称")
+    @Schema(description = "File name")
     private String name;
 
-    @Schema(description = "是否为二进制文件")
+    @Schema(description = "Whether file is binary")
     private boolean binary;
 
-    @Schema(description = "文件大小是否超过限制")
+    @Schema(description = "Whether file size exceeds limit")
     private boolean sizeExceeded;
 
-    @Schema(description = "文件内容")
+    @Schema(description = "File text content")
     private String contents;
 
-    @Schema(description = "重命名前的文件名")
+    @Schema(description = "Previous name before rename")
     private String renameFrom;
 
     //create | delete | rename | modify
-    @Schema(description = "操作类型")
+    @Schema(description = "Operation type")
     private String operation;
 
-    @Schema(description = "是否目录")
+    @Schema(description = "Whether entry is a directory")
     private Boolean isDir = false;
 }

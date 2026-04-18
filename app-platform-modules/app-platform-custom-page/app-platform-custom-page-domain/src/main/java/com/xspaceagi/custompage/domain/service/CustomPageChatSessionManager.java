@@ -25,7 +25,7 @@ public class CustomPageChatSessionManager {
      */
     public void registerSession(String sessionId, FluxSink<Map<String, Object>> sink) {
         sessionMap.put(sessionId, sink);
-        log.info("[SessionManager] 注册会话: sessionId={}", sessionId);
+        log.info("[Session Manager] register session: session Id={}", sessionId);
     }
 
     /**
@@ -34,14 +34,14 @@ public class CustomPageChatSessionManager {
     public boolean terminateSession(String sessionId) {
         FluxSink<Map<String, Object>> sink = sessionMap.remove(sessionId);
         if (sink != null) {
-            log.info("[SessionManager] 终止会话: sessionId={}", sessionId);
+            log.info("[Session Manager] terminatesession: session Id={}", sessionId);
             try {
                 sink.complete();
             } catch (Exception e) {
-                log.debug("[SessionManager] sink 已完成，忽略重复调用", e);
+                log.debug("[Session Manager] sink already completed, ignore duplicate call", e);
             }
         } else {
-            log.info("[SessionManager] 会话不存在或已结束: sessionId={}", sessionId);
+            log.info("[Session Manager] session not found or already completed: session Id={}", sessionId);
         }
         // 会话不存在时也返回成功，实现幂等性
         return true;
@@ -59,7 +59,7 @@ public class CustomPageChatSessionManager {
      */
     public void removeSession(String sessionId) {
         sessionMap.remove(sessionId);
-        log.info("[SessionManager] 移除会话: sessionId={}", sessionId);
+        log.info("[Session Manager] remove session: session Id={}", sessionId);
     }
 
     /**

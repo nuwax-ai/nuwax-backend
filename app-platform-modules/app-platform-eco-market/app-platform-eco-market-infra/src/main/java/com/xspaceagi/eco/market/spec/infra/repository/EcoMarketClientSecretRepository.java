@@ -51,7 +51,7 @@ public class EcoMarketClientSecretRepository implements IEcoMarketClientSecretRe
     public void deleteById(Long id) {
         var existObj = this.ecoMarketClientSecretService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         this.ecoMarketClientSecretService.deleteById(id);
     }
@@ -60,7 +60,7 @@ public class EcoMarketClientSecretRepository implements IEcoMarketClientSecretRe
     public Long updateInfo(EcoMarketClientSecretModel model, UserContext userContext) {
         var existObj = this.ecoMarketClientSecretService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         model.setCreatorId(null);
@@ -102,7 +102,7 @@ public class EcoMarketClientSecretRepository implements IEcoMarketClientSecretRe
     @Override
     public List<EcoMarketClientSecretModel> queryListByParams(Map<String, Object> params) {
         // 实际实现应该是基于参数查询，这里简化处理
-        log.info("根据参数查询客户端密钥列表: {}", params);
+        log.info("Query client secrets by params: {}", params);
         
         // 如果有tenantId参数，则根据租户ID查询
         if (params != null && params.containsKey("tenantId")) {

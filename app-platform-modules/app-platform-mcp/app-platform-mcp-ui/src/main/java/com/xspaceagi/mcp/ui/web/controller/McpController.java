@@ -22,7 +22,9 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ResourceEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
@@ -76,8 +78,8 @@ public class McpController {
     @PostMapping("/create")
     public ReqResult<McpDto> create(@RequestBody McpCreateDto mcpCreateDto) {
         spacePermissionService.checkSpaceUserPermission(mcpCreateDto.getSpaceId());
-        Assert.notNull(mcpCreateDto.getInstallType(), "安装方式不能为空");
-        Assert.notNull(mcpCreateDto.getMcpConfig(), "MCP配置不能为空");
+        Assert.notNull(mcpCreateDto.getInstallType(), "install type cannot be left blank.");
+        Assert.notNull(mcpCreateDto.getMcpConfig(), "MCP config cannot be left blank.");
         checkServerConfig(mcpCreateDto.getInstallType(), mcpCreateDto.getMcpConfig());
         McpDto mcpDto = new McpDto();
         BeanUtils.copyProperties(mcpCreateDto, mcpDto);
@@ -105,10 +107,10 @@ public class McpController {
     @Operation(summary = "MCP服务更新")
     @PostMapping("/update")
     public ReqResult<McpDto> update(@RequestBody McpUpdateDto mcpUpdateDto) {
-        Assert.notNull(mcpUpdateDto.getId(), "MCP ID不能为空");
+        Assert.notNull(mcpUpdateDto.getId(), "MCP ID cannot be left blank.");
         McpDto mcp = mcpConfigApplicationService.getMcp(mcpUpdateDto.getId());
         if (mcp == null) {
-            throw new BizException("MCP不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpNotFound);
         }
 
         checkServerConfig(mcp.getInstallType(), mcpUpdateDto.getMcpConfig());
@@ -151,34 +153,34 @@ public class McpController {
             return;
         }
         if (!JSON.isValid(mcpConfig.getServerConfig())) {
-            throw new BizException("服务配置格式错误，请填写正确的JSON数据");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpServiceConfigJsonInvalid);
         }
         JSONObject serverConfig = JSONObject.parseObject(mcpConfig.getServerConfig());
         if (serverConfig == null) {
-            throw new BizException("服务配置格式错误，请填写正确的JSON数据");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpServiceConfigJsonInvalid);
         }
         if (installType == InstallTypeEnum.NPX) {
             if (!serverConfig.toJSONString().toLowerCase().contains("\"command\":\"npx\"")) {
-                throw new BizException("请输入正确的npx配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpNpxConfigInvalid);
             }
         }
         if (installType == InstallTypeEnum.UVX) {
             if (!serverConfig.toJSONString().toLowerCase().contains("\"command\":\"uvx\"")) {
-                throw new BizException("请输入正确的uvx配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpUvxConfigInvalid);
             }
         }
 
         if (installType == InstallTypeEnum.STREAMABLE_HTTP) {
             List<String> list = UrlExtractUtil.extractUrls(mcpConfig.getServerConfig());
             if (list.size() == 0) {
-                throw new BizException("请输入正确的streamableHTTP配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpStreamableHttpConfigInvalid);
             }
         }
 
         if (installType == InstallTypeEnum.SSE) {
             List<String> list = UrlExtractUtil.extractUrls(mcpConfig.getServerConfig());
             if (list.size() == 0) {
-                throw new BizException("请输入正确的sse配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpSseConfigInvalid);
             }
         }
     }
@@ -189,7 +191,7 @@ public class McpController {
     public ReqResult<McpDto> getOne(@PathVariable Long id) {
         McpDto mcp = mcpConfigApplicationService.getMcp(id);
         if (mcp == null) {
-            return ReqResult.error("MCP不存在");
+            return ReqResult.error("MCP does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(mcp.getSpaceId(), RequestContext.get().getUserId());
@@ -239,7 +241,7 @@ public class McpController {
     public ReqResult<Void> delete(@PathVariable Long id) {
         McpDto mcp = mcpConfigApplicationService.getMcp(id);
         if (mcp == null) {
-            return ReqResult.error("MCP不存在");
+            return ReqResult.error("MCP does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         if (!mcp.getCreatorId().equals(RequestContext.get().getUserId())) {
@@ -255,7 +257,7 @@ public class McpController {
     public ReqResult<Void> stop(@PathVariable Long id) {
         McpDto mcp = mcpConfigApplicationService.getMcp(id);
         if (mcp == null) {
-            throw new BizException("MCP不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpNotFound);
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         if (!mcp.getCreatorId().equals(RequestContext.get().getUserId())) {
@@ -274,13 +276,13 @@ public class McpController {
     public ReqResult<String> export(@PathVariable Long id) {
         McpDto mcp = mcpConfigApplicationService.getDeployedMcp(id);
         if (mcp == null) {
-            return ReqResult.error("MCP不存在或未完成部署");
+            return ReqResult.error("MCP does not exist or deployment not completed");
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         boolean allowMcpExport = tenantConfigDto.getAllowMcpExport() == null || tenantConfigDto.getAllowMcpExport().equals(YesOrNoEnum.Y.getKey());
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         if (!allowMcpExport && userDto.getRole() != User.Role.Admin) {
-            return ReqResult.error("当前不允许导出MCP");
+            return ReqResult.error("MCP export is currently not allowed");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         return ReqResult.success(mcpConfigApplicationService.getExportMcpServerConfig(RequestContext.get().getUserId(), id));
@@ -292,7 +294,7 @@ public class McpController {
     public ReqResult<String> exportRefresh(@PathVariable Long id) {
         McpDto mcp = mcpConfigApplicationService.getDeployedMcp(id);
         if (mcp == null) {
-            return ReqResult.error("MCP不存在或未完成部署");
+            return ReqResult.error("MCP does not exist or deployment not completed");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         return ReqResult.success(mcpConfigApplicationService.refreshExportMcpServerConfig(RequestContext.get().getUserId(), id));
@@ -335,7 +337,7 @@ public class McpController {
         Assert.notNull(mcpTestDto.getId(), "id must be non-null");
         McpDto mcp = mcpConfigApplicationService.getDeployedMcp(mcpTestDto.getId());
         if (mcp == null) {
-            return ReqResult.error("MCP未部署或已停用");
+            return ReqResult.error("MCP not deployed or disabled");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
         McpExecuteRequest mcpExecuteRequest = McpExecuteRequest.builder()

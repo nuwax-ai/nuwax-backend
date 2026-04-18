@@ -97,7 +97,7 @@ public class KnowledgeQaSegmentRepository implements IKnowledgeQaSegmentReposito
     public void deleteById(Long id) {
         var existObj = this.knowledgeQaSegmentService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         this.knowledgeQaSegmentService.removeById(id);
@@ -115,7 +115,7 @@ public class KnowledgeQaSegmentRepository implements IKnowledgeQaSegmentReposito
         var qaId = model.getId();
         var existObj = this.knowledgeQaSegmentService.queryOneInfoById(qaId);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         model.setCreatorId(null);
@@ -211,7 +211,7 @@ public class KnowledgeQaSegmentRepository implements IKnowledgeQaSegmentReposito
 
         var rawSegment = this.knowledgeRawSegmentService.queryOneInfoById(rawId);
         if (rawSegment == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         if (log.isDebugEnabled()) {

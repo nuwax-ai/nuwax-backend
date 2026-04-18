@@ -22,15 +22,15 @@ public class KnowledgeQaSegmentAddRequest implements Serializable {
 
 
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     @Schema(description = "问题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "答案不能为空")
+    @NotNull(message = "Answer is required")
     private String question;
 
     @Schema(description = "答案", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "答案不能为空")
+    @NotNull(message = "Answer is required")
     private String answer;
 
 

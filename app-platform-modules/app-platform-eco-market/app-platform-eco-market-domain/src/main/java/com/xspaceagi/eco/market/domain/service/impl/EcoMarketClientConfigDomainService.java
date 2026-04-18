@@ -102,7 +102,7 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
 
     @Override
     public List<EcoMarketClientConfigModel> queryListByUids(List<String> uids) {
-        log.info("根据UID列表查询客户端配置: uids={}", uids);
+        log.info("Query client configs by uids: uids={}", uids);
         if (CollectionUtils.isEmpty(uids)) {
             return List.of();
         }
@@ -115,24 +115,24 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
             UserContext userContext) {
         // 检查参数
         if (uid == null || uid.isEmpty()) {
-            log.error("uid不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            log.error("uid cannot be empty");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
 
-        log.info("下线客户端配置: uid={}, clientId={}", uid, clientId);
+        log.info("Offline client config: uid={}, clientId={}", uid, clientId);
 
         // 查询配置详情
         EcoMarketClientConfigModel configModel = queryOneByUid(uid);
         if (configModel == null) {
-            log.error("未找到对应配置信息,uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            log.error("Config not found, uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 检查是否可以下线，只有已发布状态可以下线
         if (!(Objects.equals(configModel.getShareStatus(), EcoMarketShareStatusEnum.PUBLISHED.getCode())
                 || Objects.equals(configModel.getShareStatus(), EcoMarketShareStatusEnum.REVIEWING.getCode()))) {
-            log.error("当前状态不允许下线,uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8034);
+            log.error("Current state does not allow offline, uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineOnlyPublishedOrReviewing);
         }
 
         // 调用服务器端下线接口
@@ -140,8 +140,8 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
                 uid, clientId, clientSecret);
 
         if (!offlineSuccess) {
-            log.error("下线服务器配置失败");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8035);
+            log.error("Offline server config failed");
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineServerConfigFailed);
         }
 
         // 修改状态为已下线
@@ -157,23 +157,23 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
     public void unpublishConfig(String uid, String clientId, String clientSecret, UserContext userContext) {
         // 检查参数
         if (uid == null || uid.isEmpty()) {
-            log.error("uid不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            log.error("uid cannot be empty");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
 
-        log.info("撤销发布客户端配置: uid={}, clientId={}", uid, clientId);
+        log.info("Revoke publish client config: uid={}, clientId={}", uid, clientId);
 
         // 查询配置详情
         EcoMarketClientConfigModel configModel = queryOneByUid(uid);
         if (configModel == null) {
-            log.error("未找到对应配置信息,uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            log.error("Config not found, uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 检查是否可以下线，只有已发布状态可以下线
         if (!(Objects.equals(configModel.getShareStatus(), EcoMarketShareStatusEnum.REVIEWING.getCode()))) {
-            log.error("当前状态不允许撤销发布,uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8037);
+            log.error("Current state does not allow revoke publish, uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketRevokeOnlyReviewing);
         }
 
         // 调用服务器端下线接口
@@ -181,8 +181,8 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
                 uid, clientId, clientSecret);
 
         if (!unpublishSuccess) {
-            log.error("撤销发布服务器配置失败");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8035);
+            log.error("Revoke publish server config failed");
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineServerConfigFailed);
         }
 
         // 查询生态市场的数据,如果有数据,则回滚状态为:已发布,否则回滚状态为:草稿
@@ -201,11 +201,11 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public Long updateDraft(EcoMarketClientConfigModel model, UserContext userContext) {
-        log.info("更新客户端配置草稿: uid={}, name={}", model.getUid(), model.getName());
+        log.info("Update client config draft: uid={}, name={}", model.getUid(), model.getName());
 
         // 检查参数
         if (model == null || model.getId() == null) {
-            throw new IllegalArgumentException("配置模型不能为空且ID必须指定");
+            throw new IllegalArgumentException("Configuration model cannot be empty and ID must be specified");
         }
 
         // 确保状态为草稿
@@ -222,21 +222,21 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
     @DSTransactional(rollbackFor = Exception.class)
     public boolean updateShareStatusByUid(String uid, Integer shareStatus, String approveMessage,
             UserContext userContext) {
-        log.info("更新客户端配置分享状态: uid={}, shareStatus={}", uid, shareStatus);
+        log.info("Update client config share status: uid={}, shareStatus={}", uid, shareStatus);
 
         // 参数校验
         if (uid == null || uid.isEmpty()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
 
         if (shareStatus == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8008);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "分享状态");
         }
 
         // 检查配置是否存在
         EcoMarketClientConfigModel existingConfig = this.ecoMarketClientConfigRepository.queryOneByUid(uid);
         if (existingConfig == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8014);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigInfoNotFound);
         }
 
         // 调用repository层更新分享状态
@@ -244,9 +244,9 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
                 userContext);
 
         if (result) {
-            log.info("更新客户端配置分享状态成功: uid={}, shareStatus={}", uid, shareStatus);
+            log.info("Share status update OK: uid={}, shareStatus={}", uid, shareStatus);
         } else {
-            log.warn("更新客户端配置分享状态失败: uid={}, shareStatus={}", uid, shareStatus);
+            log.warn("Share status update failed: uid={}, shareStatus={}", uid, shareStatus);
         }
 
         return result;
@@ -258,7 +258,7 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
 
         // check targetId and targetType
         if (targetId == null || targetType == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8018);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "目标ID与目标类型");
         }
 
         switch (dataTypeEnum) {
@@ -277,7 +277,7 @@ public class EcoMarketClientConfigDomainService implements IEcoMarketClientConfi
     @Override
     public IPage<EcoMarketClientConfigModel> pageQueryEnabled(QueryEcoMarketVo queryEcoMarketVo, long current,
             long size) {
-        log.info("分页查询启用状态的配置: current={}, size={}, dataType={}", current, size, queryEcoMarketVo.getDataType());
+        log.info("Paged query enabled configs: current={}, size={}, dataType={}", current, size, queryEcoMarketVo.getDataType());
 
         // 构建查询参数
         queryEcoMarketVo.setUseStatus(EcoMarketUseStatusEnum.ENABLED.getCode());

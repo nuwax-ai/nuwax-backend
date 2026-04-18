@@ -8,7 +8,7 @@ import lombok.Data;
 public class TempConversationCreateDto {
 
     @Schema(description = "链接Key", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "chatKey不能为空")
+    @NotNull(message = "chatKey is required")
     private String chatKey;
 
     @Schema(description = "验证码参数")

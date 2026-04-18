@@ -9,10 +9,10 @@ import java.util.List;
 @Data
 public class PageFilesUpdateReq {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "文件列表")
+    @Schema(description = "File list")
     private List<PageFileInfo> files;
 
 }

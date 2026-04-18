@@ -53,7 +53,7 @@ public final class InsertTableDMLUtil {
     private static String buildInsertSqlInternal(CustomTableDefinitionModel tableModel, Map<String, Object> rowData,
             boolean forceId, boolean skipId) {
         if (rowData == null || rowData.isEmpty()) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6024);
+            throw ComposeException.build(BizExceptionCodeEnum.composeInsertDataEmpty);
         }
 
         String idField = DefaultTableFieldEnum.ID.getFieldName();
@@ -116,10 +116,10 @@ public final class InsertTableDMLUtil {
                     values.append("NULL, ");
                 } else {
                     // 非空值但无法识别的布尔值，抛出异常
-                    log.error("布尔类型转换失败，fieldName: {}, value: {}", fieldName, value);
+                    log.error("Boolean conversion failed, fieldName: {}, value: {}", fieldName, value);
                     String errorMessage = String.format("布尔类型转换失败，字段名: %s, 字段值: %s, 支持的值: true/false/1/0",
                             fieldName, value);
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                 }
                 continue;
             }
@@ -136,10 +136,10 @@ public final class InsertTableDMLUtil {
                         values.append("'").append(mysqlDateStr).append("', ");
                         continue;
                     } catch (Exception e) {
-                        log.error("日期类型转换失败，fieldName: {}, value: {}", fieldName, value, e);
+                        log.error("Date conversion failed, fieldName: {}, value: {}", fieldName, value, e);
                         String errorMessage = String.format("日期类型转换失败，字段名: %s, 字段值: %s, 错误: %s",
                                 fieldName, value, e.getMessage());
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                     }
                 }
             }
@@ -154,10 +154,10 @@ public final class InsertTableDMLUtil {
                             Double.parseDouble(defaultVal);
                             values.append(defaultVal).append(", ");
                         } catch (NumberFormatException e) {
-                            log.error("数值类型默认值转换失败，fieldName: {}, defaultValue: {}", fieldName, defaultVal, e);
+                            log.error("Numeric default conversion failed, fieldName: {}, defaultValue: {}", fieldName, defaultVal, e);
                             String errorMessage = String.format("数值类型默认值转换失败，字段名: %s, 默认值: %s, 错误: %s",
                                     fieldName, defaultVal, e.getMessage());
-                            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                         }
                     } else {
                         values.append("'").append(BuildSqlUtil.escapeSqlString(defaultVal)).append("', ");
@@ -175,10 +175,10 @@ public final class InsertTableDMLUtil {
                         Double.parseDouble(value.toString());
                         values.append(value).append(", ");
                     } catch (NumberFormatException e) {
-                        log.error("数值类型转换失败，fieldName: {}, value: {}", fieldName, value, e);
+                        log.error("Numeric conversion failed, fieldName: {}, value: {}", fieldName, value, e);
                         String errorMessage = String.format("数值类型转换失败，字段名: %s, 字段值: %s, 错误: %s",
                                 fieldName, value, e.getMessage());
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                     }
                 } else {
                     values.append("'").append(BuildSqlUtil.escapeSqlString(value == null ? "" : value.toString()))
@@ -195,7 +195,7 @@ public final class InsertTableDMLUtil {
                 + BuildSqlUtil.escapeSqlString(tableModel.getDorisTable()) + "` ("
                 + columns + ") VALUES (" + values + ")";
 
-        log.debug("构建的 INSERT INTO SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
+        log.debug("Built INSERT INTO SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
                 sql);
         return sql;
     }

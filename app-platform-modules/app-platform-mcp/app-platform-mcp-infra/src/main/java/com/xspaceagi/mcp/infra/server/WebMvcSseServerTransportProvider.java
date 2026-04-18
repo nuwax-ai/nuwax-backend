@@ -14,7 +14,9 @@ import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpContentTypeEnum;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.TimeWheel;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
@@ -213,7 +215,8 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
                                 .build();
                         return Mono.create(sink -> mcpApiService.execute(mcpExecuteRequest).doOnNext(mcpExecuteOutput -> {
                             if (!mcpExecuteOutput.isSuccess()) {
-                                sink.error(new BizException(mcpExecuteOutput.getMessage()));
+                                sink.error(BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.remoteServiceMessage,
+                                        mcpExecuteOutput.getMessage() != null ? mcpExecuteOutput.getMessage() : ""));
                             } else if (CollectionUtils.isNotEmpty(mcpExecuteOutput.getResult()) && !(mcpExecuteOutput.getResult().get(0) instanceof McpLogContent)) {
                                 sink.success(new McpSchema.CallToolResult(mcpExecuteOutput.getResult().stream().map(mcpContent -> {
                                     if (mcpContent.getType() == McpContentTypeEnum.TEXT) {

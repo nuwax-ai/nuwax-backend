@@ -21,6 +21,12 @@ public class SysDataPermissionBindDto implements Serializable {
     @Schema(description = "可访问的网页应用智能体id列表，null或空表示不限制")
     private List<Long> pageAgentIds;
 
+    @Schema(description = "可访问的开放api及访问频率配置")
+    private List<OpenApiConfig> openApiConfigs;
+
+    @Schema(description = "有权限访问的知识库id列表")
+    private List<Long> knowledgeIds;
+
     @Schema(description = "token限制")
     private TokenLimit tokenLimit;
 
@@ -66,4 +72,18 @@ public class SysDataPermissionBindDto implements Serializable {
 
 //    @Schema(description = "是否允许API外部调用，1-允许，0-不允许")
 //    private Integer allowApiExternalCall;
+
+    @Data
+    @Schema(description = "开放API权限配置")
+    public static class OpenApiConfig implements Serializable {
+
+        @Schema(description = "开放api key")
+        private String key;
+
+        @Schema(description = "接口调用频率限制，每分钟调用次数")
+        private Integer rpm;
+
+        @Schema(description = "接口调用频率限制，每天调用次数")
+        private Integer rpd;
+    }
 }

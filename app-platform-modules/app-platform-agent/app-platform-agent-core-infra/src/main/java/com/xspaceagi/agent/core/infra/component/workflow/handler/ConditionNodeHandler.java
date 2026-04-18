@@ -3,7 +3,9 @@ package com.xspaceagi.agent.core.infra.component.workflow.handler;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.ConditionNodeConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import org.apache.commons.collections4.CollectionUtils;
 import reactor.core.publisher.Mono;
 
@@ -21,7 +23,7 @@ public class ConditionNodeHandler extends AbstractNodeHandler {
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         ConditionNodeConfigDto conditionNodeConfig = (ConditionNodeConfigDto) node.getNodeConfig();
         if (CollectionUtils.isEmpty(conditionNodeConfig.getConditionBranchConfigs())) {
-            return Mono.error(new BizException("条件分支列表不能为空"));
+            return Mono.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowConditionBranchesEmpty));
         }
         Set<Long> reachableNextNodeIds = new HashSet<>();
         Set<Long> unReachableNextNodeIds = new HashSet<>();

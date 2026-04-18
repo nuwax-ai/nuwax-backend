@@ -37,19 +37,19 @@ public class EcoMarketRpcServiceTest {
             // Act
             ClientSecretResponse response = ecoMarketRpcService.queryClientSecret(request);
 
-            log.info("查询客户端密钥结果, response={}", response);
+            log.info("Client secret query result, response={}", response);
 
             // Assert
             assertNotNull(response, "响应不应为空");
             if (response != null) {
                 assertNotNull(response.getTenantId(), "租户ID不应为空");
                 assertEquals(1L, response.getTenantId(), "租户ID应该匹配");
-                log.info("客户端密钥信息: id={}, name={}, clientId={}, tenantId={}",
+                log.info("Client secret: id={}, name={}, clientId={}, tenantId={}",
                         response.getId(), response.getName(), response.getClientId(), response.getTenantId());
             }
 
         } catch (Exception e) {
-            log.error("测试查询客户端密钥时出现异常", e);
+            log.error("Exception while testing client secret query", e);
             throw e;
         } finally {
             RequestContext.remove();

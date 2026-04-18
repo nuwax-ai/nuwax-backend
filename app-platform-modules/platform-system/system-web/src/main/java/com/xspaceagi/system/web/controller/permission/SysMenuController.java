@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.xspaceagi.system.application.dto.permission.*;
 import com.xspaceagi.system.spec.annotation.RequireResource;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -146,6 +147,8 @@ public class SysMenuController extends BaseController {
 
         ReqResult<List<ResourceNodeDto>> resourceListByMenuId = getResourceListByMenuId(menuId);
         dto.setResourceTree(resourceListByMenuId.getData());
+
+        I18nUtil.replaceSystemMessage(dto);
         return ReqResult.success(dto);
     }
 
@@ -165,6 +168,8 @@ public class SysMenuController extends BaseController {
 
         ReqResult<List<ResourceNodeDto>> resourceListByMenuId = getResourceListByMenuId(menu.getId());
         dto.setResourceTree(resourceListByMenuId.getData());
+
+        I18nUtil.replaceSystemMessage(dto);
         return ReqResult.success(dto);
     }
 
@@ -196,7 +201,8 @@ public class SysMenuController extends BaseController {
             result.add(rootNode);
             return ReqResult.success(result);
         }
-        
+
+        I18nUtil.replaceSystemMessage(treeList);
         return ReqResult.success(treeList);
     }
 
@@ -333,10 +339,13 @@ public class SysMenuController extends BaseController {
             rootNode.setChildren(resourceTree);
             List<ResourceNodeDto> result = new ArrayList<>();
             result.add(rootNode);
+
+            I18nUtil.replaceSystemMessage(result);
             return ReqResult.success(result);
         }
         
         // 如果已经有 root 根节点，直接返回资源树
+        I18nUtil.replaceSystemMessage(resourceTree);
         return ReqResult.success(resourceTree);
     }
 

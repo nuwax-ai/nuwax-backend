@@ -24,7 +24,7 @@ public class DocumentExtractNodeHandler extends AbstractNodeHandler {
         if (params.isEmpty()) {
             return Map.of("output", "");
         }
-        //获取第一个参数值
+        // Get the first parameter value
         String url = String.valueOf(params.values().toArray()[0]);
         if (StringUtils.isBlank(url) || !url.startsWith("http")) {
             return Map.of("output", "");
@@ -39,15 +39,15 @@ public class DocumentExtractNodeHandler extends AbstractNodeHandler {
         try {
             switch (dataType) {
                 case File_Doc:
-                    //处理Word文档
+                    // Process Word document
                     output = UrlFile.wordToMarkdown(url);
                     break;
                 case File_Excel:
-                    //处理Excel文档
+                    // Process Excel document
                     output = UrlFile.excelToJson(url);
                     break;
                 case File_Txt:
-                    //处理Txt文档
+                    // Process Txt document
                     output = UrlFile.urlToText(url, "UTF-8");
                     break;
                 default:
@@ -61,7 +61,7 @@ public class DocumentExtractNodeHandler extends AbstractNodeHandler {
                 output = UrlFile.parseToString(url);
             } catch (Exception ex) {
                 log.warn("Failed to parse document from URL: {}", url, ex);
-                output = "文档读取失败：" + e.getMessage();
+                output = "Failed to read document: " + e.getMessage();
             }
         }
 
@@ -69,7 +69,7 @@ public class DocumentExtractNodeHandler extends AbstractNodeHandler {
     }
 
     private DataTypeEnum getDocumentTypeFromUrl(String url, Arg arg) {
-        // 这里可以根据实际需求实现获取文档类型的逻辑
+        // Implement document type retrieval logic according to actual requirements here
         if (arg.getDataType() != null && arg.getDataType().name().startsWith("File")) {
             return arg.getDataType();
         }

@@ -121,7 +121,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
     public void updateInfo(Long tableId, List<CustomFieldDefinitionModel> fieldList, UserContext userContext) {
         CustomTableDefinitionModel tableModel = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
         if (Objects.isNull(tableModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -136,7 +136,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                                          UserContext userContext) {
         CustomTableDefinitionModel tableModel = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
         if (Objects.isNull(tableModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         var spaceId = tableModel.getSpaceId();
@@ -167,8 +167,8 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                 .collect(Collectors.toList());
         if (!duplicateFieldList.isEmpty()) {
             var duplicateFieldNames = String.join(",", duplicateFieldList);
-            log.info("字段[{}],已存在", duplicateFieldNames);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6044, duplicateFieldNames);
+            log.info("Field [{}] already exists", duplicateFieldNames);
+            throw ComposeException.build(BizExceptionCodeEnum.composeFieldAlreadyExists, duplicateFieldNames);
         }
 
         customTableDefinitionDomainService.updateInfo(tableModel, fieldList, userContext);
@@ -182,7 +182,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
 
         CustomTableDefinitionModel tableModel = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
         if (Objects.isNull(tableModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -201,7 +201,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -218,7 +218,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -256,7 +256,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                     try {
                         return Long.parseLong(item.toString());
                     } catch (NumberFormatException e) {
-                        log.warn("无法将agentId转换为Long类型，跳过该记录: {}", item);
+                        log.warn("agentId not Long, skip row: {}", item);
                         return null;
                     }
                 })
@@ -288,7 +288,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                         record.put(DefaultTableFieldEnum.AGENT_NAME.getFieldName(), agentInfoDto.getName());
                     });
                 } catch (NumberFormatException e) {
-                    log.warn("无法将agentId转换为Long类型，跳过该记录的agentName设置: {}", agentId);
+                    log.warn("agentId not Long, skip agentName: {}", agentId);
                 }
             }
         });
@@ -300,7 +300,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
     public CustomTableDefinitionModel queryOneTableDefineVo(Long tableId) {
         CustomTableDefinitionModel tableInfo = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
         if (Objects.isNull(tableInfo)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -313,7 +313,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
             // 设置原始建表DDL
             tableInfo.setCreateTableDdl(createTableDdl);
         } catch (Exception e) {
-            log.error("获取表的DDL语句失败, tableId: {}", tableId, e);
+            log.error("Get table DDL failed, tableId: {}", tableId, e);
         }
 
         return tableInfo;
@@ -325,7 +325,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在，tableId=" + tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在，tableId=" + tableId);
         }
 
         // 2. 校验空间权限
@@ -359,7 +359,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(request.getTableId());
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -376,7 +376,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(request.getTableId());
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -387,7 +387,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                 tableDefinitionModel.getDorisTable(), request.getRowId());
         // 如果不存在,则主动抛异常
         if (!isExist) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 2. 修改业务数据
@@ -409,7 +409,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(request.getTableId());
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -421,7 +421,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                 tableDefinitionModel.getDorisTable(), request.getRowId());
         // 如果不存在,则主动抛异常
         if (!isExist) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 2. 删除业务数据
         customDorisTableDomainService.deleteBusinessData(request, tableDefinitionModel, userContext);
@@ -433,7 +433,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -450,7 +450,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(model.getId());
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
@@ -493,7 +493,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         return customDorisTableDomainService.existTableData(tableDefinitionModel.getDorisDatabase(),
@@ -504,7 +504,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
     public Long copyTableDefinition(Long tableId, UserContext userContext) {
         var tableModel = this.customTableDefinitionRepository.queryOneInfoById(tableId);
         if (tableModel == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6025);
+            throw ComposeException.build(BizExceptionCodeEnum.composeTableDefinitionNotFound);
         }
         // 校验用户和空间对应权限,校验用户查询表业务数据的权限,不能超出用户有权限的空间(spaceId)
         var spaceId = tableModel.getSpaceId();
@@ -525,7 +525,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         CustomTableDefinitionModel tableDefinitionModel = this.customTableDefinitionRepository
                 .queryOneInfoById(tableId);
         if (Objects.isNull(tableDefinitionModel)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 校验用户和空间对应权限
@@ -539,13 +539,13 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
 
         // 3. 如果有新字段，先创建字段，并获取更新后的表定义和字段映射
         if (!CollectionUtils.isEmpty(newFieldsToCreate)) {
-            log.info("检测到 {} 个新字段，开始在Domain层自动创建...", newFieldsToCreate.size());
+            log.info("Detected {} new fields, auto-creating in domain...", newFieldsToCreate.size());
             var fieldCreationResult = customTableDefinitionDomainService.handleNewFieldsFromExcel(
                     tableDefinitionModel, newFieldsToCreate, userContext);
 
             tableDefinitionModel = fieldCreationResult.getUpdatedTableModel();
             ExcelUtils.remapExcelDataKeys(excelData, fieldCreationResult.getNewFieldMapping());
-            log.info("新字段创建完成，已刷新表定义并重映射数据。");
+            log.info("New fields created; table def refreshed and data remapped.");
         }
 
         // 4. 导入业务数据
@@ -558,7 +558,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
             });
             customDorisTableDomainService.batchInsertData(tableDefinitionModel, excelData, userContext);
         } else {
-            log.warn("Excel中没有解析到有效数据，不执行导入, tableId: {}", tableId);
+            log.warn("No valid Excel rows, skip import, tableId: {}", tableId);
         }
     }
 
@@ -592,12 +592,12 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
         try {
             // 1. 解析 extraContent JSON
             if (!StringUtils.hasText(extraContent)) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "extraContent 不能为空");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "extraContent 不能为空");
             }
 
             OperateLogExtraData extraData = JSON.parseObject(extraContent, OperateLogExtraData.class);
             if (extraData == null || extraData.getSpelData() == null) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "日志中没有记录删除的数据信息");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "日志中没有记录删除的数据信息");
             }
 
             // 2. 解析 spelData（包含 request 和 rowData）
@@ -608,21 +608,21 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
             );
 
             if (spelDataMap == null) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "无法解析日志中的 spelData");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "无法解析日志中的 spelData");
             }
 
             // 3. 提取 request 信息
             @SuppressWarnings("unchecked")
             Map<String, Object> requestMap = (Map<String, Object>) spelDataMap.get("request");
             if (requestMap == null) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "日志中缺少 request 信息");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "日志中缺少 request 信息");
             }
 
             Object tableIdObj = requestMap.get("tableId");
             Object rowIdObj = requestMap.get("rowId");
 
             if (tableIdObj == null || rowIdObj == null) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "日志中缺少 tableId 或 rowId");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "日志中缺少 tableId 或 rowId");
             }
 
             Long tableId = Long.valueOf(tableIdObj.toString());
@@ -632,15 +632,15 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
             @SuppressWarnings("unchecked")
             Map<String, Object> rowData = (Map<String, Object>) spelDataMap.get("rowData");
             if (rowData == null || rowData.isEmpty()) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "日志中没有记录完整的行数据");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "日志中没有记录完整的行数据");
             }
 
-            log.info("开始恢复数据：tableId={}, rowId={}, forceRestore={}", tableId, rowId, forceRestore);
+            log.info("Restore data start: tableId={}, rowId={}, forceRestore={}", tableId, rowId, forceRestore);
 
             // 5. 查询表定义
             CustomTableDefinitionModel tableModel = this.customTableDefinitionRepository.queryOneInfoById(tableId);
             if (tableModel == null) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在，tableId=" + tableId);
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在，tableId=" + tableId);
             }
 
             // 6. 校验空间权限
@@ -658,7 +658,7 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
                     return "数据已存在（rowId=" + rowId + "），如需覆盖请开启强制恢复";
                 }
                 // 强制恢复：先删除已存在的数据
-                log.info("强制恢复模式：先删除已存在的数据，rowId={}", rowId);
+                log.info("Force restore: delete existing row, rowId={}", rowId);
                 customDorisTableDomainService.deleteDorisTableRowDataById(
                         tableModel.getDorisDatabase(),
                         tableModel.getDorisTable(),
@@ -678,14 +678,14 @@ public class CustomTableDefinitionApplicationServiceImpl implements CustomTableD
             // 9. 执行数据恢复（本质上是重新插入）
             customDorisTableDomainService.addBusinessData(addRequest, tableModel, userContext);
 
-            log.info("数据恢复成功：tableId={}, rowId={}", tableId, rowId);
+            log.info("Restore OK: tableId={}, rowId={}", tableId, rowId);
             return "数据恢复成功，rowId=" + rowId;
 
         } catch (ComposeException e) {
             throw e;
         } catch (Exception e) {
-            log.error("恢复数据失败", e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "恢复数据失败：" + e.getMessage());
+            log.error("Failed to restore data", e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "恢复数据失败：" + e.getMessage());
         }
     }
 

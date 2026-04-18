@@ -51,12 +51,12 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
      * @param userContext 用户上下文
      */
     public void syncDocumentToQuickwit(Long docId, UserContext userContext) {
-        log.info("同步文档到全文检索: docId={}, userId={}", docId, userContext.getUserId());
+        log.info("Sync doc to FTS: docId={}, userId={}", docId, userContext.getUserId());
 
         // 1. 查询文档信息
         KnowledgeDocumentModel doc = documentRepository.queryOneInfoById(docId);
         if (doc == null) {
-            log.warn("文档不存在: docId={}", docId);
+            log.warn("Doc not found: docId={}", docId);
             return;
         }
 
@@ -66,7 +66,7 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
         // 2. 查询知识库信息获取空间ID
         KnowledgeConfigModel config = knowledgeConfigRepository.queryOneInfoById(kbId);
         if (config == null) {
-            log.warn("知识库不存在: kbId={}", kbId);
+            log.warn("KB not found: kbId={}", kbId);
             return;
         }
         Long spaceId = config.getSpaceId();
@@ -75,7 +75,7 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
         List<KnowledgeRawSegmentModel> rawSegments = rawSegmentRepository.queryListByDocId(docId);
 
         if (CollectionUtils.isEmpty(rawSegments)) {
-            log.warn("文档没有分段数据: docId={}", docId);
+            log.warn("Doc has no segments: docId={}", docId);
             return;
         }
 
@@ -87,7 +87,7 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
        PushResult pushResult =
             fullTextSearchDomainService.pushSegments(fullTextModels);
 
-        log.info("文档全文检索数据同步完成: docId={}, segmentCount={}, indexedCount={}", 
+        log.info("Doc FTS sync done: docId={}, segmentCount={}, indexedCount={}", 
             docId, rawSegments.size(), pushResult != null ? pushResult.getIndexedCount() : 0);
     }
 
@@ -99,11 +99,11 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
      * @param userContext 用户上下文
      */
     public void deleteDocumentFromQuickwit(Long docId, Long kbId, UserContext userContext) {
-        log.info("删除文档全文检索数据: docId={}, kbId={}, userId={}", docId, kbId, userContext.getUserId());
+        log.info("Delete doc FTS: docId={}, kbId={}, userId={}", docId, kbId, userContext.getUserId());
 
         Long deletedCount = fullTextSearchDomainService.deleteByDocId(docId, kbId, userContext.getTenantId());
 
-        log.info("删除文档全文检索数据完成: docId={}, kbId={}, deletedCount={}", docId, kbId, deletedCount);
+        log.info("Delete doc FTS done: docId={}, kbId={}, deletedCount={}", docId, kbId, deletedCount);
     }
 
     /**
@@ -114,12 +114,12 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
      * @param userContext 用户上下文
      */
     public void updateSegmentText(Long rawId, String newText, UserContext userContext) {
-        log.info("更新分段文本: rawId={}, userId={}", rawId, userContext.getUserId());
+        log.info("Update segment text: rawId={}, userId={}", rawId, userContext.getUserId());
 
         // 查询分段信息获取空间ID
         KnowledgeRawSegmentModel segment = rawSegmentRepository.queryOneInfoById(rawId);
         if (segment == null) {
-            log.warn("分段不存在: rawId={}", rawId);
+            log.warn("Segment not found: rawId={}", rawId);
             return;
         }
 
@@ -134,7 +134,7 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
             spaceId
         );
 
-        log.info("更新分段文本完成: rawId={}, updatedCount={}", rawId, updatedCount);
+        log.info("Update segment done: rawId={}, updatedCount={}", rawId, updatedCount);
     }
 
     /**
@@ -144,11 +144,11 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
      * @param userContext 用户上下文
      */
     public void deleteKnowledgeBaseFromQuickwit(Long kbId, UserContext userContext) {
-        log.info("删除知识库全文检索数据: kbId={}, userId={}", kbId, userContext.getUserId());
+        log.info("Delete KB FTS: kbId={}, userId={}", kbId, userContext.getUserId());
 
         Long deletedCount = fullTextSearchDomainService.deleteByKbId(kbId, userContext.getTenantId());
 
-        log.info("删除知识库全文检索数据完成: kbId={}, deletedCount={}", kbId, deletedCount);
+        log.info("Delete KB FTS done: kbId={}, deletedCount={}", kbId, deletedCount);
     }
 
     /**
@@ -159,14 +159,14 @@ public class KnowledgeFullTextSyncService implements IKnowledgeFullTextSyncServi
      */
     public void deleteSegmentsFromQuickwit(List<Long> rawSegmentIds, UserContext userContext) {
         if (CollectionUtils.isEmpty(rawSegmentIds)) {
-            log.warn("删除分段ID列表为空");
+            log.warn("Empty rawIds list");
             return;
         }
 
-        log.info("删除分段全文检索数据: rawIds={}, userId={}", rawSegmentIds, userContext.getUserId());
+        log.info("Delete segment FTS: rawIds={}, userId={}", rawSegmentIds, userContext.getUserId());
 
         Long deletedCount = fullTextSearchDomainService.deleteByRawIds(rawSegmentIds, userContext.getTenantId());
 
-        log.info("删除分段全文检索数据完成: rawIds={}, deletedCount={}", rawSegmentIds, deletedCount);
+        log.info("Delete segment FTS done: rawIds={}, deletedCount={}", rawSegmentIds, deletedCount);
     }
 }

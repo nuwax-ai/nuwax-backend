@@ -29,10 +29,13 @@ import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.page.SuperPage;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -215,10 +218,10 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             //这里不能去重publishedList，因为调用方同时需要系统广场和空间广场的数据
 
             return publishedList.stream().map(published -> {
-                    PublishedDto publishedDto = new PublishedDto();
-                    BeanUtils.copyProperties(published, publishedDto);
-                    return publishedDto;
-                }).toList();
+                PublishedDto publishedDto = new PublishedDto();
+                BeanUtils.copyProperties(published, publishedDto);
+                return publishedDto;
+            }).toList();
         } finally {
             RequestContext.removeTenantIgnoreEntity(Published.class);
         }
@@ -389,11 +392,11 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
 
     @Override
     public Long publishApply(PublishApplyDto publishApplyDto) {
-        Assert.notNull(publishApplyDto, "publishApplyDto不能为空");
-        Assert.notNull(publishApplyDto.getApplyUser(), "applyUser不能为空");
-        Assert.notNull(publishApplyDto.getTargetType(), "targetType不能为空");
-        Assert.notNull(publishApplyDto.getTargetId(), "targetId不能为空");
-        Assert.notNull(publishApplyDto.getTargetConfig(), "targetConfig不能为空");
+        Assert.notNull(publishApplyDto, "publishApplyDto cannot be null");
+        Assert.notNull(publishApplyDto.getApplyUser(), "applyUser cannot be null");
+        Assert.notNull(publishApplyDto.getTargetType(), "targetType cannot be null");
+        Assert.notNull(publishApplyDto.getTargetId(), "targetId cannot be null");
+        Assert.notNull(publishApplyDto.getTargetConfig(), "targetConfig cannot be null");
         if (publishApplyDto.getChannels() == null) {
             publishApplyDto.setChannels(new ArrayList<>());
         }
@@ -435,7 +438,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         ConfigHistory configHistory = ConfigHistory.builder()
                 .config(hisConfig)
                 .targetId(publishApply.getTargetId())
-                .description("发布申请")
+                .description(I18nUtil.systemMessage("Backend.Publish.ConfigHistory.PublishApply"))
                 .type(ConfigHistory.Type.PublishApply)
                 .targetType(publishApply.getTargetType())
                 .opUserId(publishApply.getApplyUserId())
@@ -477,7 +480,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     @DSTransactional
     public void publish(Long applyId) {
         PublishApplyDto publishApplyDto = queryPublishApplyById(applyId);
-        Assert.notNull(publishApplyDto, "applyId错误");
+        Assert.notNull(publishApplyDto, "applyId is invalid");
         publish(publishApplyDto.getTargetType(), publishApplyDto.getTargetId(), publishApplyDto.getScope(), List.of(publishApplyDto));
     }
 
@@ -551,11 +554,13 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             apply.setPublishStatus(Published.PublishStatus.Published);
             publishDomainService.updatePublishApply(apply);
             if (publishApplyDto.getScope() == Published.PublishScope.Tenant || publishApplyDto.getSpaceId() != -1) {
-                String message = "你提交的" + Published.getTargetTypeName(publishApply.getTargetType()) + "[" + publishApply.getName() + "]发布成功";
+                UserDto userDto = userApplicationService.queryById(publishApply.getApplyUserId());
+                Map<String, String> langMap = userDto == null ? RequestContext.get().getLangMap() : userDto.getLangMap();
+                String message = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.PublishSuccess", Published.getTargetTypeName(publishApply.getTargetType()), publishApply.getName());
                 if (publishApply.getScope() == Published.PublishScope.Space) {
                     SpaceDto spaceDto = spaceApplicationService.queryById(publishApplyDto.getSpaceId());
                     if (spaceDto != null) {
-                        message = "你提交的" + Published.getTargetTypeName(publishApply.getTargetType()) + "[" + publishApply.getName() + "]已成功发布到空间[" + spaceDto.getName() + "]";
+                        message = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.PublishToSpaceSuccess", Published.getTargetTypeName(publishApply.getTargetType()), publishApply.getName(), spaceDto.getName());
                     }
                 }
 
@@ -710,21 +715,24 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     @Override
     public void rejectPublish(PublishRejectDto publishRejectDto) {
         PublishApply publishApply = publishDomainService.queryPublishApplyById(publishRejectDto.getApplyId());
-        Assert.notNull(publishApply, "applyId错误");
+        Assert.notNull(publishApply, "applyId is invalid");
         publishDomainService.rejectPublish(publishRejectDto.getApplyId());
         ConfigHistory configHistory = ConfigHistory.builder()
                 .config(publishApply.getConfig())
                 .targetId(publishApply.getTargetId())
-                .description("发布申请被拒绝")
+                .description(I18nUtil.systemMessage("Backend.Publish.ConfigHistory.PublishRejected"))
                 .targetType(publishApply.getTargetType())
                 .opUserId(RequestContext.get().getUserId())
                 .type(ConfigHistory.Type.PublishApplyReject)
                 .build();
         configHistoryDomainService.addConfigHistory(configHistory);
-
-        String reason = "你提交的" + Published.getTargetTypeName(publishApply.getTargetType()) + "【" + publishApply.getName() + "】发布失败";
+        UserDto userDto = userApplicationService.queryById(publishApply.getApplyUserId());
+        Map<String, String> langMap = userDto == null ? RequestContext.get().getLangMap() : userDto.getLangMap();
+        String reason;
         if (StringUtils.isNotBlank(publishRejectDto.getReason())) {
-            reason += "，原因如下：\n```\n" + publishRejectDto.getReason() + "\n```";
+            reason = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.PublishFailedWithReason", Published.getTargetTypeName(publishApply.getTargetType()), publishApply.getName(), publishRejectDto.getReason());
+        } else {
+            reason = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.PublishFailed", Published.getTargetTypeName(publishApply.getTargetType()), publishApply.getName());
         }
         notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                 .scope(NotifyMessage.MessageScope.System)
@@ -767,7 +775,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     public void offShelf(OffShelfDto offShelfDto) {
         Published published = publishDomainService.queryPublished(offShelfDto.getPublishId());
         if (published == null) {
-            throw new BizException("发布ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishIdInvalid);
         }
         publishDomainService.deleteByPublishedId(offShelfDto.getPublishId());
 
@@ -799,9 +807,13 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             }
         }
 
-        String reason = "你的" + Published.getTargetTypeName(published.getTargetType()) + "【" + published.getName() + "】已下架";
+        UserDto userDto = userApplicationService.queryById(published.getUserId());
+        Map<String, String> langMap = userDto == null ? RequestContext.get().getLangMap() : userDto.getLangMap();
+        String reason;
         if (StringUtils.isNotBlank(offShelfDto.getReason())) {
-            reason += "，原因如下：\n```\n" + offShelfDto.getReason() + "\n```";
+            reason = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.OffShelfWithReason", Published.getTargetTypeName(published.getTargetType()), published.getName(), offShelfDto.getReason());
+        } else {
+            reason = I18nUtil.systemMessage(langMap, "Backend.Publish.Message.OffShelf", Published.getTargetTypeName(published.getTargetType()), published.getName());
         }
         notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                 .scope(NotifyMessage.MessageScope.System)
@@ -812,7 +824,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
 
         ConfigHistory configHistory = ConfigHistory.builder()
                 .targetId(published.getTargetId())
-                .description("下架")
+                .description(I18nUtil.systemMessage(langMap, "Backend.Publish.ConfigHistory.OffShelf"))
                 .targetType(published.getTargetType())
                 .opUserId(RequestContext.get().getUserId())
                 .type(ConfigHistory.Type.OffShelf)

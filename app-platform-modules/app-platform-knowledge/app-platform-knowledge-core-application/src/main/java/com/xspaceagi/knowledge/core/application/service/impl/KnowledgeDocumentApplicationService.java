@@ -7,6 +7,7 @@ import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.xspaceagi.knowledge.core.application.service.IKnowledgeConfigApplicationService;
 import com.xspaceagi.system.application.service.SysDataPermissionApplicationService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.tenant.thread.TenantRunnable;
 import org.springframework.context.annotation.Lazy;
@@ -89,7 +90,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
     public void deleteById(Long id, UserContext userContext) {
         var existObj = this.knowledgeDocumentDomainService.queryOneInfoById(id);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -107,7 +108,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
 
         var existObj = this.knowledgeDocumentDomainService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -124,7 +125,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
     public Long updateDocName(Long docId, String name, UserContext userContext) {
         var existObj = this.knowledgeDocumentDomainService.queryOneInfoById(docId);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -143,7 +144,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
         // 查询基础配置,补全基础信息
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(model.getKbId());
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         model.setSpaceId(spaceId);
@@ -162,13 +163,13 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
         var kbId = modelList.stream().map(KnowledgeDocumentModel::getKbId)
                 .findFirst().orElse(null);
         if (Objects.isNull(kbId)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5013);
+            throw KnowledgeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "请求参数");
         }
 
         // 查询基础配置,补全基础信息
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         spacePermissionService.checkSpaceUserPermission(spaceId);
@@ -197,7 +198,8 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
                 Double gbSize = fileSize / (1024.0 * 1024 * 1024 );
                 System.out.println("LimitGb："+userDataPermissions.getKnowledgeStorageLimitGb() + ",gbSize:" + gbSize);
                 if(userDataPermissions.getKnowledgeStorageLimitGb().doubleValue() <= gbSize) {
-                    throw new BizException("操作失败，已超过知识库的存储上限！(最大"+ userDataPermissions.getKnowledgeStorageLimitGb() +"GB)");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeStorageUpperBound,
+                            userDataPermissions.getKnowledgeStorageLimitGb());
                 }
             }
         }
@@ -232,7 +234,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
         // 文档分段,问答,向量化,全部走重试
         var existObj = this.knowledgeDocumentDomainService.queryOneInfoById(docId);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -274,7 +276,7 @@ public class KnowledgeDocumentApplicationService implements IKnowledgeDocumentAp
         } catch (Exception e) {
             log.error("文档重试时删除全文检索数据失败: docId={}, kbId={}", docId, kbId, e);
             // 抛出异常，触发事务回滚
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5024, e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDeleteDocFulltextFailed, e);
         }
 
         // 删除重试任务

@@ -1,0 +1,174 @@
+{
+  "fromVersion": "1.1",
+  "toVersion": "1.2",
+  "resources": {
+    "added": [
+      {
+        "code": "i18n_lang_manage",
+        "name": "多语言管理模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 23,
+        "status": 1
+      },
+      {
+        "code": "i18n_lang_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "i18n_lang_manage",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "i18n_lang_add",
+        "name": "新增",
+        "source": 1,
+        "type": 2,
+        "parentCode": "i18n_lang_manage",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "i18n_lang_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "i18n_lang_manage",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "i18n_lang_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "i18n_lang_manage",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "i18n_lang_translate",
+        "name": "翻译",
+        "source": 1,
+        "type": 2,
+        "parentCode": "i18n_lang_manage",
+        "sortIndex": 5,
+        "status": 1
+      },
+      {
+        "code": "content_knowledge_access_control",
+        "name": "访问授权",
+        "description": "访问授权",
+        "source": 1,
+        "type": 2,
+        "parentCode": "content_knowledge",
+        "sortIndex": 4,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "code": "more_page",
+        "name": "更多",
+        "source": 1,
+        "path": "/more-page",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 11,
+        "status": 1
+      },
+      {
+        "parentCode": "more_page",
+        "code": "api_key",
+        "name": "API Key",
+        "source": 1,
+        "path": "/more-page/api-key",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "system_config",
+        "code": "i18n_lang",
+        "name": "多语言管理",
+        "description": "多语言管理",
+        "source": 1,
+        "path": "/system/config/i18n-lang",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 5,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "i18n_lang",
+        "resourceCode": "i18n_lang_manage",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "more_page",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "api_key",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "more_page",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "api_key",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

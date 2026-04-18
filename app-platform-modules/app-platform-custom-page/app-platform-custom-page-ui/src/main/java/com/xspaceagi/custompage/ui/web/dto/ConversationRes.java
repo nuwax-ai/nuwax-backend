@@ -6,28 +6,28 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 会话记录响应DTO
+ * Conversation record response DTO
  */
 @Data
-@Schema(description = "会话记录响应")
+@Schema(description = "Conversation record response")
 public class ConversationRes {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "会话ID")
+    @Schema(description = "Conversation ID")
     private Long conversationId;
 
-    @Schema(description = "会话主题")
+    @Schema(description = "Conversation topic")
     private String topic;
 
-    @Schema(description = "会话内容")
+    @Schema(description = "Conversation content")
     private String content;
 
-    @Schema(description = "创建时间")
+    @Schema(description = "Created time")
     private Date created;
 
-    @Schema(description = "创建者ID")
+    @Schema(description = "Creator user ID")
     private Long creatorId;
 
 }

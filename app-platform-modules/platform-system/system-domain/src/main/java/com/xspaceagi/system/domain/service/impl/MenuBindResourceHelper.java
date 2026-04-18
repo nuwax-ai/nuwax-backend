@@ -24,7 +24,9 @@ import com.xspaceagi.system.spec.enums.OpenTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 
 import jakarta.annotation.Resource;
 
@@ -185,14 +187,14 @@ public class MenuBindResourceHelper {
                 continue;
             }
             if (resourceId != 0L && !resourceMap.containsKey(resourceId)) {
-                throw new BizException("资源ID[" + resourceId + "]不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuBindResourceNotFound, resourceId);
             }
             if (!menuAuthorizedResourceIds.contains(resourceId)) {
-                throw new BizException("资源ID[" + resourceId + "]不在菜单ID[" + menuId + "]的绑定资源范围内");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuBindResourceOutOfScope, resourceId, menuId);
             }
             Integer resourceBindType = resourceNode.getResourceBindType();
             if (resourceBindType != null && BindTypeEnum.isInValid(resourceBindType)) {
-                throw new BizException("资源ID[" + resourceId + "]的绑定类型[" + resourceBindType + "]无效，只能是0(NONE)、1(ALL)或2(PART)");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuBindResourceBindTypeInvalid, resourceId, resourceBindType);
             }
         }
         Set<Long> allBindResourceIds = flattenResourceList.stream()

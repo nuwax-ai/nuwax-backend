@@ -49,7 +49,7 @@ public class LogPlatformDomainService implements ILogPlatformDomainService {
         page.setRecords(records);
         page.setTotal(searchResult.getTotal());
 
-        log.info("搜索完成，总数: {}, 当前页: {}, 耗时: {}ms",
+        log.info("Search done, total: {}, page: {}, elapsed: {}ms",
                 searchResult.getTotal(), searchResult.getCurrent(), searchResult.getElapsedTimeMs());
 
         return page;
@@ -57,7 +57,7 @@ public class LogPlatformDomainService implements ILogPlatformDomainService {
 
     @Override
     public boolean addAgentLog(AgentLogEntry logEntry) {
-        log.info("开始新增智能体日志，请求ID: {}", logEntry.getRequestId());
+        log.info("Adding agent log, requestId: {}", logEntry.getRequestId());
 
         boolean result = logHttpClientAdapter.addAgentLog(logEntry);
         if (result) {
@@ -155,7 +155,7 @@ public class LogPlatformDomainService implements ILogPlatformDomainService {
         // 转换结果
         List<AgentLogModel> records = convertToAgentLogModels(searchResult.getRecords());
 
-        log.info("搜索完成，总数: {}, 当前页: {}, 耗时: {}ms",
+        log.info("Search done, total: {}, page: {}, elapsed: {}ms",
                 searchResult.getTotal(), searchResult.getCurrent(), searchResult.getElapsedTimeMs());
 
         return records.stream().findFirst().orElse(null);

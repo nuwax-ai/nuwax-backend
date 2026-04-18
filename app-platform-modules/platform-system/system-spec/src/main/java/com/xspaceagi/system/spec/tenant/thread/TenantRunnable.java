@@ -30,7 +30,7 @@ public class TenantRunnable implements Runnable {
 
     public TenantRunnable(Long tenantId, Runnable runnable) {
         if (Objects.isNull(tenantId)) {
-            throw new IllegalArgumentException("tenantId is blank,please assign it");
+            throw new IllegalArgumentException("tenantId is blank; please set it");
         }
 
         this.tenantId = tenantId;

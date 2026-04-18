@@ -227,28 +227,28 @@ public class McpAsyncClient {
 
     private void nextHeartbeat() {
         if (isClosed) {
-            log.debug("MCP心跳结束，{}", serverInfo);
+            log.debug("MCP heartbeat ended, {}", serverInfo);
             return;
         }
 
         TimeWheel.getInstance().schedule((res) -> {
             if (!isClosed) {
-                log.debug("发送MCP心跳，{}", serverInfo);
+                log.debug("Sending MCP heartbeat, {}", serverInfo);
                 ping().timeout(Duration.ofSeconds(20))
                         .onErrorResume(throwable -> {
                             if (throwable instanceof TimeoutException) {
-                                log.error("MCP心跳超时", throwable);
+                                log.error("MCP heartbeat timeout", throwable);
                                 return Mono.error(throwable);
                             }
                             return Mono.empty();
                         })
                         .doOnError(throwable -> {
-                            log.error("MCP心跳失败 {}", serverInfo, throwable);
+                            log.error("MCP heartbeat failed {}", serverInfo, throwable);
                             close();
                         })
                         .doOnSuccess(ping -> nextHeartbeat()).subscribe();
             } else {
-                log.debug("Session已关闭，MCP心跳结束，{}", serverInfo);
+                log.debug("Session closed, MCP heartbeat ended, {}", serverInfo);
             }
         }, 10);
     }

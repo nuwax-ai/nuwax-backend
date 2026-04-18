@@ -129,7 +129,7 @@ public class ComposeDbBusinessDataController extends BaseController {
         var userContext = this.getUser();
         // check tableId 不为空
         if (Objects.isNull(tableId)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6012);
+            throw ComposeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "表Id");
         }
         customTableDefinitionApplicationService.clearBusinessData(tableId, userContext);
         return ReqResult.success();
@@ -146,7 +146,7 @@ public class ComposeDbBusinessDataController extends BaseController {
                     userContext);
             return ReqResult.success();
         } catch (Exception e) {
-            log.error("导入Excel数据失败", e);
+            log.error("Import Excel failed", e);
             // 使用用户友好的错误信息，提供更清晰的错误提示
             String friendlyMessage = ComposeExceptionUtils.getUserFriendlyErrorMessage(e);
             return ReqResult.error("导入Excel数据失败: " + friendlyMessage);
@@ -169,7 +169,7 @@ public class ComposeDbBusinessDataController extends BaseController {
             );
             return ReqResult.success(result);
         } catch (Exception e) {
-            log.error("恢复数据失败", e);
+            log.error("Failed to restore data", e);
             return ReqResult.error("恢复数据失败: " + e.getMessage());
         }
     }

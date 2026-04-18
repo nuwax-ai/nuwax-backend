@@ -56,12 +56,12 @@ public class DingtalkAttachmentService {
                 // 1. 从钉钉 API 下载文件
                 byte[] bytes = apiClient.downloadMessageFile(code, robotCode);
                 if (bytes == null && StringUtils.isNotBlank(robotCodeFallback)) {
-                    log.info("钉钉附件首次下载失败，尝试 robotCodeFallback={}", robotCodeFallback);
+                    log.info("DingTalk attachment first download failed, trying robotCodeFallback={}", robotCodeFallback);
                     bytes = apiClient.downloadMessageFile(code, robotCodeFallback);
                 }
 
                 if (bytes == null || bytes.length == 0) {
-                    log.warn("钉钉附件下载失败: downloadCode={}", code);
+                    log.warn("DingTalk attachment download failed: downloadCode={}", code);
                     result.getUnsupportedKeys().add(code);
                     continue;
                 }
@@ -96,13 +96,13 @@ public class DingtalkAttachmentService {
                         imUploadResult.getMimeType()
                     );
                     result.getAttachments().add(attachment);
-                    log.info("钉钉附件处理成功: downloadCode={}, url={}", code, attachment.getFileUrl());
+                    log.info("DingTalk attachment OK: downloadCode={}, url={}", code, attachment.getFileUrl());
                 } else {
-                    log.warn("钉钉附件处理失败: downloadCode={}, error={}", code, uploadResult.getErrorMessage());
+                    log.warn("DingTalk attachment failed: downloadCode={}, error={}", code, uploadResult.getErrorMessage());
                     result.getUnsupportedKeys().add(code);
                 }
             } catch (Exception e) {
-                log.warn("钉钉附件下载或上传异常: downloadCode={}", code, e);
+                log.warn("DingTalk attachment download/upload error: downloadCode={}", code, e);
                 result.getUnsupportedKeys().add(code);
             }
         }

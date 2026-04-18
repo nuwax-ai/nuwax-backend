@@ -31,8 +31,8 @@ public class TXTParser implements DocParser {
 
         var dataTypeEnum = KnowledgeDataTypeEnum.getEnumByCode(dataType);
         if (Objects.isNull(dataTypeEnum)) {
-            log.error("解析文档失败,不支持的文件类型[{}]", dataType);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5015);
+            log.error("Failed to parse document, unsupported file type [{}]", dataType);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentUnsupportedType);
         }
         switch (dataTypeEnum) {
             case URL_FILE -> {
@@ -53,8 +53,8 @@ public class TXTParser implements DocParser {
                     this.fileParseService.parseRawTxt(fileParseRequest,
                             userContext);
                 } catch (Exception e) {
-                    log.error("解析文档失败", e);
-                    throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014);
+                    log.error("Failed to parse document", e);
+                    throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);
                 }
             }
             case CUSTOM_TEXT -> {
@@ -71,13 +71,13 @@ public class TXTParser implements DocParser {
                     this.fileParseService.parseRawTxt(fileParseRequest,
                             userContext);
                 } catch (Exception e) {
-                    log.error("解析文档失败", e);
-                    throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014);
+                    log.error("Failed to parse document", e);
+                    throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);
                 }
             }
             default -> {
-                log.error("解析文档失败,不支持的文件类型[{}]", dataTypeEnum);
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5015);
+                log.error("Failed to parse document, unsupported file type [{}]", dataTypeEnum);
+                throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentUnsupportedType);
             }
         }
 

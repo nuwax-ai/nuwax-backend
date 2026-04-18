@@ -6,6 +6,7 @@ import com.xspaceagi.agent.core.infra.component.mcp.McpExecutor;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginExecutor;
 import com.xspaceagi.agent.core.infra.component.table.TableExecutor;
+import com.xspaceagi.memory.sdk.service.IMemoryRpcService;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import lombok.Getter;
@@ -26,4 +27,5 @@ public class WorkflowContextServiceHolder {
     private RedisUtil redisUtil;
     private CodeExecuteService codeExecuteService;
     private HttpClient httpClient;
+    private IMemoryRpcService iMemoryRpcService;
 }

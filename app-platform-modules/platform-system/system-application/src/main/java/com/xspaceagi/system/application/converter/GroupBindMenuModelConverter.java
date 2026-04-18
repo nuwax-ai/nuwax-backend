@@ -2,7 +2,9 @@ package com.xspaceagi.system.application.converter;
 
 import com.xspaceagi.system.domain.model.GroupBindMenuModel;
 import com.xspaceagi.system.domain.model.MenuNode;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.application.dto.permission.MenuNodeDto;
 import com.xspaceagi.system.application.dto.permission.SysGroupBindMenuDto;
 import org.apache.commons.collections4.CollectionUtils;
@@ -17,7 +19,7 @@ public class GroupBindMenuModelConverter {
 
     public static GroupBindMenuModel convertToModel(SysGroupBindMenuDto dto) {
         if (dto == null || dto.getGroupId() == null) {
-            throw new BizException("用户组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户组ID");
         }
 
         GroupBindMenuModel model = new GroupBindMenuModel();

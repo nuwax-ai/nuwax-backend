@@ -78,7 +78,7 @@ public enum HttpStatusEnum {
 
     private static final int
             INFORMATIONAL = 1,
-            SUCCESSFUL = 2,
+            successFUL = 2,
             REDIRECTION = 3,
             CLIENT_ERROR = 4,
             SERVER_ERROR = 5;
@@ -115,7 +115,7 @@ public enum HttpStatusEnum {
     }
 
     public boolean is2xxSuccessful() {
-        return type() == SUCCESSFUL;
+        return type() == successFUL;
     }
 
     public boolean is3xxRedirection() {

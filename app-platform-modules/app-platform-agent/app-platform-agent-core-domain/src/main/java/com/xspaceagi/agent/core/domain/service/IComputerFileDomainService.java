@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.domain.service;
 import com.xspaceagi.agent.core.adapter.dto.ComputerFileInfo;
 import com.xspaceagi.system.spec.common.UserContext;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
@@ -18,6 +19,11 @@ public interface IComputerFileDomainService {
      * 获取静态文件（流式返回）
      */
     Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId);
+
+    /**
+     * 获取静态文件完整响应（保留状态码与响应头，支持断点续传）
+     */
+    ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader);
 
     /**
      * 查询文件列表

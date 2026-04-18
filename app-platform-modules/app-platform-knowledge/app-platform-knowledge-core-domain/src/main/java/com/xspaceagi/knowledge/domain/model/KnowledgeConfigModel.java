@@ -75,6 +75,9 @@ public class KnowledgeConfigModel {
     @Schema(description = "工作流ID")
     private Long workflowId;
 
+    @Schema(description = "是否受后台权限控制，0 不受，1 受")
+    private Integer accessControl;
+
     @Schema(description = "全文检索同步状态: 0-未同步, 1-同步中, 2-已同步, -1-同步失败")
     private Integer fulltextSyncStatus;
 
@@ -107,6 +110,7 @@ public class KnowledgeConfigModel {
         knowledgeConfigVo.setModifiedId(model.getModifiedId());
         knowledgeConfigVo.setModifiedName(model.getModifiedName());
         knowledgeConfigVo.setWorkflowId(model.getWorkflowId());
+        knowledgeConfigVo.setAccessControl(model.getAccessControl());
         return knowledgeConfigVo;
     }
 }

@@ -50,7 +50,7 @@ public class SnowflakeIdWorker extends AbstractTaskExecuteService {
                             TimeUnit.SECONDS);
                 } catch (Exception e) {
                     // Redis 不可用，直接抛出异常，应用拒绝启动
-                    log.error("【SnowflakeIdWorker】Redis 分配 workerId 失败", e);
+                    log.error("[SnowflakeIdWorker] Redis workerId allocation failed", e);
                     throw new RuntimeException("Redis 分配 workerId 失败", e);
                 }
                 if (Boolean.TRUE.equals(success)) {
@@ -67,7 +67,7 @@ public class SnowflakeIdWorker extends AbstractTaskExecuteService {
             snowflake = IdUtil.getSnowflake(workerId, DATACENTER_ID);
         } catch (Exception e) {
             // 启动时分配失败，应用拒绝启动
-            log.error("【SnowflakeIdWorker】初始化失败", e);
+            log.error("[SnowflakeIdWorker] init failed", e);
             throw e;
         }
 
@@ -85,7 +85,7 @@ public class SnowflakeIdWorker extends AbstractTaskExecuteService {
         try {
             refreshWorkerIdExpire();
         } catch (Exception e) {
-            log.error("【SnowflakeIdWorker】心跳续约失败", e);
+            log.error("[SnowflakeIdWorker] heartbeat renew failed", e);
         }
         return false;
     }
@@ -99,7 +99,7 @@ public class SnowflakeIdWorker extends AbstractTaskExecuteService {
                         TimeUnit.SECONDS);
             } catch (Exception e) {
                 // 只记录日志，不抛出异常，防止定时任务线程崩溃
-                log.error("【SnowflakeIdWorker】心跳续约 Redis 失败", e);
+                log.error("[SnowflakeIdWorker] heartbeat Redis failed", e);
                 // 可选：报警
             }
         }
@@ -113,7 +113,7 @@ public class SnowflakeIdWorker extends AbstractTaskExecuteService {
                 stringRedisTemplate.delete(REDIS_WORKER_ID_KEY_PREFIX + workerId);
             } catch (Exception e) {
                 // 只记录日志，不影响主流程
-                log.error("【SnowflakeIdWorker】释放 workerId", e);
+                log.error("[SnowflakeIdWorker] release workerId", e);
             }
         }
     }

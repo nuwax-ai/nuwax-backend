@@ -27,7 +27,7 @@ public class ClientConfigSaveReqDTO {
     /**
      * 名称
      */
-    @NotBlank(message = "名称不能为空")
+    @NotBlank(message = "Name is required")
     @Schema(description = "名称", requiredMode = RequiredMode.REQUIRED)
     private String name;
 
@@ -40,7 +40,7 @@ public class ClientConfigSaveReqDTO {
     /**
      * 市场类型,默认插件,1:插件;2:模板;3:MCP
      */
-    @NotNull(message = "市场类型不能为空")
+    @NotNull(message = "Market type is required")
     @Schema(description = "市场类型,1:插件;2:模板;3:MCP", requiredMode = RequiredMode.REQUIRED)
     private Integer dataType;
 

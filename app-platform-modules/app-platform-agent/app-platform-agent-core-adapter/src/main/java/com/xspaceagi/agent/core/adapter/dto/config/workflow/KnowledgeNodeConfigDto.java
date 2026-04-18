@@ -5,6 +5,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.InputArg;
 import com.xspaceagi.agent.core.adapter.dto.config.OutputArg;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.SearchStrategyEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -18,7 +19,7 @@ import java.util.List;
 public class KnowledgeNodeConfigDto extends NodeConfigDto {
 
     @Schema(description = "知识库配置", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库配置不能为空")
+    @NotNull(message = "Knowledge base configuration is required")
     private List<KnowledgeBaseConfigDto> knowledgeBaseConfigs;
 
     //搜索策略
@@ -37,7 +38,7 @@ public class KnowledgeNodeConfigDto extends NodeConfigDto {
     public static class KnowledgeBaseConfigDto implements Serializable {
 
         @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "知识库ID不能为空")
+        @NotNull(message = "Knowledge base ID is required")
         private Long knowledgeBaseId;
 
         private String name;
@@ -83,12 +84,12 @@ public class KnowledgeNodeConfigDto extends NodeConfigDto {
         List<Arg> subArgs = new ArrayList<>();
         Arg subArg = new OutputArg();
         subArg.setName("output");
-        subArg.setDescription("模型总结过后的答案");
+        subArg.setDescription(I18nUtil.systemMessage("Backend.WorkflowKbArgs.output.description"));
         subArg.setDataType(DataTypeEnum.String);
         subArgs.add(subArg);
         subArg = new OutputArg();
         subArg.setName("rawText");
-        subArg.setDescription("原始文本信息");
+        subArg.setDescription(I18nUtil.systemMessage("Backend.WorkflowKbArgs.rawText.description"));
         subArg.setDataType(DataTypeEnum.String);
         subArgs.add(subArg);
         outArg.setSubArgs(subArgs);

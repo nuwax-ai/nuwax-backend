@@ -12,7 +12,9 @@ import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.spec.enums.CodeLanguageEnum;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.HashMap;
@@ -38,19 +40,19 @@ public class CodeNodeHandler extends AbstractNodeHandler {
 
         codeArgDto.setEngineType(codeNodeConfigDto.getCodeLanguage().getName());
 
-        //标识环境隔离用,取工作流的id,因为从上下文中获取可能没有智能体,无法从"workflowContext.getAgentContext().getUserId()" 获取到用户ID
+        // Identify environment isolation, use workflow ID because agent may not exist when getting from context, cannot get userId from "workflowContext.getAgentContext().getUserId()"
         String envId = Optional.ofNullable(workflowContext.getWorkflowConfig())
                 .map(WorkflowConfigDto::getId)
                 .map(Object::toString)
                 .orElse(String.valueOf(workflowContext.getAgentContext().getUserId()));
         codeArgDto.setUserId(envId);
-        // 提取参数
+        // Extract parameters
         Map<String, Object> params = extraBindValueMap(workflowContext, node, node.getNodeConfig().getInputArgs());
 
         AgentContext agentContext = workflowContext.getAgentContext();
-        //变量设置
+        // Variable setup
         Map<String, Object> sysVars = new HashMap<>();
-        //遍历 GlobalVariableEnum.values()，设置到SYS_VARS里
+        // Iterate through GlobalVariableEnum.values() and set to SYS_VARS
         if (agentContext != null) {
             for (GlobalVariableEnum globalVariableEnum : GlobalVariableEnum.values()) {
                 Object val = agentContext.getVariableParams().get(globalVariableEnum.name());
@@ -68,7 +70,8 @@ public class CodeNodeHandler extends AbstractNodeHandler {
         CodeExecuteService codeExecuteService = workflowContext.getWorkflowContextServiceHolder().getCodeExecuteService();
         CodeExecuteResultDto codeExecuteResultDto = codeExecuteService.execute(codeArgDto);
         if (Objects.isNull(codeExecuteResultDto.getSuccess()) || !codeExecuteResultDto.getSuccess()) {
-            throw new BizException(codeExecuteResultDto.getError());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    codeExecuteResultDto.getError() == null ? "" : codeExecuteResultDto.getError());
         }
         Map<String, Object> outputMap = new HashMap<>();
         if (codeExecuteResultDto.getResult() != null && codeExecuteResultDto.getResult() instanceof Map<?, ?>) {

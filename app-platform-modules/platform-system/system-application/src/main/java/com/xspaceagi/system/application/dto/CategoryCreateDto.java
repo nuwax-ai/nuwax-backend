@@ -12,15 +12,15 @@ import lombok.Data;
 @Schema(description = "分类创建请求")
 public class CategoryCreateDto {
 
-    @NotBlank(message = "分类名称不能为空")
+    @NotBlank(message = "Category name is required")
     @Schema(description = "分类名称", required = true)
     private String name;
 
-    @NotBlank(message = "分类编码不能为空")
+    @NotBlank(message = "Category code is required")
     @Schema(description = "分类编码", required = true)
     private String code;
 
-    @NotBlank(message = "分类类型不能为空")
+    @NotBlank(message = "Category type is required")
     @Schema(description = "分类类型：Agent、PageApp、Component", required = true)
     private String type;
 

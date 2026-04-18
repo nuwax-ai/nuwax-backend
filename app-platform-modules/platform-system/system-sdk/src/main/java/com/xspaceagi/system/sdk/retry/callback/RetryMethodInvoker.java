@@ -47,14 +47,14 @@ public class RetryMethodInvoker implements ApplicationContextAware {
 
             return doInvoke(dto, bean);
         } catch (InvocationTargetException e) {
-            log.error("重试调用异常", e);
+            log.error("Retry invocation error", e);
             Throwable targetException = e.getTargetException();
             if (targetException instanceof RetryException) {
                 targetException = targetException.getCause();
             }
             throw new RetryException(ExceptionUtils.getStackTrace(targetException));
         } catch (Throwable e) {
-            log.error("重试调用异常", e);
+            log.error("Retry invocation error", e);
             throw new RetryException(ExceptionUtils.getStackTrace(e));
         }
     }

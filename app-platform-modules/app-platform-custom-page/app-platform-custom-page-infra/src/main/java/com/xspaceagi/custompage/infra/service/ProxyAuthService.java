@@ -20,6 +20,7 @@ import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -118,7 +119,7 @@ public class ProxyAuthService {
         AgentInfoDto agentInfoDto = listReqResult.getData().get(0);
         UserDto loginUserInfo = authService.getLoginUserInfo(token);
         if (loginUserInfo == null) {
-            throw new BizException(ErrorCodeEnum.UNAUTHORIZED_REDIRECT.getCode(), "认证失败");
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.customPageProxyAuthFailed);
         }
 
         RequestContext.get().setUserId(loginUserInfo.getId());
@@ -128,7 +129,7 @@ public class ProxyAuthService {
 
         SpaceDto spaceDto = spaceApplicationService.queryById(agentInfoDto.getSpaceId());
         if (spaceDto == null) {
-            throw new BizException("无空间信息");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyNoSpace);
         }
 
         SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(agentInfoDto.getSpaceId(),
@@ -137,11 +138,11 @@ public class ProxyAuthService {
             ReqResult<AgentPublishedPermissionDto> agentPublishedPermissionDtoReqResult = agentRpcService
                     .queryAgentPublishedPermission(agentId);
             if (!agentPublishedPermissionDtoReqResult.getData().isView()) {
-                throw new BizException("无Agent权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         } else {
             if (spaceUserDto == null && loginUserInfo.getRole() != User.Role.Admin) {
-                throw new BizException("无Agent编排权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
 

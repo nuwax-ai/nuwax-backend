@@ -120,4 +120,5 @@ public interface AgentDomainService {
      */
     Long countUserCreatedPageApp(Long userId);
 
+    AgentConfig queryByUid(String agentUid);
 }

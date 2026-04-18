@@ -54,21 +54,21 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
     @Override
     public SseEmitter startAgentSessionSse(String sessionId, UserContext userContext) {
         if (StringUtils.isBlank(sessionId)) {
-            throw new IllegalArgumentException("sessionId不能为空");
+            throw new IllegalArgumentException("sessionId is required");
         }
 
         SseEmitter emitter = new SseEmitter(10L * 60 * 1000); // 超时时间10分钟
 
         emitter.onCompletion(() -> {
-            log.info("[Domain] SSE连接完成，sessionId={}", sessionId);
+            log.info("[Domain] SSE connection completed, session Id={}", sessionId);
         });
 
         emitter.onTimeout(() -> {
-            log.warn("[Domain] SSE连接超时，sessionId={}", sessionId);
+            log.warn("[Domain] SSE connection timeout, session Id={}", sessionId);
         });
 
         emitter.onError((throwable) -> {
-            log.error("[Domain] SSE连接错误，sessionId={}", sessionId, throwable);
+            log.error("[Domain] SSE connection error, session Id={}", sessionId, throwable);
         });
 
         aiAgentClient.subscribeSessionSse(sessionId, emitter);
@@ -79,17 +79,17 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
     public ReqResult<Map<String, Object>> agentSessionCancel(String projectId, String sessionId,
             UserContext userContext) {
         if (StringUtils.isBlank(projectId)) {
-            return ReqResult.error("0001", "projectId不能为空");
+            return ReqResult.error("0001", "projectId is required");
         }
 
         Map<String, Object> resp = aiAgentClient.sessionCancel(projectId, sessionId);
         if (resp == null) {
-            return ReqResult.error("9999", "取消任务失败，AI Agent 无响应");
+            return ReqResult.error("9999", "Failed to cancel task: AI Agent returned no response");
         }
 
         Object code = resp.get("code");
         if (code == null || !"0000".equals(String.valueOf(code))) {
-            String message = resp.get("message") == null ? "取消任务失败" : String.valueOf(resp.get("message"));
+            String message = resp.get("message") == null ? "Failed to cancel task" : String.valueOf(resp.get("message"));
             return ReqResult.error("9999", message);
         }
 
@@ -112,7 +112,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
                 }
 
             } catch (Exception e) {
-                log.warn("解析data JSON失败，使用原始数据", e);
+                log.warn("Failed to parse data JSON, using raw payload", e);
                 // 解析失败时，将原始data包装在Map中
                 dataMap.put("data", data);
             }
@@ -133,17 +133,17 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
     @Override
     public ReqResult<Map<String, Object>> getAgentStatus(String projectId, UserContext userContext) {
         if (StringUtils.isBlank(projectId)) {
-            return ReqResult.error("0001", "projectId不能为空");
+            return ReqResult.error("0001", "projectId is required");
         }
 
         Map<String, Object> resp = aiAgentClient.getAgentStatus(projectId);
         if (resp == null) {
-            return ReqResult.error("9999", "查询Agent状态失败，AI Agent 无响应");
+            return ReqResult.error("9999", "Failed to query Agent status: AI Agent returned no response");
         }
 
         Object code = resp.get("code");
         if (code == null || !"0000".equals(String.valueOf(code))) {
-            String message = resp.get("message") == null ? "查询Agent状态失败" : String.valueOf(resp.get("message"));
+            String message = resp.get("message") == null ? "Failed to query Agent status" : String.valueOf(resp.get("message"));
             return ReqResult.error("9999", message);
         }
 
@@ -166,7 +166,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
                 }
 
             } catch (Exception e) {
-                log.warn("解析data JSON失败，使用原始数据", e);
+                log.warn("Failed to parse data JSON, using raw payload", e);
                 // 解析失败时，将原始data包装在Map中
                 dataMap.put("data", data);
             }
@@ -187,17 +187,17 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
     @Override
     public ReqResult<Map<String, Object>> stopAgent(String projectId, UserContext userContext) {
         if (StringUtils.isBlank(projectId)) {
-            return ReqResult.error("0001", "projectId不能为空");
+            return ReqResult.error("0001", "projectId is required");
         }
 
         Map<String, Object> resp = aiAgentClient.stopAgent(projectId);
         if (resp == null) {
-            return ReqResult.error("9999", "停止Agent服务失败，AI Agent 无响应");
+            return ReqResult.error("9999", "Failed to stop Agent service: AI Agent returned no response");
         }
 
         Object code = resp.get("code");
         if (code == null || !"0000".equals(String.valueOf(code))) {
-            String message = resp.get("message") == null ? "停止Agent服务失败" : String.valueOf(resp.get("message"));
+            String message = resp.get("message") == null ? "Failed to stop Agent service" : String.valueOf(resp.get("message"));
             return ReqResult.error("9999", message);
         }
 
@@ -220,7 +220,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
                 }
 
             } catch (Exception e) {
-                log.warn("解析data JSON失败，使用原始数据", e);
+                log.warn("Failed to parse data JSON, using raw payload", e);
                 // 解析失败时，将原始data包装在Map中
                 dataMap.put("data", data);
             }

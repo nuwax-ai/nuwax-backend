@@ -19,7 +19,7 @@ public class KnowledgeConfigQueryRequest implements Serializable {
     private Long spaceId;
 
     @Schema(description = "知识库名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库名称不能为空")
+    @NotNull(message = "Knowledge base name is required")
     private String name;
 
     /**

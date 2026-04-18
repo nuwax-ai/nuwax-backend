@@ -20,7 +20,9 @@ import com.xspaceagi.sandbox.infra.network.ReverseServerContainer;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +87,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     public SandboxConfigDto getById(Long id) {
         SandboxConfig entity = sandboxConfigService.getById(id);
         if (entity == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
 
         return convertToDto(entity);
@@ -111,7 +113,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
             }
         }
         if (StringUtils.isBlank(host)) {
-            throw new BizException("无法获取客户端服务地址");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.sandboxClientAddressUnavailable);
         }
         //host为多个英文逗号隔开的地址，帮我轮询选择
         String[] hosts = host.split(",");
@@ -196,7 +198,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
             ReqResult<Long> userSandboxAgent = iAgentRpcService.createUserSandboxAgent(entity.getUserId(), entity.getId(), userAdd ? entity.getName() : null);
             if (!userSandboxAgent.isSuccess()) {
                 log.error("创建用户沙盒代理失败：{}", userSandboxAgent.getMessage());
-                throw new BizException("创建用户沙盒代理失败");
+                throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.sandboxUserProxyCreateFailed);
             }
             entity.setAgentId(userSandboxAgent.getData());
             if (userAdd) {
@@ -212,12 +214,12 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     @Override
     public void update(SandboxConfigDto dto) {
         if (dto.getId() == null) {
-            throw new BizException("配置ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "配置ID");
         }
 
         SandboxConfig existingEntity = sandboxConfigService.getById(dto.getId());
         if (existingEntity == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
 
         // 如果修改了 config_key，需要验证唯一性
@@ -242,7 +244,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     public void delete(Long id) {
         SandboxConfig entity = sandboxConfigService.getById(id);
         if (entity == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
 
         if (entity.getScope() == SandboxScopeEnum.USER) {
@@ -257,7 +259,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     public void toggle(Long id) {
         SandboxConfig entity = sandboxConfigService.getById(id);
         if (entity == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
 
         entity.setIsActive(!entity.getIsActive());
@@ -301,12 +303,13 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     public void testConnection(Long sandboxId) {
         SandboxConfigDto byId = getById(sandboxId);
         if (byId == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
         try {
             totalUsingCount(byId);
         } catch (Exception e) {
-            throw new BizException(e.getMessage() + "\n点击查看 <a target=\"_blank\" href=\"https://nuwax.com/agent-computer-deploy.html#%E5%85%AD%E3%80%81%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5\">常见问题</a>");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.sandboxDeployFailedWithHelp,
+                    (e.getMessage() != null ? e.getMessage() : "") + "\n点击查看 <a target=\"_blank\" href=\"https://nuwax.com/agent-computer-deploy.html#%E5%85%AD%E3%80%81%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5\">常见问题</a>");
         }
     }
 
@@ -360,7 +363,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
 
         long count = sandboxConfigService.count(queryWrapper);
         if (count > 0) {
-            throw new BizException("配置键已存在，请使用其他配置键");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.sandboxConfigKeyDuplicate);
         }
     }
 
@@ -375,7 +378,7 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
             try {
                 dto.setConfigValue(JSON.parseObject(entity.getConfigValue(), SandboxConfigValue.class));
             } catch (Exception e) {
-                log.error("解析配置值失败", e);
+                log.error("Failed to parse config value", e);
             }
         }
         if (StringUtils.isNotBlank(entity.getServerInfo())) {

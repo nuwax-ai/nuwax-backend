@@ -9,32 +9,32 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@Schema(description = "前端项目创建请求体")
+@Schema(description = "Frontend project create request body")
 public class CustomPageCreateReq {
 
-    @Schema(description = "项目ID，如果提供则更新现有项目")
+    @Schema(description = "Project ID; if set, updates the existing project")
     private Long projectId;
 
-    @NotBlank(message = "projectName 不能为空")
-    @Schema(description = "项目名称")
+    @NotBlank(message = "projectName is required")
+    @Schema(description = "Project name")
     private String projectName;
 
-    @Schema(description = "项目描述")
+    @Schema(description = "Project description")
     private String projectDesc;
 
-    @Schema(description = "文件压缩包")
+    @Schema(description = "Zip archive file")
     private MultipartFile file;
 
-    @Schema(description = "空间ID")
+    @Schema(description = "Space ID")
     private Long spaceId;
 
-    @Schema(description = "项目图标")
+    @Schema(description = "Project icon URL")
     private String icon;
 
-    @Schema(description = "封面图片")
+    @Schema(description = "Cover image URL")
     private String coverImg;
 
-    @Schema(description = "封面图片来源")
+    @Schema(description = "Cover image source type")
     private SourceTypeEnum coverImgSourceType;
 
 }

@@ -175,7 +175,7 @@ public class SandboxConfigRpcServiceImpl implements ISandboxConfigRpcService {
             try {
                 dto.setConfigValue(JSON.parseObject(entity.getConfigValue(), SandboxConfigValue.class));
             } catch (Exception e) {
-                log.error("解析配置值失败", e);
+                log.error("Failed to parse config value", e);
             }
         }
 
@@ -183,7 +183,7 @@ public class SandboxConfigRpcServiceImpl implements ISandboxConfigRpcService {
             try {
                 dto.setSandboxServerInfo(JSON.parseObject(entity.getServerInfo(), SandboxServerInfo.class));
             } catch (Exception e) {
-                log.error("解析配置值失败", e);
+                log.error("Failed to parse config value", e);
             }
         }
 

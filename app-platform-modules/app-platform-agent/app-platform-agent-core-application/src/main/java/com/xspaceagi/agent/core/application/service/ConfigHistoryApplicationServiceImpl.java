@@ -8,6 +8,7 @@ import com.xspaceagi.agent.core.adapter.repository.entity.ConfigHistory;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class ConfigHistoryApplicationServiceImpl implements ConfigHistoryApplica
                         .nickName(userDto.getNickName()).avatar(userDto.getAvatar()).userId(userDto.getId()).build());
             }
             if (agentConfigHistoryDto.getType() == ConfigHistory.Type.Publish) {
-                agentConfigHistoryDto.setDescription("发布");
+                agentConfigHistoryDto.setDescription(I18nUtil.systemMessage("ConfigHistory.publish"));
             }
             return agentConfigHistoryDto;
         }).collect(Collectors.toList());

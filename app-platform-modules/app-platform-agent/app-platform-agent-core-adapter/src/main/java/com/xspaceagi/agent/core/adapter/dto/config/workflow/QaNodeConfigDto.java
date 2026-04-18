@@ -12,7 +12,7 @@ import java.util.List;
 public class QaNodeConfigDto extends NodeConfigDto {
 
     @Schema(description = "LLM模型ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "LLM模型ID不能为空")
+    @NotNull(message = "LLM model ID is required")
     private Long modelId;
 
     @Schema(description = "模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义")
@@ -32,7 +32,7 @@ public class QaNodeConfigDto extends NodeConfigDto {
 
     //回答类型
     @Schema(description = "回答类型，如果为用户直接回答（TEXT），下级节点参数使用节点上的nextNodeIds；如果为选项回答（SELECT），下级节点参数使用option上的nextNodeIds", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "回答类型不能为空")
+    @NotNull(message = "Answer type is required")
     private AnswerTypeEnum answerType;
 
     //从回复中提取字段

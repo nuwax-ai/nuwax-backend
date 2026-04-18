@@ -63,7 +63,7 @@ public class ReqResult<T> implements Serializable {
     }
 
     public static <T> ReqResult<T> success(T obj) {
-        return create("0000", "成功", obj);
+        return create("0000", "success", obj);
     }
 
     public static <Void> ReqResult<Void> error(String msg) {

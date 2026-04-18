@@ -23,13 +23,16 @@ import com.xspaceagi.agent.web.ui.dto.ConversationCreateDto;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
-import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,13 +52,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
-import static com.xspaceagi.system.spec.enums.ResourceEnum.AGENT_QUERY_DETAIL;
-
 @Tag(name = "智能体会话相关接口")
 @RestController
 @RequestMapping("/api/agent/conversation")
 @Slf4j
 public class ConversationController {
+
+    public static final String DEFAULT_TOPIC = "Unnamed conversation";
 
     @Resource
     private ConversationApplicationService conversationApplicationService;
@@ -99,17 +102,17 @@ public class ConversationController {
         if (conversationCreateDto.isDevMode()) {
             AgentConfigDto agentConfigDto = agentApplicationService.queryById(conversationCreateDto.getAgentId());
             if (agentConfigDto == null) {
-                return ReqResult.error("智能体不存在");
+                return ReqResult.error("Agent not found");
             }
             spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
         } else {
             PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Agent, conversationCreateDto.getAgentId());
             if (publishedDto == null) {
-                return ReqResult.error("智能体不存在或已下架");
+                return ReqResult.error("Agent not found or has been unpublished");
             }
             PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, conversationCreateDto.getAgentId());
             if (!publishedPermissionDto.isExecute()) {
-                return ReqResult.error("无智能体会话权限");
+                return ReqResult.error("No permission to chat with this agent");
             }
             //agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), conversationCreateDto.getAgentId());
         }
@@ -125,12 +128,12 @@ public class ConversationController {
                 conversationApplicationService.updateConversationTopic(RequestContext.get().getUserId(), conversationUpdateDto);
             }
         } catch (Exception e) {
-            log.warn("会话主题更新失败", e);
+            log.warn("Failed to update conversation topic", e);
             // ignore
         }
         conversationDto = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationUpdateDto.getId());
-        if (conversationDto != null && "未命名会话".equals(conversationDto.getTopic())) {
-            conversationDto.setTopic("和" + conversationDto.getAgent().getName() + "开始会话");
+        if (conversationDto != null && DEFAULT_TOPIC.equals(conversationDto.getTopic())) {
+            conversationDto.setTopic(I18nUtil.systemMessage("Backend.Conversation.DefaultTopic", conversationDto.getAgent().getName()));
         }
         return ReqResult.success(conversationDto == null ? new ConversationDto() : conversationDto);
     }
@@ -147,20 +150,20 @@ public class ConversationController {
     public ReqResult<ConversationDto> get(@PathVariable Long conversationId) {
         ConversationDto conversationDto = conversationApplicationService.getConversation(null, conversationId);
         if (conversationDto == null) {
-            return ReqResult.error("会话不存在");
+            return ReqResult.error("Conversation not found");
         }
         if (conversationDto.getAgent() == null) {
-            return ReqResult.error("相关智能体不存在或已下架");
+            return ReqResult.error("Related agent not found or has been unpublished");
         }
         if (conversationDto.getDevMode() != null && conversationDto.getDevMode() == 1) {
             spacePermissionService.checkSpaceUserPermission(conversationDto.getAgent().getSpaceId());
         } else {
             if (!conversationDto.getUserId().equals(RequestContext.get().getUserId())) {
-                return ReqResult.error("无智能体会话权限");
+                return ReqResult.error("No permission to chat with this agent");
             }
             PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, conversationDto.getAgentId());
             if (!publishedPermissionDto.isView()) {
-                return ReqResult.error("无智能体会话权限");
+                return ReqResult.error("No permission to chat with this agent");
             }
         }
 
@@ -168,10 +171,10 @@ public class ConversationController {
             try {
                 SandboxConfigRpcDto sandboxConfigRpcDto = sandboxServerConfigService.queryById(Long.parseLong(conversationDto.getSandboxServerId()));
                 if (sandboxConfigRpcDto != null && sandboxConfigRpcDto.getScope() == SandboxScopeEnum.GLOBAL) {
-                    conversationDto.setSandboxServerId("-1");//云端电脑，统一为-1
+                    conversationDto.setSandboxServerId("-1");// Cloud computer, unified as -1
                 }
             } catch (Exception e) {
-                log.warn("查询沙盒配置信息失败", e);
+                log.warn("Failed to query sandbox config", e);
             }
         }
 
@@ -184,9 +187,9 @@ public class ConversationController {
             chatMessageDto.setTime(!conversationDto.getMessageList().isEmpty() ? conversationDto.getMessageList().get(0).getTime() : new Date());
             conversationDto.getMessageList().add(0, chatMessageDto);
         }
-        if ("未命名会话".equals(conversationDto.getTopic())) {
+        if (DEFAULT_TOPIC.equals(conversationDto.getTopic())) {
             if (conversationDto.getAgent() != null) {
-                conversationDto.setTopic("和" + conversationDto.getAgent().getName() + "开始会话");
+                conversationDto.setTopic(I18nUtil.systemMessage("Backend.Conversation.DefaultTopic", conversationDto.getAgent().getName()));
             }
         }
         return ReqResult.success(conversationDto);
@@ -198,15 +201,15 @@ public class ConversationController {
         Assert.notNull(conversationMessageQueryDto.getConversationId(), "conversationId must be non-null");
         ConversationDto conversationDto = conversationApplicationService.getConversationByCid(conversationMessageQueryDto.getConversationId());
         if (conversationDto == null) {
-            return ReqResult.error("会话不存在");
+            return ReqResult.error("Conversation not found");
         }
         if (conversationDto.getDevMode() != null && conversationDto.getDevMode() == 1) {
             AgentConfigDto agentConfigDto = agentApplicationService.queryById(conversationDto.getAgentId());
-            Assert.notNull(agentConfigDto, "智能体不存在");
+            Assert.notNull(agentConfigDto, "Agent not found");
             spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
         } else {
             if (!conversationDto.getUserId().equals(RequestContext.get().getUserId())) {
-                return ReqResult.error("无智能体会话权限");
+                return ReqResult.error("No permission to chat with this agent");
             }
         }
         Long index = conversationMessageQueryDto.getIndex() == null || conversationMessageQueryDto.getIndex() <= 0 ? Long.MAX_VALUE : conversationMessageQueryDto.getIndex();
@@ -248,13 +251,13 @@ public class ConversationController {
         try {
             cid = Long.parseLong(conversationId);
         } catch (NumberFormatException e) {
-            // 兼容之前的接口调用
+            // Compatible with previous API calls
             redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
             return ReqResult.success();
         }
         ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), cid);
         if (conversation == null) {
-            return ReqResult.error("会话不存在");
+            return ReqResult.error("Conversation not found");
         }
 
         if ("TaskAgent".equals(conversation.getAgent().getType())) {
@@ -284,7 +287,7 @@ public class ConversationController {
     public ReqResult<Void> agentStop(@PathVariable Long conversationId) {
         ConversationDto conversationByCid = conversationApplicationService.getConversationByCid(conversationId);
         if (conversationByCid == null || conversationByCid.getUserId().equals(RequestContext.get().getUserId())) {
-            return ReqResult.error("无会话权限");
+            return ReqResult.error("No permission for this conversation");
         }
         sandboxAgentClient.agentStop(conversationId.toString());
         return ReqResult.success();
@@ -293,7 +296,7 @@ public class ConversationController {
     @Operation(summary = "页面请求结果回写")
     @RequestMapping(path = "/chat/page/result", method = RequestMethod.POST)
     public ReqResult<Void> pageResult(@RequestBody ModelPageRequestResultDto modelPageRequestResultDto) {
-        Assert.notNull(modelPageRequestResultDto.getRequestId(), "requestId不能为空");
+        Assert.notNull(modelPageRequestResultDto.getRequestId(), "requestId cannot be empty");
         modelPageRequest.setPageRequestResult(modelPageRequestResultDto.getRequestId(), modelPageRequestResultDto.getHtml());
         return ReqResult.success();
     }
@@ -303,35 +306,35 @@ public class ConversationController {
     public ReqResult<List<String>> suggestQuestions(@RequestBody TryReqDto tryReqDto) {
         ConversationDto conversationDto = conversationApplicationService.getConversation(null, tryReqDto.getConversationId());
         if (conversationDto == null) {
-            throw new BizException("会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
         }
         AgentConfigDto agentConfigDto;
         if (conversationDto.getDevMode() == 1) {
             agentConfigDto = agentApplicationService.queryConfigForTestExecute(conversationDto.getAgentId());
             if (agentConfigDto == null) {
-                throw new BizException("智能体不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
             }
-            //权限验证
+            // Permission check
             try {
                 spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
             } catch (Exception e) {
-                throw new BizException("无智能体会话权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         } else {
             if (!conversationDto.getUserId().equals(RequestContext.get().getUserId())) {
-                throw new BizException("无智能体会话权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
             agentConfigDto = agentApplicationService.queryPublishedConfigForExecute(conversationDto.getAgentId());
         }
         if (agentConfigDto == null) {
-            throw new BizException("智能体不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOfflineOrNotFound);
         }
         TenantConfigDto tenantConfigDto = tenantConfigApplicationService.getTenantConfig(RequestContext.get().getTenantId());
         if (tenantConfigDto.getDefaultSuggestModelId() != null) {
             ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(tenantConfigDto.getDefaultSuggestModelId());
             if (modelConfigDto != null) {
                 if (CollectionUtils.isEmpty(modelConfigDto.getApiInfoList())) {
-                    log.warn("模型配置API列表为空，无法进行问题建议");
+                    log.warn("Model config API list empty; question suggestions disabled");
                     return ReqResult.success(Collections.emptyList());
                 }
                 agentConfigDto.getModelComponentConfig().setTargetConfig(modelConfigDto);
@@ -342,10 +345,12 @@ public class ConversationController {
         agentContext.setConversationId(conversationDto.getId().toString());
         agentContext.setDebug(conversationDto.getDevMode() == 1);
         agentContext.setUserId(RequestContext.get().getUserId());
+        agentContext.setTenantConfig((TenantConfigDto) RequestContext.get().getTenantConfig());
+        agentContext.setUser((UserDto) RequestContext.get().getUser());
         try {
             return ReqResult.success(agentExecutor.suggestQuestions(agentContext).timeout(Duration.ofSeconds(30)).block());
         } catch (Exception e) {
-            log.warn("问题建议异常", e);
+            log.warn("Suggest questions failed", e);
             return ReqResult.success(Collections.emptyList());
         }
     }
@@ -353,10 +358,10 @@ public class ConversationController {
     @Operation(summary = "智能体会话、桌面分享")
     @RequestMapping(path = "/share", method = RequestMethod.POST)
     public ReqResult<UserShareDto> share(@RequestBody ConversationShareDto conversationShareDto) {
-        Assert.notNull(conversationShareDto.getConversationId(), "conversationId不能为空");
+        Assert.notNull(conversationShareDto.getConversationId(), "conversationId cannot be empty");
         ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationShareDto.getConversationId());
         if (conversation == null) {
-            return ReqResult.error("会话不存在");
+            return ReqResult.error("Conversation not found");
         }
         UserShareDto userShareDto = new UserShareDto();
         userShareDto.setType(conversationShareDto.getType());
@@ -373,9 +378,16 @@ public class ConversationController {
     public ReqResult<UserShareDto> shareDetail(@PathVariable String shareKey) {
         UserShareDto userShare = userShareRpcService.getUserShare(shareKey, true);
         if (userShare == null) {
-            return ReqResult.error("分享不存在或已过期");
+            return ReqResult.error("Share not found or has expired");
         }
         return ReqResult.success(userShare);
+    }
+
+    @Operation(summary = "智能体会话可选模型列表")
+    @RequestMapping(path = "/model/options/{agentId}", method = RequestMethod.GET)
+    public ReqResult<List<ModelConfigDto>> modelSelect(@PathVariable Long agentId) {
+        List<ModelConfigDto> modelConfigDtos = agentApplicationService.queryUserCanSelectModelListForAgent(RequestContext.get().getUserId(), agentId);
+        return ReqResult.success(modelConfigDtos);
     }
 
     private Map<String, String> getHeadersFromRequest(HttpServletRequest request) {

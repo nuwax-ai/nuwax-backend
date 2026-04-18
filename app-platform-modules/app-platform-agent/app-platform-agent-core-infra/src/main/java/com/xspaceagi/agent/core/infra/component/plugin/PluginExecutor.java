@@ -16,7 +16,9 @@ import com.xspaceagi.eco.market.sdk.request.ClientSecretRequest;
 import com.xspaceagi.log.sdk.service.ILogRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,14 +58,14 @@ public class PluginExecutor {
     }
 
     public Mono<PluginExecuteResultDto> execute(PluginContext pluginContext) {
-        Assert.notNull(pluginContext, "插件上下文不能为空");
-        Assert.notNull(pluginContext.getPluginConfig(), "插件配置不能为空");
-        log.info("开始插件，requestId {}, id {}, name {}, params {}", pluginContext.getRequestId(), pluginContext.getPluginConfig().getId()
+        Assert.notNull(pluginContext, "Plugin context cannot be blank.");
+        Assert.notNull(pluginContext.getPluginConfig(), "Plugin config cannot be left blank.");
+        log.info("Starting plugin, requestId {}, id {}, name {}, params {}", pluginContext.getRequestId(), pluginContext.getPluginConfig().getId()
                 , pluginContext.getPluginConfig().getName(), pluginContext.getParams());
         pluginContext.setStartTime(System.currentTimeMillis());
-        //变量设置
+        // Variable setup
         Map<String, Object> sysVars = new HashMap<>();
-        //遍历 GlobalVariableEnum.values()，设置到SYS_VARS里
+        // Iterate through GlobalVariableEnum.values() and set to SYS_VARS
         AgentContext agentContext = pluginContext.getAgentContext();
         if (agentContext != null) {
             for (GlobalVariableEnum globalVariableEnum : GlobalVariableEnum.values()) {
@@ -110,7 +112,7 @@ public class PluginExecutor {
             if (pluginContext.isAsyncExecute()) {
                 PluginExecuteResultDto resultDto = PluginExecuteResultDto.builder()
                         .success(true)
-                        .result("工具已经在异步执行中，请按后面的语句回复用户：" + (StringUtils.isBlank(pluginContext.getAsyncReplyContent()) ? "已经开始为您处理，请耐心等待运行结果" : pluginContext.getAsyncReplyContent()))
+                        .result("The tool is already executing asynchronously, please reply to the user with the following statement: " + (StringUtils.isBlank(pluginContext.getAsyncReplyContent()) ? "Processing has started, please wait patiently for the results" : pluginContext.getAsyncReplyContent()))
                         .costTime(0L)
                         .requestId(pluginContext.getRequestId())
                         .logs(pluginContext.getLogs())
@@ -144,12 +146,12 @@ public class PluginExecutor {
             logDocument.setOutput(jsonObject.toString());
             logDocument.setCreateTime(System.currentTimeMillis());
             logDocument.setResultCode("0000");
-            logDocument.setResultMsg("成功");
+            logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
             iLogRpcService.bulkIndex(List.of(logDocument));
         } catch (Exception e) {
-            // 忽略
-            log.error("插件日志记录异常", e);
+            // Ignore
+            log.error("Plugin log recording error", e);
         }
     }
 
@@ -161,8 +163,8 @@ public class PluginExecutor {
             logDocument.setRequestEndTime(System.currentTimeMillis());
             iLogRpcService.bulkIndex(List.of(logDocument));
         } catch (Exception e) {
-            // 忽略
-            log.error("插件日志记录异常", e);
+            // Ignore
+            log.error("Plugin log recording error", e);
         }
     }
 
@@ -175,10 +177,10 @@ public class PluginExecutor {
             mono = new HttpPluginHandler().execute(pluginContext);
         }
         if (mono == null) {
-            throw new BizException("插件类型错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginTypeInvalid);
         }
         mono.doOnError(throwable -> {
-            log.error("插件执行异常，requestId {}, id {}, name {}", pluginContext.getAgentContext().getRequestId(), pluginContext.getPluginConfig().getId(),
+            log.error("Plugin execution exception, requestId {}, id {}, name {}", pluginContext.getAgentContext().getRequestId(), pluginContext.getPluginConfig().getId(),
                     pluginContext.getPluginConfig().getName(), throwable);
             pluginContext.setEndTime(System.currentTimeMillis());
             pluginContext.setExecuteSuccess(false);
@@ -194,7 +196,7 @@ public class PluginExecutor {
         }).subscribe((result) -> {
             pluginContext.setEndTime(System.currentTimeMillis());
             pluginContext.setExecuteSuccess(true);
-            log.info("插件执行完毕，requestId {}, id {}, name {}, 耗时 {} ms", pluginContext.getRequestId(), pluginContext.getPluginConfig().getId(),
+            log.info("Plugin execution completed, requestId {}, id {}, name {}, duration {} ms", pluginContext.getRequestId(), pluginContext.getPluginConfig().getId(),
                     pluginContext.getPluginConfig().getName(), pluginContext.getEndTime() - pluginContext.getStartTime());
             PluginExecuteResultDto resultDto = PluginExecuteResultDto.builder()
                     .success(true)

@@ -1,5 +1,7 @@
 package com.xspaceagi.system.application.dto.permission;
 
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import com.xspaceagi.system.spec.enums.ResourceTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@I18n(module = "PermissionResource")
 @Data
 @Schema(description = "资源树节点")
 public class ResourceNodeDto implements Serializable {
@@ -24,9 +27,11 @@ public class ResourceNodeDto implements Serializable {
     @Schema(description = "资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定")
     private Integer resourceBindType;
 
+    @I18nField(subObj = true)
     @Schema(description = "子资源列表")
     private List<ResourceNodeDto> children;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "编码")
     private String code;
 

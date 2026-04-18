@@ -45,11 +45,11 @@ public class KnowledgeRawSegmentDomainService implements IKnowledgeRawSegmentDom
         // 同步删除全文检索数据（在事务内，保证一致性）
         try {
             fullTextSearchDomainService.deleteByRawIds(java.util.Arrays.asList(id), userContext.getTenantId());
-            log.info("删除原始分段全文检索数据成功: rawId={}", id);
+            log.info("Delete raw segment full-text OK: rawId={}", id);
         } catch (Exception e) {
-            log.error("删除原始分段全文检索数据失败: rawId={}", id, e);
+            log.error("Delete raw segment full-text failed: rawId={}", id, e);
             // 抛出异常，触发事务回滚
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5025, e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDeleteSegmentFulltextFailed, e);
         }
     }
 

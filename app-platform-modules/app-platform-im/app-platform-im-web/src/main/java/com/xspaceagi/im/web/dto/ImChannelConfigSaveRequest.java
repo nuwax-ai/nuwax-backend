@@ -25,15 +25,15 @@ public class ImChannelConfigSaveRequest {
     @Schema(description = "空间主键ID（新增时必填）", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long spaceId;
 
-    @NotBlank(message = "渠道类型不能为空")
+    @NotBlank(message = "Channel type is required")
     @Schema(description = "渠道类型：feishu/dingtalk/wework/wechat_ilink")
     private String channel;
 
-    @NotBlank(message = "目标类型不能为空")
+    @NotBlank(message = "Target type is required")
     @Schema(description = "目标类型：bot/app")
     private String targetType;
 
-    @NotNull(message = "关联智能体ID不能为空")
+    @NotNull(message = "Bound agent ID is required")
     @Schema(description = "关联智能体ID")
     private Long agentId;
 

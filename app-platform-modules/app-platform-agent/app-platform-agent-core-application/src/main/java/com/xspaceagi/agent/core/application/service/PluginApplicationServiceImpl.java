@@ -26,7 +26,10 @@ import com.xspaceagi.agent.core.spec.enums.PluginTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,7 +69,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         PluginConfig pluginConfig = new PluginConfig();
         BeanUtils.copyProperties(pluginAddDto, pluginConfig);
         pluginDomainService.add(pluginConfig);
-        addConfigHistory(pluginConfig.getId(), ConfigHistory.Type.Add, "新增插件");
+        addConfigHistory(pluginConfig.getId(), ConfigHistory.Type.Add, I18nUtil.systemMessage("Plugin.ConfigHistory.Add"));
         return pluginConfig.getId();
     }
 
@@ -81,7 +84,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
             pluginConfig.setConfig(JSON.toJSONString(pluginUpdateDto.getConfig()));
         }
         pluginDomainService.update(pluginConfig);
-        addConfigHistory(pluginConfig.getId(), ConfigHistory.Type.Edit, "更新插件");
+        addConfigHistory(pluginConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Plugin.ConfigHistory.Edit"));
     }
 
     @Override
@@ -110,7 +113,8 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         Mono<PluginExecuteResultDto> mono = pluginExecutor.execute(pluginContext);
         PluginExecuteResultDto resultDto = mono.block();
         if (!resultDto.isSuccess()) {
-            throw new BizException(resultDto.getError());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    resultDto.getError());
         }
         if (resultDto.getResult() == null) {
             return List.of();
@@ -177,7 +181,8 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         inputArgs.forEach(arg -> {
             boolean isNull = ArgExtractUtil.isArgBlankValue(arg, params);
             if (arg.isRequire() && isNull && StringUtils.isBlank(arg.getBindValue())) {
-                throw new BizException("请填写必要参数[" + arg.getName() + "]，便于获取返回参数");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginRequiredParamMissing,
+                        arg.getName());
             }
             Object value = params.get(arg.getName());
             if (CollectionUtils.isNotEmpty(arg.getSubArgs())) {
@@ -186,7 +191,8 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
                         value = new HashMap<>();
                     }
                     if (!(value instanceof Map)) {
-                        throw new BizException("参数[" + arg.getName() + "]类型错误");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.paramArgTypeInvalid,
+                                arg.getName());
                     }
                     Map<String, Object> subParams = (Map<String, Object>) value;
                     checkRequireAndSetDefaultValue(arg.getSubArgs(), subParams);
@@ -195,7 +201,8 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
                         value = new ArrayList<>();
                     }
                     if (!(value instanceof List)) {
-                        throw new BizException("参数[" + arg.getName() + "]类型错误");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.paramArgTypeInvalid,
+                                arg.getName());
                     }
                     List<Map<String, Object>> subParams = (List<Map<String, Object>>) value;
                     subParams.forEach(subParam -> checkRequireAndSetDefaultValue(arg.getSubArgs(), subParam));
@@ -236,7 +243,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         try {
             return copyPluginConfig.getId();
         } finally {
-            addConfigHistory(copyPluginConfig.getId(), ConfigHistory.Type.Add, "复制插件");
+            addConfigHistory(copyPluginConfig.getId(), ConfigHistory.Type.Add, I18nUtil.systemMessage("Plugin.ConfigHistory.Copy"));
         }
     }
 
@@ -311,6 +318,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         PluginConfig pluginConfig = JSON.parseObject(publishedDto.getConfig(), PluginConfig.class);
         PluginDto pluginDto = convertToPluginDto(pluginConfig);
         pluginDto.setPublishDate(publishedDto.getModified());
+        pluginDto.setScope(publishedDto.getScope());
         pluginDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());
         return pluginDto;
     }
@@ -327,6 +335,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         agentContext.getVariableParams().put(GlobalVariableEnum.SYS_USER_ID.name(), agentContext.getUser().getId());
         agentContext.getVariableParams().put(GlobalVariableEnum.USER_UID.name(), agentContext.getUser().getUid());
         agentContext.getVariableParams().put(GlobalVariableEnum.USER_NAME.name(), agentContext.getUser().getUserName() == null ? agentContext.getUser().getNickName() : agentContext.getUser().getUserName());
+        agentContext.getVariableParams().put(GlobalVariableEnum.USER_LANG.name(), agentContext.getUser().getLang());
         PluginContext pluginContext = PluginContext.builder()
                 .agentContext(agentContext)
                 .requestId(pluginExecuteRequestDto.getRequestId())
@@ -346,20 +355,20 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         if (published == null) {
             PluginDto pluginDto = queryById(pluginId);
             if (pluginDto != null) {
-                throw new BizException(String.format("插件[%s]未发布或已下线，请更换其他适合的插件", pluginDto.getName()));
+                throw new BizException(I18nUtil.systemMessage("Backend.Plugin.UnpublishedOrOffline", pluginDto.getName()));
             }
-            throw new BizException("该插件未发布或已下线");
+            throw new BizException(I18nUtil.systemMessage("Backend.Plugin.UnpublishedOrOffline.Generic"));
         }
-        //为全局发布，不需要校验
+        // Global publish, no need to check
         if (published.getScope() == Published.PublishScope.Tenant || published.getScope() == Published.PublishScope.Global) {
             return;
         }
-        //为空时为全局发布，不需要校验
+        // Null means global publish, no need to check
         if (published.getPublishedSpaceIds() == null) {
             return;
         }
         if (!published.getPublishedSpaceIds().contains(spaceId)) {
-            throw new BizException("当前空间没有插件权限");
+            throw new BizException(I18nUtil.systemMessage("Backend.Plugin.SpaceNoPermission"));
         }
     }
 
@@ -367,7 +376,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
     public List<String> validatePluginConfig(PluginDto pluginDto) {
         List<String> messages = new ArrayList<>();
         if (pluginDto.getConfig() == null) {
-            messages.add("插件配置不能为空");
+            messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.ConfigEmpty"));
             return messages;
         }
         List<Arg> inputArgs = null;
@@ -375,16 +384,16 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         if (pluginDto.getType() == PluginTypeEnum.HTTP) {
             HttpPluginConfigDto httpPluginConfigDto = (HttpPluginConfigDto) pluginDto.getConfig();
             if (StringUtils.isBlank(httpPluginConfigDto.getUrl())) {
-                messages.add("URL不能为空");
+                messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.UrlRequired"));
             } else if (!httpPluginConfigDto.getUrl().startsWith("http://") && !httpPluginConfigDto.getUrl().startsWith("https://")) {
-                //URL是否符合规范
-                messages.add("URL格式不正确");
+                // Check if URL conforms to standards
+                messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.UrlInvalid"));
             }
             if (httpPluginConfigDto.getMethod() == null) {
-                messages.add("请求方法不能为空");
+                messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.MethodRequired"));
             }
             if (httpPluginConfigDto.getTimeout() == null || httpPluginConfigDto.getTimeout() <= 0) {
-                messages.add("超时时间不能为空或小于等于0");
+                messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.TimeoutRequired"));
             }
             inputArgs = httpPluginConfigDto.getInputArgs();
             outputArgs = httpPluginConfigDto.getOutputArgs();
@@ -393,17 +402,17 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
             inputArgs = codePluginConfigDto.getInputArgs();
             outputArgs = codePluginConfigDto.getOutputArgs();
             if (StringUtils.isBlank(codePluginConfigDto.getCode())) {
-                messages.add("代码不能为空");
+                messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.CodeRequired"));
             }
         }
-        //校验参数配置
+        // Validate parameter configuration
         if (inputArgs != null) {
             validArg(inputArgs, messages, true);
         }
         if (outputArgs != null) {
             validArg(outputArgs, messages, false);
         }
-        //代码安全性检测
+        // Code security check
         if (pluginDto.getType() == PluginTypeEnum.CODE) {
             CodePluginConfigDto codePluginConfigDto = (CodePluginConfigDto) pluginDto.getConfig();
             CodeCheckResultDto codeCheckResultDto = modelApplicationService.codeSaleCheck(codePluginConfigDto.getCode());
@@ -419,23 +428,23 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
             Set<String> names = new HashSet<>();
             args.forEach(arg -> {
                 if (names.contains(arg.getName())) {
-                    messages.add("参数[" + arg.getName() + "]重复，同级参数不能取名相同");
+                    messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.DuplicateParam", arg.getName()));
                 } else {
                     names.add(arg.getName());
                 }
                 if (StringUtils.isBlank(arg.getName())) {
-                    messages.add("参数名不能为空");
+                    messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.ParamNameEmpty"));
                     arg.setName("");
                 }
-                //参数命名规范校验
+                // Validate parameter naming convention
                 if (!arg.getName().matches("^[a-zA-Z_][a-zA-Z0-9_-]*$")) {
-                    messages.add("参数名[" + arg.getName() + "]不符合命名规范");
+                    messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.InvalidParamName", arg.getName()));
                 }
                 if (isInput && StringUtils.isBlank(arg.getDescription())) {
-                    messages.add("参数[" + arg.getName() + "]对应的描述信息不能为空");
+                    messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.ParamDescEmpty", arg.getName()));
                 }
                 if (arg.getDataType() == null) {
-                    messages.add("参数类型不能为空");
+                    messages.add(I18nUtil.systemMessage("Backend.Plugin.Validate.ParamTypeEmpty"));
                 }
                 validArg(arg.getSubArgs(), messages, isInput);
             });

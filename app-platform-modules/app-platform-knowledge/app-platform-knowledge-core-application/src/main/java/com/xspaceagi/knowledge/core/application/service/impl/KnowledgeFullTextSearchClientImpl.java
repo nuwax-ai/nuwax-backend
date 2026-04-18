@@ -34,7 +34,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
     @Override
     public PushResult pushSegments(PushRequest request) {
 
-        log.info("推送分段数据, segmentCount={}", request.getSegments() != null ? request.getSegments().size() : 0);
+        log.info("Push segments, segmentCount={}", request.getSegments() != null ? request.getSegments().size() : 0);
         searchRpcService.bulkIndex(request.getSegments().stream().map(segment -> KnowledgeSearchDocument.builder()
                 .tenantId(segment.getTenantId())
                 .id(segment.getRawId().toString())
@@ -46,7 +46,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
         PushResult result = new PushResult();
         result.setIndexedCount(request.getSegments() != null ? request.getSegments().size() * 1L : 0);
         result.setSuccessRawIds(request.getSegments() != null ? request.getSegments().stream().map(KnowledgeRawSegment::getRawId).collect(Collectors.toList()) : Collections.emptyList());
-        log.info("推送完成: indexedCount={}", result != null ? result.getIndexedCount() : 0);
+        log.info("Push done: indexedCount={}", result != null ? result.getIndexedCount() : 0);
         return result;
     }
 
@@ -54,7 +54,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
     public KnowledgeSearchResult search(KnowledgeSearchParams params) {
 
 
-        log.info("全文检索: query={}, tenantId={}, kbIds={} (类型: {})",
+        log.info("Full-text: query={}, tenantId={}, kbIds={} (type: {})",
                 params.getQuery(), params.getTenantId(), params.getKbIds(),
                 params.getKbIds() != null && !params.getKbIds().isEmpty() ? params.getKbIds().get(0).getClass().getSimpleName() : "null");
 
@@ -92,7 +92,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
 
         Long total = result != null ? result.getTotal() : 0L;
         Long tookMs = result != null ? result.getTookMs() : null;
-        log.info("检索完成: total={}, tookMs={}", total, tookMs != null ? tookMs : 0);
+        log.info("Search done: total={}, tookMs={}", total, tookMs != null ? tookMs : 0);
 
         return result;
     }
@@ -100,15 +100,15 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
     @Override
     public DeleteResult deleteSegments(DeleteParams params) {
 
-        log.info("删除数据: tenantId={}, kbIds={}, docIds={}",
+        log.info("Delete data: tenantId={}, kbIds={}, docIds={}",
                 params.getTenantId(), params.getKbId(), params.getDocId());
         params.getRawIds().forEach(rawId -> {
-            log.info("删除数据: rawId={}", rawId);
+            log.info("Delete data: rawId={}", rawId);
             searchRpcService.deleteDocument(KnowledgeSearchDocument.class, rawId.toString());
         });
         DeleteResult result = new DeleteResult();
         result.setDeletedCount(params.getRawIds().size() * 1L);
-        log.info("删除完成: deletedCount={}", result != null ? result.getDeletedCount() : 0);
+        log.info("Delete done: deletedCount={}", result != null ? result.getDeletedCount() : 0);
 
         return result;
     }
@@ -116,7 +116,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
     @Override
     public UpdateResult updateSegment(UpdateRequest request) {
 
-        log.info("更新分段: rawId={}, tenantId={}",
+        log.info("Update segment: rawId={}, tenantId={}",
                 request.getRawId(), request.getTenantId());
         return new UpdateResult();
     }
@@ -138,7 +138,7 @@ public class KnowledgeFullTextSearchClientImpl implements KnowledgeFullTextSearc
 
     @Override
     public SegmentIdsResult querySegmentIds(SegmentIdsParams params) {
-        log.info("查询分段ID列表: tenantId={}, kbId={}, spaceId={}, docId={}",
+        log.info("List segment IDs: tenantId={}, kbId={}, spaceId={}, docId={}",
                 params.getTenantId(), params.getKbId(), params.getSpaceId(), params.getDocId());
 
         List<Map<String, Object>> filterFieldsAndValues = new ArrayList<>();

@@ -6,7 +6,9 @@ import java.util.function.Supplier;
 
 import org.springframework.dao.DataIntegrityViolationException;
 
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.id.IdGenerator;
 
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +84,7 @@ public class IdGeneratorRetryUtil {
             String bizName,
             int maxRetryTimes) {
         if (maxRetryTimes < 1) {
-            throw new IllegalArgumentException("最大重试次数必须大于0");
+            throw new IllegalArgumentException("Max retries must be greater than 0");
         }
 
         Long lastGeneratedId = null;
@@ -110,7 +112,7 @@ public class IdGeneratorRetryUtil {
 
                 if (attempt >= maxRetryTimes) {
                     log.error("{}失败，重试达到上限，lastId={}", bizName, id);
-                    throw new BizException(bizName + "失败，请重试");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemIdGenerateRetryFailed, bizName);
                 }
                 // 继续下一次重试
             }
@@ -118,7 +120,7 @@ public class IdGeneratorRetryUtil {
 
         // 理论上不会走到这里，但为了安全
         log.error("{}失败，未知原因，lastId={}", bizName, lastGeneratedId);
-        throw new BizException(bizName + "失败，请重试");
+        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemIdGenerateRetryFailed, bizName);
     }
 
 }

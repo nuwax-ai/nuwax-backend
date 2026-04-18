@@ -22,14 +22,14 @@ public class CustomPageFileDomainServiceImpl implements ICustomPageFileDomainSer
 
     @Override
     public Flux<DataBuffer> getStaticFile(String targetPrefix, String relativePath, String logId, UserContext userContext) {
-        log.info("[Domain] logId={}, 获取静态文件,targetPrefix={}, relativePath={}", logId, targetPrefix, relativePath);
+        log.info("[Domain] log Id={}, getstaticfile,target Prefix={}, relative Path={}", logId, targetPrefix, relativePath);
         return pageFileBuildClient.getStaticFile(targetPrefix, relativePath, logId)
                 .doOnError(WebClientResponseException.class, e -> {
-                    log.error("[Domain] logId={}, 获取静态文件失败, targetPrefix={}, relativePath={}, status={}",
+                    log.error("[Domain] log Id={}, getstaticfilefailed, target Prefix={}, relative Path={}, status={}",
                             logId, targetPrefix, relativePath, e.getStatusCode());
                 })
                 .doOnError(Throwable.class, e -> {
-                    log.error("[Domain] logId={}, 获取静态文件异常, targetPrefix={}, relativePath={}", logId, targetPrefix, relativePath, e);
+                    log.error("[Domain] log Id={}, getstaticfileexception, target Prefix={}, relative Path={}", logId, targetPrefix, relativePath, e);
                 });
     }
 

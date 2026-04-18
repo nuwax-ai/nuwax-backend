@@ -1,11 +1,14 @@
 package com.xspaceagi.agent.core.adapter.dto.config.workflow;
 
 import com.xspaceagi.agent.core.adapter.repository.entity.WorkflowNodeConfig;
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.*;
 
+@I18n(module = "WorkflowNode")
 @Data
 public class WorkflowNodeDto {
     @Schema(description = "节点ID")
@@ -20,6 +23,7 @@ public class WorkflowNodeDto {
     @Schema(description = "工作流ID")
     private Long workflowId;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "节点类型")
     private WorkflowNodeConfig.NodeType type;
 

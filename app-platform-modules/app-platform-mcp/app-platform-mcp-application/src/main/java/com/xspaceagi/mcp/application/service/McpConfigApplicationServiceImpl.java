@@ -32,7 +32,9 @@ import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -141,7 +143,7 @@ public class McpConfigApplicationServiceImpl implements McpConfigApplicationServ
         Assert.notNull(mcpDto.getId(), "id must be non-null");
         McpDto mcp = getMcp(mcpDto.getId());
         if (mcp == null) {
-            throw new BizException("MCP不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpNotFound);
         }
         mcpDto.setInstallType(mcp.getInstallType());
         completeComponentMcpToolNames(mcpDto);

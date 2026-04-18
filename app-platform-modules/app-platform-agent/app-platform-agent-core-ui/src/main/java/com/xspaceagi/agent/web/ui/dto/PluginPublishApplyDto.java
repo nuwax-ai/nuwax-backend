@@ -14,7 +14,7 @@ public class PluginPublishApplyDto implements Serializable {
     private Long pluginId;
 
     @Schema(description = "发布范围，Space 空间；Tenant 租户全局；Global 系统全局。目前UI上的\"全局\"指的是租户全局", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "发布范围不能为空")
+    @NotNull(message = "Publish scope is required")
     private Published.PublishScope scope;
 
     @Schema(description = "发布记录")

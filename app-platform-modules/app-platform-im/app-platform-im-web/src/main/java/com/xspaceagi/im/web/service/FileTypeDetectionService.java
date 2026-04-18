@@ -1,10 +1,10 @@
 package com.xspaceagi.im.web.service;
 
+import com.xspaceagi.im.application.util.MimeTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
-import com.xspaceagi.im.application.util.MimeTypeUtils;
 
 import java.net.URI;
 
@@ -67,26 +67,26 @@ public class FileTypeDetectionService {
         // 优先级1: HTTP响应头信息
         FileDetectionResult result = detectFromHttpHeaders(headerFileName, headerContentType);
         if (result != null) {
-            log.info("从HTTP响应头检测到文件类型: ext={}, mime={}", result.getExtension(), result.getMimeType());
+            log.info("File type from HTTP headers: ext={}, mime={}", result.getExtension(), result.getMimeType());
             return result;
         }
 
         // 优先级2: Magic Bytes检测
         result = detectFromMagicBytes(fileBytes);
         if (result != null) {
-            log.info("从Magic Bytes检测到文件类型: ext={}, mime={}", result.getExtension(), result.getMimeType());
+            log.info("File type from magic bytes: ext={}, mime={}", result.getExtension(), result.getMimeType());
             return result;
         }
 
         // 优先级3: 从URL提取扩展名
         result = detectFromUrl(url);
         if (result != null) {
-            log.info("从URL检测到文件类型: ext={}", result.getExtension());
+            log.info("File type from URL: ext={}", result.getExtension());
             return result;
         }
 
         // 所有检测方式都失败，返回 null
-        log.warn("所有文件类型检测方式都失败，无法确定文件类型: originalType={}", originalType);
+        log.warn("All file type detections failed: originalType={}", originalType);
         return null;
     }
 
@@ -169,11 +169,11 @@ public class FileTypeDetectionService {
             String extension = MimeTypeUtils.getExtensionFromMimeType(mimeType);
 
             if (StringUtils.isNotBlank(extension) && !".bin".equals(extension) && !"application/octet-stream".equals(mimeType)) {
-                log.info("Tika检测到文件类型: ext={}, mimeType={}", extension, mimeType);
+                log.info("Tika detected type: ext={}, mimeType={}", extension, mimeType);
                 return new FileDetectionResult(extension.substring(1), mimeType, "Tika");
             }
         } catch (Exception e) {
-            log.debug("Tika检测失败: {}", e.getMessage());
+            log.debug("Tika detection failed: {}", e.getMessage());
         }
 
         return null;

@@ -1,6 +1,8 @@
 package com.xspaceagi.system.sdk.service.dto;
 
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -69,12 +71,33 @@ public class UserDataPermissionDto implements Serializable {
     @Schema(description = "有权限访问的网页应用ID列表")
     private List<Long> pageAgentIds;
 
+    @Schema(description = "有权限访问的开放 API 及频率配置（合并自角色与用户组）")
+    private List<OpenApiConfig> openApiConfigs;
+
+    @Schema(description = "有权限访问的知识库ID列表")
+    private List<Long> knowledgeIds;
+
+    @Data
+    @Schema(description = "开放 API 权限配置（用户侧合并结果）")
+    public static class OpenApiConfig implements Serializable {
+
+        @Schema(description = "开放 API key")
+        private String key;
+
+        @Schema(description = "每分钟请求次数，-1 表示不限制")
+        private Integer rpm;
+
+        @Schema(description = "每天请求次数，-1 表示不限制")
+        private Integer rpd;
+    }
+
     public void checkMaxSpaceCount(Integer userSpaceCount) {
         if (noLimit(maxSpaceCount)) {
             return;
         }
         if (userSpaceCount >= maxSpaceCount) {
-            throw new BizException("你的工作空间数量已经达到上限，当前工作空间上限数为" + maxSpaceCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的工作空间数量已经达到上限，当前工作空间上限数为" + maxSpaceCount);
         }
     }
 
@@ -83,7 +106,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userAgentCount >= maxAgentCount) {
-            throw new BizException("你的智能体数量已经达到上限，当前智能体上限数为" + maxAgentCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的智能体数量已经达到上限，当前智能体上限数为" + maxAgentCount);
         }
     }
 
@@ -92,7 +116,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userPageAppCount >= maxPageAppCount) {
-            throw new BizException("你的网页应用数量已经达到上限，当前网页应用上限数为" + maxPageAppCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的网页应用数量已经达到上限，当前网页应用上限数为" + maxPageAppCount);
         }
     }
 
@@ -101,7 +126,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userKnowledgeCount >= maxKnowledgeCount) {
-            throw new BizException("你的知识库数量已经达到上限，当前知识库上限数为" + maxKnowledgeCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的知识库数量已经达到上限，当前知识库上限数为" + maxKnowledgeCount);
         }
     }
 
@@ -110,7 +136,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userDataTableCount >= maxDataTableCount) {
-            throw new BizException("你的数据表数量已经达到上限，当前数据表上限数为" + maxDataTableCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的数据表数量已经达到上限，当前数据表上限数为" + maxDataTableCount);
         }
     }
 
@@ -119,7 +146,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userScheduledTaskCount >= maxScheduledTaskCount) {
-            throw new BizException("你的定时任务数量已经达到上限，当前定时任务上限数为" + maxScheduledTaskCount);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的定时任务数量已经达到上限，当前定时任务上限数为" + maxScheduledTaskCount);
         }
     }
 
@@ -128,7 +156,8 @@ public class UserDataPermissionDto implements Serializable {
             return;
         }
         if (userKnowledgeStorageLimitGb.compareTo(knowledgeStorageLimitGb) > 0) {
-            throw new BizException("你的知识库存储空间已经达到上限，当前知识库存储空间上限为" + knowledgeStorageLimitGb + "GB");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的知识库存储空间已经达到上限，当前知识库存储空间上限为" + knowledgeStorageLimitGb + "GB");
         }
     }
 

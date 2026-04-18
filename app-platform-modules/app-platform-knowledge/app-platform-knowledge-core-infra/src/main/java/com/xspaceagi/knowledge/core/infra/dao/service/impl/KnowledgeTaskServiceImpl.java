@@ -69,7 +69,7 @@ public class KnowledgeTaskServiceImpl extends ServiceImpl<KnowledgeTaskMapper, K
         var updateObj = this.getById(entity.getId());
 
         if (Objects.isNull(updateObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         entity.setCreated(null);
         entity.setModified(null);

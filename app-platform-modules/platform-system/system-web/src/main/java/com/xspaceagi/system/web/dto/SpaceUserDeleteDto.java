@@ -10,10 +10,10 @@ import java.io.Serializable;
 public class SpaceUserDeleteDto implements Serializable {
 
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId;
 
     @Schema(description = "用户ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "用户ID不能为空")
+    @NotNull(message = "User ID is required")
     private Long userId;
 }

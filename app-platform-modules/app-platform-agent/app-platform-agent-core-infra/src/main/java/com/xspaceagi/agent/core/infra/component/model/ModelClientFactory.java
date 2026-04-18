@@ -86,7 +86,7 @@ public class ModelClientFactory {
 
     @PostConstruct
     private void init() {
-        // 禁用HttpClient的keep-alive功能，有些网络环境下可能会导致连接超时
+        // Disable HttpClient's keep-alive feature, which may cause connection timeout in some network environments
         System.setProperty("jdk.httpclient.keepalive.timeout", "0");
         webClientBuilder.filter(WebClientRequestAndResponseFilter.requestFilter)
                 .filter(WebClientRequestAndResponseFilter.responseFilter)
@@ -107,7 +107,7 @@ public class ModelClientFactory {
     }
 
     public EmbeddingModel createEmbeddingModel(ModelConfigDto model) {
-        Assert.isTrue(!model.getApiInfoList().isEmpty(), "模型配置异常");
+        Assert.isTrue(!model.getApiInfoList().isEmpty(), "Model configuration error");
         ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
         if (apiInfo == null) {
             return null;
@@ -130,21 +130,22 @@ public class ModelClientFactory {
     }
 
     public ChatClient createChatClient(ModelContext modelContext, ModelConfigDto model, List<ToolCallback> functionCallbacks, Boolean withProxyToolCalls) {
-        Assert.isTrue(!model.getApiInfoList().isEmpty(), "模型配置异常");
+        Assert.isTrue(!model.getApiInfoList().isEmpty(), "Model configuration error");
         ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
         if (apiInfo == null) {
             return null;
         }
 
-        Double temperature = model.getTemperature() == null || model.getTemperature() > 1 || model.getTemperature() <= 0 ? 0.7 : model.getTemperature();
-        Double topP = model.getTopP() == null || model.getTopP() <= 0 || model.getTopP() > 1 ? 1.0 : model.getTopP();
+        Double temperature = model.getTemperature() == null || model.getTemperature() > 1 || model.getTemperature() <= 0 ? 1 : model.getTemperature();
+        Double topP = model.getTopP() == null || model.getTopP() <= 0 || model.getTopP() > 1 ? 0.7 : model.getTopP();
         ChatModel chatModel = null;
         Integer isReasonModel = model.getIsReasonModel() == null ? 0 : model.getIsReasonModel();
         String requestId = modelContext == null || modelContext.getRequestId() == null ? "" : modelContext.getRequestId();
         String traceId = modelContext == null || modelContext.getTraceId() == null ? "" : modelContext.getTraceId();
 
-        //全局模型走代理模式，为用户生成独立的key
+        // Global model uses proxy mode, generates independent keys for users
         if (model.getScope() == ModelConfig.ModelScopeEnum.Tenant && modelContext != null) {
+            AgentContext agentContext = modelContext.getAgentContext();
             BackendModelDto backendModelDto = new BackendModelDto();
             if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
                 String baseUrl = completeBaseUrl(apiInfo.getUrl());
@@ -157,10 +158,9 @@ public class ModelClientFactory {
             backendModelDto.setProtocol(model.getApiProtocol().name());
             backendModelDto.setScope(model.getScope().name());
             backendModelDto.setModelId(model.getId());
-            backendModelDto.setUserName(modelContext.getAgentContext() == null ? "" : modelContext.getAgentContext().getUserName());
+            backendModelDto.setUserName(agentContext == null || agentContext.getUser() == null ? "" : agentContext.getUser().getUserName());
             backendModelDto.setConversationId(modelContext.getConversationId());
             backendModelDto.setRequestId(requestId);
-            AgentContext agentContext = modelContext.getAgentContext();
             String siteUrl = agentContext == null || agentContext.getTenantConfig() == null ? "" : agentContext.getTenantConfig().getSiteUrl();
             FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(model.getTenantId(), agentContext == null || agentContext.getUser() == null ? -1L : agentContext.getUser().getId()
                     , agentContext == null || agentContext.getAgentConfig() == null ? -1L : agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
@@ -247,15 +247,15 @@ public class ModelClientFactory {
     }
 
     public static String extractVersionFromUrl(String url) {
-        // 定义正则表达式，匹配URL中的版本信息（如v1、v2、v3）
+        // Define regex pattern to match version information in URL (e.g., v1, v2, v3)
         String regex = "/(v\\d+)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(url);
 
         if (matcher.find()) {
-            return matcher.group(1); // 返回匹配到的版本信息
+            return matcher.group(1); // Return the matched version information
         } else {
-            return null; // 如果未找到匹配项，返回null
+            return null; // Return null if no match is found
         }
     }
 

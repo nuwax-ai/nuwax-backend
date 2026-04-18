@@ -2,6 +2,8 @@ package com.xspaceagi.system.application.dto;
 
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -12,6 +14,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.util.Date;
 
+@I18n(module = "UserSpace")
 @Data
 @Builder
 @NoArgsConstructor
@@ -25,7 +28,7 @@ public class SpaceDto implements Serializable {
     private Long tenantId;
 
     @Schema(description = "空间名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间名称不能为空")
+    @NotNull(message = "Space name is required")
     private String name;
 
     @Schema(description = "空间描述")
@@ -34,6 +37,7 @@ public class SpaceDto implements Serializable {
     @Schema(description = "空间图标")
     private String icon;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "空间类型")
     private Space.Type type;
 

@@ -12,8 +12,8 @@ import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.WeworkAgentApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
-import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
+import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
@@ -68,7 +68,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
         }
 
         if (agentId == null || agentId <= 0) {
-            log.warn("企业微信智能体未配置 agent-id");
+            log.warn("WeCom agent-id not configured");
             return new AgentExecuteResultWithConv("企业微信智能体未配置，请联系管理员", null, agentId);
         }
 
@@ -114,7 +114,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
             String outputText = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return new AgentExecuteResultWithConv(outputText, convId, agentId);
         } catch (Exception e) {
-            log.error("企业微信智能体执行异常: senderId={}", senderId, e);
+            log.error("WeCom agent execution error: senderId={}", senderId, e);
             String errorText = "模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
             return new AgentExecuteResultWithConv(errorText, null, agentId);
         } finally {

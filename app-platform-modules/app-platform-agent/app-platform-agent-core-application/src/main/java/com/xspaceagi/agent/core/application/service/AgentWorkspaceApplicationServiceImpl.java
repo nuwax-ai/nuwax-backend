@@ -10,7 +10,9 @@ import com.xspaceagi.agent.core.domain.service.SkillDomainService;
 import com.xspaceagi.agent.core.infra.rpc.SkillFileClient;
 import com.xspaceagi.agent.core.spec.utils.FileTypeUtils;
 import com.xspaceagi.agent.core.spec.utils.MarkdownExtractUtil;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.file.InMemoryMultipartFile;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +49,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         List<SubagentDto> subagents = createWorkspaceDto.getSubagents();
 
         if (userId == null || cId == null) {
-            throw new BizException("必传参数为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentRequiredParamEmpty);
         }
 
         List<SkillConfigDto> toPushSkills = new ArrayList<>();
@@ -99,14 +101,14 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         Map<String, Object> result = skillFileClient.createWorkSpace(userId, cId, zipFile);
 
         if (result == null) {
-            throw new BizException("创建工作空间失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkspaceCreateFailed);
         }
 
         Object successObj = result.get("success");
         if (successObj instanceof Boolean && !(Boolean) successObj) {
             String message = result.getOrDefault("message", "创建工作空间失败").toString();
             log.error("[createWorkspace] userId={} cId={} 创建工作空间失败, message={}", userId, cId, message);
-            throw new BizException(message);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail, message);
         }
         log.info("[createWorkspace] userId={} cId={} 创建工作空间成功", userId, cId);
     }
@@ -117,21 +119,21 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         Long cId = addSkillsToWorkspaceDto.getCId();
         MultipartFile zipFile = buildZip(addSkillsToWorkspaceDto.getSkillConfigs(), Collections.emptyList());
         if (zipFile == null) {
-            throw new BizException("打包技能 zip 失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillZipPackFailed);
         }
 
         Map<String, Object> result = skillFileClient.pushSkillsToWorkspace(userId, cId, zipFile);
 
         if (result == null) {
             log.error("[addSkills] userId={} cId={} 推送技能文件失败，响应为空", userId, cId);
-            throw new BizException("推送技能文件失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFilePushFailed);
         }
 
         Object successObj = result.get("success");
         if (successObj instanceof Boolean && !(Boolean) successObj) {
             String message = result.getOrDefault("message", "推送技能文件失败").toString();
             log.error("[addSkills] userId={} cId={} 推送技能文件失败, message={}", userId, cId, message);
-            throw new BizException(message);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail, message);
         }
 
         log.info("[addSkills] userId={} cId={} 动态增加技能完成", userId, cId);
@@ -299,7 +301,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             return new InMemoryMultipartFile("file", "skills.zip", "application/zip", zipBytes);
         } catch (IOException e) {
             log.error("[skill/agent] 打包skill/agent zip失败", e);
-            throw new BizException("打包 skill/agent 失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillAgentPackFailed);
         }
     }
 
@@ -323,7 +325,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             return Base64.getDecoder().decode(contents);
         } catch (IllegalArgumentException e) {
             // 如果不是有效的 base64，则按文本处理（兼容旧数据）
-            log.warn("文件 {} 的内容不是有效的 base64 编码，按文本处理", fileName);
+            log.warn("File {} is not valid base64, treating as text", fileName);
             return contents.getBytes(StandardCharsets.UTF_8);
         }
     }

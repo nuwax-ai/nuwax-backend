@@ -28,6 +28,7 @@ import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -90,19 +91,19 @@ public class ExecuteForPageController {
 
         Optional<DataSourceDto> first = pageDto.getDataSources().stream().filter(dataSourceDto -> dataSourceDto.getKey() != null && dataSourceDto.getKey().equals(key)).findFirst();
         if (first.isEmpty()) {
-            return Flux.create(emitter -> sendError(emitter, requestId, "请求的数据源不存在"));
+            return Flux.create(emitter -> sendError(emitter, requestId, "The requested data source does not exist"));
         }
 
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(first.get().getId(), null, true);
         if (workflowConfigDto == null) {
-            return Flux.create(emitter -> sendError(emitter, requestId, "工作流Id错误或未发布"));
+            return Flux.create(emitter -> sendError(emitter, requestId, "Invalid workflow ID or not published"));
         }
-        //验证页面所在空间是否有接口权限
+        // Verify if the page's space has workflow execution permission
         List<Long> publishedSpaceIds = workflowConfigDto.getPublishedSpaceIds();
         if (CollectionUtils.isNotEmpty(publishedSpaceIds)) {
             boolean anyMatch = publishedSpaceIds.stream().anyMatch(spaceId -> spaceId != null && spaceId.equals(pageDto.getSpaceId()));
             if (!anyMatch) {
-                return Flux.create(emitter -> sendError(emitter, requestId, "无工作流执行权限"));
+                return Flux.create(emitter -> sendError(emitter, requestId, "No workflow execution permission"));
             }
         }
 
@@ -124,19 +125,19 @@ public class ExecuteForPageController {
         PageDto pageDto = parseFromReferer(refererParseVo);
         Optional<DataSourceDto> first = pageDto.getDataSources().stream().filter(dataSourceDto -> dataSourceDto.getKey() != null && dataSourceDto.getKey().equals(key)).findFirst();
         if (!first.isPresent()) {
-            return ReqResult.error("请求的数据源不存在");
+            return ReqResult.error("The requested data source does not exist");
         }
 
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(first.get().getId(), null, true);
         if (workflowConfigDto == null) {
-            return ReqResult.error("工作流Id错误或未发布");
+            return ReqResult.error("Invalid workflow ID or not published");
         }
-        //验证页面所在空间是否有接口权限
+        // Verify if the page's space has workflow execution permission
         List<Long> publishedSpaceIds = workflowConfigDto.getPublishedSpaceIds();
         if (CollectionUtils.isNotEmpty(publishedSpaceIds)) {
             boolean anyMatch = publishedSpaceIds.stream().anyMatch(spaceId -> spaceId != null && spaceId.equals(pageDto.getSpaceId()));
             if (!anyMatch) {
-                return ReqResult.error("无工作流执行权限");
+                return ReqResult.error("No workflow execution permission");
             }
         }
 
@@ -152,30 +153,30 @@ public class ExecuteForPageController {
 
     private PageDto parseFromReferer(ReferUtil.RefererParseVo refererParseVo) {
         if (refererParseVo == null || refererParseVo.getPageId() == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "页面Id错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageIdError);
         }
         if (refererParseVo == null || refererParseVo.getAgentId() == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "智能体Id错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageAgentIdError);
         }
         if (refererParseVo == null || refererParseVo.getEnv() == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "环境错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageEnvInvalid);
         }
         PageDto pageDto = customPageRpcService.queryPageDto(refererParseVo.getPageId(), false);
         if (pageDto == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "页面Id错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageIdError);
         }
         if (pageDto.getDataSources() == null || pageDto.getDataSources().isEmpty()) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "页面数据源错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageDatasourceInvalid);
         }
 
         if (pageDto.getNeedLogin()) {
             if (!RequestContext.get().isLogin()) {
-                throw new BizException(ErrorCodeEnum.UNAUTHORIZED.getCode(), "未登录或登录超时");
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
             }
         } else {
             UserDto userDto = userApplicationService.queryById(pageDto.getCreatorId());
             if (userDto == null) {
-                throw new BizException(ErrorCodeEnum.UNAUTHORIZED.getCode(), "未登录或登录超时");
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
             }
             RequestContext.get().setUser(userDto);
             RequestContext.get().setUserId(userDto.getId());
@@ -183,30 +184,30 @@ public class ExecuteForPageController {
 
         AgentConfigDto agentConfigDto = agentApplicationService.queryPublishedConfigForExecute(refererParseVo.getAgentId());
         if (agentConfigDto != null && agentConfigDto.getAccessControl() != null && agentConfigDto.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
-            // 用户数据权限
+            // User data permission
             UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
             if (userDataPermission.getAgentIds() == null || !userDataPermission.getAgentIds().contains(refererParseVo.getAgentId())) {
-                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), "无应用访问权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
-        //dev环境或依赖的智能体没有发布时，验证用户是否有页面所在空间的权限
+        // For dev environment or when the dependent agent is not published, verify if the user has permission for the page's space
         if ("dev".equals(refererParseVo.getEnv()) || agentConfigDto == null) {
             try {
                 spacePermissionService.checkSpaceUserPermission(pageDto.getSpaceId());
             } catch (Exception e) {
-                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), "用户无页面所在空间权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         } else {
-            // 验证用户是否有智能体的权限
+            // Verify if the user has permission for the agent
             PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, refererParseVo.getAgentId());
             if (!publishedPermissionDto.isExecute()) {
-                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), "用户无智能体权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
             AgentComponentConfigDto agentComponentConfigDto = agentConfigDto.getAgentComponentConfigList().stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Page).findFirst().orElse(null);
             if (agentComponentConfigDto == null) {
                 agentComponentConfigDto = agentApplicationService.queryComponentConfigList(refererParseVo.getAgentId()).stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Page).findFirst().orElse(null);
                 if (agentComponentConfigDto == null) {
-                    throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "调用的智能体未绑定对应页面");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageNotBoundToAgent);
                 }
             }
         }
@@ -233,17 +234,17 @@ public class ExecuteForPageController {
         pageDto = parseFromReferer(refererParseVo);
         Optional<DataSourceDto> first = pageDto.getDataSources().stream().filter(dataSourceDto -> dataSourceDto.getKey() != null && dataSourceDto.getKey().equals(key)).findFirst();
         if (!first.isPresent()) {
-            throw new BizException("请求的数据源不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageDatasourceNotFound);
         }
         PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(first.get().getId(), null);
         if (pluginDto == null) {
-            throw new BizException("插件ID错误或未发布");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotPublished);
         }
         List<Long> publishedSpaceIds = pluginDto.getPublishedSpaceIds();
         if (CollectionUtils.isNotEmpty(publishedSpaceIds)) {
             boolean anyMatch = publishedSpaceIds.stream().anyMatch(spaceId -> spaceId != null && spaceId.equals(pageDto.getSpaceId()));
             if (!anyMatch) {
-                throw new BizException("无插件执行权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
         PluginExecuteRequestDto pluginExecuteRequestDto = new PluginExecuteRequestDto();

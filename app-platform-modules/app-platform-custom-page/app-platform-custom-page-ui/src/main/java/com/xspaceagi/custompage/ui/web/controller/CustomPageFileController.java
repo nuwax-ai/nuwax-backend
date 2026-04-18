@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-@Tag(name = "网页应用", description = "网页应用相关接口")
+@Tag(name = "Web app", description = "Custom page web app APIs")
 @RestController
 @RequestMapping("/api/custom-page")
 @Slf4j
@@ -26,14 +26,14 @@ public class CustomPageFileController extends BaseController {
     @Resource
     private ICustomPageFileApplicationService customPageFileApplicationService;
 
-    @Operation(summary = "访问静态文件(page)", description = "访问静态文件(page)")
+    @Operation(summary = "Serve static file (page)", description = "Serve static file for current page build")
     @CrossOrigin // 确保 OPTIONS 预检请求被正确处理
 //    @GetMapping("/static/{projectId}/**")
     public ResponseEntity<StreamingResponseBody> getStaticFile(@PathVariable("projectId") Long projectId, HttpServletRequest request) {
-        log.info("[Web] 接收到访问静态文件请求，projectId={}", projectId);
+        log.info("[Web] access staticfilerequest, project Id={}", projectId);
 
         if (projectId == null) {
-            log.error("[Web] projectId 无效, projectId={}", projectId);
+            log.error("[Web] Invalid project Id, project Id={}", projectId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
@@ -44,14 +44,14 @@ public class CustomPageFileController extends BaseController {
         return customPageFileApplicationService.getStaticFile(requestPath, staticPrefix, targetPrefix, String.valueOf(projectId), getUser());
     }
 
-    @Operation(summary = "访问静态文件(page历史版本)", description = "访问静态文件(page历史版本)")
+    @Operation(summary = "Serve static file (historical page)", description = "Serve static file for a historical page version")
     @CrossOrigin // 确保 OPTIONS 预检请求被正确处理
 //    @GetMapping("/static/_his/{projectId}/**")
     public ResponseEntity<StreamingResponseBody> getStaticHisFile(@PathVariable("projectId") Long projectId, HttpServletRequest request) {
-        log.info("[Web] 接收到访问静态文件(his)请求，projectId={}", projectId);
+        log.info("[Web] access staticfile(his)request, project Id={}", projectId);
 
         if (projectId == null) {
-            log.error("[Web] projectId 无效, projectId={}", projectId);
+            log.error("[Web] Invalid project Id, project Id={}", projectId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 

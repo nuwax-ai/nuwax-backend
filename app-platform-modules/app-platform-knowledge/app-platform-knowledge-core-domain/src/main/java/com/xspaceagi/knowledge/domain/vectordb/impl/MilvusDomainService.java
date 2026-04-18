@@ -212,7 +212,7 @@ public class MilvusDomainService implements VectorDBService {
 
                         // 检查集合是否存在
                         if (!checkCollectionExists(collectionName)) {
-                                log.warn("集合不存在，跳过删除: collectionName={}, kbId={}", collectionName, kbId);
+                                log.warn("Collection not found, skip delete: collectionName={}, kbId={}", collectionName, kbId);
                                 return;
                         }
 
@@ -260,14 +260,14 @@ public class MilvusDomainService implements VectorDBService {
                                 .map(QAEmbeddingDto::getKbId)
                                 .orElse(null);
                 if (Objects.isNull(kbId)) {
-                        log.warn("知识库ID为空[addEmbeddingQaForBatch]");
-                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5018);
+                        log.warn("kbId empty [addEmbeddingQaForBatch]");
+                        throw KnowledgeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "知识库ID");
                 }
                 String collectionName = Commons.collectionName(kbId);
 
                 // 确保集合存在，如果不存在则初始化
                 if (!checkCollectionExists(collectionName)) {
-                        log.info("集合不存在，开始初始化: collectionName={}, kbId={}", collectionName, kbId);
+                        log.info("Collection missing, init: collectionName={}, kbId={}", collectionName, kbId);
                         // 从知识库配置中获取嵌入模型ID
                         var kbConfig = this.knowledgeConfigRepository.queryOneInfoById(kbId);
                         Long embeddingModelId = Objects.nonNull(kbConfig) ? kbConfig.getEmbeddingModelId() : null;
@@ -360,7 +360,7 @@ public class MilvusDomainService implements VectorDBService {
 
                 // 检查集合是否存在
                 if (!checkCollectionExists(collectionName)) {
-                        log.warn("集合不存在，跳过删除: collectionName={}, kbId={}, qaId={}", collectionName, kbId, qaID);
+                        log.warn("Collection not found, skip delete: collectionName={}, kbId={}, qaId={}", collectionName, kbId, qaID);
                         return;
                 }
 
@@ -377,7 +377,7 @@ public class MilvusDomainService implements VectorDBService {
 
                 // 检查集合是否存在
                 if (!checkCollectionExists(collectionName)) {
-                        log.warn("集合不存在，跳过删除: collectionName={}, kbId={}", collectionName, kbId);
+                        log.warn("Collection not found, skip delete: collectionName={}, kbId={}", collectionName, kbId);
                         return;
                 }
 
@@ -394,7 +394,7 @@ public class MilvusDomainService implements VectorDBService {
 
                 // 检查集合是否存在
                 if (!checkCollectionExists(collectionName)) {
-                        log.warn("集合不存在，跳过删除: collectionName={}, kbId={}, docId={}",
+                        log.warn("Collection not found, skip delete: collectionName={}, kbId={}, docId={}",
                                 collectionName, document.getKbId(), docId);
                         return;
                 }

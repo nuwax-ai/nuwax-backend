@@ -1,8 +1,12 @@
 package com.xspaceagi.system.application.dto.permission;
 
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import com.xspaceagi.system.spec.enums.OpenTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
@@ -15,6 +19,7 @@ import java.util.List;
 /**
  * 菜单树节点
  */
+@I18n(module = "PermissionMenu")
 @Data
 @Schema(description = "菜单树节点")
 public class MenuNodeDto implements Serializable {
@@ -28,15 +33,19 @@ public class MenuNodeDto implements Serializable {
     @Schema(description = "子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定")
     private Integer menuBindType;
 
+    @I18nField(subObj = true)
     @Schema(description = "子菜单列表")
     private List<MenuNodeDto> children;
 
+    @I18nField(subObj = true)
     @Schema(description = "资源树")
     private List<ResourceNodeDto> resourceTree;
 
+    @I18nField(subObj = true)
     @Schema(description = "资源列表", hidden = true)
     private List<ResourceNodeDto> resourceNodes;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "资源码")
     private String code;
 
@@ -97,7 +106,7 @@ public class MenuNodeDto implements Serializable {
         List<MenuNodeDto> result = new ArrayList<>();
         for (MenuNodeDto node : nodes) {
             if (node.getId() == null) {
-                throw new BizException("菜单id不能为null,name:" + node.getName());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuIdNullWithNodeName, node.getName());
             } else {
                 // 创建新节点，不包含children
                 MenuNodeDto flatNode = new MenuNodeDto();

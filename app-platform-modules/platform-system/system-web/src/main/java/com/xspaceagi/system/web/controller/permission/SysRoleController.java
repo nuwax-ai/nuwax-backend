@@ -21,7 +21,10 @@ import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.StatusEnum;
+import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.controller.base.BaseController;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -122,11 +125,12 @@ public class SysRoleController extends BaseController {
         SysRoleDto roleDto = new SysRoleDto();
         BeanUtils.copyProperties(role, roleDto);
 
-        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.ROLE, role.getId());
-        if (dataPermission != null) {
-            roleDto.setModelIds(dataPermission.getModelIds());
-            roleDto.setTokenLimit(dataPermission.getTokenLimit());
-        }
+//        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.ROLE, role.getId());
+//        if (dataPermission != null) {
+//            roleDto.setModelIds(dataPermission.getModelIds());
+//            roleDto.setTokenLimit(dataPermission.getTokenLimit());
+//        }
+        I18nUtil.replaceSystemMessage(roleDto);
         return ReqResult.success(roleDto);
     }
 
@@ -145,11 +149,12 @@ public class SysRoleController extends BaseController {
         SysRoleDto roleDto = new SysRoleDto();
         BeanUtils.copyProperties(role, roleDto);
 
-        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.ROLE, role.getId());
-        if (dataPermission != null) {
-            roleDto.setModelIds(dataPermission.getModelIds());
-            roleDto.setTokenLimit(dataPermission.getTokenLimit());
-        }
+//        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.ROLE, role.getId());
+//        if (dataPermission != null) {
+//            roleDto.setModelIds(dataPermission.getModelIds());
+//            roleDto.setTokenLimit(dataPermission.getTokenLimit());
+//        }
+        I18nUtil.replaceSystemMessage(roleDto);
         return ReqResult.success(roleDto);
     }
 
@@ -186,21 +191,23 @@ public class SysRoleController extends BaseController {
         if (CollectionUtils.isEmpty(roleList)) {
             return ReqResult.success();
         }
-        List<Long> roleIds = roleList.stream().map(SysRole::getId).toList();
-        List<SysDataPermission> dataPermissionList = sysDataPermissionApplicationService.getByTargetList(PermissionTargetTypeEnum.ROLE, roleIds);
-        Map<Long, SysDataPermission> permissionMap = dataPermissionList.stream()
-                .collect(Collectors.toMap(SysDataPermission::getTargetId, p -> p, (a, b) -> a));
+//        List<Long> roleIds = roleList.stream().map(SysRole::getId).toList();
+//        List<SysDataPermission> dataPermissionList = sysDataPermissionApplicationService.getByTargetList(PermissionTargetTypeEnum.ROLE, roleIds);
+//        Map<Long, SysDataPermission> permissionMap = dataPermissionList.stream()
+//                .collect(Collectors.toMap(SysDataPermission::getTargetId, p -> p, (a, b) -> a));
 
         List<SysRoleDto> dtoList = roleList.stream().map(r -> {
             SysRoleDto roleDto = new SysRoleDto();
             BeanUtils.copyProperties(r, roleDto);
-            SysDataPermission dataPermission = permissionMap.get(r.getId());
-            if (dataPermission != null) {
-                roleDto.setModelIds(dataPermission.getModelIds());
-                roleDto.setTokenLimit(dataPermission.getTokenLimit());
-            }
+//            SysDataPermission dataPermission = permissionMap.get(r.getId());
+//            if (dataPermission != null) {
+//                roleDto.setModelIds(dataPermission.getModelIds());
+//                roleDto.setTokenLimit(dataPermission.getTokenLimit());
+//            }
             return roleDto;
         }).collect(Collectors.toList());
+
+        I18nUtil.replaceSystemMessage(dtoList);
         return ReqResult.success(dtoList);
     }
 
@@ -272,14 +279,38 @@ public class SysRoleController extends BaseController {
         }
         SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.ROLE, roleId);
         SysDataPermissionBindDto result = SysDataPermissionConverter.toDto(dataPermission);
-        if (result != null) {
-            result.setModelIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.MODEL));
-            result.setAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.AGENT));
-            result.setPageAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.PAGE));
-        }
+        result = result == null ? new SysDataPermissionBindDto() : result;
+
+        result.setModelIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.MODEL));
+        result.setAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.AGENT));
+        result.setPageAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.PAGE));
+        Map<String, String> openApiConfigMap = sysSubjectPermissionApplicationService.listSubjectKeyConfigByTarget(
+                PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.OPEN_API);
+        List<SysDataPermissionBindDto.OpenApiConfig> openApiConfigs = openApiConfigMap.entrySet().stream()
+                .map(entry -> {
+                    SysDataPermissionBindDto.OpenApiConfig config = new SysDataPermissionBindDto.OpenApiConfig();
+                    config.setKey(entry.getKey());
+                    if (StringUtils.isNotBlank(entry.getValue())) {
+                        try {
+                            Map<String, Integer> valueMap = JsonSerializeUtil.parseObject(entry.getValue(), new TypeReference<Map<String, Integer>>() {});
+                            config.setRpm(valueMap == null ? null : valueMap.get("rpm"));
+                            config.setRpd(valueMap == null ? null : valueMap.get("rpd"));
+                        } catch (Exception ignore) {
+                            config.setRpm(null);
+                            config.setRpd(null);
+                        }
+                    }
+                    return config;
+                })
+                .toList();
+        result.setOpenApiConfigs(openApiConfigs);
+
+        result.setKnowledgeIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.KNOWLEDGE));
+
         return ReqResult.success(result);
     }
 
@@ -321,7 +352,8 @@ public class SysRoleController extends BaseController {
         
         // 转换为DTO
         List<MenuNodeDto> menuDtoList = MenuNodeConverter.convertMenuTreeToDtoTree(menuNodeList);
-        
+
+        I18nUtil.replaceSystemMessage(menuDtoList);
         return ReqResult.success(menuDtoList);
     }
 

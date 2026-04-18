@@ -63,8 +63,8 @@ public class CategoryApiServiceImpl implements CategoryApiService {
 
     @Override
     public List<CategoryDto> listByTypeAndTenantId(String type, Long tenantId) {
-        Assert.hasText(type, "type不能为空");
-        Assert.notNull(tenantId, "tenantId不能为空");
+        Assert.hasText(type, "type cannot be null");
+        Assert.notNull(tenantId, "tenantId cannot be null");
         List<Category> categories = TenantFunctions.callWithIgnoreCheck(() -> categoryApplicationService.listByTypeAndTenantId(type, tenantId));
         return categories.stream()
                 .map(this::convertToDto)

@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Data
 public class TopicGenDto implements Serializable {
 
-    @JsonPropertyDescription("符合上下文交流的标题，控制在5到15字，禁止生成与主题意义不想干的标题，对于毫无意义的上下文，例如用户输入错误或者随意输入的内容不用总结，返回空即可")
+    @JsonPropertyDescription("Contextually appropriate titles, ≤50 characters. Do not generate titles unrelated to the topic. For meaningless contexts, such as user input errors or arbitrary content, no summary is needed; return empty. Output language based on the <content>")
     private String topic;
 
 }

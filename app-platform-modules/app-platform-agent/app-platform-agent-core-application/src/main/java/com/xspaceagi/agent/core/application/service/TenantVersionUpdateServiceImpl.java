@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.xspaceagi.system.application.service.I18nImportService;
 import com.xspaceagi.system.application.service.PermissionImportService;
 import com.xspaceagi.system.infra.dao.entity.Tenant;
 import com.xspaceagi.system.infra.dao.service.TenantService;
@@ -46,6 +47,9 @@ public class TenantVersionUpdateServiceImpl {
     @Resource
     private PermissionImportService permissionImportService;
 
+    @Resource
+    private I18nImportService i18nImportService;
+
     @PostConstruct
     public void init() {
         tenantVersionUpgradeMap.put("1.0.2", (tenant) -> {
@@ -54,35 +58,35 @@ public class TenantVersionUpdateServiceImpl {
         });
 
         tenantVersionUpgradeMap.put("1.0.3", (tenant) -> {
-            // 更新 eco_market_client_config 表
+            // Update eco_market_client_config table
             String updateConfigSql = "UPDATE eco_market_client_config SET target_sub_type='ChatBot' " +
                     "WHERE target_type='Agent' AND target_sub_type IS NULL";
             int configUpdatedRows = jdbcTemplate.update(updateConfigSql);
-            log.info("更新 eco_market_client_config 表，影响行数：{}，", configUpdatedRows);
+            log.info("Updated eco_market_client_config table, affected rows: {},", configUpdatedRows);
 
-            // 更新 eco_market_client_publish_config 表
+            // Update eco_market_client_publish_config table
             String updatePublishConfigSql = "UPDATE eco_market_client_publish_config SET target_sub_type='ChatBot' " +
                     "WHERE target_type='Agent' AND target_sub_type IS NULL";
             int publishConfigUpdatedRows = jdbcTemplate.update(updatePublishConfigSql);
-            log.info("更新 eco_market_client_publish_config 表，影响行数：{}", publishConfigUpdatedRows);
+            log.info("Updated eco_market_client_publish_config table, affected rows: {}", publishConfigUpdatedRows);
         });
 
         tenantVersionUpgradeMap.put("1.0.4", (tenant) -> {
             String updateSql = "UPDATE custom_page_config SET cover_img=icon, cover_img_source_type='SYSTEM' WHERE cover_img IS NULL AND icon IS NOT NULL;";
             int updatedRows = jdbcTemplate.update(updateSql);
-            log.info("更新 custom_page_config 表，影响行数：{}，", updatedRows);
+            log.info("Updated custom_page_config table, affected rows: {},", updatedRows);
         });
 
 //        tenantVersionUpgradeMap.put("1.0.5", (tenant) -> {
-//            //让所有的文档分段，重新全文检索，同步一次es，确保数据没有遗漏
+//            // Let all document segments re-perform full-text search, sync to ES once, ensuring no data is missed
 //            String updateSql = "update knowledge_raw_segment set fulltext_sync_status=0;";
 //            int updatedRows = jdbcTemplate.update(updateSql);
-//            log.info("更新 knowledge_raw_segment 表，影响行数：{}，", updatedRows);
+//            log.info("Updated knowledge_raw_segment table, affected rows: {},", updatedRows);
 //        });
 
         tenantVersionUpgradeMap.put("1.0.6.1", (tenant) -> {
-            log.info("初始化菜单权限，租户ID：{}", tenant.getId());
-            // 权限相关表如果在执行此方法时还未创建完成，会抛出异常，升级管控会等待并重试，此处不需特殊处理
+            log.info("Initialize menu permissions, tenant ID: {}", tenant.getId());
+            // If permission-related tables are not yet created when executing this method, an exception will be thrown. The upgrade control will wait and retry, no special handling needed here
             permissionImportService.importToTenant(tenant, "1.0");
         });
 
@@ -90,8 +94,18 @@ public class TenantVersionUpdateServiceImpl {
             permissionImportService.importDiffToTenant(tenant, "1.1");
         });
 
+        tenantVersionUpgradeMap.put("1.0.7.7", (tenant) -> {
+            // permission update
+            permissionImportService.importDiffToTenant(tenant, "1.2");
+        });
+
+        tenantVersionUpgradeMap.put("1.0.7.9", (tenant) -> {
+            i18nImportService.importLangToTenant(tenant, "1.0");
+            i18nImportService.importConfigToTenant(tenant, "1.0");
+        });
+
         new Thread(() -> {
-            //升级版本需要的定制化内容
+            // Customized content required for version upgrade
             while (true) {
                 try {
                     tenantService.list().forEach(tenant -> {
@@ -99,9 +113,9 @@ public class TenantVersionUpdateServiceImpl {
                             RequestContext.setThreadTenantId(tenant.getId());
                             tenantVersionUpgradeMap.forEach((version, upgrade) -> {
                                 if (compareVersion(tenant.getVersion(), version) < 0 && compareVersion(tenant.getVersion(), newVersion) < 0) {
-                                    log.info("{} 升级版本开始，租户ID：{}", version, tenant.getId());
+                                    log.info("{} Version upgrade started, tenant ID: {}", version, tenant.getId());
                                     upgrade.accept(tenant);
-                                    log.info("{} 升级版本结束，租户ID：{}", version, tenant.getId());
+                                    log.info("{} Version upgrade completed, tenant ID: {}", version, tenant.getId());
                                 }
                             });
                             tenant.setVersion(newVersion);
@@ -112,7 +126,7 @@ public class TenantVersionUpdateServiceImpl {
                     });
                     break;
                 } catch (Exception e) {
-                    log.error("升级版本数据更新失败，进入重试", e);
+                    log.error("Version upgrade data update failed, entering retry", e);
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e1) {
@@ -125,9 +139,9 @@ public class TenantVersionUpdateServiceImpl {
     }
 
     /**
-     * 语义化版本比较，支持形如 x.y.z 的数字点分版本号。
-     * 返回值语义与 String.compareTo 一致：
-     * <0 表示 v1 < v2，0 表示相等，>0 表示 v1 > v2。
+     * Semantic version comparison, supports numeric dot-separated version numbers like x.y.z.
+     * Return value semantics are consistent with String.compareTo:
+     * <0 means v1 < v2, 0 means equal, >0 means v1 > v2.
      */
     private int compareVersion(String v1, String v2) {
         if (v1 == null && v2 == null) {
@@ -159,8 +173,8 @@ public class TenantVersionUpdateServiceImpl {
         try {
             return Integer.parseInt(part);
         } catch (NumberFormatException e) {
-            // 非数字版本片段，按 0 处理，避免影响整体升级逻辑
-            log.warn("版本号片段不是数字，将按 0 处理: {}", part);
+            // Non-numeric version fragment, treat as 0 to avoid affecting overall upgrade logic
+            log.warn("Version fragment is not a number, will be treated as 0: {}", part);
             return 0;
         }
     }
@@ -173,9 +187,9 @@ public class TenantVersionUpdateServiceImpl {
         modelConfigDto.setScope(ModelConfig.ModelScopeEnum.Tenant);
         modelConfigDto.setCreatorId(-1L);
         modelConfigDto.setTenantId(tenantId);
-        modelConfigDto.setDescription("本模型由女娲平台提供的试用模型，请尽快更换使用自有模型。");
-        modelConfigDto.setName("glm-4.7-anthropic");
-        modelConfigDto.setModel("glm-4.7");
+        modelConfigDto.setDescription("This model is a trial model provided by the Nuwax. Please replace it with your own model as soon as possible.");
+        modelConfigDto.setName("glm-5.1-anthropic");
+        modelConfigDto.setModel("glm-5.1");
         modelConfigDto.setType(ModelTypeEnum.Chat);
         modelConfigDto.setFunctionCall(ModelFunctionCallEnum.StreamCallSupported);
         modelConfigDto.setStrategy(ModelConfig.ModelStrategyEnum.RoundRobin);

@@ -62,9 +62,8 @@ public class QANodeHandler extends AbstractNodeHandler {
                     modelContext.setConversationId(workflowContext.getAgentContext().getConversationId());
                     modelContext.setModelConfig(qaNodeConfigDto.getModelConfig());
                     ModelCallConfigDto modelCallConfigDto = new ModelCallConfigDto();
-                    modelCallConfigDto.setSystemPrompt("根据用户的回答提取字段内容，遇到必须字段提取不出来时，可以为空，但杜绝编造");
-                    modelCallConfigDto.setUserPrompt(new StringBuilder().append("question").append(":").append(qaDto.getQuestion())
-                            .append("\n").append("answer:").append(answer).append("\n").toString());
+                    modelCallConfigDto.setSystemPrompt("Extract field content based on the user's answer. When mandatory fields cannot be extracted, they can be left blank, but do not fabricate information");
+                    modelCallConfigDto.setUserPrompt("question" + ":" + qaDto.getQuestion() + "\n" + "answer:" + answer + "\n");
                     modelCallConfigDto.setChatRound(0);
                     modelCallConfigDto.setStreamCall(true);
                     modelCallConfigDto.setOutputType(OutputTypeEnum.JSON);
@@ -76,13 +75,13 @@ public class QANodeHandler extends AbstractNodeHandler {
 
                     ModelInvoker modelInvoker = workflowContext.getWorkflowContextServiceHolder().getModelInvoker();
                     return modelInvoker.invoke(modelContext).last().map(result -> {
-                        log.info("用户回复提取结果:{}", modelContext.getModelCallResult().getData());
+                        log.info("User response extraction result:{}", modelContext.getModelCallResult().getData());
                         Object data = modelContext.getModelCallResult().getData();
                         if (data != null) {
                             Map<String, Object> res = (Map<String, Object>) data;
                             res.putAll(output);
                             //校验data中的数据是否符合output定义
-                            StringBuilder sb = new StringBuilder("请补充回答，以便获取以下信息\n");
+                            StringBuilder sb = new StringBuilder("Please provide additional information to obtain the following details\n");
                             AtomicBoolean flag = new AtomicBoolean(false);
                             qaNodeConfigDto.getOutputArgs().forEach(arg -> {
                                 if (arg.isRequire() && (res.get(arg.getName()) == null || "".equals(res.get(arg.getName())))) {
@@ -145,7 +144,10 @@ public class QANodeHandler extends AbstractNodeHandler {
 
     private void buildAndSendOutput(WorkflowContext workflowContext, WorkflowNodeDto node, String question, String extraQuestion, List<QaNodeConfigDto.OptionConfigDto> options, QaDto qaDtoCached) {
         if (options != null) {
-            options.removeIf(optionConfigDto -> optionConfigDto.getContent() == null || optionConfigDto.getContent().contains("用户回复无关内容时走此分支"));
+            options.removeIf(optionConfigDto -> optionConfigDto.getContent() == null);
+            if (!options.isEmpty()) {
+                options.remove(options.size() - 1);
+            }
         }
         AgentOutputDto agentOutputDto = new AgentOutputDto();
         agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.MESSAGE);

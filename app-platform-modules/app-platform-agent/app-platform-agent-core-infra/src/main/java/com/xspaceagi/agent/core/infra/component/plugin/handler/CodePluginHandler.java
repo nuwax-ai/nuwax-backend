@@ -10,7 +10,9 @@ import com.xspaceagi.agent.core.infra.code.CodeExecuteService;
 import com.xspaceagi.agent.core.infra.component.ArgExtractUtil;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginContext;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,7 +47,8 @@ public class CodePluginHandler extends AbstractPluginHandler {
         for (Arg inputArg : codePluginConfigDto.getInputArgs()) {
             Object value = extraParams(inputArg, pluginContext.getParams());
             if ((value == null || value.equals("")) && inputArg.isRequire()) {
-                throw new BizException(ArgExtractUtil.requireArgMsg(inputArg));
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                        ArgExtractUtil.requireArgMsg(inputArg));
             }
             params.put(inputArg.getName(), value);
         }
@@ -55,7 +58,8 @@ public class CodePluginHandler extends AbstractPluginHandler {
         pluginContext.setLogs(codeExecuteResultDto.getLogs());
         pluginContext.setError(codeExecuteResultDto.getError());
         if (Objects.isNull(codeExecuteResultDto.getSuccess()) || !codeExecuteResultDto.getSuccess()) {
-            throw new BizException(codeExecuteResultDto.getError());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    codeExecuteResultDto.getError() == null ? "" : codeExecuteResultDto.getError());
         }
         Map<String, Object> resultMap;
         Map<String, Object> outputMap = new HashMap<>();

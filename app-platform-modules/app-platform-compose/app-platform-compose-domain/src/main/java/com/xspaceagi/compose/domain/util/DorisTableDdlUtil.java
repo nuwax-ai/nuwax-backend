@@ -40,7 +40,7 @@ public class DorisTableDdlUtil {
     @Autowired
     public void setDorisProperties(DorisProperties dorisProperties) {
         DorisTableDdlUtil.dorisProperties = dorisProperties;
-        log.info("[DorisProperties] 启动时读取到的Doris配置: {}", JSON.toJSONString(dorisProperties));
+        log.info("[DorisProperties] Doris config at startup: {}", JSON.toJSONString(dorisProperties));
     }
 
     /**
@@ -54,10 +54,10 @@ public class DorisTableDdlUtil {
             List<CustomFieldDefinitionModel> fields) {
         if (tableModel == null || !StringUtils.hasText(tableModel.getDorisDatabase())
                 || !StringUtils.hasText(tableModel.getDorisTable())) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义、数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义、数据库名或表名不能为空");
         }
         if (CollectionUtils.isEmpty(fields)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "创建表时至少需要一个字段");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "创建表时至少需要一个字段");
         }
 
         // 固定 id 作为唯一键
@@ -96,7 +96,7 @@ public class DorisTableDdlUtil {
                 .append("\n    \"enable_unique_key_merge_on_write\" = \"true\"\n")
                 .append(")");
 
-        log.debug("构建的 CREATE TABLE SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
+        log.debug("Built CREATE TABLE SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
                 sql.toString());
         return sql.toString();
     }
@@ -158,7 +158,7 @@ public class DorisTableDdlUtil {
      */
     private static String buildColumnDefinitionSql(CustomFieldDefinitionModel field) {
         if (field == null || !StringUtils.hasText(field.getFieldName())) {
-            log.warn("跳过无效的字段定义");
+            log.warn("Skipping invalid field definition");
             return ""; // Or throw exception, depending on business logic
         }
 
@@ -196,7 +196,7 @@ public class DorisTableDdlUtil {
                     fieldSql.append(" DEFAULT ").append(formattedDefault);
                 } else if (formattedDefault != null && isNotNull && "NULL".equals(formattedDefault)) {
                     // Log a warning if the column is NOT NULL but the default resolves to NULL
-                    log.warn("字段 '{}' 被定义为 NOT NULL，但提供的默认值解析为 NULL。将不为此字段添加 DEFAULT 子句。", field.getFieldName());
+                    log.warn("Field '{}' is NOT NULL but default resolves to NULL; no DEFAULT clause will be added.", field.getFieldName());
                 }
             }
         }
@@ -215,7 +215,7 @@ public class DorisTableDdlUtil {
      */
     private static String convertToDorisTypeDefinition(Integer fieldTypeCode) {
         if (fieldTypeCode == null) {
-            log.warn("字段类型代码为 null，返回默认定义: {}", TableFieldTypeEnum.STRING.getDorisDefinition());
+            log.warn("Field type code is null, returning default definition: {}", TableFieldTypeEnum.STRING.getDorisDefinition());
             return TableFieldTypeEnum.STRING.getDorisDefinition();
         }
 
@@ -225,7 +225,7 @@ public class DorisTableDdlUtil {
             }
         }
 
-        log.warn("根据 code {} 未找到对应的 TableFieldTypeEnum, 返回默认定义: {}",
+        log.warn("No TableFieldTypeEnum for code {}, default def: {}",
                 fieldTypeCode, TableFieldTypeEnum.STRING.getDorisDefinition());
         return TableFieldTypeEnum.STRING.getDorisDefinition();
     }
@@ -254,7 +254,7 @@ public class DorisTableDdlUtil {
         }
         if (typeEnum == TableFieldTypeEnum.STRING && fieldTypeCode != null
                 && !TableFieldTypeEnum.STRING.getCode().equals(fieldTypeCode)) {
-            log.warn("未找到字段类型代码 {} 对应的枚举, 将按 STRING 处理默认值", fieldTypeCode);
+            log.warn("No enum for field type code {}, default as STRING", fieldTypeCode);
         }
 
         switch (typeEnum) {
@@ -265,7 +265,7 @@ public class DorisTableDdlUtil {
                     Double.parseDouble(defaultValue);
                     return defaultValue;
                 } catch (NumberFormatException e) {
-                    log.warn("字段类型为数字，但默认值 '{}' 格式不正确，将按字符串处理", defaultValue);
+                    log.warn("Field is numeric but default '{}' is invalid, treating as string", defaultValue);
                     return "'" + BuildSqlUtil.escapeSqlString(defaultValue) + "'";
                 }
             case BOOLEAN:
@@ -273,13 +273,13 @@ public class DorisTableDdlUtil {
                     return "1";
                 if ("false".equalsIgnoreCase(defaultValue) || "0".equals(defaultValue))
                     return "0";
-                log.warn("字段类型为布尔，但默认值 '{}' 格式不正确，将使用 '0'", defaultValue);
+                log.warn("Field is boolean but default '{}' is invalid, using '0'", defaultValue);
                 return "0";
             case DATE:
                 if ("CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue.trim())) {
                     return "CURRENT_TIMESTAMP";
                 }
-                log.warn("字段类型为日期(DATETIME)，但默认值 '{}' 不是 'CURRENT_TIMESTAMP'，不会为此字段生成 DEFAULT 子句.", defaultValue);
+                log.warn("DATETIME field: default '{}' is not CURRENT_TIMESTAMP; no DEFAULT clause.", defaultValue);
                 return null;
             case MEDIUMTEXT:
             case STRING:
@@ -312,7 +312,7 @@ public class DorisTableDdlUtil {
 
         List<String> alterStatements = new ArrayList<>();
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            log.error("数据库名或表名不能为空");
+            log.error("Database name or table name cannot be empty");
             return alterStatements; // 返回空列表
         }
         if (newFields == null) {
@@ -379,14 +379,14 @@ public class DorisTableDdlUtil {
             if (!newFieldMap.containsKey(fieldName)) {
                 // 旧字段在新字段列表中不存在，需要生成 DROP COLUMN 语句
                 // 注意：调用者需要根据业务规则（例如表是否有数据）来决定是否执行此语句
-                log.warn("检测到需要删除的字段: {}, 调用者应检查是否有数据再执行DROP操作!", fieldName);
+                log.warn("Column marked for drop: {}; ensure no data before DROP!", fieldName);
                 alterStatements.add(String.format("ALTER TABLE `%s`.`%s` DROP COLUMN `%s`",
                         database, table, fieldName));
             }
         }
 
         if (!alterStatements.isEmpty()) {
-            log.info("为表 {}.{} 生成了 {} 条 ALTER 语句: {}", database, table, alterStatements.size(), alterStatements);
+            log.info("Generated {} ALTER statements for {}.{}: {}", database, table, alterStatements.size(), alterStatements);
         }
 
         return alterStatements;
@@ -398,7 +398,7 @@ public class DorisTableDdlUtil {
      */
     private static String buildAddColumnSql(CustomFieldDefinitionModel field) {
         if (field == null || !StringUtils.hasText(field.getFieldName())) {
-            log.warn("无法为无效字段生成 ADD COLUMN 语句");
+            log.warn("Cannot ADD COLUMN for invalid field");
             return null;
         }
         StringBuilder sql = new StringBuilder();
@@ -462,7 +462,7 @@ public class DorisTableDdlUtil {
      */
     public static String getCreateTableDdl(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SHOW CREATE TABLE `" + database + "`.`" + table + "`";
     }
@@ -476,7 +476,7 @@ public class DorisTableDdlUtil {
      */
     public static String getTableExistsSql(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SELECT count(*) FROM information_schema.tables WHERE table_schema = '"
                 + BuildSqlUtil.escapeSqlString(database) +
@@ -492,7 +492,7 @@ public class DorisTableDdlUtil {
      */
     public static String getTableCountSql(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SELECT COUNT(*) FROM `" + BuildSqlUtil.escapeSqlString(database) + "`.`"
                 + BuildSqlUtil.escapeSqlString(table) + "`";
@@ -603,7 +603,7 @@ public class DorisTableDdlUtil {
                     && (!Objects.equals(existingField.getDefaultValue(), field.getDefaultValue())
                     || !Objects.equals(existingField.getFieldDescription(), field.getFieldDescription()));
             if (existingField != null && Objects.isNull(defaultTableFieldEnum) && fieldChange) {
-                log.warn("字段 [{}] 类型从 {} 变更为 {}，正在生成 MODIFY COLUMN 语句，请确认Doris支持此变更且无数据丢失风险",
+                log.warn("Field [{}] type changed from {} to {}, generating MODIFY COLUMN; confirm Doris supports this without data loss",
                         field.getFieldName(), existingField.getFieldType(), field.getFieldType());
                 boolean isNotNull = DorisConfigContants.FIXED_FIELD_NULLABLE ? false
                         : field.getNullableFlag() != null && field.getNullableFlag() == -1;

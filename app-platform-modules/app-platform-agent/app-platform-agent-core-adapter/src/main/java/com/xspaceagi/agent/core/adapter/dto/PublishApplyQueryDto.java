@@ -11,7 +11,7 @@ import java.io.Serializable;
 public class PublishApplyQueryDto implements Serializable {
 
     @Schema(description = "发布类型")
-    @NotNull(message = "targetType不能为空，对于智能体和应用都传Agent或不传")
+    @NotNull(message = "targetType is required; use Agent for agents and apps, or omit")
     private Published.TargetType targetType;
 
     @Schema(description = "发布子类型类型：PageApp 和 Agent")

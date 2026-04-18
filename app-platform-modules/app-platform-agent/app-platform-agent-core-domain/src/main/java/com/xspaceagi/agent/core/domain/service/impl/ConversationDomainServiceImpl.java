@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Service
 public class ConversationDomainServiceImpl implements ConversationDomainService {
 
-    private static final String DEFAULT_TOPIC = "未命名会话";
+    private static final String DEFAULT_TOPIC = "Unnamed conversation";
     @Resource
     private ConversationRepository conversationRepository;
 
@@ -102,14 +102,12 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
 
     @Override
     public Conversation getConversation(Long id) {
+        if (id == null) {
+            return null;
+        }
         LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Conversation::getId, id);
-        try {
-            RequestContext.addTenantIgnoreEntity(Conversation.class);
-            return conversationRepository.getOne(queryWrapper);
-        } finally {
-            RequestContext.removeTenantIgnoreEntity(Conversation.class);
-        }
+        return TenantFunctions.callWithIgnoreCheck(() -> conversationRepository.getOne(queryWrapper));
     }
 
     @Override

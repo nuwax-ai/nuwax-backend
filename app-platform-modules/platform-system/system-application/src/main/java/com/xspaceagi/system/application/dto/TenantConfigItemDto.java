@@ -1,16 +1,20 @@
 package com.xspaceagi.system.application.dto;
 
 import com.xspaceagi.system.infra.dao.entity.TenantConfig;
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
 
+@I18n(module = "TenantConfig")
 @Data
 public class TenantConfigItemDto implements Serializable {
 
     private Long tenantId;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "配置项名称")
     private String name;
 

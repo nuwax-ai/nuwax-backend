@@ -79,7 +79,7 @@ public class EcoMarketServerApiService {
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
 
-        log.info("初始化生态市场服务器API调用服务，使用Fastjson2进行JSON处理");
+        log.info("Init eco-market server API client (Fastjson2 JSON)");
     }
 
     /**
@@ -89,9 +89,9 @@ public class EcoMarketServerApiService {
     public void init() {
         try {
             this.serverBaseUrl = ecoMarketConfig.getServerBaseUrl();
-            log.info("初始化生态市场服务器API调用服务，服务器URL: {}", this.serverBaseUrl);
+            log.info("Init eco-market server API client, URL: {}", this.serverBaseUrl);
         } catch (Exception e) {
-            log.warn("生态市场配置初始化异常，将在首次使用时尝试重新获取: {}", e.getMessage());
+            log.warn("Eco-market config init error, will retry on first use: {}", e.getMessage());
         }
     }
 
@@ -106,9 +106,9 @@ public class EcoMarketServerApiService {
         if (serverBaseUrl == null) {
             try {
                 serverBaseUrl = ecoMarketConfig.getServerBaseUrl();
-                log.info("延迟初始化生态市场服务器API URL: {}", serverBaseUrl);
+                log.info("Lazy init eco-market server API URL: {}", serverBaseUrl);
             } catch (Exception e) {
-                log.error("获取服务器基础URL失败", e);
+                log.error("Get server base URL failed", e);
                 throw new RuntimeException("无法获取生态市场服务器基础URL，请检查eco-market.server.base-url配置", e);
             }
         }
@@ -155,8 +155,8 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("客户端注册请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001,
+                    log.error("Client register request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound,
                             "请求失败，状态码: " + response.code());
                 }
 
@@ -181,14 +181,14 @@ public class EcoMarketServerApiService {
 
                     return result.getData();
                 } else {
-                    log.error("客户端注册失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001,
+                    log.error("Client register failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用客户端注册接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, e.getMessage());
+            log.error("Client register API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, e.getMessage());
         }
     }
 
@@ -260,7 +260,7 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("验证客户端凭证请求失败，状态码: {}", response.code());
+                    log.error("Verify client credential request failed, status: {}", response.code());
                     return false;
                 }
 
@@ -273,8 +273,8 @@ public class EcoMarketServerApiService {
                 return result != null && result.isSuccess() && Boolean.TRUE.equals(result.getData());
             }
         } catch (IOException e) {
-            log.error("调用服务器验证接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002, e.getMessage());
+            log.error("Server verify API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
         }
     }
 
@@ -309,8 +309,8 @@ public class EcoMarketServerApiService {
             // 发送POST请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("获取服务器配置详情请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Get server config detail request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
@@ -322,14 +322,14 @@ public class EcoMarketServerApiService {
                 if (result != null && result.isSuccess()) {
                     return result.getData();
                 } else {
-                    log.error("获取服务器配置详情失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Failed to get server config detail: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器配置详情接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002, e.getMessage());
+            log.error("Server config detail API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
         }
     }
 
@@ -365,8 +365,8 @@ public class EcoMarketServerApiService {
             // 发送POST请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("批量获取服务器配置详情请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Batch get server config details request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
@@ -378,14 +378,14 @@ public class EcoMarketServerApiService {
                 if (result != null && result.isSuccess()) {
                     return result.getData();
                 } else {
-                    log.error("批量获取服务器配置详情失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Batch get server config details failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器批量配置详情接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002, e.getMessage());
+            log.error("Exception calling batch server config detail API", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
         }
     }
 
@@ -421,8 +421,8 @@ public class EcoMarketServerApiService {
             // 发送POST请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("批量获取服务器配置详情请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Batch get server config details request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
@@ -434,14 +434,14 @@ public class EcoMarketServerApiService {
                 if (result != null && result.isSuccess()) {
                     return result.getData();
                 } else {
-                    log.error("批量获取服务器配置详情失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Batch get server config details failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器批量配置详情接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002, e.getMessage());
+            log.error("Exception calling batch server config detail API", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
         }
     }
 
@@ -468,8 +468,8 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("保存服务器配置请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003,
+                    log.error("Save server config request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
@@ -482,14 +482,14 @@ public class EcoMarketServerApiService {
                     // 将结果转换为指定类型
                     return JSON.parseObject(JSON.toJSONString(result.getData()), responseType);
                 } else {
-                    log.error("保存服务器配置失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003,
+                    log.error("Save server config failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器保存配置接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003, e.getMessage());
+            log.error("Server save config API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed, e.getMessage());
         }
     }
 
@@ -525,14 +525,14 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("下线服务器配置请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8004,
+                    log.error("Offline server config request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 ReqResult<Void> result = JSON.parseObject(responseBody,
@@ -543,8 +543,8 @@ public class EcoMarketServerApiService {
                 return result != null && result.isSuccess();
             }
         } catch (IOException e) {
-            log.error("调用服务器下线配置接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8004, e.getMessage());
+            log.error("Server offline config API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineConfigFailed, e.getMessage());
         }
     }
 
@@ -580,14 +580,14 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("撤销发布服务器配置请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8004,
+                    log.error("Revoke publish server config request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 ReqResult<Void> result = JSON.parseObject(responseBody,
@@ -597,8 +597,8 @@ public class EcoMarketServerApiService {
                 return result != null && result.isSuccess();
             }
         } catch (IOException e) {
-            log.error("调用服务器撤销发布配置接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8004, e.getMessage());
+            log.error("Server revoke publish API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketOfflineConfigFailed, e.getMessage());
         }
     }
 
@@ -633,14 +633,14 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("查询配置状态请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8005,
+                    log.error("Query config status request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketQueryConfigStatusFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 ReqResult<Map<String, Object>> result = JSON.parseObject(responseBody,
@@ -650,14 +650,14 @@ public class EcoMarketServerApiService {
                 if (result != null && result.isSuccess()) {
                     return result.getData();
                 } else {
-                    log.error("查询配置状态失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8005,
+                    log.error("Query config status failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketQueryConfigStatusFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器查询配置状态接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8005, e.getMessage());
+            log.error("Server query config status API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketQueryConfigStatusFailed, e.getMessage());
         }
     }
 
@@ -686,17 +686,17 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("保存并发布服务器配置请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003,
+                    log.error("Save-and-publish server config request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed,
                             "请求失败，状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
-                log.debug("从服务器获取响应体: {}", responseBody);
+                log.debug("Server response body: {}", responseBody);
 
                 // 使用Fastjson2解析响应
                 ReqResult<Object> result = JSON.parseObject(responseBody,
@@ -707,14 +707,14 @@ public class EcoMarketServerApiService {
                     // 将结果转换为指定类型
                     return JSON.parseObject(JSON.toJSONString(result.getData()), responseType);
                 } else {
-                    log.error("保存并发布服务器配置失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003,
+                    log.error("Save-and-publish server config failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed,
                             result != null ? result.getMessage() : "未知错误");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器保存并发布配置接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003, e.getMessage());
+            log.error("Server save-and-publish API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed, e.getMessage());
         }
     }
 
@@ -727,7 +727,7 @@ public class EcoMarketServerApiService {
      */
     public SuperPage<ServerConfigListRespDTO> queryServerConfigList(PageQueryVo<ServerConfigQueryRequest> reqDTO) {
         try {
-            log.info("调用服务器配置列表查询接口: reqDTO={}", reqDTO);
+            log.info("Server config list query: reqDTO={}", reqDTO);
             String url = buildApiUrl(EcoMarketApiConstant.SERVER_API_BASE + "/config/list");
 
             // 构建请求体
@@ -744,14 +744,14 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("查询服务器配置列表请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Query server config list request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             "状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 // 使用Fastjson2解析带泛型的分页结果
@@ -761,10 +761,10 @@ public class EcoMarketServerApiService {
                         });
 
                 if (result == null || !result.isSuccess()) {
-                    log.error("查询服务器配置列表失败: errorCode={}, errorMsg={}",
+                    log.error("Query server config list failed: errorCode={}, errorMsg={}",
                             result != null ? result.getCode() : "NULL",
                             result != null ? result.getMessage() : "查询失败");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             result != null ? result.getMessage() : "查询服务器配置失败");
                 }
 
@@ -773,8 +773,8 @@ public class EcoMarketServerApiService {
                 return superPage;
             }
         } catch (IOException e) {
-            log.error("调用服务器配置列表查询接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8026);
+            log.error("Exception calling server config list API", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketCenterUpgrading);
         }
     }
 
@@ -787,7 +787,7 @@ public class EcoMarketServerApiService {
      */
     public List<ServerConfigDetailRespDTO> queryAutoUseConfigList() {
         try {
-            log.info("查询自动租户启用的配置信息");
+            log.info("Query auto tenant enable configs");
             String url = buildApiUrl("/api/system/eco/market/server/autoUse/autoUseList");
 
             // 构建请求，添加客户端凭证到请求头
@@ -802,14 +802,14 @@ public class EcoMarketServerApiService {
             // 发送请求
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("查询服务器配置列表请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    log.error("Query server config list request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             "状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 // 使用Fastjson2解析带泛型的分页结果
@@ -819,18 +819,18 @@ public class EcoMarketServerApiService {
                         });
 
                 if (result == null || !result.isSuccess()) {
-                    log.error("查询服务器配置列表失败: errorCode={}, errorMsg={}",
+                    log.error("Query server config list failed: errorCode={}, errorMsg={}",
                             result != null ? result.getCode() : "NULL",
                             result != null ? result.getMessage() : "查询失败");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002,
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
                             result != null ? result.getMessage() : "查询服务器配置失败");
                 }
 
                 return result.getData();
             }
         } catch (IOException e) {
-            log.error("调用服务器配置列表查询接口异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8026);
+            log.error("Exception calling server config list API", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketCenterUpgrading);
         }
     }
 
@@ -848,7 +848,7 @@ public class EcoMarketServerApiService {
                              String clientId, String clientSecret) {
         try {
             String url = buildApiUrl(EcoMarketApiConstant.ServerConfig.UPLOAD_PAGE_ZIP);
-            log.info("上传页面zip包到服务器端: fileName={}, size={}, contentType={}", fileName, fileBytes.length, contentType);
+            log.info("Upload page zip to server: fileName={}, size={}, contentType={}", fileName, fileBytes.length, contentType);
 
             MediaType fileMediaType = MediaType.parse(contentType != null ? contentType : "application/octet-stream");
             RequestBody fileBody = RequestBody.create(fileBytes, fileMediaType);
@@ -870,13 +870,13 @@ public class EcoMarketServerApiService {
 
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("上传文件到服务器端请求失败，状态码: {}", response.code());
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040, "上传文件失败，状态码: " + response.code());
+                    log.error("Upload file to server request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed, "上传文件失败，状态码: " + response.code());
                 }
 
                 var responseBodyObj = response.body();
                 if (responseBodyObj == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8027);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
                 
@@ -886,17 +886,17 @@ public class EcoMarketServerApiService {
 
                 if (result != null && result.isSuccess()) {
                     String fileUrl = result.getData();
-                    log.info("页面zip包上传成功: fileName={}, url={}", fileName, fileUrl);
+                    log.info("Page zip upload OK: fileName={}, url={}", fileName, fileUrl);
                     return fileUrl;
                 } else {
-                    log.error("上传页面zip包到服务器端失败: {}", result != null ? result.getMessage() : "未知错误");
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040,
+                    log.error("Page zip upload to server failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed,
                             result != null ? result.getMessage() : "上传页面zip包失败");
                 }
             }
         } catch (IOException e) {
-            log.error("调用服务器页面zip包上传接口异常: fileName={}", fileName, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040, "上传页面zip包失败: " + e.getMessage());
+            log.error("Server page zip upload API error: fileName={}", fileName, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed, "上传页面zip包失败: " + e.getMessage());
         }
     }
 

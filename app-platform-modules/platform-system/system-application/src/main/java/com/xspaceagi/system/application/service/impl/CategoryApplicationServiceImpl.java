@@ -12,7 +12,9 @@ import com.xspaceagi.system.application.service.CategoryApplicationService;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.CategoryTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,7 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
 
     @Override
     public ReqResult<Category> create(Category category, UserContext userContext) {
-        log.info("[create] 创建分类, name={}, code={}, type={}", category.getName(), category.getCode(), category.getType());
+        log.info("[create] Create category, name={}, code={}, type={}", category.getName(), category.getCode(), category.getType());
 
         // 校验类型
         if (CategoryTypeEnum.isInValid(category.getType())) {
@@ -59,7 +61,7 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
 
     @Override
     public ReqResult<Category> update(Category category, UserContext userContext) {
-        log.info("[update] 更新分类, id={}, name={}, code={}, type={}",
+        log.info("[update] Update category, id={}, name={}, code={}, type={}",
                 category.getId(), category.getName(), category.getCode(), category.getType());
 
         Category existing = categoryService.getById(category.getId());
@@ -71,7 +73,7 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
         // 校验租户
         if (!existing.getTenantId().equals(userContext.getTenantId())) {
             log.error("[update] 无权限操作该分类, id={}", category.getId());
-            throw new BizException("0004", "无权限操作该分类");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
 
         // 校验类型
@@ -116,7 +118,7 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
 
     @Override
     public ReqResult<Void> delete(Long id, UserContext userContext) {
-        log.info("[delete] 删除分类, id={}", id);
+        log.info("[delete] Delete category, id={}", id);
 
         Category existing = categoryService.getById(id);
         if (existing == null) {
@@ -127,7 +129,7 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
         // 校验租户
         if (!existing.getTenantId().equals(userContext.getTenantId())) {
             log.error("[delete] 无权限操作该分类, id={}", id);
-            throw new BizException("0004", "无权限操作该分类");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
 
         categoryService.removeById(id);

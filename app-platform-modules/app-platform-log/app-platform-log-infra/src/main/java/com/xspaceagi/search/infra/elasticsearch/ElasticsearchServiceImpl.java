@@ -77,7 +77,7 @@ public class ElasticsearchServiceImpl implements SearchService, ISearchRpcServic
 
     @Override
     public void bulkIndex(List<SearchDocument> list) {
-        Assert.noNullElements(list, "list不能为空");
+        Assert.noNullElements(list, "list cannot be left blank.");
         String finalIndexName = createIndexIfNotExists(list.get(0).getClass());
         BulkRequest.Builder br = new BulkRequest.Builder();
         for (SearchDocument object : list) {
@@ -92,12 +92,12 @@ public class ElasticsearchServiceImpl implements SearchService, ISearchRpcServic
             throw new RuntimeException(e);
         }
         if (result.errors()) {
-            throw new RuntimeException("批量索引失败");
+            throw new RuntimeException("Failed to batch build indexes.");
         }
     }
 
     private String createIndexIfNotExists(Class<? extends SearchDocument> searchDocumentClazz) {
-        Assert.notNull(searchDocumentClazz, "searchDocumentClazz不能为空");
+        Assert.notNull(searchDocumentClazz, "searchDocumentClazz cannot be left blank.");
         SearchIndex annotation = searchDocumentClazz.getAnnotation(SearchIndex.class);
         String indexName = searchDocumentClazz.getSimpleName();
         int shards = 3;
@@ -195,7 +195,7 @@ public class ElasticsearchServiceImpl implements SearchService, ISearchRpcServic
     @Override
     public SearchResult search(DocumentSearchRequest documentSearchRequest) {
         if (documentSearchRequest == null) {
-            throw new IllegalArgumentException("搜索参数不能为空");
+            throw new IllegalArgumentException("Search parameters cannot be empty");
         }
         log.info("搜索文档, documentSearchRequest {}", documentSearchRequest);
         Integer from = documentSearchRequest.getFrom();

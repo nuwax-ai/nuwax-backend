@@ -5,17 +5,17 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "查询开发服务器日志请求体")
+@Schema(description = "Dev server log query request body")
 public class GetDevLogReq {
 
-    @NotNull(message = "projectId 不能为空")
-    @Schema(description = "项目ID")
+    @NotNull(message = "projectId is required")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "起始行号")
+    @Schema(description = "Start line index")
     private Integer startIndex;
 
-    @Schema(description = "日志类型(main-主日志,temp-临时日志)")
+    @Schema(description = "Log type: main (primary log) or temp (temporary log)")
     private String logType;
 
 }

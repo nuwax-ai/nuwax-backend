@@ -11,6 +11,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.PeriodTypeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -48,7 +49,7 @@ public class UserMetricController {
         if (todayTokenUsage == null) {
             todayTokenUsage = "0";
         }
-        UsageDto.Usage tokenUsage = UsageDto.Usage.builder().usage(todayTokenUsage.toString()).limit(userDataPermission.getTokenLimit().getLimitPerDay() == -1 ? "不限" : userDataPermission.getTokenLimit().getLimitPerDay().toString()).build();
+        UsageDto.Usage tokenUsage = UsageDto.Usage.builder().usage(todayTokenUsage.toString()).limit(userDataPermission.getTokenLimit().getLimitPerDay() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getTokenLimit().getLimitPerDay().toString()).build();
         tokenUsage.setDescription(tokenUsage.getUsage() + "/" + tokenUsage.getLimit());
         usageDto.setTodayTokenUsage(tokenUsage);
 
@@ -56,23 +57,23 @@ public class UserMetricController {
         if (generalAgentChatUsage == null) {
             generalAgentChatUsage = "0";
         }
-        usageDto.setTodayAgentPromptUsage(UsageDto.Usage.builder().usage(generalAgentChatUsage.toString()).limit(userDataPermission.getAgentDailyPromptLimit() == -1 ? "不限" : userDataPermission.getAgentDailyPromptLimit().toString()).build());
+        usageDto.setTodayAgentPromptUsage(UsageDto.Usage.builder().usage(generalAgentChatUsage.toString()).limit(userDataPermission.getAgentDailyPromptLimit() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getAgentDailyPromptLimit().toString()).build());
         usageDto.getTodayAgentPromptUsage().setDescription(usageDto.getTodayAgentPromptUsage().getUsage() + "/" + usageDto.getTodayAgentPromptUsage().getLimit());
 
         Object appDevChatUsage = bizMap.get(BizType.APP_DEV_CHAT.name() + "-" + PeriodType.DAY);
         if (appDevChatUsage == null) {
             appDevChatUsage = 0;
         }
-        usageDto.setTodayPageAppPromptUsage(UsageDto.Usage.builder().usage(appDevChatUsage.toString()).limit(userDataPermission.getPageDailyPromptLimit() == -1 ? "不限" : userDataPermission.getPageDailyPromptLimit().toString()).build());
+        usageDto.setTodayPageAppPromptUsage(UsageDto.Usage.builder().usage(appDevChatUsage.toString()).limit(userDataPermission.getPageDailyPromptLimit() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getPageDailyPromptLimit().toString()).build());
         usageDto.getTodayPageAppPromptUsage().setDescription(usageDto.getTodayPageAppPromptUsage().getUsage() + "/" + usageDto.getTodayPageAppPromptUsage().getLimit());
-        usageDto.setNewAgentUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxAgentCount() == -1 ? "不限" : userDataPermission.getMaxAgentCount().toString()).build());
-        usageDto.setNewTableUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxDataTableCount() == -1 ? "不限" : userDataPermission.getMaxDataTableCount().toString()).build());
-        usageDto.setNewTaskUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxScheduledTaskCount() == -1 ? "不限" : userDataPermission.getMaxScheduledTaskCount().toString()).build());
-        usageDto.setNewKnowledgeBaseUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxKnowledgeCount() == -1 ? "不限" : userDataPermission.getMaxKnowledgeCount().toString()).build());
-        usageDto.setKnowledgeBaseStorageUsage(UsageDto.Usage.builder().description(userDataPermission.getKnowledgeStorageLimitGb().compareTo(BigDecimal.valueOf(-1L)) == 0 ? "不限" : userDataPermission.getKnowledgeStorageLimitGb().toBigInteger() + "GB").build());
-        usageDto.setNewWorkspaceUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxSpaceCount() == -1 ? "不限" : userDataPermission.getMaxSpaceCount().toString()).build());
-        usageDto.setSandboxMemoryLimit(UsageDto.Usage.builder().description(userDataPermission.getAgentComputerMemoryGb() == null ? "不限" : userDataPermission.getAgentComputerMemoryGb() + "GB").build());
-        usageDto.setNewPageAppUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxPageAppCount() == -1 ? "不限" : userDataPermission.getMaxPageAppCount().toString()).build());
+        usageDto.setNewAgentUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxAgentCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxAgentCount().toString()).build());
+        usageDto.setNewTableUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxDataTableCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxDataTableCount().toString()).build());
+        usageDto.setNewTaskUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxScheduledTaskCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxScheduledTaskCount().toString()).build());
+        usageDto.setNewKnowledgeBaseUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxKnowledgeCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxKnowledgeCount().toString()).build());
+        usageDto.setKnowledgeBaseStorageUsage(UsageDto.Usage.builder().description(userDataPermission.getKnowledgeStorageLimitGb().compareTo(BigDecimal.valueOf(-1L)) == 0 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getKnowledgeStorageLimitGb().toBigInteger() + "GB").build());
+        usageDto.setNewWorkspaceUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxSpaceCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxSpaceCount().toString()).build());
+        usageDto.setSandboxMemoryLimit(UsageDto.Usage.builder().description(userDataPermission.getAgentComputerMemoryGb() == null ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getAgentComputerMemoryGb() + "GB").build());
+        usageDto.setNewPageAppUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxPageAppCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxPageAppCount().toString()).build());
 
         return ReqResult.success(usageDto);
     }

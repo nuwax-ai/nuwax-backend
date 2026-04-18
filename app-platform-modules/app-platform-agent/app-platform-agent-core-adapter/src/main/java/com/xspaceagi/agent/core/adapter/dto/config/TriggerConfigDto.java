@@ -12,12 +12,12 @@ public class TriggerConfigDto implements Serializable {
 
     //触发器名称
     @Schema(description = "触发器名称")
-    @NotNull(message = "触发器名称不能为空")
+    @NotNull(message = "Trigger name is required")
     private String name;
 
     //触发类型
     @Schema(description = "触发类型,TIME 定时触发, EVENT 事件触发")
-    @NotNull(message = "触发类型不能为空")
+    @NotNull(message = "Trigger type is required")
     private TriggerTypeEnum triggerType;
 
     //触发时区

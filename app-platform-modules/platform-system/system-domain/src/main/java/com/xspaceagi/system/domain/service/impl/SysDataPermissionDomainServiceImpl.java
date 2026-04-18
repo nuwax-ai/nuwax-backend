@@ -8,7 +8,9 @@ import com.xspaceagi.system.infra.dao.service.SysDataPermissionService;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +26,10 @@ public class SysDataPermissionDomainServiceImpl implements SysDataPermissionDoma
     @Override
     public void add(SysDataPermission dataPermission, UserContext userContext) {
         if (PermissionTargetTypeEnum.getByCode(dataPermission.getTargetType()) == null) {
-            throw new BizException("数据权限目标类型错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemDataPermissionTargetTypeInvalid);
         }
         if (dataPermission.getTargetId() == null) {
-            throw new BizException("数据权限目标ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemDataPermissionTargetIdInvalid);
         }
         dataPermission.setTenantId(userContext.getTenantId());
         dataPermission.setCreatorId(userContext.getUserId());
@@ -64,10 +66,10 @@ public class SysDataPermissionDomainServiceImpl implements SysDataPermissionDoma
     @Override
     public SysDataPermission getByTarget(PermissionTargetTypeEnum targetType, Long targetId) {
         if (targetType == null) {
-            throw new BizException("数据权限目标类型错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemDataPermissionTargetTypeInvalid);
         }
         if (targetId == null) {
-            throw new BizException("数据权限目标ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemDataPermissionTargetIdInvalid);
         }
         return sysDataPermissionService.getOne(Wrappers.<SysDataPermission>lambdaQuery()
                 .eq(SysDataPermission::getTargetType, targetType.getCode())
@@ -78,7 +80,7 @@ public class SysDataPermissionDomainServiceImpl implements SysDataPermissionDoma
     @Override
     public List<SysDataPermission> getByTargetList(PermissionTargetTypeEnum targetType, List<Long> targetIds) {
         if (targetType == null) {
-            throw new BizException("数据权限目标类型错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemDataPermissionTargetTypeInvalid);
         }
         if (targetIds == null || targetIds.isEmpty()) {
             return Collections.emptyList();

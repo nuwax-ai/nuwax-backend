@@ -68,12 +68,12 @@ public class DingtalkOpenApiClient {
                 String errCode = resp.getString("code");
                 String errMsg = resp.getString("message");
                 if (errMsg == null) errMsg = resp.getString("msg");
-                log.error("钉钉获取 AccessToken 失败: httpCode={}, code={}, message={}, 完整响应={}", result.httpCode, errCode, errMsg, resp);
+                log.error("DingTalk AccessToken failed: httpCode={}, code={}, message={}, body={}", result.httpCode, errCode, errMsg, resp);
             } else {
-                log.error("钉钉获取 AccessToken 失败: 响应为空, httpCode={}", result.httpCode);
+                log.error("DingTalk AccessToken failed: empty body, httpCode={}", result.httpCode);
             }
         } catch (Exception e) {
-            log.error("钉钉获取 AccessToken 异常: clientId={}", clientId, e);
+            log.error("DingTalk AccessToken error: clientId={}", clientId, e);
         }
         return null;
     }
@@ -93,7 +93,7 @@ public class DingtalkOpenApiClient {
         String token = getAccessToken();
         if (StringUtils.isBlank(token)) {
             lastError = "AccessToken 为空";
-            log.error("钉钉发送互动卡片失败: AccessToken 为空，请检查 clientId/clientSecret 或钉钉应用配置");
+            log.error("DingTalk interactive card failed: AccessToken empty; check clientId/clientSecret/app");
             return false;
         }
 
@@ -152,10 +152,10 @@ public class DingtalkOpenApiClient {
             if (errMsg == null && resp != null) errMsg = resp.getString("message");
             if (errMsg == null && resp != null) errMsg = resp.getString("errmsg");
             lastError = String.format("httpCode=%d, errorCode=%s, errorMessage=%s, resp=%s", httpCode, errCode, errMsg, resp);
-            log.error("钉钉发送互动卡片失败: {}", lastError);
+            log.error("DingTalk interactive card failed: {}", lastError);
         } catch (Exception e) {
             lastError = "exception: " + e.getMessage();
-            log.error("钉钉发送互动卡片异常: conversationType={}, conversationId={}", conversationType, conversationId, e);
+            log.error("DingTalk interactive card error: conversationType={}, conversationId={}", conversationType, conversationId, e);
         }
         return false;
     }
@@ -195,10 +195,10 @@ public class DingtalkOpenApiClient {
             if (errCode == null && putResult.body != null) errCode = putResult.body.getString("errorCode");
             String errMsg = putResult.body != null ? putResult.body.getString("message") : null;
             if (errMsg == null && putResult.body != null) errMsg = putResult.body.getString("errorMessage");
-            log.error("钉钉更新互动卡片失败: httpCode={}, errorCode={}, errorMessage={}, resp={}",
+            log.error("DingTalk update card failed: httpCode={}, errorCode={}, errorMessage={}, resp={}",
                     code, errCode, errMsg, putResult.body);
         } catch (Exception e) {
-            log.error("钉钉更新互动卡片异常: outTrackId={}", outTrackId, e);
+            log.error("DingTalk update card error: outTrackId={}", outTrackId, e);
         }
         return false;
     }
@@ -335,14 +335,14 @@ public class DingtalkOpenApiClient {
             String body = JSON.toJSONString(Map.of("downloadCode", downloadCode, "robotCode", rc));
             PostResult result = postWithStatus(API_BASE + "/v1.0/robot/messageFiles/download", body, token);
             if (result.httpCode < 200 || result.httpCode >= 300 || result.body == null) {
-                log.warn("钉钉获取文件下载链接失败: httpCode={}, robotCode={}, downloadCodePrefix={}, body={}. " +
+                log.warn("DingTalk file download URL failed: httpCode={}, robotCode={}, downloadCodePrefix={}, body={}. " +
                         "排查建议: 1) 在钉钉开放平台【消息推送】获取 robotCode 并配置; 2) 群聊不支持文件下载，请在单聊中测试",
                         result.httpCode, rc, downloadCode != null && downloadCode.length() > 8 ? downloadCode.substring(0, 8) + "..." : downloadCode, result.body);
                 return null;
             }
             String downloadUrl = result.body.getString("downloadUrl");
             if (StringUtils.isBlank(downloadUrl)) {
-                log.warn("钉钉 downloadUrl 为空: body={}", result.body);
+                log.warn("DingTalk downloadUrl empty: body={}", result.body);
                 return null;
             }
             HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
@@ -355,9 +355,9 @@ public class DingtalkOpenApiClient {
                     return StreamUtils.copyToByteArray(is);
                 }
             }
-            log.warn("钉钉下载文件失败: url={}, httpCode={}", downloadUrl, code);
+            log.warn("DingTalk download file failed: url={}, httpCode={}", downloadUrl, code);
         } catch (Exception e) {
-            log.warn("钉钉下载文件异常: downloadCode={}", downloadCode, e);
+            log.warn("DingTalk download file error: downloadCode={}", downloadCode, e);
         }
         return null;
     }

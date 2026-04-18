@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "IM 渠道配置统计请求")
 public class ImChannelStatisticsRequest {
 
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long spaceId;
 }

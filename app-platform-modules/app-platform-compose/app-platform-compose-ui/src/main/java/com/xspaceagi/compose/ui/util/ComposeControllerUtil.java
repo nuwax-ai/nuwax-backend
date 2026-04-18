@@ -28,11 +28,11 @@ public class ComposeControllerUtil {
      */
     public static void enrichRowDataWithUserInfo(Map<String, Object> rowData, UserContext userContext) {
         if (rowData == null || userContext == null) {
-            log.warn("enrichRowDataWithUserInfo 调用时 rowData 或 userContext 为 null，跳过处理。");
+            log.warn("enrichRowDataWithUserInfo: rowData or userContext null, skip.");
             return;
         }
 
-        log.debug("处理 rowData，添加/移除用户信息并移除系统字段。UserContext: {}, Original rowData: {}", userContext, rowData);
+        log.debug("Process rowData (user fields / system fields). UserContext: {}, rowData: {}", userContext, rowData);
 
         // UID: 必须存在，直接设置（或覆盖）
         String uid = null;
@@ -49,7 +49,7 @@ public class ComposeControllerUtil {
             rowData.put(DefaultTableFieldEnum.USER_NAME.getFieldName(), userName);
         } else {
             rowData.remove(DefaultTableFieldEnum.USER_NAME.getFieldName());
-            log.debug("UserContext 中的 userName 为 null，从 rowData 中移除了 key: {}",
+            log.debug("userName null, removed key: {}",
                     DefaultTableFieldEnum.USER_NAME.getFieldName());
         }
 
@@ -59,7 +59,7 @@ public class ComposeControllerUtil {
             rowData.put(DefaultTableFieldEnum.NICK_NAME.getFieldName(), nickName);
         } else {
             rowData.remove(DefaultTableFieldEnum.NICK_NAME.getFieldName());
-            log.debug("UserContext 中的 nickName 为 null，从 rowData 中移除了 key: {}",
+            log.debug("nickName null, removed key: {}",
                     DefaultTableFieldEnum.NICK_NAME.getFieldName());
         }
 
@@ -70,7 +70,7 @@ public class ComposeControllerUtil {
         removeSystemField(rowData, DefaultTableFieldEnum.CREATED);
         removeSystemField(rowData, DefaultTableFieldEnum.MODIFIED);
 
-        log.debug("处理后的 rowData: {}", rowData);
+        log.debug("Processed rowData: {}", rowData);
     }
 
     /**
@@ -82,7 +82,7 @@ public class ComposeControllerUtil {
         String fieldName = fieldEnum.getFieldName();
         if (rowData.containsKey(fieldName)) {
             Object removedValue = rowData.remove(fieldName);
-            log.debug("从 rowData 中移除了系统字段 '{}'，值为: {}", fieldName, removedValue);
+            log.debug("Removed system field '{}' from rowData, value: {}", fieldName, removedValue);
         }
     }
 }

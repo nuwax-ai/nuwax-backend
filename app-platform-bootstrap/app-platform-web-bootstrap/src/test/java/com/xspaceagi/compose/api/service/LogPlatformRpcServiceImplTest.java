@@ -72,16 +72,16 @@ public class LogPlatformRpcServiceImplTest {
         Long current = 1L;
         Long pageSize = 10L;
 
-        log.info("searchParams结果", JSON.toJSONString(searchParams));
+        log.info("searchParams result", JSON.toJSONString(searchParams));
 
         // Act - 执行搜索
         IPage<AgentLogModelResponse> result = logPlatformRpcService.searchAgentLogs(searchParams, current, pageSize);
 
         // Assert - 验证结果
-        log.info("搜索结果总数: {}", result.getTotal());
-        log.info("当前页数据量: {}", result.getRecords().size());
+        log.info("Total search hits: {}", result.getTotal());
+        log.info("Current page row count: {}", result.getRecords().size());
 
-        log.info("result结果", JSON.toJSONString(result));
+        log.info("result", JSON.toJSONString(result));
         // check 结果记录, RequestId("req_001333") 必须都是这个值的
         for (AgentLogModelResponse log : result.getRecords()) {
             assert (log.getRequestId().equals("req_001333"));
@@ -90,9 +90,9 @@ public class LogPlatformRpcServiceImplTest {
         // 如果有搜索结果，验证第一条记录的基本信息
         if (!result.getRecords().isEmpty()) {
             AgentLogModelResponse firstLog = result.getRecords().get(0);
-            log.info("第一条记录请求ID: {}", firstLog.getRequestId());
-            log.info("第一条记录用户输入: {}", firstLog.getUserInput());
-            log.info("第一条记录创建时间: {}", firstLog.getCreatedAt());
+            log.info("First row requestId: {}", firstLog.getRequestId());
+            log.info("First row user input: {}", firstLog.getUserInput());
+            log.info("First row createdAt: {}", firstLog.getCreatedAt());
 
             // 验证返回的记录包含必要的字段
             assert (firstLog.getRequestId() != null);

@@ -13,7 +13,9 @@ import com.xspaceagi.custompage.sdk.dto.ProjectType;
 import com.xspaceagi.custompage.sdk.dto.ProxyConfig;
 import com.xspaceagi.custompage.sdk.dto.ProxyConfigBackend;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
@@ -59,10 +61,10 @@ public class ProxyConfigService {
 
     public BackendVo selectBackend(String basePath, String realUri, ProxyConfig.ProxyEnv env, Long agentId) {
 
-        log.debug("selectBackend 开始 - basePath: {}, realUri: {}, env: {}", basePath, realUri, env);
+        log.debug("select Backend start - base Path: {}, real Uri: {}, env: {}", basePath, realUri, env);
 
         if (env == null) {
-            log.warn("selectBackend 失败 - env 为 null");
+            log.warn("select Backend failed - env is null");
             return null;
         }
 
@@ -71,11 +73,11 @@ public class ProxyConfigService {
             synchronized (this) {
                 if (customPageConfig == null) {
                     CustomPageConfigModel customPageConfigModel = customPageConfigRepository.getByBasePath(basePath);
-                    log.debug("查询配置结果 - basePath: {}, 配置存在: {}", basePath, customPageConfigModel != null);
+                    log.debug("query config result - base Path: {}, config exists: {}", basePath, customPageConfigModel != null);
 
                     customPageConfig = customPageConfigTranslator.convertToEntity(customPageConfigModel);
                     if (customPageConfig == null) {
-                        log.warn("selectBackend 失败 - 未找到 basePath: {} 的配置", basePath);
+                        log.warn("select Backend failed - base Path not found: {} config", basePath);
                         return null;
                     }
                     if (env == ProxyConfig.ProxyEnv.prod) {
@@ -87,7 +89,7 @@ public class ProxyConfigService {
 
         //下面逻辑中有对customPageConfig的操作，避免影响其他请求
         customPageConfig = (CustomPageConfig) JsonSerializeUtil.deepCopy(customPageConfig);
-        log.debug("找到配置 - ID: {}, 项目类型: {}", customPageConfig.getId(), customPageConfig.getProjectType());
+        log.debug("found config - ID: {}, project : {}", customPageConfig.getId(), customPageConfig.getProjectType());
         if (customPageConfig.getProxyConfigs() == null) {
             customPageConfig.setProxyConfigs(new ArrayList<>());
         }
@@ -103,14 +105,14 @@ public class ProxyConfigService {
                             customPageBuildModel = customPageBuildRepository
                                     .getByProjectId(customPageConfig.getId());
                             if (customPageBuildModel == null) {
-                                log.warn("selectBackend 失败 - 未找到项目ID: {} 的构建信息", customPageConfig.getId());
-                                throw new BizException("未找到项目构建信息");
+                                log.warn("select Backend failed - project ID not found: {} build info", customPageConfig.getId());
+                                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyProjectBuildNotFound);
                                 // return null;
                             }
 
                             if (customPageBuildModel.getDevPort() == null) {
-                                log.warn("selectBackend 失败 - 项目未启动开发服务器", customPageConfig.getId());
-                                throw new BizException("项目未启动开发服务器");
+                                log.warn("select Backend failed - project dev service not started", customPageConfig.getId());
+                                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyDevServerNotStarted);
                                 // return null;
                             }
                         }
@@ -140,7 +142,7 @@ public class ProxyConfigService {
                     }
                 }
 
-                log.debug("生成 dev 环境配置 - devUrl: {}", devUrl);
+                log.debug("generate dev environment config - dev Url: {}", devUrl);
                 ProxyConfig devProxyConfig = ProxyConfig.builder().path("/")
                         .healthCheckPath("/health")
                         .env(ProxyConfig.ProxyEnv.dev)
@@ -155,7 +157,7 @@ public class ProxyConfigService {
                     prodUrl += "/";
                 }
                 prodUrl += customPageConfig.getId();
-                log.debug("生成 prod 环境配置 - prodUrl: {}", prodUrl);
+                log.debug("generate prod environment config - prod Url: {}", prodUrl);
 
                 ProxyConfig prodProxyConfig = ProxyConfig.builder().path("/")
                         .healthCheckPath("/health")
@@ -175,26 +177,26 @@ public class ProxyConfigService {
         // 根据env过滤
         List<ProxyConfig> proxyConfigs = customPageConfig.getProxyConfigs().stream()
                 .filter(proxyConfig1 -> proxyConfig1.getEnv().equals(env)).collect(Collectors.toList());
-        log.debug("过滤后的代理配置数量: {}", proxyConfigs.size());
+        log.debug("filteredproxyconfigcount: {}", proxyConfigs.size());
 
         if (proxyConfigs.isEmpty()) {
-            log.warn("selectBackend 失败 - 未找到 env: {} 的代理配置", env);
+            log.warn("select Backend failed - env not found: {} proxy config", env);
             return null;
         }
 
         ProxyConfig proxyConfig = longestPrefixMatch(realUri, proxyConfigs);
         if (proxyConfig == null) {
-            log.warn("selectBackend 失败 - realUri: {} 无法匹配任何代理配置", realUri);
+            log.warn("select Backend failed - real Uri: {} cannot match any proxy config", realUri);
             return null;
         }
-        log.debug("匹配到代理配置 - path: {}, backend: {}", proxyConfig.getPath(),
+        log.debug("matchedproxyconfig - path: {}, backend: {}", proxyConfig.getPath(),
                 proxyConfig.getBackends().get(0).getBackend());
 
         URL url;
         try {
             url = new URL(proxyConfig.getBackends().get(0).getBackend());
         } catch (MalformedURLException e) {
-            log.error("无效的后端URL: {}", proxyConfig.getBackends().get(0).getBackend(), e);
+            log.error("invalid backend URL: {}", proxyConfig.getBackends().get(0).getBackend(), e);
             throw new RuntimeException(e);
         }
         BackendVo backendVo = new BackendVo();
@@ -218,7 +220,7 @@ public class ProxyConfigService {
             if (realUri.matches("^/page/\\w+(?:-\\d+)?/\\w+.*")) {
                 // 直接使用 realUri
                 backendVo.setUri(realUri);
-                log.warn("selectBackend [{}] realUri 包含页面路径模式，- uri: {}",
+                log.warn("select Backend [{}] real Uri contains page path pattern, - uri: {}",
                         env.name(), realUri);
             } else {
                 // 正常情况拼接完整路径
@@ -240,10 +242,10 @@ public class ProxyConfigService {
                     fullPath = "/proxy/" + devPort + fullPath;
                 }
                 backendVo.setUri(fullPath);
-                log.debug("selectBackend [-{}] 拼接完整路径 - fullPath: {}", env.name(), fullPath);
+                log.debug("select Backend [-{}] assemble full path - full Path: {}", env.name(), fullPath);
             }
         } else if (StringUtils.isNotBlank(url.getPath()) && !url.getPath().equals("/")) {
-            log.debug("拼接 URL - realUri: {}, proxyConfig.path: {}, url.getPath(): {}",
+            log.debug("assemble URL - real Uri: {}, proxy Config.path: {}, url.get Path(): {}",
                     realUri, proxyConfig.getPath(), url.getPath());
 
             // 移除path前缀，只移除开头匹配的部分
@@ -256,7 +258,7 @@ public class ProxyConfigService {
                     subUri = "/" + subUri;
                 }
             }
-            log.debug("计算 subUri - 替换后: {}", subUri);
+            log.debug("compute sub Uri - after replacement: {}", subUri);
 
             // 拼接 url.getPath() 和 subUri
             String urlPath = url.getPath();
@@ -267,7 +269,7 @@ public class ProxyConfigService {
         } else {
             backendVo.setUri(realUri);
         }
-        log.debug("selectBackend 成功 - 后端地址: {}://{}:{}{}", backendVo.getScheme(), backendVo.getHost(),
+        log.debug("select Backend succeeded - backend address: {}://{}:{}{}", backendVo.getScheme(), backendVo.getHost(),
                 backendVo.getPort(), backendVo.getUri());
         return backendVo;
     }

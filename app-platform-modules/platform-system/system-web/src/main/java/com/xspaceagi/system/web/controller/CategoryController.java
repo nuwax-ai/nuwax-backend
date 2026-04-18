@@ -6,6 +6,7 @@ import com.xspaceagi.system.application.service.CategoryApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Category;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.controller.base.BaseController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,10 +39,10 @@ public class CategoryController extends BaseController {
     @Operation(summary = "创建分类")
     @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Category> create(@RequestBody CategoryCreateDto dto) {
-        log.info("[create] 创建分类, name={}, code={}, type={}", dto.getName(), dto.getCode(), dto.getType());
-        Assert.notNull(dto.getName(), "名称不能为空");
-        Assert.notNull(dto.getCode(), "编码不能为空");
-        Assert.notNull(dto.getType(), "类型不能为空");
+        log.info("[create] Create category, name={}, code={}, type={}", dto.getName(), dto.getCode(), dto.getType());
+        Assert.notNull(dto.getName(), "Name is required");
+        Assert.notNull(dto.getCode(), "Code is required");
+        Assert.notNull(dto.getType(), "Type is required");
         Category category = new Category();
         category.setName(dto.getName());
         category.setCode(dto.getCode());
@@ -58,9 +59,9 @@ public class CategoryController extends BaseController {
     @Operation(summary = "更新分类")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Category> update(@RequestBody CategoryUpdateDto dto) {
-        log.info("[update] 更新分类, id={}, name={}, code={}, type={}",
+        log.info("[update] Update category, id={}, name={}, code={}, type={}",
                 dto.getId(), dto.getName(), dto.getCode(), dto.getType());
-        Assert.notNull(dto.getId(), "ID不能为空");
+        Assert.notNull(dto.getId(), "ID is required");
         Category category = new Category();
         category.setId(dto.getId());
         category.setName(dto.getName());
@@ -78,7 +79,7 @@ public class CategoryController extends BaseController {
     @Operation(summary = "删除分类")
     @PostMapping(value = "/delete/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> delete(@PathVariable("id") Long id) {
-        log.info("[delete] 删除分类, id={}", id);
+        log.info("[delete] Delete category, id={}", id);
         Assert.notNull(id, "ID不能为空");
         return categoryApplicationService.delete(id, getUser());
     }
@@ -92,6 +93,8 @@ public class CategoryController extends BaseController {
     public ReqResult<List<Category>> listByType(@RequestParam("type") String type) {
         log.info("[listByType] 查询分类列表, type={}", type);
         List<Category> list = categoryApplicationService.listByType(type);
+
+        I18nUtil.replaceSystemMessage(list);
         return ReqResult.success(list);
     }
 

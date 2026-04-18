@@ -26,7 +26,9 @@ import com.xspaceagi.im.web.service.ImFileShareService;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -146,13 +148,13 @@ public class IMFeishuController {
             appIdFromEvent = request.getParameter("appId");
         }
 
-        log.info("飞书 Webhook 请求体: appId={}, contentLength={}, body={}",
+        log.info("Feishu Webhook body: appId={}, contentLength={}, body={}",
                 appIdFromEvent, bodyBytes.length,
                 bodyBytes.length > 200 ? new String(bodyBytes, 0, 200, StandardCharsets.UTF_8) + "..." : new String(bodyBytes, StandardCharsets.UTF_8));
 
         // 验证 appId 是否存在
         if (StringUtils.isBlank(appIdFromEvent)) {
-            log.error("飞书 Webhook 缺少必要参数: appId，无法处理请求");
+            log.error("Feishu Webhook missing required appId; cannot process");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("application/json;charset=UTF-8");
             response.getOutputStream().write(JSON.toJSONString(Map.of(
@@ -165,7 +167,7 @@ public class IMFeishuController {
         if (isUrlVerification(bodyBytes)) {
             String challenge = parseChallenge(bodyBytes);
             if (challenge != null) {
-                log.info("手动处理飞书 URL 验证");
+                log.info("Handling Feishu URL verification manually");
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getOutputStream().write(JSON.toJSONString(Map.of("challenge", challenge)).getBytes(StandardCharsets.UTF_8));
@@ -179,7 +181,7 @@ public class IMFeishuController {
         if (StringUtils.isNotBlank(eventId)) {
             String dedupKey = FEISHU_EVENT_DEDUP_PREFIX + eventId;
             if (redisUtil.get(dedupKey) != null) {
-                log.info("飞书事件去重跳过: eventId={}", eventId);
+                log.info("Feishu event dedupe skip: eventId={}", eventId);
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json;charset=UTF-8");
                 return;
@@ -192,7 +194,7 @@ public class IMFeishuController {
         if (isEncrypted) {
             FeishuBotConfig config = getBotConfig(appIdFromEvent);
             if (StringUtils.isBlank(config.getEncryptKey())) {
-                log.error("飞书 Webhook 收到加密消息，但配置中缺少 encryptKey。appId={}", appIdFromEvent);
+                log.error("Feishu Webhook encrypted payload but encryptKey missing in config. appId={}", appIdFromEvent);
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getOutputStream().write(JSON.toJSONString(Map.of(
@@ -208,7 +210,7 @@ public class IMFeishuController {
 
         // 检查 EventResp 状态码，非 200 表示处理失败
         if (eventResp.getStatusCode() != HttpServletResponse.SC_OK) {
-            log.error("飞书 Webhook 处理失败: appId={}, statusCode={}", appIdFromEvent, eventResp.getStatusCode());
+            log.error("Feishu Webhook handling failed: appId={}, statusCode={}", appIdFromEvent, eventResp.getStatusCode());
 
             // 尝试从响应体中提取错误信息
             String errorMsg = "飞书 Webhook 处理失败";
@@ -217,7 +219,7 @@ public class IMFeishuController {
             if (eventResp.getBody() != null && eventResp.getBody().length > 0) {
                 try {
                     String bodyStr = new String(eventResp.getBody(), StandardCharsets.UTF_8);
-                    log.error("飞书 Webhook 错误响应: appId={}, body={}", appIdFromEvent,
+                    log.error("Feishu Webhook error response: appId={}, body={}", appIdFromEvent,
                             bodyStr.length() > 500 ? bodyStr.substring(0, 500) + "..." : bodyStr);
 
                     // 根据响应体判断错误类型
@@ -235,7 +237,7 @@ public class IMFeishuController {
                         }
                     }
                 } catch (Exception e) {
-                    log.debug("解析飞书错误响应失败", e);
+                    log.debug("Failed to parse Feishu error response", e);
                 }
             } else if (isEncryptedRequest(bodyBytes)) {
                 // 加密请求但没有响应体，很可能是 encryptKey 错误导致解密失败
@@ -244,7 +246,7 @@ public class IMFeishuController {
             }
 
             // 记录详细的错误日志
-            log.error("飞书 Webhook 错误: {} - {}。appId={}", errorMsg, detailMsg, appIdFromEvent);
+            log.error("Feishu Webhook error: {} - {}. appId={}", errorMsg, detailMsg, appIdFromEvent);
         }
 
         writeEventResp(response, eventResp);
@@ -270,7 +272,7 @@ public class IMFeishuController {
                 if (StringUtils.isNotBlank(uuid)) return uuid;
             }
         } catch (Exception e) {
-            log.debug("解析飞书 event_id 失败: {}", e.getMessage());
+            log.debug("Failed to parse Feishu event_id: {}", e.getMessage());
         }
         return null;
     }
@@ -305,7 +307,7 @@ public class IMFeishuController {
                 }
             }
         } catch (Exception e) {
-            log.debug("解析飞书事件 app_id 失败: {}", e.getMessage());
+            log.debug("Failed to parse Feishu event app_id: {}", e.getMessage());
         }
         return null;
     }
@@ -372,7 +374,7 @@ public class IMFeishuController {
             ListChatResp resp = client.im().v1().chat().list(req);
 
             if (!resp.success()) {
-                log.warn("获取飞书群列表失败: code={}, msg={}", resp.getCode(), resp.getMsg());
+                log.warn("Feishu group list failed: code={}, msg={}", resp.getCode(), resp.getMsg());
                 return ReqResult.error(resp.getMsg());
             }
             ListChatRespBody body = resp.getData();
@@ -393,7 +395,7 @@ public class IMFeishuController {
                     .build();
             return ReqResult.success(result);
         } catch (Exception e) {
-            log.error("获取飞书群列表异常", e);
+            log.error("Feishu group list error", e);
             return ReqResult.error(e.getMessage());
         }
     }
@@ -463,11 +465,11 @@ public class IMFeishuController {
                 long createTimeMs = Long.parseLong(createTimeStr);
                 long ageSeconds = (System.currentTimeMillis() - createTimeMs) / 1000;
                 if (ageSeconds > FEISHU_MESSAGE_MAX_AGE_SECONDS) {
-                    log.info("飞书历史消息跳过: messageId={}, createTime={}, ageSeconds={}", message.getMessageId(), createTimeStr, ageSeconds);
+                    log.info("Feishu history message skipped: messageId={}, createTime={}, ageSeconds={}", message.getMessageId(), createTimeStr, ageSeconds);
                     return;
                 }
             } catch (NumberFormatException e) {
-                log.debug("解析消息 create_time 失败: {}", createTimeStr);
+                log.debug("Failed to parse message create_time: {}", createTimeStr);
             }
         }
         String messageId = message.getMessageId();
@@ -481,7 +483,7 @@ public class IMFeishuController {
                 ? FEISHU_MSG_DEDUP_PREFIX + messageId
                 : FEISHU_MSG_DEDUP_PREFIX + StringUtils.defaultString(chatId) + ":" + StringUtils.defaultString(message.getCreateTime());
         if (redisUtil != null && redisUtil.get(dedupKey) != null) {
-            log.info("飞书消息去重跳过: messageId={}, chatId={}", messageId, chatId);
+            log.info("Feishu message dedupe skip: messageId={}, chatId={}", messageId, chatId);
             return;
         }
         if (redisUtil != null) {
@@ -490,7 +492,7 @@ public class IMFeishuController {
 
         FeishuBotConfig botConfig = getBotConfig(appId);
 
-        log.info("处理飞书消息: appId={}, messageId={}, chatId={}, chatType={}, content={}",
+        log.info("Handle Feishu message: appId={}, messageId={}, chatId={}, chatType={}, content={}",
                 appId, messageId, chatId, chatType, content);
 
         String userMessage = parseTextContent(content);
@@ -499,7 +501,7 @@ public class IMFeishuController {
         // 无文本且无附件时提示（若 content 非空但解析失败，记录便于排查）
         if (StringUtils.isBlank(userMessage) && attachmentKeys.isEmpty()) {
             if (StringUtils.isNotBlank(content)) {
-                log.warn("飞书消息解析失败，未提取到文本或附件: messageId={}, content={}", messageId, content);
+                log.warn("Feishu message parse failed, no text or attachment: messageId={}, content={}", messageId, content);
             }
             reply(messageId, buildCard("抱歉，暂不支持此消息格式的处理", false), botConfig);
             return;
@@ -600,20 +602,20 @@ public class IMFeishuController {
                 reply(messageId, buildCard("Agent 正在执行任务，请等待当前任务完成后再发送新请求", false), botConfig);
                 return;
             }
-            log.error("处理飞书消息异常: messageId={}, chatId={}", messageId, chatId, e);
+            log.error("Feishu message handling error: messageId={}, chatId={}", messageId, chatId, e);
             reply(messageId, buildCard("执行异常，请稍后重试", false), botConfig);
         }
     }
 
     private FeishuBotConfig getBotConfig(String appId) {
         if (StringUtils.isBlank(appId)) {
-            throw new BizException("飞书 Webhook 缺少必要参数: appId");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imFeishuWebhookMissingAppId);
         }
         // 飞书回调无登录上下文，按 appId 查 ImChannelConfig 获取配置及租户ID
         ImChannelConfigDto cfg = imChannelConfigApplicationService.getFeishuConfigByAppId(appId);
         ImChannelConfigDto.FeishuConfig feishu = cfg != null ? cfg.getFeishu() : null;
         if (feishu == null || StringUtils.isBlank(feishu.getAppId())) {
-            throw new BizException("飞书机器人未绑定");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imFeishuBotNotBound);
         }
         FeishuBotConfig config = FeishuBotConfig.builder()
                 .appId(feishu.getAppId())
@@ -762,7 +764,7 @@ public class IMFeishuController {
                 collectKeysFromContent(post.get("content"), result);
             }
         } catch (Exception e) {
-            log.debug("解析飞书附件 key 失败: {}", e.getMessage());
+            log.debug("Failed to parse Feishu attachment key: {}", e.getMessage());
         }
         return result;
     }
@@ -872,13 +874,13 @@ public class IMFeishuController {
                     .build();
             ReplyMessageResp resp = client.im().v1().message().reply(req);
             if (!resp.success()) {
-                log.warn("回复飞书消息失败: messageId={}, msgType={}, code={}, msg={}",
+                log.warn("Feishu reply failed: messageId={}, msgType={}, code={}, msg={}",
                         messageId, reply.getMsgType(), resp.getCode(), resp.getMsg());
                 return null;
             }
             return resp.getData() != null ? resp.getData().getMessageId() : null;
         } catch (Exception e) {
-            log.error("回复飞书消息异常: messageId={}, msgType={}", messageId, reply.getMsgType(), e);
+            log.error("Feishu reply error: messageId={}, msgType={}", messageId, reply.getMsgType(), e);
             return null;
         }
     }
@@ -915,10 +917,10 @@ public class IMFeishuController {
                             }
                         },
                         e -> {
-                            log.error("飞书流式执行异常: messageId={}", originalMessageId, e);
+                            log.error("Feishu stream execution error: messageId={}", originalMessageId, e);
                             patchMessage(replyMessageId, buildCard("执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), true), botConfig);
                         },
-                        () -> log.debug("飞书流式执行完成: messageId={}", originalMessageId)
+                        () -> log.debug("Feishu stream execution done: messageId={}", originalMessageId)
                 );
     }
 
@@ -953,7 +955,7 @@ public class IMFeishuController {
                 return openId;
             }
         } catch (Exception e) {
-            log.debug("飞书获取 sessionName 失败，回退 sessionKey: chatType={}, chatId={}, openId={}, err={}",
+            log.debug("Feishu sessionName failed, fallback sessionKey: chatType={}, chatId={}, openId={}, err={}",
                     chatType, chatId, openId, e.getMessage());
         }
         return StringUtils.isNotBlank(openId) ? openId : chatId;
@@ -992,7 +994,7 @@ public class IMFeishuController {
             }
             return token;
         } catch (Exception e) {
-            log.debug("获取飞书 tenant_access_token 失败: {}", e.getMessage());
+            log.debug("Feishu tenant_access_token failed: {}", e.getMessage());
             return null;
         }
     }
@@ -1081,10 +1083,10 @@ public class IMFeishuController {
                     .build();
             PatchMessageResp resp = client.im().v1().message().patch(req);
             if (!resp.success()) {
-                log.warn("patch 飞书消息失败: messageId={}, code={}, msg={}", messageId, resp.getCode(), resp.getMsg());
+                log.warn("Feishu patch message failed: messageId={}, code={}, msg={}", messageId, resp.getCode(), resp.getMsg());
             }
         } catch (Exception e) {
-            log.error("patch 飞书消息异常: messageId={}", messageId, e);
+            log.error("Feishu patch message error: messageId={}", messageId, e);
         }
     }
 

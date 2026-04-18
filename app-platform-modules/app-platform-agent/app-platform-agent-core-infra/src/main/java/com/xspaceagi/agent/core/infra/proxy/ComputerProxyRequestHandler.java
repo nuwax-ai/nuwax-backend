@@ -32,8 +32,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 计算机资源透明代理，支持 websocket 协议升级
- * 支持 desktop、audio、ime 等路径的代理
+ * Computer resource transparent proxy, supports websocket protocol upgrade
+ * Supports proxy for paths like desktop, audio, ime, etc.
  */
 public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
@@ -51,7 +51,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     private final Bootstrap httpsClientBootstrap;
     private final int pendingMax;
 
-    // 待转发队列（连接未建立前缓存请求/帧，防止丢包）
+    // Pending forward queue (cache requests/frames before connection established to prevent packet loss)
     private final Queue<Object> pendingMessages = new LinkedList<>();
 
     private Channel targetChannel;
@@ -77,43 +77,43 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (msg instanceof HttpRequest request) { // 首个 HTTP 请求用于鉴权与握手
+        if (msg instanceof HttpRequest request) { // First HTTP request for authentication and handshake
             String uri = request.uri();
 
             Long cId = extractCId(uri);
             if (cId == null) {
                 ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_REQUEST, "cId 缺失或格式错误");
+                writeError(ctx, HttpResponseStatus.BAD_REQUEST, "cId is missing or format error");
                 return;
             }
 
-            // 根据 cId 获取目标服务器信息
+            // Get target server information based on cId
             SandboxServerConfig.SandboxServer sandboxServer;
             try {
                 sandboxServer = sandboxServerConfigService.selectServer(cId);
             } catch (Exception e) {
-                log.warn("获取沙箱服务器失败, cId={}", cId, e);
+                log.warn("Failed to get sandbox server, cId={}", cId, e);
                 ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "获取沙箱服务器失败: " + e.getMessage());
+                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Failed to get sandbox server: " + e.getMessage());
                 return;
             }
 
             String targetUrl = sandboxServer.getServerVncUrl();
             if (StringUtils.isBlank(targetUrl)) {
                 ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "沙箱服务器VNC地址未配置");
+                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Sandbox server VNC address not configured");
                 return;
             }
             ConversationDto currentConversation = sandboxServer.getCurrentConversation();
             if (currentConversation == null) {
                 ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "当前会话未绑定沙箱服务器");
+                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Current session not bound to sandbox server");
                 return;
             }
-            // 获取当前会话的创建者ID
+            // Get creator ID of current session
             Long computerUserId = currentConversation.getUserId();
 
-            // 设置 RequestContext，用于多租户查询 user_share 表
+            // Set RequestContext, used for multi-tenant user_share table query
             Long tenantId = currentConversation.getTenantId();
             RequestContext<?> requestContext = null;
             try {
@@ -125,7 +125,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     RequestContext.set(requestContext);
                 }
 
-                // 从 URL 参数或 Cookie 中获取 shareKey
+                // Get shareKey from URL parameter or Cookie
                 String shareKey = getShareKeyFromUri(uri);
                 String skCookieKey = "vnc_sk_" + computerUserId + "=";
                 if (shareKey == null) {
@@ -137,7 +137,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     userShare = userShareRpcService.getUserShare(shareKey, true);
                 }
 
-                // 如果是共享链接，将 shareKey 和 expire 存储在 channel 的 attribute 中，用于在响应中设置 Cookie
+                // If it is a shared link, store shareKey and expire in channel attribute, used to set Cookie in response
                 if (userShare != null
                         && userShare.getType() == UserShareDto.UserShareType.DESKTOP
                         && userShare.getUserId().equals(computerUserId)
@@ -145,21 +145,21 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     ctx.channel().attr(ComputerProxyServerContainer.SHARE_KEY).set(shareKey);
                     ctx.channel().attr(ComputerProxyServerContainer.SHARE_EXPIRE).set(userShare.getExpire());
                     ctx.channel().attr(ComputerProxyServerContainer.SK_COOKIE_KEY).set(skCookieKey);
-                } else {// 非共享链接
+                } else {// Non-shared link
                     if (!allow(computerUserId, request, ctx)) {
                         ReferenceCountUtil.release(msg);
-                        writeError(ctx, HttpResponseStatus.FORBIDDEN, "无权访问当前用户资源");
+                        writeError(ctx, HttpResponseStatus.FORBIDDEN, "No permission to access current user resource");
                         return;
                     }
                 }
             } finally {
-                // 清理 RequestContext
+                // Clean up RequestContext
                 if (requestContext != null) {
                     RequestContext.remove();
                 }
             }
 
-            // 解析目标URL
+            // Parse target URL
             URI targetUri = URI.create(targetUrl);
             String targetScheme = StringUtils.defaultIfBlank(targetUri.getScheme(), "http");
             this.targetHost = targetUri.getHost();
@@ -174,13 +174,13 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
             request.headers().set(HttpHeaderNames.HOST, this.targetHost + ":" + this.targetPort);
             addForwardHeaders(ctx, request);
-            // 所有转发到沙箱服务器的请求都增加 x-api-key 头
+            // Add x-api-key header to all requests forwarded to sandbox server
             request.headers().set("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey());
             log.debug("Computer proxy request uri={} host={} origin={}", uri,
                     request.headers().get(HttpHeaderNames.HOST),
                     request.headers().get(HttpHeaderNames.ORIGIN));
 
-            if (targetChannel == null) { // 首次建立与目标的连接
+            if (targetChannel == null) { // First time establishing connection to target
                 ctx.channel().config().setOption(ChannelOption.AUTO_READ, false);
                 boolean enableSsl = "https".equalsIgnoreCase(targetUri.getScheme());
                 Bootstrap clientBootstrap = enableSsl ? httpsClientBootstrap : httpClientBootstrap;
@@ -199,7 +199,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
                         String connection = request.headers().get("Connection");
                         String upgrade = request.headers().get("Upgrade");
-                        // 协议升级走原生通道，支持websocket
+                        // Protocol upgrade goes through native channel, supports websocket
                         if ((connection != null && connection.equals("Upgrade")) || (upgrade != null && upgrade.equals("websocket"))) {
                             ctx.channel().pipeline().remove("httpServerCodec");
                             future.channel().pipeline().remove("httpClientCodec");
@@ -223,15 +223,15 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // 非首个 HttpRequest 的数据转发（含握手后的内容或 WebSocket 帧）
+    // Non-first HttpRequest data forwarding (including content after handshake or WebSocket frames)
     private void forwardOther(ChannelHandlerContext ctx, Object msg) {
-        // 对于共享链接，检查过期时间（拦截 WebSocket 内部传输）
+        // For shared links, check expiration time (intercept WebSocket internal transmission)
         String shareKey = ctx.channel().attr(ComputerProxyServerContainer.SHARE_KEY).get();
         if (shareKey != null) {
             Date expire = ctx.channel().attr(ComputerProxyServerContainer.SHARE_EXPIRE).get();
             if (expire != null && expire.before(new Date())) {
-                // 共享链接已过期，发送消息并关闭连接
-                log.debug("Computer 分享已过期, 关闭链接. shareKey={}, expire={}", shareKey, expire);
+                // Shared link has expired, send message and close connection
+                log.debug("Computer share expired, closing link. shareKey={}, expire={}", shareKey, expire);
                 ReferenceCountUtil.release(msg);
                 sendShareExpiredMessage(ctx);
                 if (targetChannel != null) {
@@ -242,13 +242,13 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
-        if (targetChannel == null) { // 目标未连上时缓存，防止丢包
+        if (targetChannel == null) { // Cache when target not connected yet to prevent packet loss
             synchronized (pendingMessages) {
                 if (targetChannel == null) {
                     pendingMessages.offer(msg);
                     if (pendingMessages.size() >= pendingMax) {
-                        // 不在此处 release(msg)：msg 已入队，ctx.close() 会触发 channelInactive() -> clearPending()，
-                        // clearPending() 会对队列中所有消息（含本 msg）各 release 一次；此处再 release 会导致重复释放。
+                        // Do not release(msg) here: msg has been enqueued, ctx.close() will trigger channelInactive() -> clearPending(),
+                        // clearPending() will release all messages in queue (including this msg) once; releasing here again will cause duplicate release.
                         log.warn("pending queue overflow, closing channel. pendingMax={}", pendingMax);
                         writeError(ctx, HttpResponseStatus.SERVICE_UNAVAILABLE, "proxy pending overflow");
                         ctx.close();
@@ -263,7 +263,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // 释放挂起消息（异常/关闭时避免泄漏）
+    // Release pending messages (avoid leaks during exception/close)
     private void clearPending() {
         synchronized (pendingMessages) {
             Object pending;
@@ -281,7 +281,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
         } else {
             request.headers().set("X-Forwarded-For", xff + "," + remoteIp);
         }
-        // 将浏览器发起的 Origin 改写为目标站点，避免目标端的跨域校验导致握手失败
+        // Rewrite Origin initiated by browser to target site, avoid handshake failure due to target-side CORS validation
         if (request.headers().contains(HttpHeaderNames.ORIGIN)) {
             request.headers().set(HttpHeaderNames.ORIGIN, targetOrigin);
         }
@@ -295,7 +295,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     }
 
     private Long extractCId(String uri) {
-        // 尝试从 desktop 路径提取
+        // Try to extract from desktop path
         Matcher matcher = DESKTOP_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -305,7 +305,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 return null;
             }
         }
-        // 尝试从 audio 路径提取
+        // Try to extract from audio path
         matcher = AUDIO_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -315,7 +315,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 return null;
             }
         }
-        // 尝试从 ime 路径提取
+        // Try to extract from ime path
         matcher = IME_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -329,13 +329,13 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * 重写路径，添加 userId
+     * Rewrite path, add userId
      * /computer/desktop/{cId}/xxx -> /computer/vnc/{userId}/{cId}/xxx
      * /computer/audio/{cId}/xxx -> /computer/audio/{userId}/{cId}/xxx
      * /computer/ime/{cId}/xxx -> /computer/ime/{userId}/{cId}/xxx
      */
     private String rewriteUri(String uri, Long userId, SandboxServerConfig.SandboxServer sandboxServer) {
-        // 处理 desktop 路径
+        // Handle desktop path
         Matcher matcher = DESKTOP_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -350,7 +350,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             log.info("Computer proxy rewrite uri: {} -> {}", uri, newUri);
             return newUri;
         }
-        // 处理 audio 路径
+        // Handle audio path
         matcher = AUDIO_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -364,7 +364,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             log.info("Computer proxy rewrite uri: {} -> {}", uri, newUri);
             return newUri;
         }
-        // 处理 ime 路径
+        // Handle ime path
         matcher = IME_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
@@ -382,16 +382,16 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * 用户权限校验
+     * User permission validation
      */
     private boolean allow(Long vncUserId, HttpRequest request, ChannelHandlerContext ctx) {
         if (vncUserId == null) {
-            log.warn("没有获取到 VNC userId");
+            log.warn("Failed to get VNC userId");
             return false;
         }
         Long loginUserId = getLoginUserId(request, ctx);
         if (loginUserId == null) {
-            log.info("没有获取到登录 userId。 vncUserId={}", vncUserId);
+            log.info("Failed to get login userId. vncUserId={}", vncUserId);
             return false;
         }
         boolean allow = vncUserId.equals(loginUserId);
@@ -400,14 +400,14 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * 从请求中获取登录用户ID
-     * 支持从 _ticket 参数、Cookie、Authorization 头获取 token，再解析用户信息
+     * Get login user ID from request
+     * Supports getting token from _ticket parameter, Cookie, Authorization header, then parse user information
      */
     private Long getLoginUserId(HttpRequest request, ChannelHandlerContext ctx) {
         String token = null;
         String uri = request.uri();
 
-        // 处理_ticket兑换token
+        // Handle _ticket exchange token
         if (uri != null && uri.contains("_ticket=")) {
             Map<String, String> parseQueryString = parseQueryString(uri);
             if (parseQueryString.containsKey("_ticket")) {
@@ -436,7 +436,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     token = cookie.substring(start + "ticket=".length());
                 }
                 if (!token.isBlank()) {
-                    log.info("获取用户token成功(from Cookie ticket)");
+                    log.info("Successfully obtained user token (from Cookie ticket)");
                 }
             }
             cookie = cookie.replace("ticket=" + token, "");
@@ -460,11 +460,11 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             try {
                 UserDto userDto = authService.getLoginUserInfo(token);
                 if (userDto != null) {
-                    log.info("获取用户登录信息成功,loginUserId={}", userDto.getId());
+                    log.info("Successfully obtained user login information, loginUserId={}", userDto.getId());
                     return userDto.getId();
                 }
             } catch (Exception e) {
-                log.warn("获取用户登录信息失败, token={}", token, e);
+                log.warn("Failed to get user login information, token={}", token, e);
             }
         }
         return null;

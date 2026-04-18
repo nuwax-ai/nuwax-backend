@@ -26,14 +26,14 @@ public class EcoMarkerSecretWrapper {
      */
     public ClientSecretDTO obtainClientSecretOrRegister(Long tenantId) {
         if (Objects.isNull(tenantId)) {
-            log.error("租户ID不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8028);
+            log.error("Tenant ID cannot be empty");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
         }
 
         var secret = ecoMarketClientSecretDomainService.getByTenantId(tenantId);
         // 检查是否存在
         if (Objects.isNull(secret)) {
-            log.info("客户端密钥不存在，开始注册: tenantId={}", tenantId);
+            log.info("Client secret missing, starting registration: tenantId={}", tenantId);
             // 注册客户端
             var tenantName = "EcoMarket-Client-" + tenantId;
 
@@ -54,14 +54,14 @@ public class EcoMarkerSecretWrapper {
      */
     public ClientSecretDTO registerClientSecret(Long tenantId, String name, String description) {
         if (Objects.isNull(tenantId)) {
-            log.error("租户ID不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8028);
+            log.error("Tenant ID cannot be empty");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
         }
 
         var secret = ecoMarketClientSecretDomainService.getByTenantId(tenantId);
         // 检查是否存在
         if (Objects.isNull(secret)) {
-            log.info("客户端密钥不存在，开始注册: tenantId={}", tenantId);
+            log.info("Client secret missing, starting registration: tenantId={}", tenantId);
             // 注册客户端
             return ecoMarketClientSecretDomainService.getOrRegisterClientSecret(
                     tenantId,

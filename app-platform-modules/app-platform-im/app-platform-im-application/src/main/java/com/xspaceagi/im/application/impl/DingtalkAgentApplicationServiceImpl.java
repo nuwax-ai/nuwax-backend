@@ -12,8 +12,8 @@ import com.xspaceagi.im.application.DingtalkAgentApplicationService;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
-import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
+import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
@@ -69,7 +69,7 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
         }
 
         if (agentId == null || agentId <= 0) {
-            log.warn("钉钉智能体未配置 agent-id");
+            log.warn("DingTalk agent-id not configured");
             return AgentExecuteResultWithConv.builder().text("钉钉智能体未配置，请联系管理员").conversationId(null).agentId(agentId).build();
         }
 
@@ -115,7 +115,7 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
             String out = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return AgentExecuteResultWithConv.builder().text(out).conversationId(convId).agentId(agentId).build();
         } catch (Exception e) {
-            log.error("钉钉智能体执行异常: senderId={}", senderId, e);
+            log.error("DingTalk agent error: senderId={}", senderId, e);
             String err = "模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
             return AgentExecuteResultWithConv.builder().text(err).conversationId(null).agentId(agentId).build();
         } finally {

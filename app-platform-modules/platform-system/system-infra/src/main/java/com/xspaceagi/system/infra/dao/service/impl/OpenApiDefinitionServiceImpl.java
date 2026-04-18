@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.system.infra.dao.entity.OpenApiDefinition;
 import com.xspaceagi.system.infra.dao.service.OpenApiDefinitionService;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OpenApiDefinitionServiceImpl implements OpenApiDefinitionService {
@@ -30,8 +33,9 @@ public class OpenApiDefinitionServiceImpl implements OpenApiDefinitionService {
 
             // 使用 Jackson 将 JSON 转换为 Java 对象
             openApiDefinitions = objectMapper.readValue(
-                inputStream,
-                new TypeReference<List<OpenApiDefinition>>() {}
+                    inputStream,
+                    new TypeReference<List<OpenApiDefinition>>() {
+                    }
             );
 
             logger.info("成功加载 {} 个 OpenAPI 定义组", openApiDefinitions.size());
@@ -50,6 +54,25 @@ public class OpenApiDefinitionServiceImpl implements OpenApiDefinitionService {
 
     @Override
     public List<OpenApiDefinition> queryAll() {
-        return openApiDefinitions;
+        return openApiDefinitions.stream()
+                .map(this::cloneDefinition)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private OpenApiDefinition cloneDefinition(OpenApiDefinition src) {
+        OpenApiDefinition target = new OpenApiDefinition();
+        // 简单字段
+        target.setKey(src.getKey());
+        target.setName(src.getName());
+        target.setRole(src.getRole());
+        target.setPath(src.getPath());
+        // 深拷贝 apiList
+        if (src.getApiList() != null) {
+            target.setApiList(src.getApiList().stream()
+                    .map(this::cloneDefinition)
+                    .collect(Collectors.toCollection(ArrayList::new)));
+        }
+        I18nUtil.replaceSystemMessage(target);
+        return target;
     }
 }

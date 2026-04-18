@@ -41,7 +41,7 @@ public class LLMNodeHandler extends AbstractNodeHandler {
         String userPrompt = PlaceholderParser.resoleAndReplacePlaceholder(valueMap, llmNodeConfigDto.getUserPrompt());
         ModelContext modelContext = new ModelContext();
         AgentContext agentContext = workflowContext.getCopiedAgentContext();
-        //从userPrompt中提取图片链接
+        // Extract image URLs from userPrompt
         agentContext.setAttachments(extractAttachments(userPrompt));
         modelContext.setAgentContext(agentContext);
         modelContext.setModelConfig(llmNodeConfigDto.getModelConfig());
@@ -154,24 +154,85 @@ public class LLMNodeHandler extends AbstractNodeHandler {
         return targetConfig.getDescription();
     }
 
+    private static final Map<String, String> MIME_TYPE_MAP = new HashMap<>();
+
+    static {
+        // Image formats
+        MIME_TYPE_MAP.put("jpg", "image/jpeg");
+        MIME_TYPE_MAP.put("jpeg", "image/jpeg");
+        MIME_TYPE_MAP.put("png", "image/png");
+        MIME_TYPE_MAP.put("gif", "image/gif");
+        MIME_TYPE_MAP.put("bmp", "image/bmp");
+        MIME_TYPE_MAP.put("webp", "image/webp");
+
+        // Video formats
+        MIME_TYPE_MAP.put("mp4", "video/mp4");
+        MIME_TYPE_MAP.put("avi", "video/x-msvideo");
+        MIME_TYPE_MAP.put("mov", "video/quicktime");
+        MIME_TYPE_MAP.put("wmv", "video/x-ms-wmv");
+        MIME_TYPE_MAP.put("flv", "video/x-flv");
+        MIME_TYPE_MAP.put("mkv", "video/x-matroska");
+        MIME_TYPE_MAP.put("webm", "video/webm");
+        MIME_TYPE_MAP.put("m4v", "video/x-m4v");
+        MIME_TYPE_MAP.put("3gp", "video/3gpp");
+
+        // Audio formats
+        MIME_TYPE_MAP.put("mp3", "audio/mpeg");
+        MIME_TYPE_MAP.put("wav", "audio/wav");
+        MIME_TYPE_MAP.put("aac", "audio/aac");
+        MIME_TYPE_MAP.put("ogg", "audio/ogg");
+        MIME_TYPE_MAP.put("flac", "audio/flac");
+        MIME_TYPE_MAP.put("wma", "audio/x-ms-wma");
+        MIME_TYPE_MAP.put("m4a", "audio/mp4");
+    }
+
     private static List<AttachmentDto> extractAttachments(String text) {
         List<AttachmentDto> attachmentDtos = new ArrayList<>();
+        if (text == null || text.isEmpty()) {
+            return attachmentDtos;
+        }
+
         try {
-            // 正则表达式匹配常见图片格式的URL
-            String regex = "((https?://[^\\s\"']+?\\.(jpg|jpeg|png|gif|bmp|webp))(\\?\\S+)?)";
+            // Regular expression to match URLs of image, video, and audio formats
+            // 注意：这里只使用一个捕获组来捕获完整URL，扩展名通过字符串处理获取
+            String regex = "https?://[^\\s\"']+?\\.(jpg|jpeg|png|gif|bmp|webp|mp4|avi|mov|wmv|flv|mkv|webm|m4v|3gp|mp3|wav|aac|ogg|flac|wma|m4a)(\\?\\S+)?";
             Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
             Matcher matcher = pattern.matcher(text);
 
             while (matcher.find()) {
+                String fileUrl = matcher.group(0); // 完整匹配到的URL
+
+                // 从URL中提取扩展名（更可靠的方式）
+                String extension = extractExtensionFromUrl(fileUrl);
+
                 AttachmentDto attachmentDto = new AttachmentDto();
-                attachmentDto.setFileUrl(matcher.group(1));
-                attachmentDto.setMimeType("image/jpeg");
+                attachmentDto.setFileUrl(fileUrl);
+                attachmentDto.setMimeType(MIME_TYPE_MAP.getOrDefault(extension, "application/octet-stream"));
                 attachmentDtos.add(attachmentDto);
             }
         } catch (Exception e) {
-            // 处理异常
-            log.warn("Error extracting image URLs: {}", e.getMessage());
+            log.warn("Error extracting attachment URLs: {}", e.getMessage());
         }
         return attachmentDtos;
+    }
+
+    /**
+     * 从URL中提取文件扩展名（小写）
+     */
+    private static String extractExtensionFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return "";
+        }
+
+        // 去掉查询参数
+        String urlWithoutQuery = url.split("\\?")[0];
+
+        // 从最后一个点号后面获取扩展名
+        int lastDotIndex = urlWithoutQuery.lastIndexOf('.');
+        if (lastDotIndex == -1 || lastDotIndex == urlWithoutQuery.length() - 1) {
+            return "";
+        }
+
+        return urlWithoutQuery.substring(lastDotIndex + 1).toLowerCase();
     }
 }

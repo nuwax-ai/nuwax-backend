@@ -17,7 +17,9 @@ import com.xspaceagi.custompage.domain.service.ICustomPageConfigDomainService;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 
 import jakarta.annotation.Resource;
@@ -54,13 +56,13 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
      * 处理保活请求
      */
     public ReqResult<Map<String, Object>> handleKeepAlive(Long projectId, UserContext userContext) {
-        log.info("[KeepAlive] projectId={},开始处理保活请求", projectId);
+        log.info("[Keep Alive] project Id={},starthandlekeep-aliverequest", projectId);
 
         try {
             CustomPageBuildModel project = customPageBuildRepository.getByProjectId(projectId);
             if (project == null) {
-                log.info("[KeepAlive] projectId={},项目不存在", projectId);
-                return ReqResult.error("0001", "项目不存在");
+                log.info("[Keep Alive] project Id={},projectnot found", projectId);
+                return ReqResult.error("0001", "Project does not exist");
             }
 
             String devProxyPath = customPageProxyPathService.getDevProxyPath(projectId);
@@ -69,25 +71,25 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
             // 需要先判断表中的状态,如果直接请求server启动dev,有可能server重启过,丢失了缓存,但dev还活着,再次请求就会多开dev服务器
             if (project.getDevPid() != null && project.getDevPort() != null) {
                 // 调server保活
-                log.info("[KeepAlive] projectId={},从表中取到dev已运行,调server保活接口", projectId);
+                log.info("[Keep Alive] project Id={},dev is running from table, call server keep-alive API", projectId);
                 serverResp = pageFileBuildClient.keepAlive(projectId, devProxyPath, project.getDevPid(),
                         project.getDevPort());
             } else {
                 // 调server启动dev
-                log.info("[KeepAlive] projectId={},dev未运行,调server启动dev", projectId);
+                log.info("[Keep Alive] project Id={},dev not running, call server start dev", projectId);
                 serverResp = pageFileBuildClient.startDev(projectId, devProxyPath);
 
             }
             if (serverResp == null) {
-                log.info("[KeepAlive] projectId={},保活失败,server返回null", projectId);
+                log.info("[Keep Alive] project Id={},keep-alivefailed,server returned null", projectId);
                 updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
-                return ReqResult.error("9999", "保活失败，server无响应");
+                return ReqResult.error("9999", "Keep-alive failed: server returned no response");
             }
 
             boolean success = Boolean.parseBoolean(String.valueOf(serverResp.get("success")));
             String message = serverResp.get("message") == null ? "" : String.valueOf(serverResp.get("message"));
             if (!success) {
-                log.error("[KeepAlive] projectId={},保活失败,server返回错误,code={},message={}", projectId,
+                log.error("[Keep Alive] project Id={},keep-alivefailed,serverreturned error,code={},message={}", projectId,
                         serverResp.get("code"), message);
                 updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
 
@@ -107,9 +109,9 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
                 pid = Integer.valueOf(String.valueOf(pidObj));
                 port = Integer.valueOf(String.valueOf(portObj));
             } catch (Exception e) {
-                log.error("[KeepAlive] projectId={},获取dev端口和pid异常", projectId, e);
+                log.error("[Keep Alive] project Id={},get dev port and pid exception", projectId, e);
                 updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
-                return ReqResult.error("9999", "获取服务端口和pid异常: " + e.getMessage());
+                return ReqResult.error("9999", "Failed to obtain service port and process ID: " + e.getMessage());
             }
             updateKeepAlive(projectId, new Date(), YesOrNoEnum.Y.getKey(), pid, port, userContext);
 
@@ -119,8 +121,8 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
             result.put("port", port);
             return ReqResult.success(result);
         } catch (Exception e) {
-            log.error("[KeepAlive] projectId={},保活处理异常", projectId, e);
-            return ReqResult.error("9999", "保活处理异常: " + e.getMessage());
+            log.error("[Keep Alive] project Id={},keep-alivehandleexception", projectId, e);
+            return ReqResult.error("9999", "Keep-alive error: " + e.getMessage());
         }
     }
 
@@ -162,9 +164,9 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
             // 将projectId添加到保活项目集合中
             redisUtil.sSet(KEEPALIVE_PROJECTS_SET_KEY, projectId.toString());
 
-            log.info("[KeepAlive] projectId={},缓存已更新", projectId);
+            log.info("[Keep Alive] project Id={},cache updated", projectId);
         } catch (Exception e) {
-            log.error("[KeepAlive] projectId={},缓存更新失败", projectId, e);
+            log.error("[Keep Alive] project Id={},cacheupdatefailed", projectId, e);
         }
     }
 
@@ -174,10 +176,10 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
     private void updatKeepAliveDb(CustomPageBuildModel model, UserContext userContext) {
         try {
             customPageBuildRepository.updateKeepAlive(model, userContext);
-            log.info("[KeepAlive] projectId={},库表已更新", model.getProjectId());
+            log.info("[Keep Alive] project Id={},db table updated", model.getProjectId());
         } catch (Exception e) {
-            log.error("[KeepAlive] projectId={},库表更新失败", model.getProjectId(), e);
-            throw new BizException("KeepAlive更新库表失败");
+            log.error("[Keep Alive] project Id={},db table update failed", model.getProjectId(), e);
+            throw BizException.of(ErrorCodeEnum.SYS_ERROR, BizExceptionCodeEnum.customPageKeepAliveDbUpdateFailed);
         }
     }
 
@@ -190,6 +192,6 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
 
         redisUtil.remove(KEEPALIVE_PROJECTS_SET_KEY, projectId.toString());
 
-        log.info("[KeepAlive] projectId={},删除redis保活缓存完成", projectId);
+        log.info("[Keep Alive] project Id={},deleterediskeep-alivecachecompleted", projectId);
     }
 }

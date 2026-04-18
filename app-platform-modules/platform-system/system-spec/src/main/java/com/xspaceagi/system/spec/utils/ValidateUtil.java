@@ -58,7 +58,7 @@ public class ValidateUtil {
     public static <T> void validateThrowIfException(T t, Class<?>... groups) {
         String msg = validate(t, groups);
         if (StringUtils.isNotBlank(msg)) {
-            throw SystemManagerException.build(BizExceptionCodeEnum.VALIDATE_ERROR_2006, msg);
+            throw SystemManagerException.build(BizExceptionCodeEnum.validationFailedWithDetail, msg);
         }
     }
 

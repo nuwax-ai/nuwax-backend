@@ -31,7 +31,9 @@ import com.xspaceagi.system.infra.dao.service.SysMenuResourceService;
 import com.xspaceagi.system.infra.dao.service.SysResourceService;
 import com.xspaceagi.system.infra.dao.service.SysRoleMenuService;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 
 import jakarta.annotation.Resource;
@@ -60,29 +62,29 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
         resource.setPath(StringUtils.trim(resource.getPath()));
 
         if (StringUtils.isNotBlank(resource.getCode()) && !resource.getCode().matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-            throw new BizException("资源码只能包含字母、数字和下划线，且必须以字母开头");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacResourceCodeFormatInvalid);
         }
         if (StringUtils.length(resource.getCode()) > 100) {
-            throw new BizException("资源码长度不能超过100");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacResourceCodeLengthExceeded);
         }
         if (StringUtils.length(resource.getName()) > 50) {
-            throw new BizException("名称长度不能超过50");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacNameLengthExceeded);
         }
         if (StringUtils.length(resource.getDescription()) > 500) {
-            throw new BizException("描述长度不能超过500");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacDescLengthExceeded);
         }
         if (StringUtils.length(resource.getPath()) > 500) {
-            throw new BizException("路径长度不能超过500");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacPathLengthExceeded);
         }
     }
 
     @Override
     public void addResource(SysResource resource, UserContext userContext) {
         if (StringUtils.isBlank(resource.getName())) {
-            throw new BizException("名称不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "名称");
         }
         if (resource.getType() == null) {
-            throw new BizException("类型不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "类型");
         }
 
         // 如果编码为空，根据名称自动生成编码
@@ -104,21 +106,24 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
 
         SysResource exists = queryResourceByCode(resource.getCode());
         if (exists != null) {
-            throw new BizException("已存在此资源编码");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemResourceCodeDuplicate);
         }
         if (resource.getParentId() != null && resource.getParentId() != 0) {
             if (resource.getParentId() < 0) {
-                throw new BizException("父级ID无效");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentIdInvalid);
             } else {
                 SysResource parent = queryResourceById(resource.getParentId());
                 if (parent == null) {
-                    throw new BizException("父级资源不存在,parentId=" + resource.getParentId());
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentResourceNotFoundWithParentId,
+                            resource.getParentId());
                 }
                 if (!parent.getType().equals(ResourceTypeEnum.MODULE.getCode())) {
-                    throw new BizException("[" + parent.getName() + ")]不是模块，不能作为父级");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentNameNotModule,
+                            parent.getName());
                 }
                 if (resource.getParentId().equals(resource.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + resource.getId() + "]");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentSelfReferenceForbidden,
+                            resource.getId());
                 }
             }
         }
@@ -145,37 +150,39 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
     @Override
     public void updateResource(SysResource resource, UserContext userContext) {
         if (resource.getId() == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
         normalizeResource(resource);
         SysResource exist = queryResourceById(resource.getId());
         if (exist == null) {
-            throw new BizException("资源不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemResourceNotFound);
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
             if (resource.getCode() != null && !resource.getCode().equals(exist.getCode())) {
-                throw new BizException("系统内置资源编码不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinResourceCodeImmutable);
             }
             if (resource.getName() != null && !resource.getName().equals(exist.getName())) {
-                throw new BizException("系统内置资源名称不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinResourceNameImmutable);
             }
             if (resource.getStatus() != null && !resource.getStatus().equals(StatusEnum.ENABLED.getCode())) {
-                throw new BizException("系统内置资源不能禁用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinResourceCannotDisable);
             }
         }
         if (resource.getParentId() != null && resource.getParentId() != 0) {
             if (resource.getParentId() < 0) {
-                throw new BizException("父级ID无效");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentIdInvalid);
             } else {
                 SysResource parent = queryResourceById(resource.getParentId());
                 if (parent == null) {
-                    throw new BizException("父级资源不存在");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentResourceNotFound);
                 }
                 if (!parent.getType().equals(ResourceTypeEnum.MODULE.getCode())) {
-                    throw new BizException("[" + parent.getName() + ")]不是模块，不能作为父级");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentNameNotModule,
+                            parent.getName());
                 }
                 if (resource.getParentId().equals(resource.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + resource.getId() + "]");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentSelfReferenceForbidden,
+                            resource.getId());
                 }
             }
         }
@@ -188,11 +195,11 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
     @Override
     public void deleteResource(Long resourceId, UserContext userContext) {
         if (resourceId == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
         SysResource root = queryResourceById(resourceId);
         if (root == null) {
-            throw new BizException("资源不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemResourceNotFound);
         }
         if (SourceEnum.SYSTEM.getCode().equals(root.getSource())) {
             //throw new BizException("系统内置资源不能删除");
@@ -231,26 +238,30 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
             }
             parents.forEach(p -> {
                 if (!p.getType().equals(ResourceTypeEnum.MODULE.getCode())) {
-                    throw new BizException("[" + p.getName() + ")]不是模块，不能作为父级");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentNameNotModule,
+                            p.getName());
                 }
             });
         }
         for (SortIndex item : sortIndexList) {
             if (item == null || item.getId() == null) {
-                throw new BizException("资源ID不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "资源ID");
             }
             SysResource updateResource = new SysResource();
             updateResource.setId(item.getId());
             boolean hasUpdate = false;
             if (item.getParentId() != null) {
                 if (item.getParentId() < 0) {
-                    throw new BizException("父级ID无效: resourceId=" + item.getId());
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentIdInvalidForResource,
+                            item.getId());
                 }
                 if (item.getParentId() != 0 && !existingParentIds.contains(item.getParentId())) {
-                    throw new BizException("父级节点不存在 [parentId:" + item.getParentId() + "]");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentNodeNotFound,
+                            item.getParentId());
                 }
                 if (item.getParentId().equals(item.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + item.getId() + "]");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacParentSelfReferenceForbidden,
+                            item.getId());
                 }
                 updateResource.setParentId(item.getParentId());
                 hasUpdate = true;
@@ -318,8 +329,8 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
             try {
                 tree = JsonSerializeUtil.parseObject(rm.getResourceTreeJson(), new TypeReference<List<ResourceNode>>() {});
             } catch (Exception e) {
-                log.error("resourceTreeJson 反序列化失败: " + e.getMessage(), e);
-                throw new BizException("resourceTreeJson 反序列化失败");
+                log.error("resourceTreeJson deserialize failed: " + e.getMessage(), e);
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemResourceTreeJsonInvalid);
             }
             if (tree == null || !containsAnyResourceId(tree, toDeleteIds)) {
                 continue;
@@ -346,8 +357,8 @@ public class SysResourceDomainServiceImpl implements SysResourceDomainService {
             try {
                 tree = JsonSerializeUtil.parseObject(gm.getResourceTreeJson(), new TypeReference<List<ResourceNode>>() {});
             } catch (Exception e) {
-                log.error("resourceTreeJson 反序列化失败: " + e.getMessage(), e);
-                throw new BizException("resourceTreeJson 反序列化失败");
+                log.error("resourceTreeJson deserialize failed: " + e.getMessage(), e);
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemResourceTreeJsonInvalid);
             }
             if (tree == null || !containsAnyResourceId(tree, toDeleteIds)) {
                 continue;

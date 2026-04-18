@@ -61,7 +61,7 @@ public class EcoMarketClientPublishConfigRepository implements IEcoMarketClientP
     public void deleteById(Long id) {
         var existObj = this.ecoMarketClientPublishConfigService.getById(id);
         if (existObj == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
         this.ecoMarketClientPublishConfigService.deleteById(id);
     }
@@ -70,7 +70,7 @@ public class EcoMarketClientPublishConfigRepository implements IEcoMarketClientP
     public Long updateInfo(EcoMarketClientPublishConfigModel model, UserContext userContext) {
         var existObj = this.ecoMarketClientPublishConfigService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         model.setCreatorId(null);
@@ -135,7 +135,7 @@ public class EcoMarketClientPublishConfigRepository implements IEcoMarketClientP
     public void deleteByUid(String uid) {
         var existObj = this.ecoMarketClientPublishConfigService.queryOneByUid(uid);
         if (existObj == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
         this.ecoMarketClientPublishConfigService.deleteByUid(uid);
     }

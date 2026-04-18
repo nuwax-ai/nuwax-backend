@@ -11,10 +11,10 @@ public class SpaceTransferDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId;
 
     @Schema(description = "目标用户ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "目标用户ID不能为空")
+    @NotNull(message = "Target user ID is required")
     private Long targetUserId;
 }

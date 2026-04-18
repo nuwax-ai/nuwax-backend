@@ -16,11 +16,11 @@ import java.io.Serializable;
 public class AgentAddDto implements Serializable {
 
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId; // 空间ID
 
     @Schema(description = "Agent名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "Agent名称不能为空")
+    @NotNull(message = "Agent name is required")
     private String name; // Agent名称
 
     @Schema(description = "Agent描述")

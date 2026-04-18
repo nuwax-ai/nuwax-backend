@@ -42,7 +42,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             requestVo.setQueryText("智能体");
             requestVo.setTopK(10);
             
-            log.info("开始全文检索测试: kbIds={}, queryText={}, topK={}", 
+            log.info("Start full-text search test: kbIds={}, queryText={}, topK={}", 
                 requestVo.getKbIds(), requestVo.getQueryText(), requestVo.getTopK());
             
             // Act
@@ -54,33 +54,33 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             assertTrue(responseVo.getCostTimeMs() >= 0, "耗时应该大于等于0");
             
             log.info("\n\n========================================");
-            log.info("=== 全文检索测试结果 ===");
+            log.info("=== Full-text search test result ===");
             log.info("========================================");
-            log.info("检索结果数量: {}", responseVo.getResults().size());
-            log.info("耗时: {}ms", responseVo.getCostTimeMs());
+            log.info("Retrieval result count: {}", responseVo.getResults().size());
+            log.info("Elapsed: {}ms", responseVo.getCostTimeMs());
             log.info("========================================\n");
             
             // 打印前3个结果详情
             if (!responseVo.getResults().isEmpty()) {
-                log.info("\n=== 前3个结果详情 ===");
+                log.info("\n=== Top 3 results ===");
                 int index = 1;
                 for (var result : responseVo.getResults().stream().limit(3).toList()) {
                     String textPreview = result.getRawText() != null && result.getRawText().length() > 100 
                         ? result.getRawText().substring(0, 100) + "..." 
                         : result.getRawText();
                     
-                    log.info("\n[结果 #{}]", index++);
-                    log.info("  分段ID (rawSegmentId): {}", result.getRawSegmentId());
-                    log.info("  文档ID (docId): {}", result.getDocId());
-                    log.info("  知识库ID (kbId): {}", result.getKbId());
-                    log.info("  BM25评分 (score): {}", result.getScore());
-                    log.info("  排序索引 (sortIndex): {}", result.getSortIndex());
-                    log.info("  文档名称 (documentName): {}", result.getDocumentName());
-                    log.info("  文本内容: {}", textPreview);
+                    log.info("\n[Result #{}]", index++);
+                    log.info("  rawSegmentId: {}", result.getRawSegmentId());
+                    log.info("  docId: {}", result.getDocId());
+                    log.info("  kbId: {}", result.getKbId());
+                    log.info("  BM25 score: {}", result.getScore());
+                    log.info("  sortIndex: {}", result.getSortIndex());
+                    log.info("  documentName: {}", result.getDocumentName());
+                    log.info("  Text: {}", textPreview);
                 }
                 log.info("\n========================================\n");
             } else {
-                log.warn("\n⚠️  没有找到任何匹配的结果！\n");
+                log.warn("\n⚠️  No matching results found.\n");
             }
             
         } finally {
@@ -103,7 +103,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             requestVo.setQueryText("Python");
             requestVo.setTopK(5);
             
-            log.info("开始多知识库全文检索测试: kbIds={}, queryText={}, topK={}", 
+            log.info("Start multi-KB full-text test: kbIds={}, queryText={}, topK={}", 
                 requestVo.getKbIds(), requestVo.getQueryText(), requestVo.getTopK());
             
             // Act
@@ -114,10 +114,10 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             assertNotNull(responseVo.getResults());
             
             log.info("\n\n========================================");
-            log.info("=== 多知识库检索测试结果 ===");
+            log.info("=== Multi-KB search test result ===");
             log.info("========================================");
-            log.info("检索结果数量: {}", responseVo.getResults().size());
-            log.info("耗时: {}ms", responseVo.getCostTimeMs());
+            log.info("Retrieval result count: {}", responseVo.getResults().size());
+            log.info("Elapsed: {}ms", responseVo.getCostTimeMs());
             
             // 统计各知识库的结果数量
             if (!responseVo.getResults().isEmpty()) {
@@ -127,12 +127,12 @@ public class KnowledgeFullTextSearchRpcServiceTest {
                         java.util.stream.Collectors.counting()
                     ));
                 
-                log.info("\n=== 各知识库结果分布 ===");
+                log.info("\n=== Per-KB result distribution ===");
                 kbCountMap.forEach((kbId, count) -> 
-                    log.info("知识库ID {} 的结果数量: {}", kbId, count));
+                    log.info("Result count for kbId {}: {}", kbId, count));
                 log.info("========================================\n");
             } else {
-                log.warn("\n⚠️  没有找到任何匹配的结果！\n");
+                log.warn("\n⚠️  No matching results found.\n");
             }
             
         } finally {
@@ -156,7 +156,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             requestVo.setTopK(10);
             requestVo.setDocIds(java.util.Arrays.asList(1L, 2L, 3L)); // 指定文档ID
             
-            log.info("开始指定文档检索测试: kbIds={}, docIds={}, queryText={}", 
+            log.info("Start specified-doc search test: kbIds={}, docIds={}, queryText={}", 
                 requestVo.getKbIds(), requestVo.getDocIds(), requestVo.getQueryText());
             
             // Act
@@ -167,20 +167,20 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             assertNotNull(responseVo.getResults());
             
             log.info("\n\n========================================");
-            log.info("=== 指定文档检索测试结果 ===");
+            log.info("=== Specified-doc search test result ===");
             log.info("========================================");
-            log.info("检索结果数量: {}", responseVo.getResults().size());
-            log.info("耗时: {}ms", responseVo.getCostTimeMs());
+            log.info("Retrieval result count: {}", responseVo.getResults().size());
+            log.info("Elapsed: {}ms", responseVo.getCostTimeMs());
             
             // 验证所有结果都来自指定的文档
             if (!responseVo.getResults().isEmpty()) {
                 boolean allFromSpecifiedDocs = responseVo.getResults().stream()
                     .allMatch(result -> requestVo.getDocIds().contains(result.getDocId()));
                 
-                log.info("\n所有结果是否来自指定文档: {}", allFromSpecifiedDocs);
+                log.info("\nAll results from specified docs: {}", allFromSpecifiedDocs);
                 log.info("========================================\n");
             } else {
-                log.warn("\n⚠️  没有找到任何匹配的结果！\n");
+                log.warn("\n⚠️  No matching results found.\n");
             }
             
         } finally {
@@ -203,7 +203,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             requestVo.setQueryText("不存在的内容XYZABC123");
             requestVo.setTopK(10);
             
-            log.info("开始空结果测试: kbIds={}, queryText={}", 
+            log.info("Start empty-result test: kbIds={}, queryText={}", 
                 requestVo.getKbIds(), requestVo.getQueryText());
             
             // Act
@@ -214,10 +214,10 @@ public class KnowledgeFullTextSearchRpcServiceTest {
             assertNotNull(responseVo.getResults());
             
             log.info("\n\n========================================");
-            log.info("=== 空结果测试 ===");
+            log.info("=== Empty result test ===");
             log.info("========================================");
-            log.info("检索结果数量: {}", responseVo.getResults().size());
-            log.info("耗时: {}ms", responseVo.getCostTimeMs());
+            log.info("Retrieval result count: {}", responseVo.getResults().size());
+            log.info("Elapsed: {}ms", responseVo.getCostTimeMs());
             log.info("========================================\n");
             
         } finally {
@@ -243,7 +243,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
                 requestVo.setQueryText("Python");
                 requestVo.setTopK(topK);
                 
-                log.info("测试TopK={}: kbIds={}, queryText={}", 
+                log.info("Test TopK={}: kbIds={}, queryText={}", 
                     topK, requestVo.getKbIds(), requestVo.getQueryText());
                 
                 // Act
@@ -255,7 +255,7 @@ public class KnowledgeFullTextSearchRpcServiceTest {
                 assertTrue(responseVo.getResults().size() <= topK, 
                     "返回结果数量不应超过TopK值");
                 
-                log.info("TopK={} 结果: 返回{}条, 耗时{}ms", 
+                log.info("TopK={}: returned {} rows, {}ms", 
                     topK, responseVo.getResults().size(), responseVo.getCostTimeMs());
             }
             

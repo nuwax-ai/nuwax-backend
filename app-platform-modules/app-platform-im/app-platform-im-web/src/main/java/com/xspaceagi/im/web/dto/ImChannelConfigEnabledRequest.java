@@ -17,11 +17,11 @@ import lombok.NoArgsConstructor;
 @Schema(description = "IM 渠道配置启用/禁用请求")
 public class ImChannelConfigEnabledRequest {
 
-    @NotNull(message = "配置ID不能为空")
+    @NotNull(message = "Configuration ID is required")
     @Schema(description = "配置ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long id;
 
-    @NotNull(message = "启用状态不能为空")
+    @NotNull(message = "Enabled flag is required")
     @Schema(description = "是否启用", requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean enabled;
 }

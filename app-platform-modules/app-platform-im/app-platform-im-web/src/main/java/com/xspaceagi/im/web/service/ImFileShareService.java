@@ -34,12 +34,12 @@ public class ImFileShareService {
      */
     public String createFileShare(Long userId, Long conversationId, String filePath, Long tenantId) {
         if (userId == null || tenantId == null || StringUtils.isBlank(filePath)) {
-            log.warn("创建文件分享失败：userId、tenantId 或 filePath 为空");
+            log.warn("Create file share failed: userId, tenantId or filePath empty");
             return null;
         }
 
         if (conversationId == null) {
-            log.warn("创建文件分享失败：conversationId 为空");
+            log.warn("Create file share failed: conversationId empty");
             return null;
         }
 
@@ -58,11 +58,11 @@ public class ImFileShareService {
             if (result != null && StringUtils.isNotBlank(result.getShareKey())) {
                 return result.getShareKey();
             } else {
-                log.warn("文件分享创建失败：返回结果为空或 shareKey 为空");
+                log.warn("File share creation failed: empty result or shareKey");
                 return null;
             }
         } catch (Exception e) {
-            log.error("创建文件分享异常: userId={}, conversationId={}, filePath={}", userId, conversationId, filePath, e);
+            log.error("Create file share error: userId={}, conversationId={}, filePath={}", userId, conversationId, filePath, e);
             return null;
         } finally {
             // 清理 RequestContext

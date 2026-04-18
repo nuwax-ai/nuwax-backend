@@ -2,8 +2,12 @@ package com.xspaceagi.system.application.service.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.xspaceagi.system.spec.enums.StatusEnum;
@@ -152,11 +156,13 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
 
         UserDataPermissionDto result = mergeDataPermissions(userId, allPermissions);
 
-        // 计算有权限访问的主体ID（基于角色和组权限）
+        // 计算有权限访问的主体（基于角色和组权限）
         result.setModelIds(mergeSubjectIds(roleIds, groupIds, PermissionSubjectTypeEnum.MODEL));
         result.setAgentIds(mergeSubjectIds(roleIds, groupIds, PermissionSubjectTypeEnum.AGENT));
         result.setPageAgentIds(mergeSubjectIds(roleIds, groupIds, PermissionSubjectTypeEnum.PAGE));
-
+        List<UserDataPermissionDto.OpenApiConfig> openApiConfigs = mergeOpenApiConfigs(roleIds, groupIds);
+        result.setOpenApiConfigs(openApiConfigs);
+        result.setKnowledgeIds(mergeSubjectIds(roleIds, groupIds, PermissionSubjectTypeEnum.KNOWLEDGE));
         return result;
     }
 
@@ -183,6 +189,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         //dto.setModelIds();
         //dto.setAgentIds();
         //dto.setPageIds();
+        //dto.setOpenApiConfigs();
+        //dto.setKnowledgeIds();
         return dto;
     }
 
@@ -209,6 +217,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         dto.setModelIds(List.of());
         dto.setAgentIds(List.of());
         dto.setPageAgentIds(List.of());
+        dto.setOpenApiConfigs(List.of());
+        dto.setKnowledgeIds(List.of());
         return dto;
     }
 
@@ -271,6 +281,77 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+    }
+
+    /**
+     * 合并角色与用户组下的开放 API 配置：同一 key 多来源时，rpm/rpd 与配额字段语义一致（任一为 -1 则不限制，否则取最大值）。
+     */
+    private List<UserDataPermissionDto.OpenApiConfig> mergeOpenApiConfigs(List<Long> roleIds, List<Long> groupIds) {
+        Map<String, List<Integer>> rpmByKey = new LinkedHashMap<>();
+        Map<String, List<Integer>> rpdByKey = new LinkedHashMap<>();
+
+        if (roleIds != null) {
+            for (Long roleId : roleIds) {
+                if (roleId == null) {
+                    continue;
+                }
+                Map<String, String> m = sysSubjectPermissionApplicationService.listSubjectKeyConfigByTarget(
+                        PermissionTargetTypeEnum.ROLE, roleId, PermissionSubjectTypeEnum.OPEN_API);
+                accumulateOpenApiRateLimits(rpmByKey, rpdByKey, m);
+            }
+        }
+        if (groupIds != null) {
+            for (Long groupId : groupIds) {
+                if (groupId == null) {
+                    continue;
+                }
+                Map<String, String> m = sysSubjectPermissionApplicationService.listSubjectKeyConfigByTarget(
+                        PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.OPEN_API);
+                accumulateOpenApiRateLimits(rpmByKey, rpdByKey, m);
+            }
+        }
+
+        Set<String> allKeys = new LinkedHashSet<>();
+        allKeys.addAll(rpmByKey.keySet());
+        allKeys.addAll(rpdByKey.keySet());
+        List<UserDataPermissionDto.OpenApiConfig> out = new ArrayList<>();
+        for (String key : allKeys) {
+            UserDataPermissionDto.OpenApiConfig cfg = new UserDataPermissionDto.OpenApiConfig();
+            cfg.setKey(key);
+            cfg.setRpm(mergeQuota(rpmByKey.getOrDefault(key, List.of())));
+            cfg.setRpd(mergeQuota(rpdByKey.getOrDefault(key, List.of())));
+            out.add(cfg);
+        }
+        return out;
+    }
+
+    private void accumulateOpenApiRateLimits(Map<String, List<Integer>> rpmByKey, Map<String, List<Integer>> rpdByKey,
+                                             Map<String, String> configMap) {
+        if (configMap == null || configMap.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : configMap.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            Integer rpm = null;
+            Integer rpd = null;
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                try {
+                    Map<String, Integer> valueMap = JsonSerializeUtil.parseObject(entry.getValue(),
+                            new TypeReference<Map<String, Integer>>() {});
+                    if (valueMap != null) {
+                        rpm = valueMap.get("rpm");
+                        rpd = valueMap.get("rpd");
+                    }
+                } catch (Exception e) {
+                    log.debug("解析开放API config 失败, key={}", key, e);
+                }
+            }
+            rpmByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(rpm);
+            rpdByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(rpd);
+        }
     }
 
     private TokenLimit mergeTokenLimit(List<SysDataPermission> permissions) {

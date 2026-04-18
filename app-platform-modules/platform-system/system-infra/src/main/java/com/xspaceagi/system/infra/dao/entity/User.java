@@ -26,6 +26,7 @@ public class User {
     private String email;
     private String phone;
     private Date lastLoginTime;
+    private String lang;
     private Date created;
     private Date modified;
 

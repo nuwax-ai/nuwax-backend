@@ -24,7 +24,7 @@ public class SystemManagerException extends KindlyException {
      * @return 异常
      */
     public static SystemManagerException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new SystemManagerException(codeEnum.getCode(), errorMessage);
     }
 

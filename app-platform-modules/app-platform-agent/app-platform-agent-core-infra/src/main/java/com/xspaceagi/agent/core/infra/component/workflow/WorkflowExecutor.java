@@ -23,6 +23,7 @@ import com.xspaceagi.agent.core.infra.component.workflow.handler.NodeHandler;
 import com.xspaceagi.agent.core.spec.enums.ComponentTypeEnum;
 import com.xspaceagi.log.sdk.service.ILogRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
+import com.xspaceagi.memory.sdk.service.IMemoryRpcService;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -43,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- * 工作流执行引擎
+ * Workflow execution engine
  */
 @Slf4j
 @Component
@@ -69,6 +70,7 @@ public class WorkflowExecutor {
 
     private CodeExecuteService codeExecuteService;
 
+    private IMemoryRpcService iMemoryRpcService;
 
     private HttpClient httpClient;
 
@@ -128,10 +130,15 @@ public class WorkflowExecutor {
         this.tableExecutor = tableExecutor;
     }
 
+    @Autowired
+    public void setIMemoryRpcService(IMemoryRpcService iMemoryRpcService) {
+        this.iMemoryRpcService = iMemoryRpcService;
+    }
+
     /**
      * 执行工作流
      *
-     * @param workflowContext 工作流执行上下文
+     * @param workflowContext Workflow execution context
      * @return Mono
      */
     public Mono<Object> execute(WorkflowContext workflowContext) {
@@ -159,7 +166,7 @@ public class WorkflowExecutor {
         AtomicReference<Set<Disposable>> disposableAtomicReference = new AtomicReference<>(new ConcurrentHashSet<>());
         return Mono.create(emitter -> {
                     if (workflowContext.isAsyncExecute()) {
-                        emitter.success(Map.of("output", "工具已经在异步执行中，请按后面的语句回复用户：" + (StringUtils.isBlank(workflowContext.getAsyncReplyContent()) ? "已经开始为您处理，请耐心等待运行结果" : workflowContext.getAsyncReplyContent())));
+                        emitter.success(Map.of("output", "The tool is already executing asynchronously, please reply to the user with the following statement: " + (StringUtils.isBlank(workflowContext.getAsyncReplyContent()) ? "Processing has started, please wait patiently for the results" : workflowContext.getAsyncReplyContent())));
                         Mono<Object> mono = Mono.create(sink -> execute0(workflowContext, sink, disposableAtomicReference));
                         Disposable d = mono.doOnError(e -> {
                                     asyncExecuteResponseHandler.handleError(workflowContext.getAgentContext(), ComponentTypeEnum.Workflow, e);
@@ -195,6 +202,7 @@ public class WorkflowExecutor {
         workflowContextServiceHolder.setRedisUtil(redisUtil);
         workflowContextServiceHolder.setCodeExecuteService(codeExecuteService);
         workflowContextServiceHolder.setHttpClient(httpClient);
+        workflowContextServiceHolder.setIMemoryRpcService(iMemoryRpcService);
         return workflowContextServiceHolder;
     }
 
@@ -204,12 +212,12 @@ public class WorkflowExecutor {
             logDocument.setOutput(JSON.toJSONString(result));
             logDocument.setCreateTime(System.currentTimeMillis());
             logDocument.setResultCode("0000");
-            logDocument.setResultMsg("成功");
+            logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
             iLogRpcService.bulkIndex(List.of(logDocument));
         } catch (Exception e) {
-            // 忽略
-            log.error("工作流日志记录异常", e);
+            // Ignore
+            log.error("Workflow log recording error", e);
         }
     }
 
@@ -222,14 +230,14 @@ public class WorkflowExecutor {
             logDocument.setRequestEndTime(System.currentTimeMillis());
             iLogRpcService.bulkIndex(List.of(logDocument));
         } catch (Exception e) {
-            // 忽略
-            log.error("工作流日志记录异常", e);
+            // Ignore
+            log.error("Workflow log recording error", e);
         }
     }
 
     public static void execute0(WorkflowContext workflowContext, MonoSink<Object> emitter, AtomicReference<Set<Disposable>> disposableAtomicReference) {
-        log.info("开始执行工作流，{}", workflowContext.getWorkflowConfig());
-        //nodes转map
+        log.info("Starting workflow execution, {}", workflowContext.getWorkflowConfig());
+        // Convert nodes to map
         Map<Long, WorkflowNodeDto> nodeMap = workflowContext.getWorkflowConfig().getNodes().stream().collect(Collectors.toMap(WorkflowNodeDto::getId, n -> n));
         workflowContext.getWorkflowConfig().getNodes().forEach(node -> {
             NodeConfigDto nodeConfig = node.getNodeConfig();
@@ -266,11 +274,11 @@ public class WorkflowExecutor {
                 if (nodeDto.getLoopNodeId() != null && nodeDto.getLoopNodeId().equals(nextNode.getId())) {
                     return;
                 }
-                //给下级节点附上上级节点
+                // Attach parent node to child node
                 if (!nextNode.getPreNodes().contains(nodeDto)) {
                     nextNode.getPreNodes().add(nodeDto);
                 }
-                //给上级节点附上下级节点
+                // Attach child node to parent node
                 if (!nodeDto.getNextNodes().contains(nextNode)) {
                     nodeDto.getNextNodes().add(nextNode);
                 }
@@ -290,23 +298,23 @@ public class WorkflowExecutor {
     }
 
     /**
-     * 执行工作流节点
+     * Execute workflow node
      *
-     * @param workflowContext 工作流上下文
-     * @param node            节点
+     * @param workflowContext Workflow context
+     * @param node            Node
      * @param emitter         MonoSink
      */
     public static void executeNode(WorkflowContext workflowContext, WorkflowNodeDto node, LoopNodeExecutingDto loopNodeExecutingDto, MonoSink<Object> emitter, AtomicReference<Set<Disposable>> disposableAtomicReferences) {
-        log.info("开始执行节点，ID {}, 名称 {}", node.getId(), node.getName());
+        log.info("Starting node execution, ID {}, Name {}", node.getId(), node.getName());
         if (workflowContext.getAgentContext().isInterrupted()) {
-            log.info("Agent中断执行，停止执行节点，ID {}, 名称 {}", node.getId(), node.getName());
+            log.info("Agent interrupted execution, stop executing node, ID {}, Name {}", node.getId(), node.getName());
             emitter.success(Map.of());
             return;
         }
         final Map<String, NodeExecuteResult> nodeExecuteResultMap;
         final Map<String, NodeExecuteStatus> nodeExecuteStatusMap;
         if (loopNodeExecutingDto != null) {
-            //本次循环内部已经在某个分支上执行完成退出了
+            // The current loop has completed execution on a branch and exited
             if (loopNodeExecutingDto.isDone()) {
                 return;
             }
@@ -323,7 +331,7 @@ public class WorkflowExecutor {
         NodeHandler handler = HandlerFactory.createNodeHandler(node);
         Disposable disposable = handler.execute(workflowContext, node).doOnError(throwable -> {
                     if (workflowContext.getAgentContext().isInterrupted()) {
-                        log.info("Agent中断执行，忽略执行异常，ID {}, 名称 {}", node.getId(), node.getName());
+                        log.info("Agent interrupted execution, ignore execution exception, ID {}, Name {}", node.getId(), node.getName());
                         emitter.success(Map.of());
                         return;
                     }
@@ -331,7 +339,7 @@ public class WorkflowExecutor {
                     workflowContext.getNodeExecuteInputMap().remove(node.getId().toString());
                     NodeExecuteResult errorNodeExecuteInfoDto = NodeExecuteResult.builder()
                             .success(false)
-                            .input(input.size() > 0 ? input.get(input.size() - 1) : Map.of())
+                            .input(!input.isEmpty() ? input.get(input.size() - 1) : Map.of())
                             .error(throwable.getMessage())
                             .data(Map.of("ERROR_MESSAGE", throwable.getMessage() == null ? "" : throwable.getMessage()))
                             .startTime(startTime)
@@ -346,21 +354,21 @@ public class WorkflowExecutor {
                 })
                 .subscribe((result) -> {
                     if (workflowContext.getAgentContext().isInterrupted()) {
-                        log.info("Agent中断执行，忽略执行结果，ID {}, 名称 {}", node.getId(), node.getName());
+                        log.info("Agent interrupted execution, ignore execution result, ID {}, Name {}", node.getId(), node.getName());
                         emitter.success(Map.of());
                         return;
                     }
                     Long nowMill = System.currentTimeMillis();
-                    log.info("节点执行完毕\nID {}, 名称 {}\n耗时 {} ms", node.getId(), node.getName(), nowMill - startTime);
+                    log.info("Node execution completed\nID {}, Name {}\nDuration {} ms", node.getId(), node.getName(), nowMill - startTime);
                     //log.debug("节点执行完毕\nID {}, 名称 {}\n结果 {} \n耗时 {} ms", node.getId(), node.getName(), result, nowMill - startTime);
                     List<Map<String, Object>> input = workflowContext.getNodeExecuteInputMap().getOrDefault(node.getId().toString(), new ArrayList<>());
                     workflowContext.getNodeExecuteInputMap().remove(node.getId().toString());
-                    // 保存工作流执行日志以及结果
+                    // Save workflow execution logs and results
                     NodeExecuteResult nodeExecuteInfoDto = NodeExecuteResult.builder()
                             .startTime(startTime)
                             .success(true)
                             .endTime(nowMill)
-                            .input(input.size() > 0 ? input.get(input.size() - 1) : Map.of())
+                            .input(!input.isEmpty() ? input.get(input.size() - 1) : Map.of())
                             .data(result)
                             .nodeId(node.getId())
                             .nodeName(node.getName())
@@ -378,49 +386,49 @@ public class WorkflowExecutor {
 
                     if (node.getType() == WorkflowNodeConfig.NodeType.End) {
                         workflowContext.setEndTime(System.currentTimeMillis());
-                        log.info("工作流执行完毕\nID {} 名称 {}\n结果 {}\n耗时 {} ms ", workflowContext.getWorkflowConfig().getId(), workflowContext.getWorkflowConfig().getName(), result, workflowContext.getEndTime() - workflowContext.getStartTime());
+                        log.info("Workflow execution completed\nID {} Name {}\nResult {}\nDuration {} ms ", workflowContext.getWorkflowConfig().getId(), workflowContext.getWorkflowConfig().getName(), result, workflowContext.getEndTime() - workflowContext.getStartTime());
                         emitter.success(result);
                         return;
                     }
                     if (loopNodeExecutingDto != null && loopNodeExecutingDto.isDone()) {
                         return;
                     }
-                    //循环结束节点
-                    if (node.isInnerEndNode()) {
-                        log.info("循环执行结束节点\nID {} 名称 {}\n结果 {}", node.getId(), node.getName(), result);
+                    // Loop end node
+                    if (loopNodeExecutingDto != null && node.isInnerEndNode()) {
+                        log.info("Loop execution end node\nID {} Name {}\nResult {}", node.getId(), node.getName(), result);
                         loopNodeExecutingDto.setDone(true);
                         emitter.success(result);
                         return;
                     }
-                    //循环节点中断
-                    if (node.getType() == WorkflowNodeConfig.NodeType.LoopBreak && !node.isVirtualExecute()) {
-                        log.info("循环中断节点\nID {} 名称 {}\n结果 {}", node.getId(), node.getName(), result);
+                    // Loop node break
+                    if (loopNodeExecutingDto != null && node.getType() == WorkflowNodeConfig.NodeType.LoopBreak && !node.isVirtualExecute()) {
+                        log.info("Loop break node\nID {} name {}\nresult {}", node.getId(), node.getName(), result);
                         loopNodeExecutingDto.setBreakLoop(true);
                         emitter.success(result);
                         return;
                     }
-                    //循环继续节点
-                    if (node.getType() == WorkflowNodeConfig.NodeType.LoopContinue && !node.isVirtualExecute()) {
-                        log.info("循环中断节点\nID {} 名称 {}\n结果 {}", node.getId(), node.getName(), result);
+                    // Loop node continue
+                    if (loopNodeExecutingDto != null && node.getType() == WorkflowNodeConfig.NodeType.LoopContinue && !node.isVirtualExecute()) {
+                        log.info("Loop break node\nID {} name {}\nresult {}", node.getId(), node.getName(), result);
                         loopNodeExecutingDto.setContinueLoop(true);
                         emitter.success(result);
                         return;
                     }
 
-                    if (node.getNextNodes() != null && node.getNextNodes().size() > 0) {
+                    if (node.getNextNodes() != null && !node.getNextNodes().isEmpty()) {
                         node.getNextNodes().forEach(nextNode -> {
                             nextNode.setUnreachableNextNodeIds(new HashSet<>());
                             NodeExecuteStatus status = nodeExecuteStatusMap.get(nextNode.getId().toString());
-                            if (status != null && (status == NodeExecuteStatus.EXECUTING || status == NodeExecuteStatus.FINISHED)) {
+                            if (status == NodeExecuteStatus.EXECUTING || status == NodeExecuteStatus.FINISHED) {
                                 return;
                             }
-                            //检测节点上级节点是否已经都执行完毕
+                            // Check if all parent nodes of the node have completed execution
                             AtomicBoolean isPreNodesComplete = new AtomicBoolean(true);
-                            //判断待执行节点是否在所有上级节点的不可到达的下级节点中，这决定了该节点是否需要真的执行
+                            // Determine whether the pending node is in the unreachable child nodes of all parent nodes, which determines whether the node needs to be actually executed
                             AtomicBoolean isAllInPreNodeUnreachableNextNodeIds = new AtomicBoolean(true);
                             if (nextNode.getPreNodes() != null) {
                                 nextNode.getPreNodes().forEach(preNode -> {
-                                    //需要更复杂的判断，解决逻辑分支意图相关的分支问题
+                                    // Need more complex judgment to solve branch problems related to logical branch intent
                                     if (!nodeExecuteResultMap.containsKey(preNode.getId().toString())) {
                                         isPreNodesComplete.set(false);
                                     }
@@ -432,21 +440,21 @@ public class WorkflowExecutor {
                             if (isPreNodesComplete.get()) {
                                 nextNode.setVirtualExecute(false);
                                 if (isAllInPreNodeUnreachableNextNodeIds.get()) {
-                                    //该节点无法真正执行，进行虚拟执行
+                                    // This node cannot be actually executed, perform virtual execution
                                     nextNode.setVirtualExecute(true);
-                                    //下级节点也无法从这条线执行到
+                                    // Child nodes also cannot be reached from this line
                                     nextNode.getUnreachableNextNodeIds().addAll(nextNode.getNextNodes().stream().map(WorkflowNodeDto::getId).collect(Collectors.toList()));
                                 }
-                                //确保从不同分支过来的节点不重复执行
+                                // Ensure that nodes coming from different branches are not executed repeatedly
                                 synchronized (nextNode) {
                                     status = nodeExecuteStatusMap.get(nextNode.getId().toString());
-                                    if (status == null || (status != NodeExecuteStatus.FINISHED && status != NodeExecuteStatus.EXECUTING)) {
+                                    if (status != NodeExecuteStatus.FINISHED && status != NodeExecuteStatus.EXECUTING) {
                                         try {
                                             executeNode(workflowContext, nextNode, loopNodeExecutingDto, emitter, disposableAtomicReferences);
                                         } catch (Exception e) {
-                                            log.error("节点执行异常", e);
+                                            log.error("Node execution exception", e);
                                             nodeExecuteStatusMap.put(nextNode.getId().toString(), NodeExecuteStatus.FAILED);
-                                            emitter.error(new RuntimeException("节点<" + nextNode.getName() + ">执行异常"));
+                                            emitter.error(new RuntimeException("Node<" + nextNode.getName() + "> execution exception"));
                                         }
                                     }
                                 }
@@ -469,11 +477,11 @@ public class WorkflowExecutor {
     }
 
     /**
-     * 单节点调试执行
+     * Single node debug execution
      *
-     * @param workflowContext 工作流上下文
-     * @param node            节点
-     * @return 节点执行结果
+     * @param workflowContext Workflow context
+     * @param node            Node
+     * @return Node execution result
      */
     public Mono<Object> testExecuteNode(WorkflowContext workflowContext, WorkflowNodeDto node) {
         if (workflowContext.getWorkflowContextServiceHolder() == null) {

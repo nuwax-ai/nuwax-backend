@@ -7,102 +7,102 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 用户页面信息DTO
+ * Custom page (user web app) DTO
  */
 @Data
-@Schema(description = "用户页面信息DTO")
+@Schema(description = "Custom page project DTO")
 public class CustomPageDto {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "项目ID字符串")
+    @Schema(description = "Project ID as string")
     private String projectIdStr;
 
-    @Schema(description = "项目名称")
+    @Schema(description = "Project name")
     private String name;
 
-    @Schema(description = "项目描述")
+    @Schema(description = "Project description")
     private String description;
 
-    @Schema(description = "项目图标")
+    @Schema(description = "Project icon URL")
     private String icon;
 
-    @Schema(description = "封面图片")
+    @Schema(description = "Cover image URL")
     private String coverImg;
 
-    @Schema(description = "封面图片来源")
+    @Schema(description = "Cover image source type")
     private SourceTypeEnum coverImgSourceType;
 
-    @Schema(description = "项目基础路径")
+    @Schema(description = "Project base path")
     private String basePath;
 
-    @Schema(description = "发布状态,true:已发布,false:未发布")
+    @Schema(description = "Publish/build running state (true = published / running)")
     private Boolean buildRunning;
 
-    @Schema(description = "发布时间")
+    @Schema(description = "Last publish time")
     private Date buildTime;
 
-    @Schema(description = "发布版本")
+    @Schema(description = "Publish version")
     private Integer buildVersion;
 
-    @Schema(description = "发布类型")
+    @Schema(description = "Publish type")
     private PublishTypeEnum publishType;
 
-    @Schema(description = "代码版本")
+    @Schema(description = "Code version")
     private Integer codeVersion;
 
-    @Schema(description = "版本信息")
+    @Schema(description = "Version metadata")
     private Object versionInfo;
 
-    @Schema(description = "上次对话模型ID")
+    @Schema(description = "Last selected chat model ID")
     private Long lastChatModelId;
 
-    @Schema(description = "上次多模态ID")
+    @Schema(description = "Last selected multimodal model ID")
     private Long lastMultiModelId;
 
-    @Schema(description = "是否需要登录,true:需要,false:不需要")
+    @Schema(description = "Whether login is required (true = required)")
     private Boolean needLogin;
 
-    @Schema(description = "调试关联智能体")
+    @Schema(description = "Dev / debug Agent ID")
     private Long devAgentId;
 
-    @Schema(description = "项目类型")
+    @Schema(description = "Project type")
     private ProjectType projectType;
 
-    @Schema(description = "代理配置")
+    @Schema(description = "Reverse-proxy configuration")
     private List<ProxyConfig> proxyConfigs;
 
-    @Schema(description = "页面参数配置")
+    @Schema(description = "Page argument schema list")
     private List<PageArgConfig> pageArgConfigs;
 
-    @Schema(description = "绑定的数据源")
+    @Schema(description = "Bound data sources")
     private List<DataSourceDto> dataSources;
 
-    @Schema(description = "扩展字段")
+    @Schema(description = "Extension payload")
     private Object ext;
 
-    @Schema(description = "租户ID")
+    @Schema(description = "Tenant ID")
     private Long tenantId;
 
-    @Schema(description = "空间ID")
+    @Schema(description = "Space ID")
     private Long spaceId;
 
-    @Schema(description = "创建时间")
+    @Schema(description = "Created time")
     private Date created;
 
-    @Schema(description = "创建者ID")
+    @Schema(description = "Creator user ID")
     private Long creatorId;
 
-    @Schema(description = "创建者名称")
+    @Schema(description = "Creator username")
     private String creatorName;
 
-    @Schema(description = "创建者昵称")
+    @Schema(description = "Creator nickname")
     private String creatorNickName;
 
-    @Schema(description = "创建者头像")
+    @Schema(description = "Creator avatar URL")
     private String creatorAvatar;
 
-    @Schema(description = "页面URL")
+    @Schema(description = "Public page URL")
     private String pageUrl;
 }

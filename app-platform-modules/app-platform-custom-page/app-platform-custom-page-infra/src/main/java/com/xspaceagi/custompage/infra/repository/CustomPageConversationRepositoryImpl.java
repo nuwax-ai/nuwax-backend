@@ -31,10 +31,10 @@ public class CustomPageConversationRepositoryImpl implements ICustomPageConversa
     @Override
     public Long save(CustomPageConversationModel model, UserContext userContext) {
         if (model == null) {
-            throw new IllegalArgumentException("model不能为空");
+            throw new IllegalArgumentException("model is required");
         }
         if (userContext == null) {
-            throw new IllegalArgumentException("userContext不能为空");
+            throw new IllegalArgumentException("userContext is required");
         }
 
         CustomPageConversation entity = customPageConversationTranslator.convertToEntity(model);
@@ -72,13 +72,13 @@ public class CustomPageConversationRepositoryImpl implements ICustomPageConversa
     public SuperPage<CustomPageConversationModel> pageQuery(CustomPageConversationModel queryModel, Long current,
             Long pageSize) {
         if (queryModel == null) {
-            throw new IllegalArgumentException("queryModel不能为空");
+            throw new IllegalArgumentException("queryModel is required");
         }
         if (current == null || current <= 0) {
-            throw new IllegalArgumentException("current不能为空或无效");
+            throw new IllegalArgumentException("current is required or invalid");
         }
         if (pageSize == null || pageSize <= 0) {
-            throw new IllegalArgumentException("pageSize不能为空或无效");
+            throw new IllegalArgumentException("pageSize is required or invalid");
         }
 
         var wrapper = Wrappers.<CustomPageConversation>lambdaQuery()

@@ -3,6 +3,7 @@ package com.xspaceagi.agent.web.ui.controller;
 import com.alibaba.fastjson2.JSON;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
+import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
@@ -20,6 +21,8 @@ import com.xspaceagi.agent.web.ui.dto.PublishedComposeTableQueryDto;
 import com.xspaceagi.agent.web.ui.dto.PublishedKnowledgeQueryDto;
 import com.xspaceagi.compose.sdk.request.QueryDorisTableDefinePageRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
+import com.xspaceagi.knowledge.domain.model.KnowledgeConfigModel;
+import com.xspaceagi.knowledge.domain.repository.IKnowledgeConfigRepository;
 import com.xspaceagi.knowledge.sdk.request.KnowledgeConfigRequestVo;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeConfigRpcService;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
@@ -31,12 +34,17 @@ import com.xspaceagi.system.sdk.operate.ActionType;
 import com.xspaceagi.system.sdk.operate.OperationLogReporter;
 import com.xspaceagi.system.sdk.operate.SystemEnum;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.CategoryTypeEnum;
+import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.page.SuperPage;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -97,6 +105,9 @@ public class PublishedController extends BaseController {
     @Resource
     private CategoryRpcService categoryRpcService;
 
+    @Resource
+    private IUserDataPermissionRpcService userDataPermissionRpcService;
+
     @Operation(summary = "广场-智能体与插件分类")
     @RequestMapping(path = "/category/list", method = RequestMethod.GET)
     public ReqResult<List<PublishedCategoryDto>> categoryList() {
@@ -121,6 +132,7 @@ public class PublishedController extends BaseController {
         //技能分类
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Skill, "技能", componentCategories));
 
+        I18nUtil.replaceSystemMessage(categoryDtoList);
         return ReqResult.success(categoryDtoList);
     }
 
@@ -307,7 +319,7 @@ public class PublishedController extends BaseController {
     public ReqResult<AgentDetailDto> agentDetail(@PathVariable Long agentId, @RequestParam(required = false) Boolean withConversationId) {
         AgentDetailDto agentDetailDto = agentApplicationService.queryAgentDetail(agentId, true);
         if (agentDetailDto == null) {
-            throw new BizException("智能体未发布或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishedOffline);
         }
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, agentId);
         if (!publishedPermissionDto.isView()) {
@@ -322,12 +334,22 @@ public class PublishedController extends BaseController {
         return ReqResult.success(agentDetailDto);
     }
 
+    @Operation(summary = "已发布的智能体详情接口")
+    @RequestMapping(path = "/agent/uid/{agentUid}", method = RequestMethod.GET)
+    public ReqResult<AgentDetailDto> queryAgentDetailByUid(@PathVariable String agentUid, @RequestParam(required = false) Boolean withConversationId) {
+        AgentConfigDto agentConfigDto = agentApplicationService.queryByUid(agentUid);
+        if (agentConfigDto == null){
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishedOffline);
+        }
+        return  agentDetail(agentConfigDto.getId(), withConversationId);
+    }
+
     @Operation(summary = "已发布的插件详情接口")
     @RequestMapping(path = "/plugin/{pluginId}", method = RequestMethod.GET)
     public ReqResult<PluginDetailDto> pluginDetail(@PathVariable Long pluginId) {
         PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Plugin, pluginId);
         if (publishedDto == null) {
-            throw new BizException("插件插件不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginOffline);
         }
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Plugin, pluginId);
         if (!publishedPermissionDto.isView()) {
@@ -365,7 +387,7 @@ public class PublishedController extends BaseController {
     public ReqResult<WorkflowDetailDto> workflowDetail(@PathVariable Long workflowId) {
         PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Workflow, workflowId);
         if (publishedDto == null) {
-            throw new BizException("工作流不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowOffline);
         }
         setCopyPermission(publishedDto);
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(workflowId, null, false);
@@ -440,6 +462,15 @@ public class PublishedController extends BaseController {
         publishedQueryDto.setTargetType(Published.TargetType.Knowledge);
         publishedQueryDto.setChannel(Published.PublishChannel.Space);
 
+        //新增的逻辑开始
+        UserDto userDto = (UserDto) RequestContext.get().getUser();
+        System.out.println("userids:" + userDto.getId());
+        UserDataPermissionDto userDataPermissionDto = userDataPermissionRpcService.getUserDataPermission(userDto.getId());
+        List<Long> knowledgeIds = userDataPermissionDto.getKnowledgeIds();
+        //if(knowledgeIds != null && knowledgeIds.size() > 0) {
+            //List<KnowledgeConfigModel> knowledgeConfigs = knowledgeConfigRepository.queryListByIds(knowledgeIds);
+        //}
+        //新增的逻辑结束
 
         //查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
         var spaceIds = this.obtainAuthSpaceIds();
@@ -450,9 +481,11 @@ public class PublishedController extends BaseController {
                 .dataType(publishedQueryDto.getDataType())
                 .page(publishedQueryDto.getPage())
                 .pageSize(publishedQueryDto.getPageSize())
+                .knowledgeIds(knowledgeIds)
                 .build();
 
         var voResponse = this.knowledgeConfigRpcService.queryListKnowledgeConfig(knowledgeConfigRequestVo);
+
         var voPage = voResponse.getConfigPage();
         var voList = voPage.getRecords();
         var dataList = voList.stream()
@@ -584,7 +617,7 @@ public class PublishedController extends BaseController {
         var spaceIds = this.obtainAuthSpaceIds();
         queryDto.setSpaceIds(spaceIds);
 
-        SuperPage<PublishedDto> page = publishApplicationService.queryPublishedListForAt(publishedQueryDto);
+        SuperPage<PublishedDto> page = publishApplicationService.queryPublishedListForAt(queryDto);
         if (CollectionUtils.isNotEmpty(page.getRecords())) {
             page.getRecords().forEach(publishedDto -> {
                 publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
@@ -598,7 +631,7 @@ public class PublishedController extends BaseController {
     public ReqResult<SkillDetailDto> skillDetail(@PathVariable Long skillId) {
         PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Skill, skillId);
         if (publishedDto == null) {
-            throw new BizException("技能不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillOffline);
         }
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Skill, skillId);
         if (!publishedPermissionDto.isView()) {
@@ -630,11 +663,11 @@ public class PublishedController extends BaseController {
     public byte[] skillExport(@PathVariable Long skillId, HttpServletResponse response) {
         PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Skill, skillId);
         if (publishedDto == null) {
-            throw new BizException("技能不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillOffline);
         }
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Skill, skillId);
         if (!publishedPermissionDto.isView()) {
-            throw new BizException("无技能下载权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
         setCopyPermission(publishedDto);
         SkillConfigDto skillConfigDto = JSON.parseObject(publishedDto.getConfig(), SkillConfigDto.class);
@@ -688,7 +721,7 @@ public class PublishedController extends BaseController {
     public ReqResult<Void> offShelf(@RequestBody UserOffShelfDto offShelfDto) {
         PublishedDto publishedDto = publishApplicationService.queryPublished(offShelfDto.getTargetType(), offShelfDto.getTargetId());
         if (publishedDto == null) {
-            throw new BizException("下架失败，未发布");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentUnpublishFailedNotPublished);
         }
         spacePermissionService.checkSpaceUserPermission(publishedDto.getSpaceId());
         OffShelfDto offShelfDto1 = new OffShelfDto();
@@ -721,7 +754,7 @@ public class PublishedController extends BaseController {
         }
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(publishedDto.getTargetType(), publishedDto.getTargetId());
         if (!publishedPermissionDto.isView()) {
-            throw new BizException("无查看权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
         publishedDto.setAllowCopy(publishedPermissionDto.isCopy() ? YesOrNoEnum.Y.getKey() : YesOrNoEnum.N.getKey());
     }

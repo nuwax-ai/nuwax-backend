@@ -56,7 +56,7 @@ public class CreateTableDefineVo {
      */
     @Schema(description = "创建人id")
     @JsonPropertyDescription("创建人id")
-    @NotNull(message = "创建人id不能为空")
+    @NotNull(message = "Creator ID is required")
     private Long creatorId;
 
 

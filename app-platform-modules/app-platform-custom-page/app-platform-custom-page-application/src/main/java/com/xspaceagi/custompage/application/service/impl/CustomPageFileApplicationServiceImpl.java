@@ -39,12 +39,12 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
         if (prefixIndex != -1) {
             relativePath = requestPath.substring(prefixIndex + staticPrefix.length());
         } else {
-            log.error("[Web] 无法从请求路径中提取 relativePath, requestPath={}, logId={}", requestPath, logId);
+            log.error("[Web] Cannot extract relative Path from request, request Path={}, log Id={}", requestPath, logId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         if (relativePath.trim().isEmpty()) {
-            log.error("[Web] relativePath 为空, requestPath={}, logId={}", requestPath, logId);
+            log.error("[Web] relative Path is empty, request Path={}, log Id={}", requestPath, logId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
@@ -53,11 +53,11 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
         try {
             decodedPath = URLDecoder.decode(relativePath, "UTF-8");
         } catch (Exception e) {
-            log.warn("[Web] URL 解码失败, relativePath={}, 使用原始路径", relativePath, e);
+            log.warn("[Web] URL decode failed, relative Path={}, using raw path", relativePath, e);
         }
         final String finalRelativePath = decodedPath;
 
-        log.info("[Web] 提取的 logId={}, relativePath={}", logId, finalRelativePath);
+        log.info("[Web] Extracted log Id={}, relative Path={}", logId, finalRelativePath);
 
         try {
             Flux<DataBuffer> fileFlux = customPageFileDomainService.getStaticFile(targetPrefix, finalRelativePath, logId, userContext);
@@ -72,23 +72,23 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
                     Throwable error = firstSignal.getThrowable();
                     if (error instanceof WebClientResponseException) {
                         WebClientResponseException e = (WebClientResponseException) error;
-                        log.error("[Web] 获取静态文件失败，logId={}, status={}", logId, e.getStatusCode());
+                        log.error("[Web] Failed to get static file, log Id={}, status={}", logId, e.getStatusCode());
                         HttpStatus status = e.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND 
                                 ? HttpStatus.NOT_FOUND 
                                 : HttpStatus.INTERNAL_SERVER_ERROR;
                         return buildErrorResponse(status, "获取静态文件失败: " + e.getMessage(), logId);
                     } else if (error instanceof SpacePermissionException) {
                         SpacePermissionException e = (SpacePermissionException) error;
-                        log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
+                        log.error("[Web] Insufficient permission for static file, log Id={}, {}", logId, e.getMessage());
                         return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
                     } else {
-                        log.error("[Web] 访问静态文件异常，logId={}", logId, error);
+                        log.error("[Web] Exception while accessing static file, log Id={}", logId, error);
                         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "访问静态文件失败: " + error.getMessage(), logId);
                     }
                 }
             } catch (Exception e) {
                 // materialize() 本身可能抛出异常，这种情况下也返回错误响应
-                log.error("[Web] 检查静态文件时发生异常，logId={}", logId, e);
+                log.error("[Web] Exception while checking static file, log Id={}", logId, e);
                 if (e instanceof WebClientResponseException) {
                     WebClientResponseException webEx = (WebClientResponseException) e;
                     HttpStatus status = webEx.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND 
@@ -118,14 +118,14 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
                 try {
                     finalFileFlux
                             .doOnError(WebClientResponseException.class, e -> {
-                                log.error("[Web] 获取静态文件失败，logId={}, status={}, responseBody={}", 
+                                log.error("[Web] Failed to get static file, log Id={}, status={}, response Body={}", 
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());
                             })
                             .doOnError(SpacePermissionException.class, e -> {
-                                log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
+                                log.error("[Web] Insufficient permission for static file, log Id={}, {}", logId, e.getMessage());
                             })
                             .doOnError(Throwable.class, e -> {
-                                log.error("[Web] 访问静态文件异常，logId={}", logId, e);
+                                log.error("[Web] Exception while accessing static file, log Id={}", logId, e);
                             })
                             .doOnNext(dataBuffer -> {
                                 try {
@@ -134,19 +134,19 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
                                     outputStream.write(bytes);
                                     outputStream.flush();
                                 } catch (IOException e) {
-                                    log.error("[Web] 写入输出流失败, logId={}", logId, e);
-                                    throw new RuntimeException("写入输出流失败", e);
+                                    log.error("[Web] Failed to write output stream, log Id={}", logId, e);
+                                    throw new RuntimeException("Failed to write output stream", e);
                                 } finally {
                                     DataBufferUtils.release(dataBuffer);
                                 }
                             })
                             .doOnComplete(() -> {
-                                log.info("[Web] 文件流式传输完成, logId={}, relativePath={}",
+                                log.info("[Web] File streaming completed, log Id={}, relative Path={}",
                                         logId, finalRelativePath);
                             })
                             .blockLast(); // 在 StreamingResponseBody 的回调中阻塞是正常的
                 } catch (Exception e) {
-                    log.error("[Web] 流式传输文件失败, logId={}", logId, e);
+                    log.error("[Web] File streaming failed, log Id={}", logId, e);
                     // 不再抛出异常，因为响应已经开始写入，无法改变状态码
                     // 错误已经在开始写入之前被检查和处理了
                 }
@@ -154,10 +154,10 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
 
             return ResponseEntity.ok().headers(headers).body(streamingResponseBody);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
+            log.error("[Web] Insufficient permission for static file, log Id={}, {}", logId, e.getMessage());
             return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
         } catch (Exception e) {
-            log.error("[Web] 访问静态文件失败，logId={}", logId, e);
+            log.error("[Web] Failed to access static file, log Id={}", logId, e);
             return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "访问静态文件失败: " + e.getMessage(), logId);
         }
     }
@@ -191,7 +191,7 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
                 outputStream.write(errorJson.getBytes(StandardCharsets.UTF_8));
                 outputStream.flush();
             } catch (IOException ioException) {
-                log.error("[Web] 写入错误响应失败, logId={}", logId, ioException);
+                log.error("[Web] Failed to write error response, log Id={}", logId, ioException);
             }
         };
         return ResponseEntity.status(status).headers(errorHeaders).body(errorBody);

@@ -2,7 +2,9 @@ package com.xspaceagi.custompage.ui.web.controller;
 
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.infra.dao.entity.User;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +18,7 @@ public abstract class BaseController {
     public UserContext getUser() {
         var userDto = (UserDto) RequestContext.get().getUser();
         if (userDto == null) {
-            throw new BizException("用户未登陆");
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.systemUserNotLoggedInWeb);
         }
         return UserContext.builder()
                 .userId(userDto.getId())

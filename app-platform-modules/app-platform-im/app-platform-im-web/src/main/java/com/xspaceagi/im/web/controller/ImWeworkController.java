@@ -121,7 +121,7 @@ public class ImWeworkController {
         String echostr = request.getParameter("echostr");
         String tokenFromUrl = request.getParameter("token"); // 从URL参数中获取token
 
-        log.info("企业微信自建应用回调: method={}, msgSignature={}, timestamp={}, nonce={}, tokenFromUrl={}",
+        log.info("WeCom self-built app callback: method={}, msgSignature={}, timestamp={}, nonce={}, tokenFromUrl={}",
                 request.getMethod(), msgSignature != null ? "***" : null, timestamp, nonce,
                 tokenFromUrl != null ? "***" : null);
 
@@ -136,19 +136,19 @@ public class ImWeworkController {
             WeworkBotConfig appConfig = resolveAppConfigFromToken(tokenFromUrl, ImTargetTypeEnum.APP);
             if (appConfig == null) {
                 // 如果URL中没有token参数，回退到签名验证方式（向后兼容）
-                log.info("URL中未提供token参数，使用签名验证方式查找配置");
+                log.info("No token in URL; using signature verification to resolve config");
                 appConfig = resolveBotConfigBySignature(echostr, timestamp, nonce, msgSignature, ImTargetTypeEnum.APP);
             }
 
             if (appConfig == null) {
-                log.warn("企业微信自建应用 URL 验证签名失败，无法匹配到任何应用配置");
+                log.warn("WeCom self-built app URL verify failed, no app config matched");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
 
             // 验证签名
             if (!verifyWeworkSignature(appConfig.getToken(), timestamp, nonce, echostr, msgSignature)) {
-                log.warn("企业微信自建应用 URL 验证签名失败: agentId={}", appConfig.getAgentId());
+                log.warn("WeCom self-built app URL verify signature failed: agentId={}", appConfig.getAgentId());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
@@ -159,9 +159,9 @@ public class ImWeworkController {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write(plainEchostr);
-                log.info("企业微信自建应用 URL 验证成功: agentId={}", appConfig.getAgentId());
+                log.info("WeCom self-built app URL verify OK: agentId={}", appConfig.getAgentId());
             } catch (Exception e) {
-                log.warn("企业微信自建应用 URL 验证解密失败: {}", e.getMessage());
+                log.warn("WeCom self-built app URL verify decrypt failed: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
             return;
@@ -177,7 +177,7 @@ public class ImWeworkController {
         String encryptedBody = normalizeRequestBody(bodyBytes);
         String encryptPayload = extractEncryptPayload(encryptedBody);
         if (encryptPayload == null) {
-            log.warn("企业微信自建应用 POST body 无法解析出 Encrypt 内容");
+            log.warn("WeCom self-built app POST body has no Encrypt");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -186,19 +186,19 @@ public class ImWeworkController {
         WeworkBotConfig appConfig = resolveAppConfigFromToken(tokenFromUrl, ImTargetTypeEnum.APP);
         if (appConfig == null) {
             // 如果URL中没有token参数，回退到签名验证方式（向后兼容）
-            log.info("URL中未提供token参数，使用签名验证方式查找配置");
+            log.info("No token in URL; using signature verification to resolve config");
             appConfig = resolveBotConfigBySignature(encryptPayload, timestamp, nonce, msgSignature, ImTargetTypeEnum.APP);
         }
 
         if (appConfig == null) {
-            log.warn("企业微信自建应用消息签名验证失败，无法匹配到任何应用配置");
+            log.warn("WeCom self-built app msg signature failed, no app config matched");
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
         // 验证签名
         if (!verifyWeworkSignature(appConfig.getToken(), timestamp, nonce, encryptPayload, msgSignature)) {
-            log.warn("企业微信自建应用消息签名验证失败: agentId={}", appConfig.getAgentId());
+            log.warn("WeCom self-built app msg signature failed: agentId={}", appConfig.getAgentId());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -217,7 +217,7 @@ public class ImWeworkController {
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write(plainEchostr);
             } catch (Exception e) {
-                log.warn("企业微信自建应用 URL 验证解密失败: {}", e.getMessage());
+                log.warn("WeCom self-built app URL verify decrypt failed: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
             return;
@@ -228,7 +228,7 @@ public class ImWeworkController {
         try {
             decryptedXml = cryptUtil.decrypt(encryptPayload);
         } catch (Exception e) {
-            log.warn("企业微信自建应用消息解密失败: {}", e.getMessage());
+            log.warn("WeCom self-built app decrypt failed: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -242,7 +242,7 @@ public class ImWeworkController {
         String msgId = extractXmlTag(decryptedXml, "MsgId");
         String mediaId = extractXmlTag(decryptedXml, "MediaId");
 
-        log.info("企业微信自建应用收到消息: agentId={}, fromUserName={}, toUserName={}, msgType={}, msgId={}, content={}",
+        log.info("WeCom self-built app message: agentId={}, fromUserName={}, toUserName={}, msgType={}, msgId={}, content={}",
                 agentId, fromUserName, toUserName, msgType, msgId, content);
 
         // 幂等去重（复用机器人通道同一前缀），只影响是否触发异步智能体，不影响当前请求的被动回复
@@ -250,7 +250,7 @@ public class ImWeworkController {
         if (StringUtils.isNotBlank(msgId)) {
             String dedupKey = WEWORK_MSG_PREFIX + msgId;
             if (redisUtil != null && redisUtil.get(dedupKey) != null) {
-                log.info("企业微信自建应用重复消息: msgid={}", msgId);
+                log.info("WeCom self-built app duplicate: msgid={}", msgId);
                 firstSeen = false;
             } else if (redisUtil != null) {
                 redisUtil.set(dedupKey, "1", WEWORK_MSG_TTL_SECONDS);
@@ -300,7 +300,7 @@ public class ImWeworkController {
                                     userMessage = userMessage + "\n\n[系统提示：部分附件类型不支持下载，请发送具体文件。]";
                                 }
                             } catch (Exception e) {
-                                log.error("企业微信自建应用附件处理异常(异步): mediaId={}, msgType={}", finalMediaId, finalMsgType, e);
+                                log.error("WeCom self-built app attachment error (async): mediaId={}, msgType={}", finalMediaId, finalMsgType, e);
                                 userMessage = userMessage + "\n\n[系统提示：附件处理失败，请稍后重试。]";
                             }
                         }
@@ -323,9 +323,9 @@ public class ImWeworkController {
 
                     // 通过自建应用主动推送消息给用户
                     sendAppTextMessage(finalConfig, finalFromUserName, processedText);
-                    log.info("企业微信自建应用异步智能体执行完成，已通过应用消息推送结果");
+                    log.info("WeCom self-built app async agent done, result pushed via app message");
                 } catch (Exception e) {
-                    log.error("企业微信自建应用异步智能体执行异常: fromUserName={}", finalFromUserName, e);
+                    log.error("WeCom self-built app async agent error: fromUserName={}", finalFromUserName, e);
                     try {
                         sendAppTextMessage(finalConfig, finalFromUserName,
                                 "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"));
@@ -356,7 +356,7 @@ public class ImWeworkController {
         String echostr = request.getParameter("echostr");
         String tokenFromUrl = request.getParameter("token"); // 从URL参数中获取token
 
-        log.info("企业微信 Webhook 请求: method={}, msgSignature={}, timestamp={}, nonce={}, tokenFromUrl={}",
+        log.info("WeCom Webhook request: method={}, msgSignature={}, timestamp={}, nonce={}, tokenFromUrl={}",
                 request.getMethod(), msgSignature != null ? "***" : null, timestamp, nonce,
                 tokenFromUrl != null ? "***" : null);
 
@@ -374,20 +374,20 @@ public class ImWeworkController {
             WeworkBotConfig config = resolveBotConfigFromToken(tokenFromUrl);
             if (config == null) {
                 // 如果URL中没有token参数，回退到签名验证方式（向后兼容）
-                log.info("URL中未提供token参数，使用签名验证方式查找配置");
+                log.info("No token in URL; using signature verification to resolve config");
                 String encryptPayload = echostr; // echostr 就是加密内容
                 config = resolveBotConfigBySignature(encryptPayload, timestamp, nonce, msgSignature, ImTargetTypeEnum.BOT);
             }
 
             if (config == null) {
-                log.warn("企业微信 URL 验证签名失败，无法匹配到任何机器人配置");
+                log.warn("WeCom URL verify failed, no bot config matched");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
 
             // 验证签名
             if (!verifyWeworkSignature(config.getToken(), timestamp, nonce, echostr, msgSignature)) {
-                log.warn("企业微信 URL 验证签名失败: aibotId={}", config.getAibotId());
+                log.warn("WeCom URL verify signature failed: aibotId={}", config.getAibotId());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
@@ -398,9 +398,9 @@ public class ImWeworkController {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write(plainEchostr);
-                log.info("企业微信智能机器人 URL 验证成功: aibotId={}", config.getAibotId());
+                log.info("WeCom smart bot URL verify OK: aibotId={}", config.getAibotId());
             } catch (Exception e) {
-                log.warn("企业微信 URL 验证解密失败: {}", e.getMessage());
+                log.warn("WeCom URL verify decrypt failed: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             }
             return;
@@ -414,7 +414,7 @@ public class ImWeworkController {
 
         String encryptPayload = extractEncryptPayload(encryptedBody);
         if (encryptPayload == null) {
-            log.warn("企业微信 POST body 无法解析出 Encrypt 内容");
+            log.warn("WeCom POST body has no Encrypt");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -423,19 +423,19 @@ public class ImWeworkController {
         WeworkBotConfig botConfig = resolveBotConfigFromToken(tokenFromUrl);
         if (botConfig == null) {
             // 如果URL中没有token参数，回退到签名验证方式（向后兼容）
-            log.info("URL中未提供token参数，使用签名验证方式查找配置");
+            log.info("No token in URL; using signature verification to resolve config");
             botConfig = resolveBotConfigBySignature(encryptPayload, timestamp, nonce, msgSignature, ImTargetTypeEnum.BOT);
         }
 
         if (botConfig == null) {
-            log.warn("企业微信消息签名验证失败，无法匹配到配置");
+            log.warn("WeCom message signature failed, no config matched");
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
         // 验证签名
         if (!verifyWeworkSignature(botConfig.getToken(), timestamp, nonce, encryptPayload, msgSignature)) {
-            log.warn("企业微信消息签名验证失败: aibotId={}", botConfig.getAibotId());
+            log.warn("WeCom message signature failed: aibotId={}", botConfig.getAibotId());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -446,7 +446,7 @@ public class ImWeworkController {
         try {
             decryptedJson = cryptUtil.decrypt(encryptPayload);
         } catch (Exception e) {
-            log.warn("企业微信消息解密失败: {}", e.getMessage());
+            log.warn("WeCom message decrypt failed: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -464,7 +464,7 @@ public class ImWeworkController {
         if (StringUtils.isNotBlank(msgid)) {
             String dedupKey = WEWORK_MSG_PREFIX + msgid;
             if (redisUtil != null && redisUtil.get(dedupKey) != null) {
-                log.info("企业微信重复消息跳过: msgid={}", msgid);
+                log.info("WeCom duplicate message skipped: msgid={}", msgid);
                 response.setStatus(HttpServletResponse.SC_OK);
                 return;
             }
@@ -475,7 +475,7 @@ public class ImWeworkController {
 
         // 从解密后的消息中获取 aibotid 用于日志记录（配置已通过签名验证确定）
         String aibotIdFromBody = body.getString("aibotid");
-        log.info("企业微信消息: msgtype={}, msgid={}, aibotid={}", msgtype, msgid, aibotIdFromBody);
+        log.info("WeCom message: msgtype={}, msgid={}, aibotid={}", msgtype, msgid, aibotIdFromBody);
 
         String userMessage = extractUserMessage(body, msgtype);
 
@@ -483,8 +483,8 @@ public class ImWeworkController {
         List<AttachmentDto> attachments = new ArrayList<>();
         String attachmentUrl = null;
 
-        log.info("企业微信消息类型检查: msgtype={}, body={}", msgtype, body.toJSONString());
-        log.info("完整的 image 对象字段: {}", body.getJSONObject("image") != null ?
+        log.info("WeCom message type check: msgtype={}, body={}", msgtype, body.toJSONString());
+        log.info("Full image object fields: {}", body.getJSONObject("image") != null ?
                 body.getJSONObject("image").entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue())
                         .reduce((a, b) -> a + ", " + b)
@@ -506,7 +506,7 @@ public class ImWeworkController {
                             if (imageObj != null) {
                                 String url = imageObj.getString("url");
                                 if (StringUtils.isNotBlank(url)) {
-                                    log.info("企业微信mixed消息中的图片: url={}", url);
+                                    log.info("WeCom mixed image: url={}", url);
                                     attachmentUrl = url;
                                     break; // 只处理第一个图片
                                 }
@@ -516,7 +516,7 @@ public class ImWeworkController {
                             if (fileObj != null) {
                                 String url = fileObj.getString("url");
                                 if (StringUtils.isNotBlank(url)) {
-                                    log.info("企业微信mixed消息中的文件: url={}", url);
+                                    log.info("WeCom mixed file: url={}", url);
                                     attachmentUrl = url;
                                     break; // 只处理第一个文件
                                 }
@@ -527,48 +527,48 @@ public class ImWeworkController {
             }
         } else if ("image".equals(msgtype)) {
             JSONObject imageObj = body.getJSONObject("image");
-            log.info("企业微信图片对象: imageObj={}", imageObj != null ? imageObj.toJSONString() : "null");
+            log.info("WeCom image object: imageObj={}", imageObj != null ? imageObj.toJSONString() : "null");
             if (imageObj != null) {
                 // 企业微信智能机器人图片使用 url 字段（临时 COS 签名 URL，5分钟有效）
                 String url = imageObj.getString("url");
                 if (StringUtils.isNotBlank(url)) {
-                    log.info("企业微信图片使用url: {}", url);
+                    log.info("WeCom image using url: {}", url);
                     attachmentUrl = url;
                 } else {
-                    log.warn("企业微信图片对象无url字段");
+                    log.warn("WeCom image object has no url");
                 }
             }
         } else if ("file".equals(msgtype)) {
             JSONObject fileObj = body.getJSONObject("file");
-            log.info("企业微信文件对象: fileObj={}", fileObj != null ? fileObj.toJSONString() : "null");
+            log.info("WeCom file object: fileObj={}", fileObj != null ? fileObj.toJSONString() : "null");
             if (fileObj != null) {
                 // 企业微信智能机器人文件使用 url 字段（临时 COS 签名 URL，5分钟有效）
                 String url = fileObj.getString("url");
                 if (StringUtils.isNotBlank(url)) {
-                    log.info("企业微信文件使用url: {}", url);
+                    log.info("WeCom file using url: {}", url);
                     attachmentUrl = url;
                 } else {
-                    log.warn("企业微信文件对象无url字段");
+                    log.warn("WeCom file object has no url");
                 }
             }
         }
 
         // 只有在没有使用 media_id 方式处理成功时，才尝试使用 url 方式
         if (StringUtils.isNotBlank(attachmentUrl) && attachments.isEmpty()) {
-            log.info("企业微信收到附件消息: msgtype={}, url={}", msgtype, attachmentUrl);
+            log.info("WeCom attachment message: msgtype={}, url={}", msgtype, attachmentUrl);
             try {
                 TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(botConfig.getTenantId());
                 var attachmentResult = weworkAttachmentService.downloadAndUploadFromUrl(
                         attachmentUrl, msgtype, botConfig.getEncodingAesKey(), tenantConfig);
                 attachments = attachmentResult.getAttachments();
-                log.info("企业微信附件处理完成: url={}, 附件数量={}", attachmentUrl, attachments.size());
+                log.info("WeCom attachment done: url={}, count={}", attachmentUrl, attachments.size());
             } catch (Exception e) {
-                log.error("企业微信附件处理异常: url={}", attachmentUrl, e);
+                log.error("WeCom attachment handling error: url={}", attachmentUrl, e);
             }
         } else if (!attachments.isEmpty()) {
-            log.info("企业微信附件已通过 media_id 处理完成，跳过 url 处理: msgtype={}, 附件数量={}", msgtype, attachments.size());
+            log.info("WeCom attachment handled via media_id, skip url: msgtype={}, count={}", msgtype, attachments.size());
         } else {
-            log.info("企业微信消息无附件: msgtype={}", msgtype);
+            log.info("WeCom message has no attachment: msgtype={}", msgtype);
         }
 
         if (StringUtils.isBlank(userMessage)) {
@@ -583,7 +583,7 @@ public class ImWeworkController {
         String responseUrl = body.getString("response_url");
 
         if (StringUtils.isBlank(responseUrl)) {
-            log.warn("企业微信消息无 response_url: msgid={}", msgid);
+            log.warn("WeCom message has no response_url: msgid={}", msgid);
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
@@ -595,7 +595,7 @@ public class ImWeworkController {
             return;
         }
 
-        log.info("处理企业微信消息: senderId={}, chatType={}, chatId={}, content={}",
+        log.info("Handle WeCom message: senderId={}, chatType={}, chatId={}, content={}",
                 senderId, chatType, chatId, userMessage);
 
         // 企业微信智能机器人webhook不允许被动回复，统一使用异步+主动推送方式
@@ -624,9 +624,9 @@ public class ImWeworkController {
 
                 // 推送最终结果
                 replyByResponseUrl(finalResponseUrl, processedText);
-                log.info("企业微信异步智能体执行完成，已主动推送最终结果");
+                log.info("WeCom async agent finished; final result pushed proactively");
             } catch (Exception e) {
-                log.error("企业微信智能体执行异常: senderId={}", finalSenderId, e);
+                log.error("WeCom agent execution error: senderId={}", finalSenderId, e);
                 replyByResponseUrl(finalResponseUrl, "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误"));
             }
         });
@@ -731,12 +731,12 @@ public class ImWeworkController {
 
             int code = conn.getResponseCode();
             if (code >= 200 && code < 300) {
-                log.info("企业微信主动回复成功: responseUrl={}", responseUrl);
+                log.info("WeCom proactive reply succeeded: responseUrl={}", responseUrl);
             } else {
-                log.warn("企业微信主动回复失败: code={}, response={}", code, conn.getResponseMessage());
+                log.warn("WeCom proactive reply failed: code={}, response={}", code, conn.getResponseMessage());
             }
         } catch (Exception e) {
-            log.error("企业微信主动回复异常: responseUrl={}", responseUrl, e);
+            log.error("WeCom proactive reply error: responseUrl={}", responseUrl, e);
         }
     }
 
@@ -860,12 +860,12 @@ public class ImWeworkController {
 
                     // 签名验证成功！
                     String configIdentifier = isBotConfig ? cfg.getWeworkBot().getAibotId() : cfg.getWeworkApp().getAgentId();
-                    log.info("企业微信{}消息匹配到配置: token={}, identifier={}, tenantId={}, 检查了{}个配置",
+                    log.info("WeCom {} message matched config: token={}, identifier={}, tenantId={}, checked {} configs",
                             isBotConfig ? "智能机器人" : "自建应用",
                             token, configIdentifier, cfg.getTenantId(), totalChecked);
                     return buildWeworkBotConfig(cfg, targetType);
                 } catch (Exception e) {
-                    log.warn("处理企业微信{}配置异常: error={}",
+                    log.warn("WeCom {} config handling error: error={}",
                             isBotConfig ? "智能机器人" : "自建应用",
                             e.getMessage());
                 }
@@ -880,7 +880,7 @@ public class ImWeworkController {
             offset += PAGE_SIZE;
         }
 
-        log.warn("企业微信{}消息无法匹配到任何配置，共检查了 {} 个配置",
+        log.warn("WeCom {} message matched no config (checked {} configs)",
                 isBotConfig ? "智能机器人" : "自建应用", totalChecked);
         return null;
     }
@@ -899,15 +899,15 @@ public class ImWeworkController {
         try {
             ImChannelConfigDto configDto = imChannelConfigApplicationService.getWeworkBotConfigByToken(tokenFromUrl);
             if (configDto == null || configDto.getWeworkBot() == null) {
-                log.warn("根据URL参数中的token未找到智能机器人配置: token={}", tokenFromUrl);
+                log.warn("No smart bot config for URL token: token={}", tokenFromUrl);
                 return null;
             }
 
-            log.info("企业微信智能机器人通过URL参数token直接匹配到配置: token={}, aibotId={}, tenantId={}",
+            log.info("WeCom smart bot matched by URL token: token={}, aibotId={}, tenantId={}",
                     tokenFromUrl, configDto.getWeworkBot().getAibotId(), configDto.getTenantId());
             return buildWeworkBotConfig(configDto, ImTargetTypeEnum.BOT);
         } catch (Exception e) {
-            log.warn("根据URL参数中的token查询智能机器人配置异常: token={}, error={}", tokenFromUrl, e.getMessage());
+            log.warn("Error querying smart bot config by URL token: token={}, error={}", tokenFromUrl, e.getMessage());
             return null;
         }
     }
@@ -931,14 +931,14 @@ public class ImWeworkController {
                 configDto = imChannelConfigApplicationService.getWeworkBotConfigByToken(tokenFromUrl);
             }
             if (configDto == null || configDto.getWeworkApp() == null) {
-                log.warn("根据URL参数中的token未找到配置: targetType={}, token={}", targetType.getCode(), tokenFromUrl);
+                log.warn("No config for URL token: targetType={}, token={}", targetType.getCode(), tokenFromUrl);
                 return null;
             }
-            log.info("企业微信通过URL参数token匹配到配置: targetType={}, token={}", targetType.getCode(), tokenFromUrl);
+            log.info("WeCom config matched by URL token: targetType={}, token={}", targetType.getCode(), tokenFromUrl);
 
             return buildWeworkBotConfig(configDto, targetType);
         } catch (Exception e) {
-            log.warn("根据URL参数中的token查询自建应用配置异常: token={}, error={}", tokenFromUrl, e.getMessage());
+            log.warn("Error querying self-built app config by URL token: token={}, error={}", tokenFromUrl, e.getMessage());
             return null;
         }
     }
@@ -1040,7 +1040,7 @@ public class ImWeworkController {
                             config.getNuwaxAgentId(),
                             sessionName);
 
-            log.info("企业微信智能体执行完成: senderId={}, chatType={}, chatId={}, conversationId={}, agentId={}",
+            log.info("WeCom agent finished: senderId={}, chatType={}, chatId={}, conversationId={}, agentId={}",
                     senderId, chatType, chatId, result.getConversationId(), result.getAgentId());
 
             String processedText = imAgentOutputProcessService.processAgentOutput(
@@ -1051,7 +1051,7 @@ public class ImWeworkController {
             }
             return processedText;
         } catch (Exception e) {
-            log.error("企业微信智能体执行异常: senderId={}", senderId, e);
+            log.error("WeCom agent execution error: senderId={}", senderId, e);
             return "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
         }
     }
@@ -1125,7 +1125,7 @@ public class ImWeworkController {
             int errcode = obj.getIntValue("errcode");
             if (errcode != 0) {
                 // 86008: 无权限访问该 chat（通常是非本应用创建/托管的 appchat），按设计回退 chatId，不抛异常
-                log.debug("企业微信 appchat/get 无法获取群名，回退 chatId: errcode={}, errmsg={}, chatId={}",
+                log.debug("WeCom appchat/get could not get group name, fallback chatId: errcode={}, errmsg={}, chatId={}",
                         errcode, obj.getString("errmsg"), chatId);
                 return null;
             }
@@ -1147,7 +1147,7 @@ public class ImWeworkController {
         try {
             String accessToken = getCorpAccessToken(config.getCorpId(), config.getCorpSecret());
             if (StringUtils.isBlank(accessToken)) {
-                log.warn("企业微信自建应用发送消息失败：获取access_token失败");
+                log.warn("WeCom self-built app send message failed: access_token fetch failed");
                 return;
             }
 
@@ -1184,17 +1184,17 @@ public class ImWeworkController {
                 int errcode = respJson != null ? respJson.getIntValue("errcode") : -1;
                 String errmsg = respJson != null ? respJson.getString("errmsg") : null;
                 if (errcode == 0) {
-                    log.info("企业微信自建应用主动发送消息成功: toUser={}, resp={}", toUser, respBody);
+                    log.info("WeCom self-built app proactive message OK: toUser={}, resp={}", toUser, respBody);
                 } else {
-                    log.warn("企业微信自建应用主动发送消息返回业务错误: toUser={}, errcode={}, errmsg={}, resp={}",
+                    log.warn("WeCom self-built app proactive message business error: toUser={}, errcode={}, errmsg={}, resp={}",
                             toUser, errcode, errmsg, respBody);
                 }
             } else {
-                log.warn("企业微信自建应用主动发送消息失败: httpCode={}, httpMsg={}, resp={}",
+                log.warn("WeCom self-built app proactive message failed: httpCode={}, httpMsg={}, resp={}",
                         code, conn.getResponseMessage(), respBody);
             }
         } catch (Exception e) {
-            log.error("企业微信自建应用主动发送消息异常: toUser={}", toUser, e);
+            log.error("WeCom self-built app proactive message error: toUser={}", toUser, e);
         }
     }
 
@@ -1215,18 +1215,18 @@ public class ImWeworkController {
 
             int code = conn.getResponseCode();
             if (code != 200) {
-                log.warn("获取企业微信access_token失败: httpCode={}", code);
+                log.warn("WeCom access_token fetch failed: httpCode={}", code);
                 return null;
             }
             String resp = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             JSONObject json = JSON.parseObject(resp);
             if (json == null || json.getIntValue("errcode") != 0) {
-                log.warn("获取企业微信access_token失败: resp={}", resp);
+                log.warn("WeCom access_token fetch failed: resp={}", resp);
                 return null;
             }
             return json.getString("access_token");
         } catch (Exception e) {
-            log.error("获取企业微信access_token异常", e);
+            log.error("Exception fetching WeCom access_token", e);
             return null;
         }
     }

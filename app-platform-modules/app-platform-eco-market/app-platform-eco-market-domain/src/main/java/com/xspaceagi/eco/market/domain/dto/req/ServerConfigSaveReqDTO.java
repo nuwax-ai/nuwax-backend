@@ -20,14 +20,14 @@ public class ServerConfigSaveReqDTO {
     @Schema(description = "ID,新增时为空,更新时必填")
     private Long id;
 
-    @NotBlank(message = "唯一标识不能为空")
+    @NotBlank(message = "Unique identifier is required")
     @Schema(description = "唯一标识", requiredMode = Schema.RequiredMode.REQUIRED)
     private String uid;
 
     /**
      * 名称
      */
-    @NotBlank(message = "名称不能为空")
+    @NotBlank(message = "Name is required")
     @Schema(description = "名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
@@ -40,7 +40,7 @@ public class ServerConfigSaveReqDTO {
     /**
      * 市场类型,默认插件,1:插件;2:模板;3:MCP
      */
-    @NotNull(message = "市场类型不能为空")
+    @NotNull(message = "Market type is required")
     @Schema(description = "市场类型,默认插件,1:插件;2:模板;3:MCP", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer dataType;
 
@@ -108,14 +108,14 @@ public class ServerConfigSaveReqDTO {
     /**
      * 客户端ID
      */
-    @NotBlank(message = "客户端ID不能为空")
+    @NotBlank(message = "Client ID is required")
     @Schema(description = "客户端ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private String clientId;
 
     /**
      * 客户端密钥
      */
-    @NotBlank(message = "客户端密钥不能为空")
+    @NotBlank(message = "Client secret is required")
     @Schema(description = "客户端密钥", requiredMode = Schema.RequiredMode.REQUIRED)
     private String clientSecret;
 

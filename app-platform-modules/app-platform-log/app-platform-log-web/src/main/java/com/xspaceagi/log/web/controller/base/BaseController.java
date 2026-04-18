@@ -138,10 +138,10 @@ public abstract class BaseController {
             }).collect(Collectors.toList()));
             return ReqResult.success(page);
         } catch (LogPlatformException e) {
-            log.error("日志搜索失败: {}", e.getMessage(), e);
+            log.error("Log search failed: {}", e.getMessage(), e);
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("日志搜索发生未知错误", e);
+            log.error("Unknown error during log search", e);
             return ReqResult.error("日志搜索发生未知错误: " + e.getMessage());
         }
     }

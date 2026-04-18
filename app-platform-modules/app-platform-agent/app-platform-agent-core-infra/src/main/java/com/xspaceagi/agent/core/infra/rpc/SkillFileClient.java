@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.infra.rpc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,14 +29,15 @@ public class SkillFileClient {
         try {
             sandboxServer = sandboxServerConfigService.selectServer(cId);
         } catch (Exception e) {
-            throw new BizException(e.getMessage());
+            log.warn("[SkillFileClient] selectServer failed cId={}", cId, e);
+            throw BizException.of(BizExceptionCodeEnum.agentDependencyServiceError);
         }
         if (sandboxServer == null) {
             return null;
         }
         String serverUrl = sandboxServer.getServerFileUrl();
         if (serverUrl == null) {
-            throw new BizException("未找到文件服务器");
+            throw BizException.of(BizExceptionCodeEnum.agentFileServerNotFound);
         }
         return serverUrl + "/api";
     }
@@ -79,7 +81,7 @@ public class SkillFileClient {
      */
     public Map<String, Object> pushSkillsToWorkspace(Long userId, Long cId, MultipartFile zipFile) {
         if (zipFile == null) {
-            throw new BizException("无技能文件可推送");
+            throw new IllegalArgumentException("No skill files to push");
         }
 
         String url = getBaseUrl(cId) + "/computer/push-skills-to-workspace";

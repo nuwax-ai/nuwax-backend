@@ -18,4 +18,6 @@ public interface UserApiKeyApplicationService {
     List<UserAccessKeyDto> getUserApiKeys(Long userId);
 
     List<OpenApiDefinition> queryOpenApiDefinitions(Long userId);
+
+    void requestLimitCheck(Long userId, OpenApiDefinition openApiDefinition);
 }

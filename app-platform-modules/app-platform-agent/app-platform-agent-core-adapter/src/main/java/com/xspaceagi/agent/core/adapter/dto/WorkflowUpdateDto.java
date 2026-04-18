@@ -10,7 +10,7 @@ import java.util.Map;
 public class WorkflowUpdateDto {
 
     @Schema(description = "工作流ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "id不能为空")
+    @NotNull(message = "id is required")
     private Long id;
 
     @Schema(description = "工作流名称")

@@ -19,8 +19,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
-import java.util.Base64;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * 企业微信附件服务：从企业微信消息中下载附件，通过 FileUploadService 上传到项目存储，返回可访问的 URL。
@@ -62,7 +62,7 @@ public class WeworkAttachmentService {
             // 1. 获取 access_token
             String accessToken = getAccessToken(corpId, corpSecret);
             if (StringUtils.isBlank(accessToken)) {
-                log.warn("企业微信获取access_token失败: corpId={}", corpId);
+                log.warn("WeCom access_token failed: corpId={}", corpId);
                 result.getUnsupportedKeys().add(mediaId);
                 return result;
             }
@@ -70,12 +70,12 @@ public class WeworkAttachmentService {
             // 2. 下载附件
             byte[] fileBytes = downloadMedia(accessToken, mediaId);
             if (fileBytes == null || fileBytes.length == 0) {
-                log.warn("企业微信附件下载失败: mediaId={}, type={}", mediaId, type);
+                log.warn("WeCom attachment download failed: mediaId={}, type={}", mediaId, type);
                 result.getUnsupportedKeys().add(mediaId);
                 return result;
             }
 
-            log.info("企业微信附件下载成功: mediaId={}, type={}, size={}", mediaId, type, fileBytes.length);
+            log.info("WeCom attachment download OK: mediaId={}, type={}, size={}", mediaId, type, fileBytes.length);
 
             // 3. 使用统一服务检测文件类型并上传
             FileUploadHelperService.UploadResult uploadResult = fileUploadHelperService.detectAndUpload(
@@ -98,15 +98,15 @@ public class WeworkAttachmentService {
                         imUploadResult.getMimeType()
                 );
                 result.getAttachments().add(dto);
-                log.info("企业微信附件处理成功: mediaId={}, url={}, detectionSource={}",
+                log.info("WeCom attachment OK: mediaId={}, url={}, detectionSource={}",
                         mediaId, dto.getFileUrl(), uploadResult.getDetection().getDetectionSource());
             } else {
-                log.warn("企业微信附件处理失败: mediaId={}, error={}", mediaId, uploadResult.getErrorMessage());
+                log.warn("WeCom attachment failed: mediaId={}, error={}", mediaId, uploadResult.getErrorMessage());
                 result.getUnsupportedKeys().add(mediaId);
             }
 
         } catch (Exception e) {
-            log.error("企业微信附件处理异常: mediaId={}", mediaId, e);
+            log.error("WeCom attachment error: mediaId={}", mediaId, e);
             result.getUnsupportedKeys().add(mediaId);
         }
 
@@ -135,7 +135,7 @@ public class WeworkAttachmentService {
             DownloadResult downloadResult = downloadFromUrl(url);
             byte[] encryptedBytes = downloadResult != null ? downloadResult.bytes : null;
             if (encryptedBytes == null || encryptedBytes.length == 0) {
-                log.warn("企业微信附件下载失败: url={}, type={}", url, type);
+                log.warn("WeCom attachment download failed: url={}, type={}", url, type);
                 result.getUnsupportedKeys().add(url);
                 return result;
             }
@@ -143,8 +143,8 @@ public class WeworkAttachmentService {
             String headerContentType = downloadResult != null ? downloadResult.contentType : null;
             String headerFileName = downloadResult != null ? downloadResult.fileName : null;
 
-            log.info("企业微信加密附件下载成功: url={}, type={}, size={}", url, type, encryptedBytes.length);
-            log.info("加密数据前16字节: {}", bytesToHex(encryptedBytes, Math.min(16, encryptedBytes.length)));
+            log.info("WeCom encrypted attachment download OK: url={}, type={}, size={}", url, type, encryptedBytes.length);
+            log.info("First 16 bytes of ciphertext: {}", bytesToHex(encryptedBytes, Math.min(16, encryptedBytes.length)));
 
             // 2. 尝试解密附件数据（如果可能）
             byte[] fileBytes = null;
@@ -152,10 +152,10 @@ public class WeworkAttachmentService {
                 // 企业微信智能机器人的图片可能是加密的，但也可能只是特殊格式
                 // 先尝试解密
                 fileBytes = decryptWeworkData(encryptedBytes, aesKey);
-                log.info("企业微信附件解密成功: 原始大小={}, 解密后大小={}", encryptedBytes.length, fileBytes.length);
-                log.info("解密后前16字节: {}", bytesToHex(fileBytes, Math.min(16, fileBytes.length)));
+                log.info("WeCom attachment decrypt OK: rawSize={}, decryptedSize={}", encryptedBytes.length, fileBytes.length);
+                log.info("First 16 bytes after decrypt: {}", bytesToHex(fileBytes, Math.min(16, fileBytes.length)));
             } catch (Exception e) {
-                log.warn("企业微信附件解密失败: url={}, 错误: {}", url, e.getMessage());
+                log.warn("WeCom attachment decrypt failed: url={}, error: {}", url, e.getMessage());
                 // 有些文件（比如普通附件）可能本身并不需要解密；
                 // 解密失败时，尝试把加密字节当成明文继续识别与上传（仅 type=file 才这样做）。
                 if ("file".equals(type)) {
@@ -165,7 +165,7 @@ public class WeworkAttachmentService {
 
             // 如果解密失败或数据为空，直接返回失败
             if (fileBytes == null || fileBytes.length == 0) {
-                log.warn("企业微信附件解密后数据为空: url={}", url);
+                log.warn("WeCom attachment decrypted empty: url={}", url);
                 result.getUnsupportedKeys().add(url);
                 return result;
             }
@@ -191,15 +191,15 @@ public class WeworkAttachmentService {
                         imUploadResult.getMimeType()
                 );
                 result.getAttachments().add(dto);
-                log.info("企业微信附件处理成功: url={}, finalUrl={}, detectionSource={}",
+                log.info("WeCom attachment OK: url={}, finalUrl={}, detectionSource={}",
                         url, dto.getFileUrl(), uploadResult.getDetection().getDetectionSource());
             } else {
-                log.warn("企业微信附件处理失败: url={}, error={}", url, uploadResult.getErrorMessage());
+                log.warn("WeCom attachment failed: url={}, error={}", url, uploadResult.getErrorMessage());
                 result.getUnsupportedKeys().add(url);
             }
 
         } catch (Exception e) {
-            log.error("企业微信附件处理异常: url={}", url, e);
+            log.error("WeCom attachment handling error: url={}", url, e);
             result.getUnsupportedKeys().add(url);
         }
 
@@ -250,7 +250,7 @@ public class WeworkAttachmentService {
                 return result;
             }
         } catch (Exception e) {
-            log.error("下载企业微信附件异常: url={}", url, e);
+            log.error("WeCom attachment download error: url={}", url, e);
         }
         return null;
     }
@@ -317,7 +317,7 @@ public class WeworkAttachmentService {
                 }
             }
         } catch (Exception e) {
-            log.error("获取企业微信access_token异常", e);
+            log.error("Exception fetching WeCom access_token", e);
         }
         return null;
     }
@@ -340,7 +340,7 @@ public class WeworkAttachmentService {
                 return response.getBody();
             }
         } catch (Exception e) {
-            log.error("下载企业微信附件异常: mediaId={}", mediaId, e);
+            log.error("WeCom attachment download error: mediaId={}", mediaId, e);
         }
         return null;
     }
@@ -368,34 +368,34 @@ public class WeworkAttachmentService {
             paddedAesKey = paddedAesKey + "=".repeat(4 - (paddedAesKey.length() % 4));
         }
         byte[] keyBytes = Base64.getDecoder().decode(paddedAesKey);
-        log.info("AES Key 解码成功，原始长度: {}, 解码后长度: {} 字节", aesKey.length(), keyBytes.length);
+        log.info("AES key decode OK, rawLen: {}, decodedLen: {} bytes", aesKey.length(), keyBytes.length);
         log.info("AES Key (Hex): {}", bytesToHex(keyBytes, keyBytes.length));
 
         // 2. 提取 IV：**取 AESKey 的前16字节**（不是加密数据的前16字节！）
         byte[] iv = new byte[16];
         System.arraycopy(keyBytes, 0, iv, 0, 16);
-        log.info("IV（取AESKey前16字节）: {}", bytesToHex(iv, 16));
+        log.info("IV (first 16 bytes of AESKey): {}", bytesToHex(iv, 16));
 
         // 3. 所有加密数据都是密文（不需要跳过前16字节）
         byte[] cipherText = encryptedData;
-        log.info("密文长度: {} 字节", cipherText.length);
+        log.info("Ciphertext length: {} bytes", cipherText.length);
 
         // 4. 先尝试 PKCS5Padding 解密
         try {
             byte[] result = decryptWithPadding(keyBytes, iv, cipherText, "AES/CBC/PKCS5Padding");
-            log.info("PKCS5Padding 解密成功，解密后长度: {} 字节", result.length);
-            log.info("解密后前16字节: {}", bytesToHex(result, Math.min(16, result.length)));
+            log.info("PKCS5Padding decrypt OK, plaintext length: {} bytes", result.length);
+            log.info("First 16 bytes after decrypt: {}", bytesToHex(result, Math.min(16, result.length)));
             return result;
         } catch (Exception e) {
-            log.warn("PKCS5Padding 解密失败: {}，尝试 NoPadding 解密", e.getMessage());
+            log.warn("PKCS5Padding decrypt failed: {}, trying NoPadding", e.getMessage());
             // 如果 PKCS5Padding 失败，尝试 NoPadding
             try {
                 byte[] result = decryptWithNoPadding(keyBytes, iv, cipherText);
-                log.info("NoPadding 解密成功，解密后长度: {} 字节", result.length);
-                log.info("解密后前16字节: {}", bytesToHex(result, Math.min(16, result.length)));
+                log.info("NoPadding decrypt OK, plaintext length: {} bytes", result.length);
+                log.info("First 16 bytes after decrypt: {}", bytesToHex(result, Math.min(16, result.length)));
                 return result;
             } catch (Exception e2) {
-                log.error("NoPadding 解密也失败: {}", e2.getMessage());
+                log.error("NoPadding decrypt also failed: {}", e2.getMessage());
                 throw e2;
             }
         }
@@ -443,7 +443,7 @@ public class WeworkAttachmentService {
                 if (validPadding) {
                     byte[] unpadded = new byte[decrypted.length - padLength];
                     System.arraycopy(decrypted, 0, unpadded, 0, unpadded.length);
-                    log.info("手动去除 PKCS#7 填充: {} 字节", padLength);
+                    log.info("Stripped PKCS#7 padding: {} bytes", padLength);
                     return unpadded;
                 }
             }

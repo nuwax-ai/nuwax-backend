@@ -24,7 +24,9 @@ import com.xspaceagi.mcp.sdk.enums.McpContentTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpDataTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -109,7 +111,7 @@ public class McpApiServiceImpl implements IMcpApiService {
                         iLogRpcService.bulkIndex(List.of(logDocument));
                     } catch (Exception e) {
                         // 忽略
-                        log.error("Mcp日志记录异常", e);
+                        log.error("MCP log recording error", e);
                     }
                 }).doOnNext(result -> {
                     try {
@@ -121,7 +123,7 @@ public class McpApiServiceImpl implements IMcpApiService {
                         iLogRpcService.bulkIndex(List.of(logDocument));
                     } catch (Exception e) {
                         // 忽略
-                        log.error("Mcp日志记录异常", e);
+                        log.error("MCP log recording error", e);
                     }
                 });
             } catch (Exception e) {
@@ -233,7 +235,7 @@ public class McpApiServiceImpl implements IMcpApiService {
             if (val == null) {
                 val = StringUtils.isNotBlank(arg.getBindValue()) ? arg.getBindValue() : null;
                 if (val == null && arg.isRequire()) {
-                    throw new BizException("参数[" + arg.getName() + "]值不能为空");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, arg.getName());
                 }
             }
             if (arg.getDataType() == McpDataTypeEnum.Object) {
@@ -306,13 +308,13 @@ public class McpApiServiceImpl implements IMcpApiService {
 
     private void checkAndUpdateListParams(McpArgDto arg, Object val) {
         if (!(val instanceof List)) {
-            throw new BizException("参数[" + arg.getName() + "]类型错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.paramArgTypeInvalid, arg.getName());
         }
         for (Object obj : (List<?>) val) {
             if (obj instanceof Map) {
                 checkAndUpdateParams(arg.getSubArgs(), (Map<String, Object>) obj);
             } else {
-                throw new BizException("参数[" + arg.getName() + "]类型错误");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.paramArgTypeInvalid, arg.getName());
             }
         }
     }

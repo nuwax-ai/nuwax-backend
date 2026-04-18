@@ -25,6 +25,8 @@ public interface AuthService {
 
     void expireUserAllToken(Long userId);
 
+    void expireUserAllToken(Long userId, String clientIdPrefix);
+
     String getClientId(Long userId, String token);
 
     List<String> getUserClientIds(Long userId);

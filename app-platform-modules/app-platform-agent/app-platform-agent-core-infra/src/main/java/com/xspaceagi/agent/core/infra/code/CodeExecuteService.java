@@ -2,7 +2,9 @@ package com.xspaceagi.agent.core.infra.code;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +49,7 @@ public class CodeExecuteService {
             return codeExecuteResultDto;
         } catch (Exception e) {
             log.error("代码执行接口调用失败", e);
-            throw new BizException("代码执行接口暂不可用，请稍后再试");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentCodeExecuteUnavailable);
         } finally {
             log.info("代码执行接口调用结果，输入 {}, 输出 {}", body, res);
         }

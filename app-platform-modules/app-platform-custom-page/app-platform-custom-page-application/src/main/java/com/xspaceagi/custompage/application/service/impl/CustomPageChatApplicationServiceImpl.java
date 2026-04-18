@@ -36,23 +36,23 @@ public class CustomPageChatApplicationServiceImpl implements ICustomPageChatAppl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> saveConversation(CustomPageConversationModel model, UserContext userContext) {
-        log.info("[Application] projectId={},保存会话记录", model.getProjectId());
+        log.info("[Application] project Id={},savesession records", model.getProjectId());
 
         ReqResult<Long> domainResult = customPageConversationDomainService.saveConversation(model, userContext);
 
         if (!domainResult.isSuccess()) {
-            log.error("[Application] projectId={},保存会话记录失败,error={}", model.getProjectId(),
+            log.error("[Application] project Id={},savesession records failed,error={}", model.getProjectId(),
                     domainResult.getMessage());
             return ReqResult.error(domainResult.getCode(), domainResult.getMessage());
         }
 
-        log.info("[Application] projectId={},保存会话记录成功,result={}", model.getProjectId(), domainResult.getData());
+        log.info("[Application] project Id={},savesession records succeeded,result={}", model.getProjectId(), domainResult.getData());
         return ReqResult.success();
     }
 
     @Override
     public ReqResult<List<CustomPageConversationModel>> listConversations(Long projectId, UserContext userContext) {
-        log.info("[Application] projectId={},查询用户会话记录", projectId);
+        log.info("[Application] project Id={},queryusersession records", projectId);
 
         List<CustomPageConversationModel> modelList = new ArrayList<>();
         List<CustomPageConversationModel> models = customPageConversationDomainService
@@ -61,26 +61,26 @@ public class CustomPageChatApplicationServiceImpl implements ICustomPageChatAppl
             modelList.addAll(models);
         }
 
-        log.info("[Application] projectId={},查询用户会话记录返回size={}", projectId, modelList.size());
+        log.info("[Application] project Id={},queryusersession recordsreturn size={}", projectId, modelList.size());
         return ReqResult.success(modelList);
     }
 
     @Override
     public ReqResult<SuperPage<CustomPageConversationModel>> pageQueryConversations(
             CustomPageConversationModel queryModel, Long current, Long pageSize, UserContext userContext) {
-        log.info("[Application] projectId={},分页查询用户会话记录, current={}, pageSize={}", queryModel.getProjectId(), current,
+        log.info("[Application] project Id={},pagedqueryusersession records, current={}, page Size={}", queryModel.getProjectId(), current,
                 pageSize);
 
         ReqResult<SuperPage<CustomPageConversationModel>> domainResult = customPageConversationDomainService
                 .pageQuery(queryModel, current, pageSize, userContext);
 
         if (!domainResult.isSuccess()) {
-            log.error("[Application] projectId={},分页查询用户会话记录失败,error={}", queryModel.getProjectId(),
+            log.error("[Application] project Id={},pagedqueryusersession records failed,error={}", queryModel.getProjectId(),
                     domainResult.getMessage());
             return ReqResult.error(domainResult.getCode(), domainResult.getMessage());
         }
 
-        log.info("[Application] projectId={},分页查询用户会话记录成功,total={}", queryModel.getProjectId(),
+        log.info("[Application] project Id={},pagedqueryusersession records succeeded,total={}", queryModel.getProjectId(),
                 domainResult.getData().getTotal());
         return domainResult;
     }
@@ -88,17 +88,17 @@ public class CustomPageChatApplicationServiceImpl implements ICustomPageChatAppl
     @Override
     public Flux<Map<String, Object>> sendAgentChatFlux(Map<String, Object> chatBody,
             UserContext userContext) {
-        log.info("[Application] 发送聊天消息（Flux响应式）,chatBody keys={}", chatBody == null ? null : chatBody.keySet());
-        Optional.ofNullable(chatBody).orElseThrow(() -> new IllegalArgumentException("请求体不能为空"));
+        log.info("[Application] send chat message(Fluxreactive),chat Body keys={}", chatBody == null ? null : chatBody.keySet());
+        Optional.ofNullable(chatBody).orElseThrow(() -> new IllegalArgumentException("Request body cannot be empty"));
 
         return customPageChatFluxService.sendAgentChatFlux(chatBody, userContext);
     }
 
     @Override
     public ReqResult<Void> terminateChatSession(String sessionId, UserContext userContext) {
-        log.info("[Application] 接收到终止会话请求: sessionId={}", sessionId);
+        log.info("[Application] terminatesessionrequest: session Id={}", sessionId);
         if (sessionId == null || sessionId.trim().isEmpty()) {
-            return ReqResult.error("0001", "sessionId不能为空");
+            return ReqResult.error("0001", "sessionId is required");
         }
 
         customPageChatFluxService.terminateSession(sessionId);
@@ -107,27 +107,27 @@ public class CustomPageChatApplicationServiceImpl implements ICustomPageChatAppl
 
     @Override
     public SseEmitter startAgentSessionSse(String sessionId, UserContext userContext) {
-        log.info("[Application] 建立会话SSE,sessionId={}", sessionId);
+        log.info("[Application] establish session SSE,session Id={}", sessionId);
         return customPageChatDomainService.startAgentSessionSse(sessionId, userContext);
     }
 
     @Override
     public ReqResult<Map<String, Object>> agentSessionCancel(String projectId, String sessionId,
             UserContext userContext) {
-        log.info("[Application] projectId={},取消agent任务,sessionId={}", projectId, sessionId);
+        log.info("[Application] project Id={},cancel agent task,session Id={}", projectId, sessionId);
         return customPageChatDomainService.agentSessionCancel(projectId, sessionId, userContext);
     }
 
     @Override
     public ReqResult<Map<String, Object>> getAgentStatus(String projectId, UserContext userContext) {
-        log.info("[Application] projectId={},查询Agent状态", projectId);
+        log.info("[Application] project Id={},query Agentstatus", projectId);
         return customPageChatDomainService.getAgentStatus(projectId, userContext);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Map<String, Object>> stopAgent(String projectId, UserContext userContext) {
-        log.info("[Application] projectId={},停止Agent服务", projectId);
+        log.info("[Application] project Id={},stop Agentservice", projectId);
         return customPageChatDomainService.stopAgent(projectId, userContext);
     }
 }

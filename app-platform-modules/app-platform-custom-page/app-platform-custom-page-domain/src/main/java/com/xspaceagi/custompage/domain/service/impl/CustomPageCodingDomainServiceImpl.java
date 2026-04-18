@@ -41,10 +41,10 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
     @Override
     public ReqResult<Map<String, Object>> specifiedFilesUpdate(Long projectId, List<PageFileInfo> files,
                                                                UserContext userContext) {
-        log.info("[specifiedFilesUpdate] projectId={},开始执行domain", projectId);
+        log.info("[specified Files Update] project Id={},start domain execution", projectId);
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         // 校验空间权限
@@ -55,7 +55,7 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
         Map<String, Object> resp = pageFileBuildClient.specifiedFilesUpdate(projectId, files, buildModel.getCodeVersion(), devProxyPath,
                 buildModel.getDevPid());
         if (resp == null) {
-            return ReqResult.error("9999", "指定文件修改失败，server端无响应");
+            return ReqResult.error("9999", "Update specified files failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
@@ -75,10 +75,10 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
     @Override
     public ReqResult<Map<String, Object>> allFilesUpdate(Long projectId, List<PageFileInfo> files,
                                                          UserContext userContext) {
-        log.info("[allFilesUpdate] projectId={},开始执行domain", projectId);
+        log.info("[all Files Update] project Id={},start domain execution", projectId);
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         // 校验空间权限
@@ -88,7 +88,7 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
         Map<String, Object> resp = pageFileBuildClient.allFilesUpdate(projectId, files, buildModel.getCodeVersion(), devProxyPath,
                 buildModel.getDevPid());
         if (resp == null) {
-            return ReqResult.error("9999", "全量文件修改失败，server端无响应");
+            return ReqResult.error("9999", "Full file update failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
@@ -117,11 +117,11 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
     @Override
     public ReqResult<Map<String, Object>> uploadSingleFile(Long projectId, MultipartFile file, String filePath,
                                                            UserContext userContext) {
-        log.info("[uploadSingleFile] projectId={},开始执行domain", projectId);
+        log.info("[upload Single File] project Id={},start domain execution", projectId);
 
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         // 校验空间权限
@@ -131,7 +131,7 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
 
         Map<String, Object> resp = pageFileBuildClient.uploadSingleFile(projectId, file, filePath, currentVersion);
         if (resp == null) {
-            return ReqResult.error("9999", "上传文件失败，server端无响应");
+            return ReqResult.error("9999", "Upload file failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
@@ -161,10 +161,10 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
     @Override
     public ReqResult<Map<String, Object>> rollbackVersion(Long projectId, Integer rollbackTo,
                                                           UserContext userContext) {
-        log.info("[rollbackToVersion] projectId={},开始执行domain,rollbackToVersion={}", projectId, rollbackTo);
+        log.info("[rollback To Version] project Id={},start domain execution,rollback To Version={}", projectId, rollbackTo);
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         // 校验空间权限
@@ -173,17 +173,17 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
         // 校验版本号
         Integer currentVersion = buildModel.getCodeVersion() == null ? 0 : buildModel.getCodeVersion();
         if (rollbackTo >= currentVersion) {
-            return ReqResult.error("0002", "回滚版本号必须小于当前版本号");
+            return ReqResult.error("0002", "Rollback version must be less than the current version");
         }
         if (rollbackTo < 1) {
-            return ReqResult.error("0002", "回滚版本号不能小于1");
+            return ReqResult.error("0002", "Rollback version cannot be less than 1");
         }
 
         String devProxyPath = customPageProxyPathService.getDevProxyPath(projectId);
         Map<String, Object> resp = pageFileBuildClient.rollbackVersion(projectId, rollbackTo, buildModel.getCodeVersion(), devProxyPath,
                 buildModel.getDevPid());
         if (resp == null) {
-            return ReqResult.error("9999", "回滚版本失败，server端无响应");
+            return ReqResult.error("9999", "Rollback version failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));

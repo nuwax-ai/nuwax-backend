@@ -13,7 +13,9 @@ import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.SpacePermissionException;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,119 +63,119 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     @Override
     public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext) {
         if (userId == null || userId <= 0) {
-            log.error("[Web] userId 无效, userId={}", userId);
-            return buildError("userId 无效");
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
         }
         if (cId == null || cId <= 0) {
-            log.error("[Web] cId 无效, cId={}", cId);
-            return buildError("cId 无效");
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
         }
         try {
             return computerFileDomainService.getFileList(userId, cId, proxyPath, userContext);
         } catch (Exception e) {
-            log.error("[Web] 查询文件列表异常, userId={}, cId={}", userId, cId, e);
-            return buildError("查询文件列表失败");
+            log.error("[Web] Exception querying file list, userId={}, cId={}", userId, cId, e);
+            return buildError("Failed to query file list");
         }
     }
 
     @Override
     public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext) {
         if (userId == null || userId <= 0) {
-            log.error("[Web] userId 无效, userId={}", userId);
-            return buildError("userId 无效");
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
         }
         if (cId == null || cId <= 0) {
-            log.error("[Web] cId 无效, cId={}", cId);
-            return buildError("cId 无效");
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
         }
         if (files == null || files.isEmpty()) {
-            log.error("[Web] files 无效, files为空");
-            return buildError("files 无效");
+            log.error("[Web] files is invalid, files is empty");
+            return buildError("files is invalid");
         }
         try {
             return computerFileDomainService.filesUpdate(userId, cId, files, userContext);
         } catch (Exception e) {
-            log.error("[Web] 更新用户文件列表异常, userId={}, cId={}", userId, cId, e);
-            return buildError("更新用户文件列表失败,请检查文件名是否重复");
+            log.error("[Web] Exception updating user file list, userId={}, cId={}", userId, cId, e);
+            return buildError("Failed to update user file list, please check if filename is duplicated");
         }
     }
 
     @Override
     public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext) {
         if (userId == null || userId <= 0) {
-            log.error("[Web] userId 无效, userId={}", userId);
-            return buildError("userId 无效");
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
         }
         if (cId == null || cId <= 0) {
-            log.error("[Web] cId 无效, cId={}", cId);
-            return buildError("cId 无效");
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
         }
         if (filePath == null || filePath.trim().isEmpty()) {
-            log.error("[Web] filePath 无效, filePath={}", filePath);
-            return buildError("filePath 无效");
+            log.error("[Web] filePath is invalid, filePath={}", filePath);
+            return buildError("filePath is invalid");
         }
         if (file == null || file.isEmpty()) {
-            log.error("[Web] file 无效, file为空");
-            return buildError("file 无效");
+            log.error("[Web] file is invalid, file is empty");
+            return buildError("file is invalid");
         }
         try {
             return computerFileDomainService.uploadFile(userId, cId, filePath, file, userContext);
         } catch (Exception e) {
-            log.error("[Web] 上传用户文件异常, userId={}, cId={}, filePath={}", userId, cId, filePath, e);
-            return buildError("上传用户文件失败");
+            log.error("[Web] Exception uploading user file, userId={}, cId={}, filePath={}", userId, cId, filePath, e);
+            return buildError("Failed to upload user file");
         }
     }
 
     @Override
     public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext) {
         if (userId == null || userId <= 0) {
-            log.error("[Web] userId 无效, userId={}", userId);
-            return buildError("userId 无效");
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
         }
         if (cId == null || cId <= 0) {
-            log.error("[Web] cId 无效, cId={}", cId);
-            return buildError("cId 无效");
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
         }
         if (filePaths == null || filePaths.isEmpty()) {
-            log.error("[Web] filePaths 无效, filePaths 为空");
-            return buildError("filePaths 无效");
+            log.error("[Web] filePaths is invalid, filePaths is empty");
+            return buildError("filePaths is invalid");
         }
         if (files == null || files.isEmpty()) {
-            log.error("[Web] files 无效, files 为空");
-            return buildError("files 无效");
+            log.error("[Web] files is invalid, files is empty");
+            return buildError("files is invalid");
         }
         if (filePaths.size() != files.size()) {
-            log.error("[Web] filePaths 与 files 数量不一致, filePathsSize={}, filesSize={}", filePaths.size(), files.size());
-            return buildError("filePaths 与 files 数量不一致");
+            log.error("[Web] filePaths and files count mismatch, filePathsSize={}, filesSize={}", filePaths.size(), files.size());
+            return buildError("filePaths and files count mismatch");
         }
         try {
             return computerFileDomainService.uploadFiles(userId, cId, filePaths, files, userContext);
         } catch (Exception e) {
-            log.error("[Web] 批量上传用户文件异常, userId={}, cId={}", userId, cId, e);
-            return buildError("批量上传用户文件失败");
+            log.error("[Web] Exception batch uploading user files, userId={}, cId={}", userId, cId, e);
+            return buildError("Failed to batch upload user files");
         }
     }
 
     @Override
     public ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext) {
         if (userId == null || userId <= 0) {
-            log.error("[Web] userId 无效, userId={}", userId);
+            log.error("[Web] Invalid userId, userId={}", userId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         if (cId == null || cId <= 0) {
-            log.error("[Web] cId 无效, cId={}", cId);
+            log.error("[Web] Invalid cId, cId={}", cId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         String logId = userId + "_" + cId;
-        log.info("[Web] 下载全部文件, logId={}, userId={}, cId={}", logId, userId, cId);
+        log.info("[Web] Download all files, logId={}, userId={}, cId={}", logId, userId, cId);
 
         try {
             Flux<DataBuffer> fileFlux = computerFileDomainService.downloadAllFiles(userId, cId, logId, userContext);
 
-            // 在开始写入之前，先检查第一个信号来提前发现错误
-            // 使用 share() 来共享 Flux，然后使用 materialize() 来检查第一个信号
-            // 如果第一个信号是错误，就返回错误响应；否则继续使用原来的流式传输方式
+            // Check the first signal before starting to write to detect errors early
+            // Use share() to share Flux, then use materialize() to check the first signal
+            // If the first signal is an error, return an error response; otherwise continue with the original streaming method
             Flux<DataBuffer> sharedFlux = fileFlux.share();
             try {
                 Signal<DataBuffer> firstSignal = sharedFlux.materialize().blockFirst();
@@ -181,39 +183,39 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                     Throwable error = firstSignal.getThrowable();
                     if (error instanceof WebClientResponseException) {
                         WebClientResponseException e = (WebClientResponseException) error;
-                        log.error("[Web] 下载全部文件失败，logId={}, status={}", logId, e.getStatusCode());
+                        log.error("[Web] Failed to download all files, logId={}, status={}", logId, e.getStatusCode());
                         HttpStatus status = e.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
                                 ? HttpStatus.NOT_FOUND
                                 : HttpStatus.INTERNAL_SERVER_ERROR;
-                        return buildErrorResponse(status, "下载全部文件失败: " + e.getMessage(), logId);
+                        return buildErrorResponse(status, "Failed to download all files: " + e.getMessage(), logId);
                     } else if (error instanceof SpacePermissionException) {
                         SpacePermissionException e = (SpacePermissionException) error;
-                        log.error("[Web] 下载全部文件权限不足，logId={}, {}", logId, e.getMessage());
+                        log.error("[Web] Insufficient permission to download all files, logId={}, {}", logId, e.getMessage());
                         return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
                     } else {
-                        log.error("[Web] 下载全部文件异常，logId={}", logId, error);
-                        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "下载全部文件失败: " + error.getMessage(), logId);
+                        log.error("[Web] Exception downloading all files, logId={}", logId, error);
+                        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to download all files: " + error.getMessage(), logId);
                     }
                 }
             } catch (Exception e) {
-                // materialize() 本身可能抛出异常，这种情况下也返回错误响应
-                log.error("[Web] 检查下载全部文件时发生异常，logId={}", logId, e);
+                // materialize() itself may throw exceptions, in which case also return an error response
+                log.error("[Web] Exception while checking download all files, logId={}", logId, e);
                 if (e instanceof WebClientResponseException) {
                     WebClientResponseException webEx = (WebClientResponseException) e;
                     HttpStatus status = webEx.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
                             ? HttpStatus.NOT_FOUND
                             : HttpStatus.INTERNAL_SERVER_ERROR;
-                    return buildErrorResponse(status, "下载全部文件失败: " + webEx.getMessage(), logId);
+                    return buildErrorResponse(status, "Failed to download all files: " + webEx.getMessage(), logId);
                 } else if (e instanceof SpacePermissionException) {
                     SpacePermissionException permEx = (SpacePermissionException) e;
                     return buildErrorResponse(HttpStatus.FORBIDDEN, permEx.getMessage(), logId, permEx.getCode());
                 } else {
-                    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "下载全部文件失败: " + e.getMessage(), logId);
+                    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to download all files: " + e.getMessage(), logId);
                 }
             }
 
-            // 如果第一个信号不是错误，使用共享的 Flux 继续流式传输
-            // share() 确保多个订阅者可以共享同一个 Flux，不会丢失数据
+            // If the first signal is not an error, use the shared Flux to continue streaming
+            // share() ensures that multiple subscribers can share the same Flux without losing data
             final Flux<DataBuffer> finalFileFlux = sharedFlux;
 
             HttpHeaders headers = new HttpHeaders();
@@ -227,14 +229,14 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                 try {
                     finalFileFlux
                             .doOnError(WebClientResponseException.class, e -> {
-                                log.error("[Web] 下载全部文件失败，logId={}, status={}, responseBody={}",
+                                log.error("[Web] Failed to download all files, logId={}, status={}, responseBody={}",
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());
                             })
                             .doOnError(SpacePermissionException.class, e -> {
-                                log.error("[Web] 下载全部文件权限不足，logId={}, {}", logId, e.getMessage());
+                                log.error("[Web] Insufficient permission to download all files, logId={}, {}", logId, e.getMessage());
                             })
                             .doOnError(Throwable.class, e -> {
-                                log.error("[Web] 下载全部文件异常，logId={}", logId, e);
+                                log.error("[Web] Exception downloading all files, logId={}", logId, e);
                             })
                             .doOnNext(dataBuffer -> {
                                 try {
@@ -243,18 +245,18 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                                     outputStream.write(bytes);
                                     outputStream.flush();
                                 } catch (IOException e) {
-                                    log.error("[Web] 写入 zip 输出流失败, logId={}", logId, e);
-                                    throw new RuntimeException("写入输出流失败", e);
+                                    log.error("[Web] Failed to write zip output stream, logId={}", logId, e);
+                                    throw new RuntimeException("Failed to write output stream", e);
                                 } finally {
                                     DataBufferUtils.release(dataBuffer);
                                 }
                             })
-                            .doOnComplete(() -> log.info("[Web] 全部文件 zip 流式传输完成, logId={}", logId))
+                            .doOnComplete(() -> log.info("[Web] All files zip streaming completed, logId={}", logId))
                             .blockLast();
                 } catch (Exception e) {
-                    log.error("[Web] 流式传输全部文件 zip 失败, logId={}", logId, e);
-                    // 不再抛出异常，因为响应已经开始写入，无法改变状态码
-                    // 错误已经在开始写入之前被检查和处理了
+                    log.error("[Web] Streaming all files zip failed, logId={}", logId, e);
+                    // No longer throw exception, because the response has already started writing and cannot change the status code
+                    // Errors have been checked and handled before starting to write
                 }
             };
 
@@ -262,11 +264,11 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                     .headers(headers)
                     .body(streamingResponseBody);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 下载全部文件权限不足，logId={}, {}", logId, e.getMessage());
+            log.error("[Web] Insufficient permission to download all files, logId={}, {}", logId, e.getMessage());
             return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
         } catch (Exception e) {
-            log.error("[Web] 下载全部文件失败，logId={}", logId, e);
-            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "下载全部文件失败: " + e.getMessage(), logId);
+            log.error("[Web] Failed to download all files, logId={}", logId, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to download all files: " + e.getMessage(), logId);
         }
     }
 
@@ -279,96 +281,83 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         }
         Long conversationUserId = authResult.getUserId();
 
-        log.info("[Web] 访问静态文件，conversationUserId={}, cId={}, ", conversationUserId, cId);
+        log.info("[Web] Access static file, conversationUserId={}, cId={}, ", conversationUserId, cId);
         String staticPrefix = "/api/computer/static/" + cId + "/";
+        String staticPrefixForApi = "/api/v1/chat/" + cId + "/file/";
         String targetPrefix = "/computer/static/" + conversationUserId + "/" + cId + "/";
         String logId = conversationUserId + "_" + cId;
 
         String requestPath = request.getRequestURI();
         String relativePath = "";
 
-        int prefixIndex = requestPath.indexOf(staticPrefix);
+        int prefixIndex = requestPath.startsWith(staticPrefixForApi) ? requestPath.indexOf(staticPrefixForApi) : requestPath.indexOf(staticPrefix);
+        int prefixLength = requestPath.startsWith(staticPrefixForApi) ? staticPrefixForApi.length() : staticPrefix.length();
         if (prefixIndex != -1) {
-            relativePath = requestPath.substring(prefixIndex + staticPrefix.length());
+            relativePath = requestPath.substring(prefixIndex + prefixLength);
         } else {
-            log.error("[Web] 无法从请求路径中提取 relativePath, requestPath={}, logId={}", requestPath, logId);
+            log.error("[Web] Cannot extract relativePath from request, requestPath={}, logId={}", requestPath, logId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         if (relativePath.trim().isEmpty()) {
-            log.error("[Web] relativePath 为空, requestPath={}, logId={}", requestPath, logId);
+            log.error("[Web] relativePath is empty, requestPath={}, logId={}", requestPath, logId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // URL 解码
+        // URL decode
         String decodedPath = relativePath;
         try {
             decodedPath = URLDecoder.decode(relativePath, "UTF-8");
         } catch (Exception e) {
-            log.warn("[Web] URL 解码失败, relativePath={}, 使用原始路径", relativePath, e);
+            log.warn("[Web] URL decode failed, relativePath={}, using raw path", relativePath, e);
         }
         final String finalRelativePath = decodedPath;
 
-        log.info("[Web] 提取的 logId={}, relativePath={}", logId, finalRelativePath);
+        log.info("[Web] Extracted logId={}, relativePath={}", logId, finalRelativePath);
 
         try {
-            Flux<DataBuffer> fileFlux = computerFileDomainService.getStaticFile(cId, targetPrefix, finalRelativePath, logId);
-
-            // 在开始写入之前，先检查第一个信号来提前发现错误
-            // 使用 share() 来共享 Flux，然后使用 materialize() 来检查第一个信号
-            // 如果第一个信号是错误，就返回错误响应；否则继续使用原来的流式传输方式
-            Flux<DataBuffer> sharedFlux = fileFlux.share();
-            try {
-                Signal<DataBuffer> firstSignal = sharedFlux.materialize().blockFirst();
-                if (firstSignal != null && firstSignal.isOnError()) {
-                    Throwable error = firstSignal.getThrowable();
-                    if (error instanceof WebClientResponseException) {
-                        WebClientResponseException e = (WebClientResponseException) error;
-                        log.error("[Web] 获取静态文件失败，logId={}, status={}", logId, e.getStatusCode());
-                        HttpStatus status = e.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
-                                ? HttpStatus.NOT_FOUND
-                                : HttpStatus.INTERNAL_SERVER_ERROR;
-                        return buildErrorResponse(status, e.getMessage(), logId);
-                    } else if (error instanceof SpacePermissionException) {
-                        SpacePermissionException e = (SpacePermissionException) error;
-                        log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
-                        return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
-                    } else {
-                        log.error("[Web] 访问静态文件异常，logId={}", logId, error);
-                        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "访问静态文件失败: " + error.getMessage(), logId);
-                    }
-                }
-            } catch (Exception e) {
-                // materialize() 本身可能抛出异常，这种情况下也返回错误响应
-                log.error("[Web] 检查静态文件时发生异常，logId={}", logId, e);
-                if (e instanceof WebClientResponseException) {
-                    WebClientResponseException webEx = (WebClientResponseException) e;
-                    HttpStatus status = webEx.getStatusCode() == org.springframework.http.HttpStatus.NOT_FOUND
-                            ? HttpStatus.NOT_FOUND
-                            : HttpStatus.INTERNAL_SERVER_ERROR;
-                    return buildErrorResponse(status, webEx.getMessage(), logId);
-                } else if (e instanceof SpacePermissionException) {
-                    SpacePermissionException permEx = (SpacePermissionException) e;
-                    return buildErrorResponse(HttpStatus.FORBIDDEN, permEx.getMessage(), logId, permEx.getCode());
-                } else {
-                    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "访问静态文件失败: " + e.getMessage(), logId);
-                }
+            String rangeHeader = request.getHeader(HttpHeaders.RANGE);
+            if (StringUtils.isNotBlank(rangeHeader)) {
+                log.info("[Web] Client range request, logId={}, range={}", logId, rangeHeader);
+            }
+            ResponseEntity<Flux<DataBuffer>> downstreamResponse = computerFileDomainService.getStaticFileResponse(
+                    cId, targetPrefix, finalRelativePath, logId, rangeHeader
+            );
+            if (downstreamResponse == null || downstreamResponse.getBody() == null) {
+                log.error("[Web] Downstream static file response is empty, logId={}", logId);
+                return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to access static file: empty downstream response", logId);
             }
 
-            // 如果第一个信号不是错误，使用共享的 Flux 继续流式传输
-            // share() 确保多个订阅者可以共享同一个 Flux，不会丢失数据
-            final Flux<DataBuffer> finalFileFlux = sharedFlux;
+            final Flux<DataBuffer> finalFileFlux = downstreamResponse.getBody();
+            HttpHeaders downstreamHeaders = downstreamResponse.getHeaders();
 
-            // 根据文件扩展名设置正确的 Content-Type
-            // 注意：CORS headers 由 HttpInterceptor 统一处理，这里不需要重复设置
             HttpHeaders headers = new HttpHeaders();
-            MediaType contentType = FileTypeUtils.getContentTypeByFileName(finalRelativePath);
-            headers.setContentType(contentType);
+            MediaType downstreamContentType = downstreamHeaders.getContentType();
+            if (downstreamContentType != null) {
+                headers.setContentType(downstreamContentType);
+            } else {
+                headers.setContentType(FileTypeUtils.getContentTypeByFileName(finalRelativePath));
+            }
+            if (downstreamHeaders.getFirst(HttpHeaders.ACCEPT_RANGES) != null) {
+                headers.set(HttpHeaders.ACCEPT_RANGES, downstreamHeaders.getFirst(HttpHeaders.ACCEPT_RANGES));
+            }
+            if (downstreamHeaders.getFirst(HttpHeaders.CONTENT_RANGE) != null) {
+                headers.set(HttpHeaders.CONTENT_RANGE, downstreamHeaders.getFirst(HttpHeaders.CONTENT_RANGE));
+            }
+            if (downstreamHeaders.getContentLength() >= 0) {
+                headers.setContentLength(downstreamHeaders.getContentLength());
+            }
+            if (downstreamHeaders.getFirst(HttpHeaders.ETAG) != null) {
+                headers.set(HttpHeaders.ETAG, downstreamHeaders.getFirst(HttpHeaders.ETAG));
+            }
+            if (downstreamHeaders.getFirst(HttpHeaders.LAST_MODIFIED) != null) {
+                headers.set(HttpHeaders.LAST_MODIFIED, downstreamHeaders.getFirst(HttpHeaders.LAST_MODIFIED));
+            }
 
-            // 如果从 ticket 获取了 token，设置 Cookie 以便后续请求使用
+            // If token is obtained from ticket, set Cookie for subsequent requests
             if (authResult.getToken() != null) {
                 headers.add("Set-Cookie", "ticket=" + authResult.getToken() + "; Path=/; HttpOnly; SameSite=None; Secure");
-                log.info("设置 Cookie ticket, logId={}", logId);
+                log.info("Set Cookie ticket, logId={}", logId);
             }
             if (authResult.getUserShare() != null) {
                 String skCookieKey = getSkCookieKey(conversationUserId, cId);
@@ -376,31 +365,31 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                 String cookieValue = skCookieKey + userShare.getShareKey() + "; Path=/; SameSite=None; Secure";
                 Date expire = userShare.getExpire();
                 if (expire != null) {
-                    // 计算从当前时间到过期时间的秒数
+                    // Calculate the number of seconds from current time to expiration time
                     long maxAge = (expire.getTime() - System.currentTimeMillis()) / 1000;
                     if (maxAge > 0) {
                         cookieValue += "; Max-Age=" + maxAge;
                     } else {
-                        // 如果已经过期，设置 Max-Age=0 立即删除 cookie
+                        // If already expired, set Max-Age=0 to delete cookie immediately
                         cookieValue += "; Max-Age=0";
                     }
                 }
                 headers.add("Set-Cookie", cookieValue);
             }
 
-            // 创建 StreamingResponseBody 实现流式传输
+            // Create StreamingResponseBody to implement streaming
             StreamingResponseBody streamingResponseBody = outputStream -> {
                 try {
                     finalFileFlux
                             .doOnError(WebClientResponseException.class, e -> {
-                                log.error("[Web] 获取静态文件失败，logId={}, status={}, responseBody={}",
+                                log.error("[Web] Failed to get static file, logId={}, status={}, responseBody={}",
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());
                             })
                             .doOnError(SpacePermissionException.class, e -> {
-                                log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
+                                log.error("[Web] Insufficient permission for static file, logId={}, {}", logId, e.getMessage());
                             })
                             .doOnError(Throwable.class, e -> {
-                                log.error("[Web] 访问静态文件异常，logId={}", logId, e);
+                                log.error("[Web] Exception while accessing static file, logId={}", logId, e);
                             })
                             .doOnNext(dataBuffer -> {
                                 try {
@@ -409,30 +398,34 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                                     outputStream.write(bytes);
                                     outputStream.flush();
                                 } catch (IOException e) {
-                                    log.error("[Web] 写入输出流失败, logId={}", logId, e);
-                                    throw new RuntimeException("写入输出流失败", e);
+                                    log.error("[Web] Failed to write output stream, logId={}", logId, e);
+                                    throw new RuntimeException("Failed to write output stream", e);
                                 } finally {
                                     DataBufferUtils.release(dataBuffer);
                                 }
                             })
                             .doOnComplete(() -> {
-                                log.info("[Web] 文件流式传输完成, logId={}, relativePath={}", logId, finalRelativePath);
+                                log.info("[Web] File streaming completed, logId={}, relativePath={}", logId, finalRelativePath);
                             })
-                            .blockLast(); // 在 StreamingResponseBody 的回调中阻塞是正常的
+                            .blockLast(); // Blocking in StreamingResponseBody callback is normal
                 } catch (Exception e) {
-                    log.error("[Web] 流式传输文件失败, logId={}", logId, e);
-                    // 不再抛出异常，因为响应已经开始写入，无法改变状态码
-                    // 错误已经在开始写入之前被检查和处理了
+                    log.error("[Web] File streaming failed, logId={}", logId, e);
+                    // No longer throw exception, because the response has already started writing and cannot change the status code
+                    // Errors have been checked and handled before starting to write
                 }
             };
 
-            return ResponseEntity.ok().headers(headers).body(streamingResponseBody);
+            HttpStatus status = HttpStatus.resolve(downstreamResponse.getStatusCode().value());
+            if (status == null) {
+                status = HttpStatus.OK;
+            }
+            return ResponseEntity.status(status).headers(headers).body(streamingResponseBody);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 访问静态文件权限不足，logId={}, {}", logId, e.getMessage());
+            log.error("[Web] Insufficient permission for static file, logId={}, {}", logId, e.getMessage());
             return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(), logId, e.getCode());
         } catch (Exception e) {
-            log.error("[Web] 访问静态文件失败，logId={}", logId, e);
-            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "访问静态文件失败: " + e.getMessage(), logId);
+            log.error("[Web] Failed to access static file, logId={}", logId, e);
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to access static file: " + e.getMessage(), logId);
         }
     }
 
@@ -441,21 +434,21 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         try {
             sandboxServer = sandboxServerConfigService.selectServer(cId);
         } catch (Exception e) {
-            throw new BizException(e.getMessage());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail, e.getMessage());
         }
         if (sandboxServer == null) {
-            throw new BizException("未找到文件服务器");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentFileServerNotFound);
         }
         ConversationDto currentConversation = sandboxServer.getCurrentConversation();
         if (currentConversation == null) {
-            throw new BizException("未找到当前会话");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSessionNotFound);
         }
         return currentConversation;
     }
 
     /**
-     * 认证结果，包含用户ID和token（如果是从ticket获取的）。
-     * 当 redirectUrl 非空时表示需要重定向到登录页，此时 userId 为 null。
+     * Authentication result, containing userId and token (if obtained from ticket).
+     * When redirectUrl is not empty, it means need to redirect to login page, userId is null at this time.
      */
     @Getter
     @AllArgsConstructor
@@ -466,18 +459,18 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         private final String redirectUrl;
     }
 
-    // sk鉴权
+    // sk authentication
     private UserShareDto authWithSk(ConversationDto currentConversation, Long cId, HttpServletRequest request) {
         Long conversationUserId = currentConversation.getUserId();
         if (conversationUserId == null) {
             return null;
         }
 
-        // 1. 优先从请求参数 sk 获取
+        // 1. Priority to get from request parameter sk
         String sk = request.getParameter("sk");
 
         if (StringUtils.isBlank(sk)) {
-            // 2. 从 Cookie 解析 sk
+            // 2. Parse sk from Cookie
             String cookieHeader = request.getHeader("Cookie");
             if (StringUtils.isBlank(cookieHeader)) {
                 return null;
@@ -523,24 +516,24 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                     if (StringUtils.isNotBlank(token)) {
                         UserDto userDto = authService.getLoginUserInfo(token);
                         if (userDto != null) {
-                            log.info("从 URI ticket 获取用户信息成功, userId={}", userDto.getId());
+                            log.info("Successfully obtained user info from URI ticket, userId={}", userDto.getId());
                             currentUserId = userDto.getId();
                             if (!currentUserId.equals(conversationUserId)) {
-                                throw new BizException("无权访问当前资源");
+                                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
                             }
                             return new AuthResult(conversationUserId, token, null, null);
                         } else {
-                            log.warn("从 URI ticket 获取用户信息失败, token={}", token);
+                            log.warn("Failed to obtain user info from URI ticket, token={}", token);
                         }
                     }
                 } catch (BizException e) {
-                    // 业务异常（如权限不足）直接抛出，不捕获
+                    // Business exception (e.g., insufficient permission) is thrown directly, not caught
                     throw e;
                 } catch (Exception e) {
-                    log.warn("从 URI ticket 获取用户信息失败, ticket={}", ticket, e);
+                    log.warn("Failed to obtain user info from URI ticket, ticket={}", ticket, e);
                 }
             }
-            // 无法获取用户信息，跳转到登录页
+            // Unable to get user info, redirect to login page
             StringBuffer requestURL = request.getRequestURL();
             String queryString = request.getQueryString();
             String referer = requestURL.toString();
@@ -552,7 +545,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         }
 
         if (!currentUserId.equals(conversationUserId)) {
-            throw new BizException("无权访问当前资源");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
         return new AuthResult(conversationUserId, null, null, null);
     }
@@ -565,22 +558,22 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         return result;
     }
 
-    //构建错误响应（JSON格式）
+    // Build error response (JSON format)
     private ResponseEntity<StreamingResponseBody> buildErrorResponse(HttpStatus status, String message, String logId) {
         return buildErrorResponse(status, message, logId, "0001");
     }
 
-    //构建错误响应（JSON格式）
+    // Build error response (JSON format)
     private ResponseEntity<StreamingResponseBody> buildErrorResponse(HttpStatus status, String message, String logId, String code) {
-        String errorMessage = message != null ? message : "访问静态文件失败";
+        String errorMessage = message != null ? message : "Failed to access static file";
 
-        // 移除 IP:端口 格式的敏感信息（如 192.168.1.34:60000）
-        // 匹配 IPv4 地址:端口格式，包括可能的 http:// 或 https:// 前缀
+        // Remove sensitive information in IP:port format (e.g., 192.168.1.34:60000)
+        // Match IPv4 address:port format, including possible http:// or https:// prefix
         Pattern ipPortPattern = Pattern.compile("(https?://)?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d+");
         errorMessage = ipPortPattern.matcher(errorMessage).replaceAll("");
-        // 清理多余的空格
+        // Clean up extra spaces
         errorMessage = errorMessage.trim().replaceAll("\\s+", " ");
-        // 转义 JSON 字符串中的特殊字符
+        // Escape special characters in JSON string
         String escapedMessage = errorMessage.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
@@ -594,7 +587,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                 outputStream.write(errorJson.getBytes(StandardCharsets.UTF_8));
                 outputStream.flush();
             } catch (IOException ioException) {
-                log.error("[Web] 写入错误响应失败, logId={}", logId, ioException);
+                log.error("[Web] Failed to write error response, logId={}", logId, ioException);
             }
         };
         return ResponseEntity.status(status).headers(errorHeaders).body(errorBody);

@@ -6,15 +6,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "域名绑定更新请求体")
+@Schema(description = "Domain binding update request body")
 public class CustomPageDomainUpdateReq {
 
-    @NotNull(message = "id 不能为空")
-    @Schema(description = "域名绑定ID", required = true)
+    @NotNull(message = "id is required")
+    @Schema(description = "Domain binding ID", required = true)
     private Long id;
 
-    @NotBlank(message = "domain 不能为空")
-    @Schema(description = "域名", required = true)
+    @NotBlank(message = "domain is required")
+    @Schema(description = "Domain name", required = true)
     private String domain;
 
 }

@@ -33,7 +33,7 @@ public class McpExecutor {
         if (mcpToolDto == null) {
             return Flux.just(McpExecuteOutput.builder()
                     .success(false)
-                    .message("MCP工具不存在")
+                    .message("MCP tool not found")
                     .build());
         }
         List<Arg> args = ArgConverter.convertMcpArgsToArgs(mcpToolDto.getInputArgs());

@@ -18,10 +18,10 @@ public final class DeleteTableDmlUtil {
     public static String buildDeleteSql(CustomTableDefinitionModel tableModel, Long id) {
         if (id == null) {
             // 确保 ID 不为空，这是删除操作的必要条件
-            log.error("尝试删除数据时发生错误：行 ID (rowId) 不能为空。表: {}.{}",
+            log.error("Delete error: rowId required. Table: {}.{}",
                     tableModel.getDorisDatabase(), tableModel.getDorisTable());
             // 使用与更新逻辑一致的错误码
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6009); // 假设 6009 是 ID 不能为空
+            throw ComposeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "行ID");
         }
         return "DELETE FROM `" + BuildSqlUtil.escapeSqlString(tableModel.getDorisDatabase()) + "`.`"
                 + BuildSqlUtil.escapeSqlString(tableModel.getDorisTable()) + "` WHERE id = " + id;

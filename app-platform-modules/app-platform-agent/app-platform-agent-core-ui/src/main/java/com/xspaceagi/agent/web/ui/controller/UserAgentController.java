@@ -11,7 +11,9 @@ import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -122,7 +124,7 @@ public class UserAgentController {
     private void checkAgentPermission(Long agentId) {
         AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
         if (agentDto == null) {
-            throw new BizException("Agent不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
         spacePermissionService.checkSpaceUserPermission(agentDto.getSpaceId());
     }

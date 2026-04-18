@@ -1,11 +1,13 @@
 package com.xspaceagi.system.application.dto;
 
+import com.xspaceagi.system.spec.annotation.I18n;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
 
+@I18n(module = "TenantConfig")
 @Data
 public class TenantConfigDto implements Serializable {
 

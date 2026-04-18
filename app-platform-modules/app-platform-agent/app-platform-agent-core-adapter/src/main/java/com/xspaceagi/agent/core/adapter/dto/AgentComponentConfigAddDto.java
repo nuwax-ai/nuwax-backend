@@ -15,15 +15,15 @@ import lombok.NoArgsConstructor;
 public class AgentComponentConfigAddDto {
 
     @Schema(description = "关联的AgentID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "agentId不能为空")
+    @NotNull(message = "agentId is required")
     private Long agentId; // AgentID
 
     @Schema(description = "组件类型", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "type不能为空")
+    @NotNull(message = "type is required")
     private AgentComponentConfig.Type type;
 
     @Schema(description = "关联的组件ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "targetId不能为空")
+    @NotNull(message = "targetId is required")
     private Long targetId; // 关联的组件ID
 
     @Schema(description = "工具名称，选择MCP时有用")

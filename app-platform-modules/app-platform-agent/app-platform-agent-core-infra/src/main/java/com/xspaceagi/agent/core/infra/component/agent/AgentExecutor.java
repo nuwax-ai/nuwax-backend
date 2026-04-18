@@ -37,10 +37,13 @@ import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpExecuteOutput;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.AgentInterruptException;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -127,13 +130,13 @@ public class AgentExecutor extends BaseComponent {
 
     public Flux<AgentOutputDto> execute(AgentContext agentContext) {
         try {
-            Assert.notNull(agentContext, "agentContext不能为空");
-            Assert.notNull(agentContext.getAgentConfig(), "agentConfig不能为空");
-            Assert.notNull(agentContext.getUserId(), "userId不能为空");
-            Assert.notNull(agentContext.getMessage(), "message不能都为空");
-            Assert.notNull(agentContext.getConversationId(), "conversationId不能为空");
+            Assert.notNull(agentContext, "agentContext cannot be left blank.");
+            Assert.notNull(agentContext.getAgentConfig(), "agentConfig cannot be left blank.");
+            Assert.notNull(agentContext.getUserId(), "userId cannot be left blank.");
+            Assert.notNull(agentContext.getMessage(), "message cannot be left blank.");
+            Assert.notNull(agentContext.getConversationId(), "conversationId cannot be left blank.");
         } catch (Exception e) {
-            log.warn("参数校验失败", e);
+            log.warn("Parameter validation failed", e);
             return Flux.error(e);
         }
 
@@ -157,7 +160,7 @@ public class AgentExecutor extends BaseComponent {
                 agentContext.setLongMemory(conversationApplicationService.queryMemory(agentContext.getUser().getTenantId(),
                         agentContext.getUser().getId(), agentContext.getAgentConfig().getId(), agentContext.getOriginalMessage(), "", justKeywordMatch, agentContext.isFilterSensitive()));
             } catch (Exception e) {
-                log.warn("查询长期记忆失败", e);
+                log.warn("Failed to query long-term memory", e);
             }
         }
 
@@ -174,7 +177,7 @@ public class AgentExecutor extends BaseComponent {
                 }
                 nextDisposable.set(doNext(agentContext, sink));
             } catch (Exception e) {
-                log.error("执行失败", e);
+                log.error("Execution failed", e);
                 sink.tryEmitError(e);
             }
         })).subscribe();
@@ -266,7 +269,7 @@ public class AgentExecutor extends BaseComponent {
         //模型调用技能准备
         List<ComponentConfig> componentConfigList = convertToComponentConfigList(agentContext.getAgentConfig().getAgentComponentConfigList(), agentContext);
         if (!pageComponentConfigs.isEmpty()) {
-            componentConfigList.addAll(buildPageBrowserComponentConfig(pageComponentConfigs));
+            componentConfigList.addAll(buildPageBrowserComponentConfig(pageComponentConfigs, agentContext.getUser().getLangMap()));
         }
         modelContext.getModelCallConfig().setComponentConfigs(componentConfigList);
 
@@ -289,7 +292,7 @@ public class AgentExecutor extends BaseComponent {
                     componentExecutedList.add(componentExecutingDto);
                 } catch (Exception e) {
                     // 忽略
-                    log.error("处理组件执行结果异常", e);
+                    log.error("Exception processing component execution result", e);
                 }
             }
         });
@@ -334,7 +337,7 @@ public class AgentExecutor extends BaseComponent {
                     if (throwable instanceof AgentInterruptException) {
                         return;
                     }
-                    log.error("模型调用失败", throwable);
+                    log.error("Model invocation failed", throwable);
                 });
     }
 
@@ -381,13 +384,13 @@ public class AgentExecutor extends BaseComponent {
         if (agentContext.isInterrupted()) {
             agentContext.getAgentExecuteResult().setEndTime(System.currentTimeMillis());
             agentContext.getAgentExecuteResult().setSuccess(true);
-            agentContext.getAgentExecuteResult().setError("中断执行");
+            agentContext.getAgentExecuteResult().setError("Execution interrupted");
             AgentOutputDto agentOutputDto = buildFinalResultOutput(agentContext);
             sink.tryEmitNext(agentOutputDto);
             sink.tryEmitComplete();
             return;
         }
-        log.error("Agent执行失败", e);
+        log.error("Agent execution failed", e);
         agentContext.getAgentExecuteResult().setEndTime(System.currentTimeMillis());
         agentContext.getAgentExecuteResult().setSuccess(false);
         agentContext.getAgentExecuteResult().setError(e.getMessage());
@@ -430,12 +433,12 @@ public class AgentExecutor extends BaseComponent {
         if (agentContext.getAgentConfig().getOpenLongMemory() == AgentConfig.OpenStatus.Open) {
             try {
                 if (!agentContext.getConversationId().startsWith("agent:")) {
-                    log.info("加入总结会话队列, conversationId:{}", agentContext.getConversationId());
+                    log.info("Adding to summary queue, conversationId:{}", agentContext.getConversationId());
                     Long conversationId = Long.parseLong(agentContext.getConversationId());
                     conversationApplicationService.pushToSummaryQueue(conversationId);
                 }
             } catch (Exception e) {
-                log.error("加入总结会话队列失败，conversationId:{}", agentContext.getConversationId(), e);
+                log.error("Failed to add to summary queue, conversationId:{}", agentContext.getConversationId(), e);
                 //do nothing
             }
         }
@@ -517,7 +520,7 @@ public class AgentExecutor extends BaseComponent {
             stringBuilder.append("\n<attachment>").append(JSON.toJSONString(agentContext.getAttachments())).append("</attachment>");
         }
         if (StringUtils.isBlank(agentContext.getMessage()) && CollectionUtils.isNotEmpty(agentContext.getAttachments())) {
-            agentContext.setMessage("\n分析以上附件内容");
+            agentContext.setMessage("\n" + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Agent.Message.AnalyzeAttachments"));
         }
         if (withUserPrompt) {
             stringBuilder.append("\n<user-message>").append(agentContext.getMessage()).append("</user-message>");
@@ -546,14 +549,14 @@ public class AgentExecutor extends BaseComponent {
                 bindConfig.getPageArgConfigs().forEach(pageArgConfig -> {
                     pagePromptBuilder.append(index.getAndIncrement()).append(". ").append(pageArgConfig.getName()).append("-").append(pageArgConfig.getDescription()).append("\n");
                     pagePromptBuilder.append("URI:").append(pageArgConfig.getPageUrl(agentContext.getAgentConfig().getId())).append("\n");
-                    pagePromptBuilder.append("参数JsonSchema:").append("\n```");
+                    pagePromptBuilder.append("ParameterJsonSchema:").append("\n```");
                     List<String> required = new ArrayList<>();
                     Map<String, Object> properties = new HashMap<>();
                     Map<String, Object> inputSchema = Map.of("type", "object", "properties", properties, "required", required);
                     pageArgConfig.getArgs().forEach(arg -> {
                         String description = arg.getDescription();
                         if (arg.getEnable() != null && !arg.getEnable() && StringUtils.isNotBlank(arg.getBindValue())) {
-                            description += "，固定默认值：" + arg.getBindValue();
+                            description += ", fixed default value: " + arg.getBindValue();
                         }
                         properties.put(arg.getName(), Map.of("type", "string", "description", description));
                         if (arg.isRequire()) {
@@ -619,8 +622,9 @@ public class AgentExecutor extends BaseComponent {
             agentComponentConfig.setType(AgentComponentConfig.Type.Knowledge);
             agentComponentConfig.setTargetId(knowledgeBaseIds.get(0));
             if (knowledgeBaseIds.size() > 1) {
-                agentComponentConfig.setName("知识库搜索");
-                componentExecuteResult.setName("知识库搜索");
+                String knowledgeSearchName = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Agent.Component.KnowledgeSearch");
+                agentComponentConfig.setName(knowledgeSearchName);
+                componentExecuteResult.setName(knowledgeSearchName);
                 componentExecuteResult.setId(-1L);
             }
             agentComponentConfig.setBindConfig(knowledgeBaseBindConfig);
@@ -648,7 +652,7 @@ public class AgentExecutor extends BaseComponent {
                 agentOutputDto.setRequestId(agentContext.getRequestId());
                 agentOutputDto.setError(e.getMessage());
                 sink.tryEmitNext(agentOutputDto);
-                resultStringBuilder.append("知识库搜索失败：").append(e.getMessage());
+                resultStringBuilder.append("Knowledge base search failed: ").append(e.getMessage());
             }
         }
 
@@ -756,7 +760,7 @@ public class AgentExecutor extends BaseComponent {
                 } else if (StringUtils.isNotBlank(agentComponentConfigDto.getFallbackMsg())) {
                     resultStringBuilder.append(agentComponentConfigDto.getFallbackMsg());
                 } else {
-                    resultStringBuilder.append("工具`").append(agentComponentConfigDto.getName()).append("`调用失败：").append(e.getMessage());
+                    resultStringBuilder.append("Tool `").append(agentComponentConfigDto.getName()).append("` invocation failed: ").append(e.getMessage());
                 }
             }
         }
@@ -793,13 +797,14 @@ public class AgentExecutor extends BaseComponent {
         try {
             McpExecuteOutput mcpExecuteOutput = mcpExecutor.execute(mcpContext).blockLast();
             if (mcpExecuteOutput == null || !mcpExecuteOutput.isSuccess()) {
-                throw new BizException(mcpExecuteOutput == null ? "" : mcpExecuteOutput.getMessage());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                        mcpExecuteOutput == null ? "" : mcpExecuteOutput.getMessage());
             }
             componentExecuteResult.setSuccess(true);
             componentExecuteResult.setData(mcpExecuteOutput.getResult());
             return buildToolCallResult(mcpContext.getName(), JSON.toJSONString(mcpExecuteOutput.getResult()), null);
         } catch (Exception e) {
-            log.error("执行MCP失败: {}", e.getMessage(), e);
+            log.error("MCP execution failed: {}", e.getMessage(), e);
             componentExecuteResult.setSuccess(false);
             componentExecuteResult.setError(e.getMessage());
             return buildToolCallResult(mcpContext.getName(), null, e.getMessage());
@@ -841,7 +846,7 @@ public class AgentExecutor extends BaseComponent {
             componentExecuteResult.setData(res);
             return buildToolCallResult(agentComponentConfigDto.getName(), res == null ? "" : JSON.toJSONString(res), null);
         } catch (Exception e) {
-            log.error("调用插件失败", e);
+            log.error("Workflow invocation failed", e);
             componentExecuteResult.setSuccess(false);
             componentExecuteResult.setError(e.getMessage());
             return buildToolCallResult(agentComponentConfigDto.getName(), null, e.getMessage());
@@ -849,7 +854,7 @@ public class AgentExecutor extends BaseComponent {
     }
 
     private String invokePlugin(AgentContext agentContext, AgentComponentConfigDto agentComponentConfigDto,
-                                       Map<String, Object> input, ComponentExecuteResult componentExecuteResult) {
+                                Map<String, Object> input, ComponentExecuteResult componentExecuteResult) {
         try {
             List<String> errorList = new ArrayList<>();
             PluginBindConfigDto pluginBindConfigDto = (PluginBindConfigDto) agentComponentConfigDto.getBindConfig();
@@ -882,7 +887,7 @@ public class AgentExecutor extends BaseComponent {
             componentExecuteResult.setData(res);
             return buildToolCallResult(agentComponentConfigDto.getName(), res == null ? "" : JSON.toJSONString(res), null);
         } catch (Exception e) {
-            log.error("调用插件失败", e);
+            log.error("Plugin invocation failed", e);
             componentExecuteResult.setSuccess(false);
             componentExecuteResult.setError(e.getMessage());
             return buildToolCallResult(agentComponentConfigDto.getName(), null, e.getMessage());
@@ -918,9 +923,9 @@ public class AgentExecutor extends BaseComponent {
         componentExecuteResult.setInput(Map.of("query", searchContext.getQuery()));
         List<KnowledgeQaVo> qaVoList = knowledgeBaseSearcher.search(searchContext).block();
         componentExecuteResult.setSuccess(true);
-        componentExecuteResult.setData(CollectionUtils.isEmpty(qaVoList) ? "未检索到相关信息" : qaVoList);
+        componentExecuteResult.setData(CollectionUtils.isEmpty(qaVoList) ? "No relevant information found" : qaVoList);
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("以下是在知识库中的检索结果：\n");
+        stringBuilder.append("The following are the search results in the knowledge base:\n");
         if (!CollectionUtils.isEmpty(qaVoList)) {
             stringBuilder.append(JSON.toJSONString(qaVoList));
         } else {
@@ -928,7 +933,7 @@ public class AgentExecutor extends BaseComponent {
                     StringUtils.isNotBlank(knowledgeBaseBindConfigDto.getNoneRecallReply())) {
                 stringBuilder.append(knowledgeBaseBindConfigDto.getNoneRecallReply());
             } else {
-                stringBuilder.append("未检索到相关信息");
+                stringBuilder.append("No relevant information found");
             }
         }
         return stringBuilder.append("\n\n").toString();
@@ -1061,10 +1066,10 @@ public class AgentExecutor extends BaseComponent {
                 case Table:
                     //insert
                     ComponentConfig componentConfigInsert = buildTableComponentConfig(agentComponentConfigDto, ComponentSubTypeEnum.TABLE_DATA_INSERT);
-                    componentConfigInsert.setName(agentComponentConfigDto.getName() + "[新增INSERT]");
+                    componentConfigInsert.setName(agentComponentConfigDto.getName() + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Agent.Component.TableInsertSuffix"));
                     componentConfigs.add(componentConfigInsert);
                     ComponentConfig componentConfigSql = buildTableComponentConfig(agentComponentConfigDto, ComponentSubTypeEnum.TABLE_SQL_EXECUTE);
-                    componentConfigSql.setName(agentComponentConfigDto.getName() + "[更新、删除、查询SQL执行]");
+                    componentConfigSql.setName(agentComponentConfigDto.getName() + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Agent.Component.TableSqlSuffix"));
                     componentConfigs.add(componentConfigSql);
                     continue;
                 default:
@@ -1095,7 +1100,7 @@ public class AgentExecutor extends BaseComponent {
         return componentConfig;
     }
 
-    private static List<ComponentConfig> buildPageBrowserComponentConfig(List<AgentComponentConfigDto> pageComponentConfigs) {
+    private static List<ComponentConfig> buildPageBrowserComponentConfig(List<AgentComponentConfigDto> pageComponentConfigs, Map<String, String> langMap) {
         List<ComponentConfig> componentConfigs = new ArrayList<>();
         Map<String, PageArgConfig> pageArgConfigMap = null;
         if (CollectionUtils.isNotEmpty(pageComponentConfigs)) {
@@ -1110,29 +1115,33 @@ public class AgentExecutor extends BaseComponent {
         }
         // 创建打开页面组件
         ComponentConfig componentConfig = new ComponentConfig();
-        componentConfig.setName("打开页面");
+        componentConfig.setName(I18nUtil.systemMessage(langMap, "Backend.Agent.Component.OpenPage"));
         componentConfig.setFunctionName("browser_open_page");
-        componentConfig.setDescription("识别用户意图，打开用户当前想要查看的页面，仅仅是打开，无需返回数据");
+        componentConfig.setDescription("Identify user intent and open the page the user wants to view. Just open it, no need to return data");
         componentConfig.setTargetId(-1L);
         componentConfig.setType(ComponentTypeEnum.Page);
         componentConfig.setInputArgs(List.of(
-                        Arg.builder().name("uri").description("页面路径，只能请求以斜杠（/）开头的内部地址").dataType(DataTypeEnum.String).require(true).build(),
-                        Arg.builder().name("arguments").dataType(DataTypeEnum.Object).description("页面请求参数，具体的参数字段根据实际情况返回").build()
+                        Arg.builder().name("uri").description("Page path, can only request internal addresses starting with a slash (/)").dataType(DataTypeEnum.String).require(true).build(),
+                        Arg.builder().name("arguments").dataType(DataTypeEnum.Object).subArgs(List.of(
+                                Arg.builder().name("{dynamic_parameters}").description("Page request parameters, specific parameter fields returned according to actual situation").build()
+                        )).build()
                 )
         );
         componentConfig.setBindConfig(pageArgConfigMap);
         componentConfigs.add(componentConfig);
 
         componentConfig = new ComponentConfig();
-        componentConfig.setName("浏览页面数据");
+        componentConfig.setName(I18nUtil.systemMessage(langMap, "Backend.Agent.Component.BrowsePageData"));
         componentConfig.setFunctionName("browser_navigate_page");
-        componentConfig.setDescription("识别用户意图，需要获取页面数据进行分析时调用");
+        componentConfig.setDescription("Identify user intent and call when page data needs to be retrieved for analysis");
         componentConfig.setTargetId(-1L);
         componentConfig.setType(ComponentTypeEnum.Page);
         componentConfig.setInputArgs(List.of(
-                        Arg.builder().name("uri").description("页面路径，只能请求以斜杠（/）开头的内部地址").dataType(DataTypeEnum.String).require(true).build(),
-                        Arg.builder().name("data_type").description("页面数据类型，可选范围：markdown 经过转换成markdown的数据，便于模型理解；html 原始dom信息，用于识别后填写表单等").dataType(DataTypeEnum.String).require(true).build(),
-                        Arg.builder().name("arguments").dataType(DataTypeEnum.Object).description("页面请求参数，具体的参数字段根据实际情况返回").build()
+                        Arg.builder().name("uri").description("Page path, can only request internal addresses starting with a slash (/)").dataType(DataTypeEnum.String).require(true).build(),
+                        Arg.builder().name("data_type").description("Page data type, optional range: markdown - data converted to markdown for model understanding; html - original DOM information for identifying and filling forms").dataType(DataTypeEnum.String).require(true).build(),
+                        Arg.builder().name("arguments").dataType(DataTypeEnum.Object).subArgs(List.of(
+                                Arg.builder().name("{dynamic_parameters}").description("Page request parameters, specific parameter fields returned according to actual situation").build()
+                        )).build()
                 )
         );
         componentConfig.setBindConfig(pageArgConfigMap);
@@ -1153,7 +1162,7 @@ public class AgentExecutor extends BaseComponent {
                 if (variableConfigDto != null && !CollectionUtils.isEmpty(variableConfigDto.getVariables())) {
                     //过滤出自定义变量，同时把前端已经传递的变量也过滤掉
                     List<Arg> nonSysArgs = variableConfigDto.getVariables().stream().filter(var -> !var.isSystemVariable()
-                                    && var.getInputType() != null && var.getInputType() == Arg.InputTypeEnum.AutoRecognition)
+                                    && var.getInputType() != null && var.getInputType() == Arg.InputTypeEnum.AutoRecognition && !agentContext.getVariableParams().containsKey(var.getName()))
                             .toList();
                     userArgs.addAll(nonSysArgs);
                     variableConfigDto.getVariables().forEach((var) -> {
@@ -1176,13 +1185,14 @@ public class AgentExecutor extends BaseComponent {
                 }
             }
             if (!userArgs.isEmpty()) {
+                String variableSettingName = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Agent.Component.VariableSetting");
                 ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
                 componentExecuteResult.setStartTime(System.currentTimeMillis());
-                componentExecuteResult.setName("变量设置");
+                componentExecuteResult.setName(variableSettingName);
                 componentExecuteResult.setType(ComponentTypeEnum.Variable);
                 componentExecuteResult.setSuccess(true);
                 componentExecuteResult.setStartTime(System.currentTimeMillis());
-                variableComponent.setName("变量设置");
+                variableComponent.setName(variableSettingName);
                 AgentOutputDto agentOutputDto = buildProcessOutput(variableComponent, ExecuteStatusEnum.EXECUTING, ComponentTypeEnum.Variable, componentExecuteResult);
                 agentOutputDto.setRequestId(agentContext.getRequestId());
                 fluxSink.tryEmitNext(agentOutputDto);
@@ -1232,14 +1242,14 @@ public class AgentExecutor extends BaseComponent {
                     AgentOutputDto agentOutput = buildProcessOutput(variableComponent, ExecuteStatusEnum.FINISHED, ComponentTypeEnum.Variable, componentExecuteResult);
                     agentOutput.setRequestId(agentContext.getRequestId());
                     fluxSink.tryEmitNext(agentOutput);
-                    log.info("用户变量设置结果:{}", res);
+                    log.info("User variable setting result:{}", res);
                     try {
                         if (res instanceof Map) {
                             Map<String, Object> resMap = (Map<String, Object>) res;
                             resMap.forEach((k, v) -> agentContext.getVariableParams().put(k, v));
                         }
                     } catch (Exception e) {
-                        log.error("用户变量设置失败", e);
+                        log.error("User variable setting failed", e);
                     }
                     sink.success(null);
                 }).subscribe();
@@ -1282,7 +1292,7 @@ public class AgentExecutor extends BaseComponent {
         if (StringUtils.isNotBlank(agentContext.getMessage())) {
             stringBuilder.append(agentContext.getMessage());
         } else if (CollectionUtils.isNotEmpty(agentContext.getAttachments())) {
-            stringBuilder.append("分析以上附件内容");
+            stringBuilder.append(I18nUtil.systemMessage("Backend.Agent.Message.AnalyzeAttachments"));
         }
         return stringBuilder.toString();
     }
@@ -1378,7 +1388,7 @@ public class AgentExecutor extends BaseComponent {
                     int completionTokens1 = completionTokens.addAndGet(Integer.parseInt(String.valueOf(modelExecuteInfo.get("completionTokens"))));
                     totalTokens.set(promptTokens1 + completionTokens1);
                 } catch (Exception e) {
-                    log.warn("parse modelExecuteInfo error:{}", e.getMessage());
+                    log.warn("Parse modelExecuteInfo error:{}", e.getMessage());
                 }
 
                 componentExecuteResults.add(componentExecuteResult);
@@ -1412,7 +1422,7 @@ public class AgentExecutor extends BaseComponent {
 
     private static String buildToolCallResult(String toolName, String result, String errorMessage) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("以下是工具`").append(toolName).append("`调用结果：\n");
+        stringBuilder.append("The following is the tool `").append(toolName).append("` invocation result:\n");
         if (result != null) {
             stringBuilder.append(result);
         }
@@ -1436,13 +1446,13 @@ public class AgentExecutor extends BaseComponent {
 
     public Mono<List<String>> suggestQuestions(AgentContext agentContext) {
         try {
-            Assert.notNull(agentContext, "agentContext不能为空");
-            Assert.notNull(agentContext.getAgentConfig(), "agentConfig不能为空");
-            Assert.notNull(agentContext.getConversationId(), "conversationId不能为空");
-            Assert.notNull(agentContext.getUserId(), "userId不能为空");
+            Assert.notNull(agentContext, "agentContext cannot be left blank.");
+            Assert.notNull(agentContext.getAgentConfig(), "agentConfig cannot be left blank.");
+            Assert.notNull(agentContext.getConversationId(), "conversationId cannot be left blank.");
+            Assert.notNull(agentContext.getUserId(), "userId cannot be left blank.");
 
         } catch (Exception e) {
-            log.warn("参数校验失败", e);
+            log.warn("Parameter validation failed", e);
             return Mono.error(e);
         }
         AtomicReference<Disposable> nextDisposable = new AtomicReference<>();
@@ -1453,16 +1463,16 @@ public class AgentExecutor extends BaseComponent {
                 Arg arg = new Arg();
                 arg.setRequire(true);
                 arg.setName("suggestList");
-                arg.setDescription("问题建议列表");
+                arg.setDescription("Suggest list");
                 arg.setDataType(DataTypeEnum.Array_String);
                 outputArgs.add(arg);
                 ModelContext suggestModelContext = buildModelContext(agentContext, buildSuggestSystemPrompt(agentContext), buildSuggestUserPrompt(agentContext),
                         null, true, OutputTypeEnum.JSON, outputArgs);
                 Disposable disposable = modelInvoker.invoke(suggestModelContext).doOnError((e) -> {
-                    log.error("建议问题调用失败", e);
+                    log.error("Suggested question invocation failed", e);
                     sink.success(new ArrayList<>());
                 }).doOnComplete(() -> {
-                    log.info("建议问题结果:{}", suggestModelContext.getModelCallResult().getData());
+                    log.info("Suggested question result:{}", suggestModelContext.getModelCallResult().getData());
                     Object data = suggestModelContext.getModelCallResult().getData();
                     List<String> list = new ArrayList<>();
                     if (data instanceof Map) {

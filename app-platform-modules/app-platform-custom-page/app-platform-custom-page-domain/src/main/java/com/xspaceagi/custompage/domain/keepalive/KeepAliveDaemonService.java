@@ -76,7 +76,7 @@ public class KeepAliveDaemonService {
         try {
             TenantFunctions.callWithIgnoreCheck(this::warmupKeepAliveCache);
         } catch (Exception e) {
-            log.error("[KeepAlive-daemon] 预热Redis保活缓存失败", e);
+            log.error("[Keep Alive-daemon] warm-up Rediskeep-alivecachefailed", e);
         }
 
         scheduledExecutor.scheduleWithFixedDelay(
@@ -85,7 +85,7 @@ public class KeepAliveDaemonService {
                 CHECK_INTERVAL_SECONDS,
                 TimeUnit.SECONDS);
 
-        log.info("[KeepAlive-daemon] 保活服务初始化完成，定时检查间隔：{}秒", CHECK_INTERVAL_SECONDS);
+        log.info("[Keep Alive-daemon] keep-aliveserviceinitializecompleted, scheduled checkinterval: {}seconds", CHECK_INTERVAL_SECONDS);
     }
 
     @PreDestroy
@@ -101,7 +101,7 @@ public class KeepAliveDaemonService {
                 Thread.currentThread().interrupt();
             }
         }
-        log.info("[KeepAlive-daemon] 保活服务已关闭");
+        log.info("[Keep Alive-daemon] keep-aliveserviceclosed");
     }
 
     /**
@@ -111,11 +111,11 @@ public class KeepAliveDaemonService {
         // 查询运行中的项目
         List<CustomPageBuildModel> runningList = customPageBuildRepository.listByDevRunning(1);
         if (runningList == null || runningList.isEmpty()) {
-            log.info("[KeepAlive-daemon] 预热结束：无运行中的项目");
+            log.info("[Keep Alive-daemon] warm-upcompleted: project");
             return 1;
         }
 
-        log.info("[KeepAlive-daemon] 开始预热，总计：{}", runningList.size());
+        log.info("[Keep Alive-daemon] startwarm-up, total: {}", runningList.size());
         int success = 0;
         for (CustomPageBuildModel model : runningList) {
             try {
@@ -125,10 +125,10 @@ public class KeepAliveDaemonService {
                 updateKeepAliveCache(model.getProjectId(), model);
                 success++;
             } catch (Exception e) {
-                log.error("[KeepAlive-daemon] projectId={},预热失败", model.getProjectId(), e);
+                log.error("[Keep Alive-daemon] project Id={},warm-upfailed", model.getProjectId(), e);
             }
         }
-        log.info("[KeepAlive-daemon] 预热完成,总计：{}, 成功：{}", runningList.size(), success);
+        log.info("[Keep Alive-daemon] warm-upcompleted,total: {}, succeeded: {}", runningList.size(), success);
         return success;
     }
 
@@ -137,7 +137,7 @@ public class KeepAliveDaemonService {
      */
     private void checkKeepAliveTimeout() {
         TenantFunctions.callWithIgnoreCheck(() -> {
-            log.debug("[KeepAlive-daemon] 定时检查超时项目");
+            log.debug("[Keep Alive-daemon] scheduled checktimeoutproject");
             checkKeepAliveTimeout0();
             return null;
         });
@@ -156,54 +156,54 @@ public class KeepAliveDaemonService {
                     Date now = new Date();
                     long timeoutThreshold = now.getTime() - KEEPALIVE_TIMEOUT_MS;
 
-                    //log.info("[KeepAlive-daemon] 开始检查超时项目，当前时间：{}", now);
+                    //log.info("[Keep Alive-daemon] start timeoutproject, : {}", now);
 
                     // 从Redis获取所有保活项目ID
                     Set<Object> projectIds = redisUtil.members(KEEPALIVE_PROJECTS_SET_KEY);
                     if (projectIds == null || projectIds.isEmpty()) {
-                        //log.debug("[KeepAlive-daemon] redis中没有需要检查的项目,结束");
+                        //log.debug("[Keep Alive-daemon] redis project,completed");
                         return;
                     }
 
-                    log.info("[KeepAlive-daemon] 找到{}个项开始检查", projectIds.size());
+                    log.info("[Keep Alive-daemon] found{}items to check", projectIds.size());
 
                     // 检查每个项目的保活状态
                     for (Object projectIdObj : projectIds) {
                         Long projectId = Long.valueOf(projectIdObj.toString());
-                        //log.debug("[KeepAlive-daemon] 开始检查：projectId={} --", projectId);
+                        //log.debug("[Keep Alive-daemon] start : project Id={} --", projectId);
                         try {
                             CustomPageBuildModel model = getKeepAliveCache(projectId);
                             if (model == null || model.getLastKeepAliveTime() == null) {
                                 // 如果Redis中没有数据，从保活项目集合中移除
-                                //log.debug("[KeepAlive-daemon] projectId={},redis中没有数据,从保活集合中移除", projectId);
+                                //log.debug("[Keep Alive-daemon] project Id={},redis , keep-alive", projectId);
                                 redisUtil.remove(KEEPALIVE_PROJECTS_SET_KEY, projectId.toString());
                                 continue;
                             }
 
                             long lastKeepAliveTime = model.getLastKeepAliveTime().getTime();
                             if (lastKeepAliveTime < timeoutThreshold) {
-                                //log.debug("[KeepAlive-daemon] projectId={},项目超时,最后保活时间：{},开始执行stop服务器", projectId, model.getLastKeepAliveTime());
+                                //log.debug("[Keep Alive-daemon] project Id={},projecttimeout, keep-alive : {},start executionstop service", projectId, model.getLastKeepAliveTime());
 
                                 // 停止开发服务器
                                 stopDevServerIfRunning(projectId, model);
                             }
                         } catch (Exception e) {
-                            log.error("[KeepAlive-daemon] projectId={},检查保活异常", projectId, e);
+                            log.error("[Keep Alive-daemon] project Id={},keep-alive check exception", projectId, e);
                         }
                     }
 
-                    //log.debug("[KeepAlive-daemon] 保活检查完成");
+                    //log.debug("[Keep Alive-daemon] keep-alive completed");
                 } finally {
                     lock.unlock();
                 }
             } else {
-                log.info("[KeepAlive-daemon] 获取分布式锁失败,跳过本次检查");
+                log.info("[Keep Alive-daemon] failed to acquire distributed lock,skip");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("[KeepAlive-daemon] 获取分布式锁被中断", e);
+            log.warn("[Keep Alive-daemon] acquire distributed lock interrupted", e);
         } catch (Exception e) {
-            log.error("[KeepAlive-daemon] 检查保活异常", e);
+            log.error("[Keep Alive-daemon] keep-alive check exception", e);
         }
     }
 
@@ -221,9 +221,9 @@ public class KeepAliveDaemonService {
             // 将projectId添加到保活项目集合中
             redisUtil.sSet(KEEPALIVE_PROJECTS_SET_KEY, projectId.toString());
 
-            log.info("[KeepAlive-daemon] 更新Redis保活缓存，projectId={}", projectId);
+            log.info("[Keep Alive-daemon] update Rediskeep-alivecache, project Id={}", projectId);
         } catch (JsonProcessingException e) {
-            log.error("[KeepAlive-daemon] 序列化保活数据失败，projectId={}", projectId, e);
+            log.error("[Keep Alive-daemon] serialize keep-alive data failed, project Id={}", projectId, e);
         }
     }
 
@@ -238,7 +238,7 @@ public class KeepAliveDaemonService {
         // 从保活项目集合中移除projectId
         redisUtil.remove(KEEPALIVE_PROJECTS_SET_KEY, projectId.toString());
 
-        log.info("[KeepAlive-daemon] projectId={},删除redis保活缓存完成", projectId);
+        log.info("[Keep Alive-daemon] project Id={},deleterediskeep-alivecachecompleted", projectId);
     }
 
     /**
@@ -247,7 +247,7 @@ public class KeepAliveDaemonService {
     private void stopDevServerIfRunning(Long projectId, CustomPageBuildModel model) {
         try {
             if (model.getDevRunning() != null && model.getDevRunning() == 1 && model.getDevPid() != null) {
-                log.info("[KeepAlive-daemon] projectId={},pid={},开始stop服务器",
+                log.info("[Keep Alive-daemon] project Id={},pid={},startstop service",
                         projectId, model.getDevPid());
 
                 // 调用停止开发服务器的逻辑
@@ -255,16 +255,16 @@ public class KeepAliveDaemonService {
                     Map<String, Object> resp = pageFileBuildClient.stopDev(projectId, model.getDevPid());
 
                     if (resp == null) {
-                        log.error("[KeepAlive-daemon] projectId={},stop服务器失败,server无响应", projectId);
+                        log.error("[Keep Alive-daemon] project Id={},stop servicefailed,serverno response", projectId);
                         return;
                     }
                     boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
                     String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
                     if (!success) {
-                        log.error("[KeepAlive-daemon] projectId={},stop服务器失败,server返回错误,message={}", projectId, message);
+                        log.error("[Keep Alive-daemon] project Id={},stop servicefailed,serverreturned error,message={}", projectId, message);
                         return;
                     }
-                    log.info("[KeepAlive-daemon] projectId={},stop服务器成功,开始更新状态", projectId);
+                    log.info("[Keep Alive-daemon] project Id={},stop servicesucceeded,start updating status", projectId);
 
                     Long tenantId = model.getTenantId();
                     if (tenantId == null) {
@@ -284,15 +284,15 @@ public class KeepAliveDaemonService {
                     // 更新数据库状态
                     customPageBuildRepository.updateStopDevStatus(projectId, null);
 
-                    log.info("[KeepAlive-daemon] projectId={},dev服务器已停止", projectId);
+                    log.info("[Keep Alive-daemon] project Id={}, dev server stopped", projectId);
                 }
             } else {
                 // 从Redis缓存中移除
                 removeKeepAliveCache(projectId);
-                log.info("[KeepAlive-daemon] projectId={},dev服务器已停止", projectId);
+                log.info("[Keep Alive-daemon] project Id={}, dev server stopped", projectId);
             }
         } catch (Exception e) {
-            log.error("[KeepAlive-daemon] projectId={}stop服务器异常", projectId, e);
+            log.error("[Keep Alive-daemon] project Id={}stop serviceexception", projectId, e);
         } finally {
             RequestContext.remove();
         }
@@ -309,7 +309,7 @@ public class KeepAliveDaemonService {
                 return objectMapper.readValue(value.toString(), CustomPageBuildModel.class);
             }
         } catch (JsonProcessingException e) {
-            log.error("[KeepAlive-daemon] 反序列化保活数据失败，projectId={}", projectId, e);
+            log.error("[Keep Alive-daemon] deserialize keep-alive data failed, project Id={}", projectId, e);
         }
         return null;
     }

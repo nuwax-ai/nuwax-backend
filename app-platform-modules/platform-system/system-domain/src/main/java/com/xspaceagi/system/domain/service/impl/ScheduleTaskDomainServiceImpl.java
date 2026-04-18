@@ -25,10 +25,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -47,7 +44,11 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
         this.applicationContext = applicationContext;
     }
 
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(10, new CustomThreadFactory("schedule-task-executor"));
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, new CustomThreadFactory("schedule-task-main-loop"));
+    private final ExecutorService callbackExecutor = new ThreadPoolExecutor(0, 100,
+            60L, TimeUnit.SECONDS,
+            new SynchronousQueue<Runnable>(),
+            new CustomThreadFactory("schedule-task-executor"));
 
     @PostConstruct
     public void init() {
@@ -58,28 +59,31 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
         scheduleTaskUpdate.setStatus(ScheduleTaskDto.Status.CONTINUE);
         scheduleTaskService.update(scheduleTaskUpdate, lambdaQueryWrapper);
         // 轮询任务数据
-        executor.scheduleAtFixedRate(() -> executor.execute(() -> checkAndExecuteTask(new AtomicInteger(MAX_EXEC_CT))), 5, 1, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(() -> callbackExecutor.execute(() -> checkAndExecuteTask(new AtomicInteger(MAX_EXEC_CT))), 5, 1, TimeUnit.SECONDS);
     }
 
     private void checkAndExecuteTask(AtomicInteger ct) {
+        if (ct.decrementAndGet() < 0) {
+            return;
+        }
         ScheduleTask scheduleTaskForExec = queryOneAndLock();
-        if (null != scheduleTaskForExec && ct.decrementAndGet() > 0) {
+        if (null != scheduleTaskForExec) {
             String info = JSONObject.toJSONString(scheduleTaskForExec);
             log.debug("查询任务查询数据，第{}次处理：{}", scheduleTaskForExec.getExecTimes(), info);
             callback(scheduleTaskForExec).subscribe(res -> {
                 log.debug("任务数据处理结束：{}", info);
                 ScheduleTask scheduleTask = queryOne(scheduleTaskForExec.getTaskId());
                 if (scheduleTask.getStatus() == ScheduleTaskDto.Status.COMPLETE || scheduleTask.getStatus() == ScheduleTaskDto.Status.CANCEL) {
-                    checkAndExecuteTask(ct);
+                    callbackExecutor.execute(() -> checkAndExecuteTask(ct));
                     return;
                 }
                 scheduleTask.setStatus(res ? ScheduleTaskDto.Status.COMPLETE : ScheduleTaskDto.Status.CONTINUE);
                 if (!res && scheduleTask.getExecTimes() >= scheduleTask.getMaxExecTimes()) {
-                    scheduleTask.setStatus(ScheduleTaskDto.Status.OVERFLOW_MAX_EXEC_TIMES);
+                    scheduleTask.setStatus(ScheduleTaskDto.Status.COMPLETE);
                 }
                 scheduleTask.setError("");
                 scheduleTaskService.updateById(scheduleTask);
-                checkAndExecuteTask(ct);
+                callbackExecutor.execute(() -> checkAndExecuteTask(ct));
             }, e -> {
                 log.error("任务回调业务模块失败 {}", JSONObject.toJSONString(scheduleTaskForExec), e);
                 ScheduleTask taskUpdate = new ScheduleTask();
@@ -172,7 +176,9 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
         if (null != scheduleTask1) {
             // 曾按 taskId 注销后，再次 register 时若仅 return，
             // 记录仍为 CANCEL，重新start需把同 taskId 任务拉回到 CREATE。
-            if (scheduleTask1.getStatus() == ScheduleTaskDto.Status.CANCEL) {
+            if (scheduleTask1.getStatus() != ScheduleTaskDto.Status.CREATE
+                    && scheduleTask1.getStatus() != ScheduleTaskDto.Status.EXECUTING
+                    && scheduleTask1.getStatus() != ScheduleTaskDto.Status.CONTINUE) {
                 if (StringUtils.isNotBlank(scheduleTask.getCron())) {
                     scheduleTask1.setCron(scheduleTask.getCron());
                 }

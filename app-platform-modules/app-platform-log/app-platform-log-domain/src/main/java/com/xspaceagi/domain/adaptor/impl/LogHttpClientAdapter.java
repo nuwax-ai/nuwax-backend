@@ -116,7 +116,7 @@ public class LogHttpClientAdapter {
             }
         } catch (Exception e) {
             log.error("新增单个智能体日志失败", e);
-            throw LogPlatformException.build(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7002, e.getMessage());
+            throw LogPlatformException.build(BizExceptionCodeEnum.logPlatformInsertFailed, e.getMessage());
         }
     }
 
@@ -144,7 +144,7 @@ public class LogHttpClientAdapter {
             }
         } catch (Exception e) {
             log.error("批量新增智能体日志失败", e);
-            throw LogPlatformException.build(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7003, e.getMessage());
+            throw LogPlatformException.build(BizExceptionCodeEnum.logPlatformBatchInsertFailed, e.getMessage());
         }
     }
 
@@ -160,7 +160,7 @@ public class LogHttpClientAdapter {
             }
 
             String json = objectMapper.writeValueAsString(searchRequest);
-            log.debug("发送日志搜索请求: {}", json);
+            log.debug("Sending log search request: {}", json);
             RequestBody body = RequestBody.create(json, JSON);
 
             Request request = new Request.Builder()
@@ -171,7 +171,7 @@ public class LogHttpClientAdapter {
             try (Response response = httpClient.newCall(request).execute()) {
                 if (response.isSuccessful()) {
                     String responseBody = response.body().string();
-                    log.debug("搜索响应: {}", responseBody);
+                    log.debug("Search response: {}", responseBody);
 
                     // 解析包装的响应
                     RustServiceResponse<AgentLogSearchResult> rustResponse = objectMapper.readValue(responseBody,
@@ -184,21 +184,21 @@ public class LogHttpClientAdapter {
                         String errorMsg = String.format("服务返回错误：code=%s, message=%s",
                                 rustResponse.getCode(), rustResponse.getMessage());
                         log.warn(errorMsg);
-                        throw new LogPlatformException(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001.getCode(),
+                        throw new LogPlatformException(BizExceptionCodeEnum.logPlatformSearchFailed.getCode(),
                                 errorMsg);
                     }
                 } else {
                     String errorBody = response.body().string();
-                    log.warn("搜索智能体日志失败，状态码: {}, 响应: {}", response.code(), errorBody);
-                    throw new LogPlatformException(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001.getCode(),
+                    log.warn("Agent log search failed, status: {}, body: {}", response.code(), errorBody);
+                    throw new LogPlatformException(BizExceptionCodeEnum.logPlatformSearchFailed.getCode(),
                             "搜索失败，HTTP状态码: " + response.code() + ", 响应: " + errorBody);
                 }
             }
         } catch (LogPlatformException e) {
             throw e;
         } catch (Exception e) {
-            log.error("搜索智能体日志失败", e);
-            throw LogPlatformException.build(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001, e.getMessage());
+            log.error("Agent log search failed", e);
+            throw LogPlatformException.build(BizExceptionCodeEnum.logPlatformSearchFailed, e.getMessage());
         }
     }
 
@@ -214,7 +214,7 @@ public class LogHttpClientAdapter {
             }
 
             String json = objectMapper.writeValueAsString(searchRequest);
-            log.debug("发送日志搜索请求: {}", json);
+            log.debug("Sending log search request: {}", json);
             RequestBody body = RequestBody.create(json, JSON);
 
             Request request = new Request.Builder()
@@ -225,7 +225,7 @@ public class LogHttpClientAdapter {
             try (Response response = httpClient.newCall(request).execute()) {
                 if (response.isSuccessful()) {
                     String responseBody = response.body().string();
-                    log.debug("搜索响应: {}", responseBody);
+                    log.debug("Search response: {}", responseBody);
 
                     // 解析包装的响应
                     RustServiceResponse<AgentLogSearchResult> rustResponse = objectMapper.readValue(responseBody,
@@ -238,21 +238,21 @@ public class LogHttpClientAdapter {
                         String errorMsg = String.format("服务返回错误：code=%s, message=%s",
                                 rustResponse.getCode(), rustResponse.getMessage());
                         log.warn(errorMsg);
-                        throw new LogPlatformException(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001.getCode(),
+                        throw new LogPlatformException(BizExceptionCodeEnum.logPlatformSearchFailed.getCode(),
                                 errorMsg);
                     }
                 } else {
                     String errorBody = response.body().string();
-                    log.warn("搜索智能体日志失败，状态码: {}, 响应: {}", response.code(), errorBody);
-                    throw new LogPlatformException(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001.getCode(),
+                    log.warn("Agent log search failed, status: {}, body: {}", response.code(), errorBody);
+                    throw new LogPlatformException(BizExceptionCodeEnum.logPlatformSearchFailed.getCode(),
                             "搜索失败，HTTP状态码: " + response.code() + ", 响应: " + errorBody);
                 }
             }
         } catch (LogPlatformException e) {
             throw e;
         } catch (Exception e) {
-            log.error("搜索智能体日志失败", e);
-            throw LogPlatformException.build(BizExceptionCodeEnum.LOG_PLATFORM_ERROR_7001, e.getMessage());
+            log.error("Agent log search failed", e);
+            throw LogPlatformException.build(BizExceptionCodeEnum.logPlatformSearchFailed, e.getMessage());
         }
     }
 

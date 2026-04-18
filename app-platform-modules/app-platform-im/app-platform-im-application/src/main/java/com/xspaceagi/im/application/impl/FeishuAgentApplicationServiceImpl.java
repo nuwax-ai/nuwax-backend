@@ -12,14 +12,16 @@ import com.xspaceagi.im.application.FeishuAgentApplicationService;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
-import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
+import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -60,11 +62,11 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
         }
 
         if (agentId == null || agentId <= 0) {
-            log.warn("飞书智能体未配置 feishu.agent-id");
+            log.warn("Feishu agent-id (feishu.agent-id) not configured");
             return AgentExecuteResultWithConv.builder().text("飞书智能体未配置，请联系管理员").conversationId(null).agentId(agentId).build();
         }
         if (tenantId == null) {
-            throw new BizException("租户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
         }
 
         RequestContext<Object> requestContext = new RequestContext<>();
@@ -111,7 +113,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
             String out = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return AgentExecuteResultWithConv.builder().text(out).conversationId(conversationId).agentId(agentId).build();
         } catch (Exception e) {
-            log.error("飞书智能体执行异常: sessionId={}", sessionId, e);
+            log.error("Feishu agent error: sessionId={}", sessionId, e);
             String err = "模型执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
             return AgentExecuteResultWithConv.builder().text(err).conversationId(null).agentId(agentId).build();
         } finally {

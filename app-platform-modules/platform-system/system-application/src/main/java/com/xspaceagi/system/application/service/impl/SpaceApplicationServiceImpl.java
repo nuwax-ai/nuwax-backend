@@ -3,16 +3,19 @@ package com.xspaceagi.system.application.service.impl;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.UserDto;
-import com.xspaceagi.system.domain.service.SpaceDomainService;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.domain.service.SpaceDomainService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.SpacePermissionException;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
@@ -47,7 +50,7 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
     public void addSpaceUser(SpaceUserDto spaceUserDto) {
         UserDto userDto = userApplicationService.queryById(spaceUserDto.getUserId());
         if (userDto == null) {
-            throw new BizException("错误的用户ID");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUserIdInvalid);
         }
         spaceDomainService.addSpaceUser(SpaceUser.builder().spaceId(spaceUserDto.getSpaceId()).userId(spaceUserDto.getUserId()).role(spaceUserDto.getRole()).build());
     }
@@ -88,16 +91,19 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
         }
         SpaceDto spaceDto = new SpaceDto();
         BeanUtils.copyProperties(space, spaceDto);
+        I18nUtil.replaceSystemMessage(spaceDto);
         return spaceDto;
     }
 
     @Override
     public List<SpaceDto> queryByIds(List<Long> spaceIds) {
-        return spaceDomainService.queryListByIds(spaceIds).stream().map(space -> {
+        List<SpaceDto> spaceDtoList = spaceDomainService.queryListByIds(spaceIds).stream().map(space -> {
             SpaceDto spaceDto = new SpaceDto();
             BeanUtils.copyProperties(space, spaceDto);
             return spaceDto;
         }).toList();
+        I18nUtil.replaceSystemMessage(spaceDtoList);
+        return spaceDtoList;
     }
 
     @Override
@@ -145,14 +151,14 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
     public void checkSpaceAdminPermission(Long id) {
         SpaceUserDto spaceUserDto = querySpaceUser(id, RequestContext.get().getUserId());
         if (spaceUserDto == null || (spaceUserDto.getRole() != SpaceUser.Role.Admin && spaceUserDto.getRole() != SpaceUser.Role.Owner)) {
-            throw new BizException("没有权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 
     public void checkSpaceOwnerPermission(Long id) {
         SpaceUserDto spaceUserDto = querySpaceUser(id, RequestContext.get().getUserId());
         if (spaceUserDto == null || (spaceUserDto.getRole() != SpaceUser.Role.Owner)) {
-            throw new BizException("没有权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 
@@ -168,7 +174,7 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
             if (space != null) {
                 return;
             } else {
-                throw new BizException("空间不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSpaceNotFound);
             }
         }
         SpaceUserDto spaceUserDto = querySpaceUser(id, userId);

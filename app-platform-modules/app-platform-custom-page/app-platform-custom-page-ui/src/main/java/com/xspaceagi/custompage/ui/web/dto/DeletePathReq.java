@@ -4,15 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 删除路径配置请求DTO
+ * Delete path configuration request DTO
  */
 @Data
-@Schema(description = "删除路径配置请求DTO")
+@Schema(description = "Delete path configuration request DTO")
 public class DeletePathReq {
 
-    @Schema(description = "项目ID", required = true)
+    @Schema(description = "Project ID", required = true)
     private Long projectId;
 
-    @Schema(description = "页面路径", required = true, example = "/view")
+    @Schema(description = "Page URI path", required = true, example = "/view")
     private String pageUri;
 }

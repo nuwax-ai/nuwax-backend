@@ -318,6 +318,7 @@ public enum ResourceEnum {
     CONTENT_KNOWLEDGE_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_knowledge_query_list", "查询列表", "content_knowledge"),
     CONTENT_KNOWLEDGE_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_knowledge_query_detail", "查询详情", "content_knowledge"),
     CONTENT_KNOWLEDGE_DELETE(ResourceTypeEnum.OPERATION, "content_knowledge_delete", "删除", "content_knowledge"),
+    CONTENT_KNOWLEDGE_ACCESS_CONTROL(ResourceTypeEnum.OPERATION, "content_knowledge_access_control", "访问授权", "content_knowledge"),
 
     // 2级模块 - 数据表管理
     CONTENT_DATATABLE(ResourceTypeEnum.MODULE, "content_datatable", "数据表管理", "content_manage"),
@@ -352,7 +353,16 @@ public enum ResourceEnum {
 
     CONTENT_SKILL_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_skill_query_list", "查询列表", "content_skill"),
     CONTENT_SKILL_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_skill_query_detail", "查询详情", "content_skill"),
-    CONTENT_SKILL_DELETE(ResourceTypeEnum.OPERATION, "content_skill_delete", "删除", "content_skill");
+    CONTENT_SKILL_DELETE(ResourceTypeEnum.OPERATION, "content_skill_delete", "删除", "content_skill"),
+
+    // ================== 多语言管理模块 ==================
+    I18N_LANG_MANAGE(ResourceTypeEnum.MODULE, "i18n_lang_manage", "多语言管理模块", "root"),
+    I18N_LANG_QUERY(ResourceTypeEnum.OPERATION, "i18n_lang_query", "查询", "i18n_lang_manage"),
+    I18N_LANG_ADD(ResourceTypeEnum.OPERATION, "i18n_lang_add", "新增", "i18n_lang_manage"),
+    I18N_LANG_MODIFY(ResourceTypeEnum.OPERATION, "i18n_lang_modify", "编辑", "i18n_lang_manage"),
+    I18N_LANG_DELETE(ResourceTypeEnum.OPERATION, "i18n_lang_delete", "删除", "i18n_lang_manage"),
+    I18N_LANG_TRANSLATE(ResourceTypeEnum.OPERATION, "i18n_lang_translate", "翻译", "i18n_lang_manage");
+
 
 
     private final ResourceTypeEnum type;

@@ -6,6 +6,7 @@ import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SysSubjectPermissionDomainService {
 
@@ -20,19 +21,36 @@ public interface SysSubjectPermissionDomainService {
     List<Long> listSubjectIdsByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType);
 
     /**
+     * 获取指定 target（角色/用户组）绑定的主体KEY列表
+     */
+    List<String> listSubjectKeysByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType);
+
+    /**
+     * 获取指定 target（角色/用户组）绑定的主体KEY和配置
+     */
+    Map<String, String> listSubjectKeyConfigByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType);
+
+    /**
      * 全量覆盖：设置 target（角色/用户组）在某 subjectType 下绑定的 subjectIds
      * <p>
      * 传空/空集合表示清空绑定（即该 target 不再拥有任何受限主体的访问权限）
      * </p>
      */
-    void replaceSubjectsByTarget(PermissionTargetTypeEnum targetType, Long targetId,
-                                 PermissionSubjectTypeEnum subjectType, List<Long> subjectIds,
-                                 UserContext userContext);
+    void replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum targetType, Long targetId,
+                                              PermissionSubjectTypeEnum subjectType, List<Long> subjectIds,
+                                              UserContext userContext);
+
+    /**
+     * 全量覆盖：设置 target（角色/用户组）在某 subjectType 下绑定的 subjectKey 配置
+     */
+    void replaceSubjectsByTargetAndSubjectKeyConfig(PermissionTargetTypeEnum targetType, Long targetId,
+                                                    PermissionSubjectTypeEnum subjectType, Map<String, String> subjectKeyConfigMap,
+                                                    UserContext userContext);
 
     /**
      * 为主体增加一个目标（角色/用户组）访问权限
      */
-    void addTarget(PermissionSubjectTypeEnum subjectType, Long subjectId,
+    void addTarget(PermissionSubjectTypeEnum subjectType, Long subjectId, String subjectKey,
                    PermissionTargetTypeEnum targetType, Long targetId,
                    UserContext userContext);
 
@@ -53,4 +71,5 @@ public interface SysSubjectPermissionDomainService {
     void replaceTargetsBySubject(PermissionSubjectTypeEnum subjectType, Long subjectId,
                                  List<Long> roleIds, List<Long> groupIds,
                                  UserContext userContext);
+
 }

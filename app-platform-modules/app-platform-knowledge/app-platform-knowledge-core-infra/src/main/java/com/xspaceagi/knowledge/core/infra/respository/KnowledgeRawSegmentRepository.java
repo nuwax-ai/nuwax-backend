@@ -88,7 +88,7 @@ public class KnowledgeRawSegmentRepository implements IKnowledgeRawSegmentReposi
     public void deleteById(Long id) {
         var existObj = this.knowledgeRawSegmentService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         this.knowledgeRawSegmentService.removeById(id);
@@ -103,7 +103,7 @@ public class KnowledgeRawSegmentRepository implements IKnowledgeRawSegmentReposi
     public Long updateInfo(KnowledgeRawSegmentModel model, UserContext userContext) {
         var existObj = this.knowledgeRawSegmentService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         //问答生成的状态,需要重新生成,修改为待生成
         model.setQaStatus(QaStatusEnum.PENDING.getCode());

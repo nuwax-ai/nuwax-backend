@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
 
     private static final String INTENT_RECOGNITION_SYSTEM_PROMPT = """
-            请根据下面提供的信息，识别意图，并将其与预设意图选项进行匹配，若匹配不上时选择"其他意图"。
+            Please identify the intent based on the information provided below, and match it with preset intent options. If no match is found, select "Other Intent".
             """;
 
     @Override
@@ -47,19 +47,19 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
             ChatMemory chatMemory = workflowContext.getWorkflowContextServiceHolder().getChatMemory();
             List<Message> messages = chatMemory.get(workflowContext.getAgentContext().getConversationId(), 12);
             if (CollectionUtils.isNotEmpty(messages)) {
-                stringBuilder.append("对话历史:\n");
+                stringBuilder.append("Conversation history:\n");
                 messages.forEach(message -> stringBuilder.append(message.getMessageType().name()).append(":").append(message.getText()).append("\n"));
             }
         }
-        stringBuilder.append("识别参数：\n").append(JSON.toJSONString(params)).append("\n");
-        stringBuilder.append("意图选项：\n").append(JSON.toJSONString(intentOptions));
+        stringBuilder.append("Recognition parameters:\n").append(JSON.toJSONString(params)).append("\n");
+        stringBuilder.append("Intent options:\n").append(JSON.toJSONString(intentOptions));
         modelCallConfigDto.setSystemPrompt(stringBuilder.toString());
         modelCallConfigDto.setUserPrompt("");
         modelCallConfigDto.setChatRound(0);
         modelCallConfigDto.setStreamCall(true);
         modelCallConfigDto.setOutputType(OutputTypeEnum.JSON);
 
-        //构建意图识别的默认出参
+        // Build default output parameters for intent recognition
         var outputArgs = intentRecognitionNodeConfigDto.getOutputArgs();
 
         modelCallConfigDto.setOutputArgs(outputArgs);
@@ -73,7 +73,7 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
             Set<Long> unReachableNextNodeIds = new HashSet<>();
             Object data = modelContext.getModelCallResult().getData();
             int classificationId = classificationIndex.get();
-            Object reason = "未识别到意图，选择其他意图";
+            Object reason = "Intent not recognized, select Other Intent";
             if ((data instanceof Map<?, ?>)) {
                 Map<String, Object> output = (Map<String, Object>) data;
                 Object classificationId0 = output.get("classificationId");
@@ -88,12 +88,12 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
             }
 
             final Integer classificationId0 = classificationId;
-            //intentOptions中过滤出classificationId相同的选项
+            // Filter out options with the same classificationId from intentOptions
             Map<String, Object> optional = intentOptions.stream().filter(intentOption -> classificationId0.equals(intentOption.get("classificationId"))).findFirst().orElse(new HashMap<>());
             if (optional.isEmpty()) {
                 optional.put("classificationId", classificationIndex.get());
-                optional.put("intent", "其他意图");
-                reason = "未识别到意图，选择其他意图";
+                optional.put("intent", "Other Intent");
+                reason = "Intent not recognized, select Other Intent";
             }
             intentRecognitionNodeConfigDto.getIntentConfigs().forEach(intentConfigDto -> {
                 if (intentConfigDto.getIntent().equals(optional.get("intent"))) {

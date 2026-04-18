@@ -43,7 +43,7 @@ public class SysUserPermissionServiceImpl implements SysUserPermissionService {
     @Override
     public List<MenuNode> getUserMenuAndResources(User user) {
         if (user == null) {
-            throw new IllegalArgumentException("用户不能为空");
+            throw new IllegalArgumentException("User cannot be empty");
         }
         Long userId = user.getId();
 

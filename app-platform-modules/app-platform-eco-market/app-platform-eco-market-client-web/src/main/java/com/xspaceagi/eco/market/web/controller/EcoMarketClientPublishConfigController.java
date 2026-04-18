@@ -1,6 +1,7 @@
 package com.xspaceagi.eco.market.web.controller;
 
 import com.xspaceagi.system.infra.service.QueryVoListDelegateService;
+import com.xspaceagi.system.spec.exception.BizException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,7 +47,7 @@ public class EcoMarketClientPublishConfigController extends BaseController {
     @PostMapping("/enable")
     public ReqResult<EcoMarketClientPublishConfigModel> enableConfig(
             @Parameter(description = "配置唯一标识") @RequestParam("uid") String uid) {
-        log.info("启用配置: uid={}", uid);
+        log.info("Enable config: uid={}", uid);
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -73,11 +74,11 @@ public class EcoMarketClientPublishConfigController extends BaseController {
     @PostMapping("/updateAndEnable")
     public ReqResult<EcoMarketClientPublishConfigModel> updateAndEnableConfig(
             @RequestBody UpdateAndEnableConfigReqDTO reqDTO) {
-        log.info("更新保存并启用配置: reqDTO={}", reqDTO);
+        log.info("Update save-and-enable config: reqDTO={}", reqDTO);
 
         // 参数校验
         if (reqDTO == null || reqDTO.getUid() == null || reqDTO.getUid().isEmpty()) {
-            return ReqResult.error(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007.getCode(), "配置唯一标识不能为空");
+            throw BizException.of(BizExceptionCodeEnum.fieldRequiredButEmpty, "uid");
         }
 
         // 获取当前用户上下文
@@ -102,7 +103,7 @@ public class EcoMarketClientPublishConfigController extends BaseController {
     @PostMapping("/disable")
     public ReqResult<EcoMarketClientPublishConfigModel> disableConfig(
             @Parameter(description = "配置唯一标识") @RequestParam("uid") String uid) {
-        log.info("禁用配置: uid={}", uid);
+        log.info("Disable config: uid={}", uid);
 
         // 获取当前用户上下文
         var userContext = getUser();

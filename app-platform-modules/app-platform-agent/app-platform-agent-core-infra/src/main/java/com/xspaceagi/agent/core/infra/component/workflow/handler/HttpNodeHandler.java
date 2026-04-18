@@ -29,7 +29,7 @@ public class HttpNodeHandler extends AbstractNodeHandler {
         String result = null;
         HttpClient httpClient = workflowContext.getWorkflowContextServiceHolder().getHttpClient();
         ContentType contentType;
-        // 发送请求
+        // Send request
         switch (httpNodeConfigDto.getMethod()) {
             case GET:
                 result = httpClient.get(apiUrl, queries, headers, Map.of());
@@ -49,7 +49,7 @@ public class HttpNodeHandler extends AbstractNodeHandler {
         HttpResponse httpResponse = httpClient.getLastResponse();
         if (httpResponse != null) {
             outputMap.put(SystemArgNameEnum.HTTP_STATUS_CODE.name(), httpResponse.getStatusLine().getStatusCode());
-            //将所有headers组成json返回
+            // Convert all headers to JSON and return
             Map<String, String> headersMap = Arrays.stream(httpResponse.getAllHeaders())
                     .collect(Collectors.toMap(Header::getName, Header::getValue, (v1, v2) -> v1 + "," + v2));
             outputMap.put(SystemArgNameEnum.HTTP_HEADERS.name(), JSON.toJSONString(headersMap));

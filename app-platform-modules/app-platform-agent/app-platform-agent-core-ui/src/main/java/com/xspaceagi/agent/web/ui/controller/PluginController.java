@@ -17,7 +17,10 @@ import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
@@ -73,7 +76,7 @@ public class PluginController {
     public ReqResult<Long> copyToSpace(@PathVariable Long pluginId, @PathVariable Long targetSpaceId) {
         PluginDto pluginDto = pluginApplicationService.queryById(pluginId);
         if (pluginDto == null) {
-            throw new BizException("pluginId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginIdInvalid);
         }
         // 检查权限
         if (targetSpaceId.equals(pluginDto.getSpaceId())) {
@@ -95,7 +98,7 @@ public class PluginController {
     public ReqResult<PluginDto> getPluginConfig(@PathVariable Long pluginId) {
         PluginDto pluginDto = pluginApplicationService.queryById(pluginId);
         if (pluginDto == null) {
-            throw new BizException("pluginId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginIdInvalid);
         }
         spacePermissionService.checkSpaceUserPermission(pluginDto.getSpaceId());
         //为了前端好处理。重新将参数的key处理
@@ -174,8 +177,8 @@ public class PluginController {
 
     private void validatePluginConfig(PluginDto pluginDto) {
         List<String> messages = pluginApplicationService.validatePluginConfig(pluginDto);
-        if (messages.size() > 0) {
-            throw new BizException(Joiner.on(",").join(messages));
+        if (!messages.isEmpty()) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), Joiner.on(",").join(messages));
         }
     }
 
@@ -185,7 +188,7 @@ public class PluginController {
     public ReqResult<PluginExecuteResultDto> testExecute(@RequestBody PluginExecuteRequestDto pluginExecuteRequestDto) {
         PluginDto pluginDto = checkPluginPermission(pluginExecuteRequestDto.getPluginId());
         List<String> messages = pluginApplicationService.validatePluginConfig(pluginDto);
-        if (messages.size() > 0) {
+        if (!messages.isEmpty()) {
             return ReqResult.error(Joiner.on(",").join(messages));
         }
         pluginExecuteRequestDto.setTest(true);
@@ -200,17 +203,17 @@ public class PluginController {
         checkPluginPermission(pluginPublishApplyDto.getPluginId());
         PluginDto pluginDto = pluginApplicationService.queryById(pluginPublishApplyDto.getPluginId());
         if (pluginDto == null) {
-            throw new BizException("插件ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginIdError);
         }
         List<String> messages = pluginApplicationService.validatePluginConfig(pluginDto);
-        if (messages.size() > 0) {
+        if (!messages.isEmpty()) {
             return ReqResult.error(Joiner.on(",").join(messages));
         }
         PublishApplyDto publishApplyDto = new PublishApplyDto();
         publishApplyDto.setApplyUser((UserDto) RequestContext.get().getUser());
         publishApplyDto.setTargetType(Published.TargetType.Plugin);
         publishApplyDto.setTargetId(pluginDto.getId());
-        //发布范围不选择表示已发布的要下架
+        // If publish scope is not selected, it means published items should be removed
         publishApplyDto.setChannels(pluginPublishApplyDto.getScope() == null ? new ArrayList<>() : List.of(Published.PublishChannel.System));
         publishApplyDto.setRemark(pluginPublishApplyDto.getRemark());
         publishApplyDto.setScope(pluginPublishApplyDto.getScope());
@@ -221,20 +224,20 @@ public class PluginController {
         publishApplyDto.setSpaceId(pluginDto.getSpaceId());
         Long applyId = publishApplicationService.publishApply(publishApplyDto);
         if (pluginPublishApplyDto.getScope() == Published.PublishScope.Space) {
-            return ReqResult.create(ReqResult.SUCCESS, "发布成功", "发布成功");
+            return ReqResult.create(ReqResult.SUCCESS, I18nUtil.systemMessage("Backend.Plugin.Publish.Success"), I18nUtil.systemMessage("Backend.Plugin.Publish.Success"));
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (tenantConfigDto.getPluginPublishAudit() == 0) {
             publishApplicationService.publish(applyId);
-            return ReqResult.create(ReqResult.SUCCESS, "发布成功", "发布成功");
+            return ReqResult.create(ReqResult.SUCCESS, I18nUtil.systemMessage("Backend.Plugin.Publish.Success"), I18nUtil.systemMessage("Backend.Plugin.Publish.Success"));
         }
-        return ReqResult.create(ReqResult.SUCCESS, "发布申请已提交，等待审核中", "发布申请已提交，等待审核中");
+        return ReqResult.create(ReqResult.SUCCESS, I18nUtil.systemMessage("Backend.Plugin.Publish.AuditPending"), I18nUtil.systemMessage("Backend.Plugin.Publish.AuditPending"));
     }
 
     private PluginDto checkPluginPermission(Long pluginId) {
         PluginDto pluginDto = pluginApplicationService.queryById(pluginId);
         if (pluginDto == null) {
-            throw new BizException("插件不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFound);
         }
         spacePermissionService.checkSpaceUserPermission(pluginDto.getSpaceId());
         return pluginDto;

@@ -52,6 +52,12 @@ public interface ImChannelConfigApplicationService {
      */
     Long resolveExplicitOrUniqueWechatIlinkConfigId(Long spaceId, Long tenantId, Long explicitConfigId);
 
+    /**
+     * 当前租户下按登录用户解析一条可推送的微信 iLink 配置主键
+     * {@code botId} 对应 {@code im_channel_config.target_id}（微信侧 ilinkAccountId）；未传则按用户下匹配记录取修改时间最近的一条启用配置。
+     */
+    ImChannelConfigDto resolveWechatIlinkConfigIdForUserPush(Long tenantId, Long userId, String botId);
+
     List<ImChannelConfig> list(ImChannelConfig query);
 
     ImChannelConfig getById(Long id);

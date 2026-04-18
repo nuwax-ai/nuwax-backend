@@ -21,6 +21,10 @@ spring:
 #    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
 
 server:
+  compression:
+    enabled: true
+    min-response-size: 2KB
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
   tomcat:
     # 设置POST请求大小限制，0表示不限制
     max-http-form-post-size: 0
@@ -61,6 +65,7 @@ auth:
     - /api/mcp/sse
     - /api/mcp/message
     - /api/v1/
+    - /api/ticket/redirect
     - /api/audio
     - /api/page/workflow
     - /api/page/plugin
@@ -76,6 +81,7 @@ auth:
     - /api/im/feishu
     - /api/im/dingtalk
     - /api/im/wework
+    - /api/i18n/
 
 # DataSource Config
 mybatis-plus:
@@ -112,8 +118,16 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 1.0.7.6
+  version: 1.0.7.9
 
 stt:
   api:
     base-url: https://stt-api.nuwax.com
+
+sandbox:
+  api:
+    rewrite:
+      allow-path:
+        - "skill/**"
+        - "publish/apply"
+        - "im/wechat/push-message"

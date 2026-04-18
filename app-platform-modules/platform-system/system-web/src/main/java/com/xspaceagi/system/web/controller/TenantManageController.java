@@ -6,7 +6,9 @@ import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Tenant;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -57,7 +59,7 @@ public class TenantManageController {
     private void checkPermission() {
         //租户ID为1的管理员拥有所有租户的管理权限
         if (RequestContext.get().getTenantId() != 1) {
-            throw new BizException("无权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 }

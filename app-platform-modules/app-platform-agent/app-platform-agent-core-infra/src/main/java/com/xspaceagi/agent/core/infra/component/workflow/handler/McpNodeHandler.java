@@ -8,7 +8,9 @@ import com.xspaceagi.agent.core.infra.component.mcp.McpExecutor;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpLogContent;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import org.apache.commons.collections4.CollectionUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
@@ -22,7 +24,7 @@ public class McpNodeHandler extends AbstractNodeHandler {
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         McpNodeConfigDto mcpNodeConfigDto = (McpNodeConfigDto) node.getNodeConfig();
         if (mcpNodeConfigDto.getMcp() == null){
-            return Mono.error(new BizException("节点引用的MCP服务已被删除"));
+            return Mono.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowMcpReferenceRemoved));
         }
         Map<String, Object> params = extraBindValueMap(workflowContext, node, mcpNodeConfigDto.getInputArgs());
         McpContext mcpContext = McpContext.builder()

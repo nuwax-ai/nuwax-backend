@@ -12,6 +12,7 @@ import com.xspaceagi.agent.core.domain.service.PublishDomainService;
 import com.xspaceagi.agent.core.spec.utils.MarkdownExtractUtil;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
 import com.xspaceagi.agent.web.ui.controller.dto.*;
+import com.xspaceagi.sandbox.SandboxRequestAttributes;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
@@ -19,15 +20,20 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -88,14 +94,27 @@ public class PublishController extends BaseController {
     // 因为此接口是聚合接口，不通过@RequireResource 校验权限，在接口实现中区分类型后校验权限
     @Operation(summary = "提交发布申请")
     @RequestMapping(path = "/apply", method = RequestMethod.POST)
-    public ReqResult<String> publishApply(@RequestBody PublishApplySubmitDto publishApplySubmitDto) {
+    public ReqResult<String> publishApply(HttpServletRequest request,
+                                          @RequestBody PublishApplySubmitDto publishApplySubmitDto) {
+        if (isSandboxSource(request)) {
+            if (StringUtils.isBlank(publishApplySubmitDto.getCategory())) {
+                publishApplySubmitDto.setCategory("Other");
+            }
+            if (CollectionUtils.isNotEmpty(publishApplySubmitDto.getItems())) {
+                for (PublishApplySubmitDto.PublishItem item : publishApplySubmitDto.getItems()) {
+                    if (item != null && item.getScope() == Published.PublishScope.Space && item.getSpaceId() == null) {
+                        item.setSpaceId(getPersonalSpaceId());
+                    }
+                }
+            }
+        }
         //整体有两个地方做权限校验，一是校验有没有权限发布出去；而是校验有没有目标空间的发布权限
         Object targetConfig = checkPermissionAndReturnTargetConfig(publishApplySubmitDto.getTargetType(), publishApplySubmitDto.getTargetId());
         // 按目标类型校验资源权限
         checkPublishResourcePermission(publishApplySubmitDto.getTargetType(), targetConfig);
-        Assert.notNull(publishApplySubmitDto.getCategory(), "请选择分类");
+        Assert.notNull(publishApplySubmitDto.getCategory(), "Please select a category");
         if (CollectionUtils.isEmpty(publishApplySubmitDto.getItems())) {
-            throw new BizException("未选择发布范围");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishScopeNotSelected);
         }
         if (targetConfig instanceof PluginDto || targetConfig instanceof WorkflowConfigDto) {
             String name = targetConfig instanceof PluginDto
@@ -118,7 +137,7 @@ public class PublishController extends BaseController {
                 }
             } catch (Exception e) {
                 //忽略
-                log.error("调用模型转换接口异常", e);
+                log.error("Exception when calling model conversion API", e);
             }
         }
         if (targetConfig instanceof SkillConfigDto skillConfig) {
@@ -150,7 +169,7 @@ public class PublishController extends BaseController {
             //私有电脑的agent不允许发布到广场
             if (agentConfigDto.getExtra() != null && agentConfigDto.getExtra().get("private") != null
                     && publishApplySubmitDto.getItems().stream().anyMatch(item -> item.getScope() == Published.PublishScope.Tenant)) {
-                throw new BizException("私有电脑的智能体不允许发布到广场");
+                throw new BizException(I18nUtil.systemMessage("Backend.Publish.AgentPrivateCannotPublishToSquare"));
             }
 
             // 构建代理MCP，id存储在agentConfigDto的extra字段中
@@ -193,25 +212,25 @@ public class PublishController extends BaseController {
         List<Long> userSpaceIds = obtainAuthSpaceIds();
         //参数检查
         for (PublishApplySubmitDto.PublishItem publishItem : publishApplySubmitDto.getItems()) {
-            Assert.notNull(publishItem.getScope(), "发布范围不能为空");
+            Assert.notNull(publishItem.getScope(), "Publish scope is required");
             if (publishItem.getScope() == Published.PublishScope.Space) {
-                Assert.notNull(publishItem.getSpaceId(), "空间ID不能为空");
+                Assert.notNull(publishItem.getSpaceId(), "Space ID is required");
                 SpaceDto spaceDto = spaceApplicationService.queryById(publishItem.getSpaceId());
                 if (spaceDto == null) {
-                    throw new BizException("空间[" + publishItem.getSpaceId() + "]不存在");
+                    throw new BizException(I18nUtil.systemMessage("Backend.Publish.SpaceNotFound", publishItem.getSpaceId().toString()));
                 }
                 if (!userSpaceIds.contains(publishItem.getSpaceId())) {
-                    throw new BizException("无空间[" + publishItem.getSpaceId() + "]发布权限");
+                    throw new BizException(I18nUtil.systemMessage("Backend.Publish.SpaceNoPermission", publishItem.getSpaceId().toString()));
                 }
                 if (!spaceDto.getId().equals(spaceId) && spaceDto.getReceivePublish() != YesOrNoEnum.Y.getKey()) {
-                    throw new BizException("空间[" + publishItem.getSpaceId() + "]未开启接收发布功能");
+                    throw new BizException(I18nUtil.systemMessage("Backend.Publish.SpaceReceivePublishDisabled", publishItem.getSpaceId().toString()));
                 }
             }
         }
 
         List<PublishApplyDto> tenantPublishApplyDtos = new ArrayList<>();
         List<PublishApplyDto> spacePublishApplyDtos = new ArrayList<>();
-        String message = "发布成功";
+        String message = I18nUtil.systemMessage("Backend.Publish.Success");
         for (PublishApplySubmitDto.PublishItem publishItem : publishApplySubmitDto.getItems()) {
             PublishApplyDto publishApplyDto = new PublishApplyDto();
             publishApplyDto.setApplyUser((UserDto) RequestContext.get().getUser());
@@ -246,7 +265,7 @@ public class PublishController extends BaseController {
         if (publishAudit == null || publishAudit.equals(YesOrNoEnum.N.getKey()) || CollectionUtils.isEmpty(tenantPublishApplyDtos)) {
             publishApplicationService.publish(publishApplySubmitDto.getTargetType(), publishApplySubmitDto.getTargetId(), Published.PublishScope.Tenant, tenantPublishApplyDtos);
         } else {
-            message = "系统广场发布申请已提交，等待审核中";
+            message = I18nUtil.systemMessage("Backend.Publish.AuditPending");
         }
         publishApplicationService.publish(publishApplySubmitDto.getTargetType(), publishApplySubmitDto.getTargetId(), Published.PublishScope.Space, spacePublishApplyDtos);
         return ReqResult.create(ReqResult.SUCCESS, message, message);
@@ -257,8 +276,8 @@ public class PublishController extends BaseController {
     @Operation(summary = "查询指定智能体插件或工作流已发布列表")
     @RequestMapping(path = "/item/list", method = RequestMethod.POST)
     public ReqResult<List<PublishItemDto>> queryPublishItems(@RequestBody PublishQueryDto publishQueryDto) {
-        Assert.notNull(publishQueryDto.getTargetType(), "targetType不能为空");
-        Assert.notNull(publishQueryDto.getTargetId(), "targetId不能为空");
+        Assert.notNull(publishQueryDto.getTargetType(), "targetType is required");
+        Assert.notNull(publishQueryDto.getTargetId(), "targetId is required");
         checkPermissionAndReturnTargetConfig(publishQueryDto.getTargetType(), publishQueryDto.getTargetId());
         List<PublishApply> publishApplyList = publishDomainService.queryPublishApplyingList(publishQueryDto.getTargetType(), publishQueryDto.getTargetId());
         List<Published> publishedList = publishDomainService.queryPublishedList(publishQueryDto.getTargetType(), List.of(publishQueryDto.getTargetId()));
@@ -313,15 +332,15 @@ public class PublishController extends BaseController {
         //以spaceId为key转map
         Map<Long, SpaceDto> spaceIdMap = spaceDtos.stream().collect(Collectors.toMap(SpaceDto::getId, spaceDto -> spaceDto));
         publishItemDtoList.forEach(publishItemDto -> {
-            String onlyTemplateDesc = Objects.equals(publishItemDto.getOnlyTemplate(), YesOrNoEnum.Y.getKey()) ? "（仅模板）" : "";
+            String onlyTemplateDesc = Objects.equals(publishItemDto.getOnlyTemplate(), YesOrNoEnum.Y.getKey()) ? I18nUtil.systemMessage("Backend.Publish.TemplateOnly") : "";
             if (publishItemDto.getScope() == Published.PublishScope.Space) {
                 publishItemDto.setSpaceId(publishItemDto.getSpaceId());
                 SpaceDto spaceDto = spaceIdMap.get(publishItemDto.getSpaceId());
                 if (spaceDto != null) {
-                    publishItemDto.setDescription("空间广场 - " + spaceDto.getName() + onlyTemplateDesc);
+                    publishItemDto.setDescription(I18nUtil.systemMessage("Backend.Publish.SpaceSquare", spaceDto.getName()) + onlyTemplateDesc);
                 }
             } else {
-                publishItemDto.setDescription("系统广场" + onlyTemplateDesc);
+                publishItemDto.setDescription(I18nUtil.systemMessage("Backend.Publish.SystemSquare") + onlyTemplateDesc);
             }
         });
         return ReqResult.success(publishItemDtoList);
@@ -332,7 +351,7 @@ public class PublishController extends BaseController {
     public ReqResult<Long> templateCopy(@RequestBody TemplateCopyDto templateCopyDto) {
         PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(templateCopyDto.getTargetType(), templateCopyDto.getTargetId());
         if (!publishedPermissionDto.isCopy()) {
-            return ReqResult.error("无复制权限");
+            return ReqResult.error(I18nUtil.systemMessage("Backend.Publish.CopyPermissionDenied"));
         }
         Long id = null;
         spacePermissionService.checkSpaceUserPermission(templateCopyDto.getTargetSpaceId(), RequestContext.get().getUserId());
@@ -351,11 +370,11 @@ public class PublishController extends BaseController {
         if (templateCopyDto.getTargetType() == Published.TargetType.Skill) {
             PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Skill, templateCopyDto.getTargetId());
             if (publishedDto == null) {
-                throw new BizException("技能不存在或已下架");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillOffline);
             }
             SkillConfigDto skillConfigDto = JSON.parseObject(publishedDto.getConfig(), SkillConfigDto.class);
             if (skillConfigDto == null) {
-                throw new BizException("技能配置解析失败");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillConfigParseFailed);
             }
             id = skillApplicationService.copySkill(skillConfigDto, templateCopyDto.getTargetSpaceId());
         }
@@ -365,10 +384,10 @@ public class PublishController extends BaseController {
     @Operation(summary = "智能体、插件、工作流下架")
     @RequestMapping(path = "/offShelf", method = RequestMethod.POST)
     public ReqResult<Void> offShelf(@RequestBody UserOffShelfDto offShelfDto) {
-        Assert.notNull(offShelfDto.getPublishId(), "publishId不能为空");
+        Assert.notNull(offShelfDto.getPublishId(), "publishId is required");
         PublishedDto publishedDto = publishApplicationService.queryPublishedById(offShelfDto.getPublishId());
         if (publishedDto == null) {
-            throw new BizException("下架失败，未发布或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentUnpublishFailedAlreadyOffline);
         }
         Long originalSpaceId = null;
         Long creatorId = null;
@@ -441,15 +460,15 @@ public class PublishController extends BaseController {
     }
 
     private Object checkPermissionAndReturnTargetConfig(Published.TargetType targetType, Long targetId) {
-        Assert.notNull(targetType, "targetType不能为空");
-        Assert.notNull(targetId, "targetId不能为空");
+        Assert.notNull(targetType, "targetType is required");
+        Assert.notNull(targetId, "targetId is required");
         Long spaceId = null;
         Long creatorId = null;
         Object targetConfig = null;
         if (targetType == Published.TargetType.Agent) {
             AgentConfigDto agentDto = agentApplicationService.queryById(targetId);
             if (agentDto == null) {
-                throw new BizException("Agent不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
             }
             spaceId = agentDto.getSpaceId();
             creatorId = agentDto.getCreatorId();
@@ -458,7 +477,7 @@ public class PublishController extends BaseController {
         if (targetType == Published.TargetType.Plugin) {
             PluginDto pluginDto = pluginApplicationService.queryById(targetId);
             if (pluginDto == null) {
-                throw new BizException("Plugin不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOpenapiPluginNotFound);
             }
             spaceId = pluginDto.getSpaceId();
             creatorId = pluginDto.getCreatorId();
@@ -467,7 +486,7 @@ public class PublishController extends BaseController {
         if (targetType == Published.TargetType.Workflow) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(targetId);
             if (workflowConfigDto == null) {
-                throw new BizException("Workflow不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFound);
             }
             spaceId = workflowConfigDto.getSpaceId();
             creatorId = workflowConfigDto.getCreatorId();
@@ -476,23 +495,44 @@ public class PublishController extends BaseController {
         if (targetType == Published.TargetType.Skill) {
             SkillConfigDto skillConfigDto = skillApplicationService.queryById(targetId);
             if (skillConfigDto == null) {
-                throw new BizException("Skill不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOpenapiSkillNotFound);
             }
             spaceId = skillConfigDto.getSpaceId();
             creatorId = skillConfigDto.getCreatorId();
             targetConfig = skillConfigDto;
         }
-        Assert.notNull(spaceId, "spaceId不能为空");
+        Assert.notNull(spaceId, "spaceId is required");
         SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(spaceId, RequestContext.get().getUserId());
         if (spaceUserDto == null) {
-            throw new BizException("用户无空间发布权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
         if (creatorId.equals(RequestContext.get().getUserId())) {
             return targetConfig;
         }
         if (spaceUserDto.getRole() == SpaceUser.Role.User) {
-            throw new BizException("用户无发布权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
         return targetConfig;
+    }
+
+    private boolean isSandboxSource(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        Object src = request.getAttribute(SandboxRequestAttributes.REQUEST_SOURCE);
+        return SandboxRequestAttributes.SOURCE_SANDBOX.equals(src);
+    }
+
+    private Long getPersonalSpaceId() {
+        Long userId = RequestContext.get().getUserId();
+        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
+        SpaceDto personalSpace = spaceDtos.stream()
+                .filter(spaceDto -> spaceDto.getType() == Space.Type.Personal)
+                .findFirst()
+                .orElse(null);
+        if (personalSpace == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentUserNoPersonalSpace);
+        }
+        return personalSpace.getId();
     }
 }

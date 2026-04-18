@@ -63,9 +63,9 @@ public class TikaParser implements DocParser {
         var dataType = documentDto.getDataType();
         var dataTypeEnum = KnowledgeDataTypeEnum.getEnumByCode(dataType);
         if (Objects.isNull(dataTypeEnum)) {
-            log.error("解析文档失败,不支持的文件类型[{}]", dataType);
+            log.error("Failed to parse document, unsupported file type [{}]", dataType);
             throw KnowledgeException.build(
-                    BizExceptionCodeEnum.KNOWLEDGE_ERROR_5015
+                    BizExceptionCodeEnum.knowledgeDocumentUnsupportedType
             );
         }
 
@@ -76,7 +76,7 @@ public class TikaParser implements DocParser {
             if (
                     shouldUseWorkflowParsing(documentDto.getKbId())
             ) {
-                log.info("使用工作流解析文档,docId={},docUrl={}", documentDto.getId(), docUrl);
+                log.info("Parse doc via workflow, docId={}, docUrl={}", documentDto.getId(), docUrl);
                 String content = parseWithWorkflow(
                         documentDto.getKbId(),
                         docUrl,
@@ -118,13 +118,13 @@ public class TikaParser implements DocParser {
                         .content(content)
                         .segmentConfig(documentDto.getSegmentConfig())
                         .build();
-
                 fileParseService.parseRawTxt(fileParseRequest, userContext);
+
             }
         } catch (IOException | SAXException | TikaException e) {
-            log.error("解析文档失败,docUrl={}", docUrl, e);
+            log.error("Failed to parse document,docUrl={}", docUrl, e);
             throw KnowledgeException.build(
-                    BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                    BizExceptionCodeEnum.knowledgeDocumentParseFailed
             );
         }
     }
@@ -181,7 +181,7 @@ public class TikaParser implements DocParser {
                 return true;
             }
         } catch (Exception e) {
-            log.debug("检测PDF文件类型失败,docUrl={}", docUrl, e);
+            log.debug("PDF type detect failed, docUrl={}", docUrl, e);
             // 如果检测失败，回退到URL扩展名判断
             String lowerUrl = docUrl.toLowerCase();
             return lowerUrl.endsWith(".pdf") || lowerUrl.contains(".pdf?");
@@ -206,7 +206,7 @@ public class TikaParser implements DocParser {
                             knowledgeConfig.getWorkflowId() != null
             );
         } catch (Exception e) {
-            log.error("查询知识库配置失败,kbId={}", kbId, e);
+            log.error("Knowledge config query failed, kbId={}", kbId, e);
             return false;
         }
     }
@@ -227,7 +227,7 @@ public class TikaParser implements DocParser {
                             knowledgeConfig.getWorkflowId() == null
             ) {
                 throw KnowledgeException.build(
-                        BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                        BizExceptionCodeEnum.knowledgeDocumentParseFailed
                 );
             }
 
@@ -241,7 +241,7 @@ public class TikaParser implements DocParser {
 
             if (workflowConfigDto == null) {
                 throw KnowledgeException.build(
-                        BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                        BizExceptionCodeEnum.knowledgeDocumentParseFailed
                 );
             }
 
@@ -268,7 +268,7 @@ public class TikaParser implements DocParser {
             List<Arg> inputArgs = workflowConfigDto.getStartNode().getNodeConfig().getInputArgs();
             if (inputArgs == null || inputArgs.isEmpty()) {
                 throw KnowledgeException.build(
-                        BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                        BizExceptionCodeEnum.knowledgeDocumentParseFailed
                 );
             }
             Map<String, Object> variableParams = new HashMap<>();
@@ -297,16 +297,16 @@ public class TikaParser implements DocParser {
                     result = ((Map<?, ?>) object).values().stream().map(Object::toString).collect(Collectors.joining("\n\n"));
                 } else {
                     throw KnowledgeException.build(
-                            BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                            BizExceptionCodeEnum.knowledgeDocumentParseFailed
                     );
                 }
             }
 
             return result;
         } catch (Exception e) {
-            log.error("工作流解析PDF失败,kbId={},docUrl={}", kbId, docUrl, e);
+            log.error("Workflow PDF parse failed, kbId={}, docUrl={}", kbId, docUrl, e);
             throw KnowledgeException.build(
-                    BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014
+                    BizExceptionCodeEnum.knowledgeDocumentParseFailed
             );
         }
     }

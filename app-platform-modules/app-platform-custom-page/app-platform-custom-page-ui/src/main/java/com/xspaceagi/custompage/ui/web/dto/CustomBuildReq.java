@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@Schema(description = "前端项目构建请求体")
+@Schema(description = "Frontend project build request body")
 public class CustomBuildReq {
 
-    @NotBlank(message = "projectId 不能为空")
-    @Schema(description = "项目ID")
+    @NotBlank(message = "projectId is required")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @NotBlank(message = "publishType 不能为空")
-    @Schema(description = "发布类型")
+    @NotBlank(message = "publishType is required")
+    @Schema(description = "Publish type")
     private String publishType;
 
 }

@@ -67,12 +67,12 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
 
     @Override
     public List<CustomPageDto> list(CustomPageQueryReq req) {
-        log.info("[RPC] 查询前端页面项目列表, request={}", req);
+        log.info("[RPC] queryfrontend pageprojectlist, request={}", req);
         if (req == null) {
-            throw new IllegalArgumentException("参数为空");
+            throw new IllegalArgumentException("Parameters are empty");
         }
         if (req.getSpaceId() == null) {
-            throw new IllegalArgumentException("spaceId为必填参数");
+            throw new IllegalArgumentException("spaceId is required");
         }
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(req.getSpaceId());
@@ -103,7 +103,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                         try {
                             projectIdToMaxVersionTimeMap.put(build.getProjectId(), DateUtil.parse(maxVersionTime.get(), "yyyy-MM-dd HH:mm:ss"));
                         } catch (ParseException e) {
-                            log.warn("[RPC] 解析版本时间失败, projectId={}, time={}, error={}", build.getProjectId(), maxVersionTime.get(), e.getMessage());
+                            log.warn("[RPC] parse version time failed, project Id={}, time={}, error={}", build.getProjectId(), maxVersionTime.get(), e.getMessage());
                             projectIdToMaxVersionTimeMap.put(build.getProjectId(), build.getModified());
                         }
                     }
@@ -123,17 +123,17 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
         // 补充用户信息
         completeCreator(dtoList);
 
-        log.info("[RPC] 查询前端页面项目列表响应, 条数={}", dtoList.size());
+        log.info("[RPC] queryfrontend pageprojectlistresponse, count={}", dtoList.size());
         return dtoList;
     }
 
     @Override
     public SuperPage<CustomPageDto> pageQuery(PageQueryVo<CustomPageQueryReq> pageQueryVo) {
-        log.info("[RPC] 分页查询前端页面项目, request={}", pageQueryVo);
+        log.info("[RPC] pagedqueryfrontend pageproject, request={}", pageQueryVo);
 
         CustomPageQueryReq req = pageQueryVo.getQueryFilter();
         if (req == null) {
-            throw new IllegalArgumentException("参数为空");
+            throw new IllegalArgumentException("Parameters are empty");
         }
 
         CustomPageConfigModel configModel = new CustomPageConfigModel();
@@ -151,15 +151,15 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
         // 补充用户信息
         completeCreator(dtoPage.getRecords());
 
-        log.info("[RPC] 分页查询前端页面项目响应, 条数={}", dtoPage.getTotal());
+        log.info("[RPC] pagedqueryfrontend pageprojectresponse, count={}", dtoPage.getTotal());
         return dtoPage;
     }
 
     @Override
     public CustomPageDto queryDetail(Long projectId) {
-        log.info("[RPC] 查询前端页面项目详情, projectId={}", projectId);
+        log.info("[RPC] Query custom page project detail, project Id={}", projectId);
         if (projectId == null) {
-            throw new IllegalArgumentException("projectId为必填参数");
+            throw new IllegalArgumentException("projectId is required");
         }
         CustomPageConfigModel configModel = customPageConfigDomainService.getById(projectId);
         if (configModel == null) {
@@ -176,7 +176,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                 String prodProxyPath = customPageProxyPathService.getProdProxyPath(configModel);
                 dto.setPageUrl(prodProxyPath);
             } catch (Exception e) {
-                log.info("[RPC] projectId={}, 没有查到prodProxyPath", projectId);
+                log.info("[RPC] project Id={}, prod Proxy Path not found", projectId);
             }
         }
         return dto;
@@ -184,9 +184,9 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
 
     @Override
     public CustomPageDto queryDetailWithVersion(Long projectId) {
-        log.info("[RPC] 查询前端页面项目详情, projectId={}", projectId);
+        log.info("[RPC] Query custom page project detail, project Id={}", projectId);
         if (projectId == null) {
-            throw new IllegalArgumentException("projectId为必填参数");
+            throw new IllegalArgumentException("projectId is required");
         }
         CustomPageConfigModel configModel = customPageConfigDomainService.getById(projectId);
         if (configModel == null) {
@@ -212,7 +212,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
             } else {
                 TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
                 if (tenantConfig == null || tenantConfig.getDefaultCodingModelId() == null || tenantConfig.getDefaultCodingModelId() == 0) {
-                    log.info("[RPC] projectId={},查询前端页面项目详情, 没有配置默认聊天模型", projectId);
+                    log.info("[RPC] project Id={},query frontend page project detail, no default chat model configured", projectId);
                 } else {
                     dto.setLastChatModelId(tenantConfig.getDefaultCodingModelId());
                 }
@@ -224,7 +224,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                 // 从 RequestContext 获取租户配置
                 TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
                 if (tenantConfig == null || tenantConfig.getDefaultVisualModelId() == null || tenantConfig.getDefaultVisualModelId() == 0) {
-                    log.info("[RPC] projectId={},查询前端页面项目详情, 没有配置默认多模态模型", projectId);
+                    log.info("[RPC] project Id={},query frontend page project detail, no default multimodal model configured", projectId);
                 } else {
                     dto.setLastMultiModelId(tenantConfig.getDefaultVisualModelId());
                 }
@@ -236,7 +236,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                 String prodProxyPath = customPageProxyPathService.getProdProxyPath(configModel);
                 dto.setPageUrl(prodProxyPath);
             } catch (Exception e) {
-                log.info("[RPC] projectId={}, 没有查到prodProxyPath", projectId);
+                log.info("[RPC] project Id={}, prod Proxy Path not found", projectId);
             }
         }
         return dto;
@@ -244,9 +244,9 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
 
     @Override
     public CustomPageDto queryDetailByAgentId(Long agentId) {
-        log.info("[RPC] 根据agentId查询项目详情, agentId={}", agentId);
+        log.info("[RPC] query project detail by agent Id, agent Id={}", agentId);
         if (agentId == null) {
-            throw new IllegalArgumentException("agentId为必填参数");
+            throw new IllegalArgumentException("agentId is required");
         }
         CustomPageConfigModel configModel = customPageConfigDomainService.getByAgentId(agentId);
         if (configModel == null) {
@@ -263,7 +263,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                 String prodProxyPath = customPageProxyPathService.getProdProxyPath(configModel);
                 dto.setPageUrl(prodProxyPath);
             } catch (Exception e) {
-                log.info("[RPC] agentId={}, 没有查到prodProxyPath", agentId);
+                log.info("[RPC] agent Id={}, not foundprod Proxy Path", agentId);
             }
         }
         return dto;
@@ -329,7 +329,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                         dataSource.setName(pluginDto.getName());
                         dataSource.setIcon(pluginDto.getIcon());
                     } else {
-                        log.error("[bindDataSource] projectId={},type={},dataSourceId={},插件不存在或未发布, pluginId={}", model.getId(), type, dataSourceId, dataSourceId);
+                        log.error("[bind Data Source] project Id={},type={},data Source Id={},pluginnot foundor not published, plugin Id={}", model.getId(), type, dataSourceId, dataSourceId);
                     }
                 } else if ("workflow".equalsIgnoreCase(type)) {
                     WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(dataSourceId, null);
@@ -337,7 +337,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                         dataSource.setName(workflowConfigDto.getName());
                         dataSource.setIcon(workflowConfigDto.getIcon());
                     } else {
-                        log.error("[bindDataSource] projectId={},type={},dataSourceId={},工作流不存在或未发布, workflowId={}", model.getId(), type, dataSourceId, dataSourceId);
+                        log.error("[bind Data Source] project Id={},type={},data Source Id={},workflownot foundor not published, workflow Id={}", model.getId(), type, dataSourceId, dataSourceId);
                     }
                 }
 

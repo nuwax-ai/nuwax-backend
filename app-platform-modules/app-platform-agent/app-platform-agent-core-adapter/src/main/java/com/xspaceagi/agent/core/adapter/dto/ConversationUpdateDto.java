@@ -9,12 +9,11 @@ import java.io.Serializable;
 @Data
 public class ConversationUpdateDto implements Serializable {
 
-    @Schema(description = "会话ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "会话ID不能为空")
+    @Schema(description = "会话ID")
     private Long id;
 
     @Schema(description = "用户第一条消息")
-    @NotNull(message = "用户第一条消息")
+    @NotNull(message = "User first message is required")
     private String firstMessage;
 
     @Schema(description = "会话主题，可以不传，firstMessage与topic二选一")

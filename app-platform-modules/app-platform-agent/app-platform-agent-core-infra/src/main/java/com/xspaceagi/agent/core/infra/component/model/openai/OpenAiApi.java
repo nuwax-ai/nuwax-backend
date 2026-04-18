@@ -1215,6 +1215,7 @@ public class OpenAiApi {
     public record ChatCompletionMessage(// @formatter:off
                                         @JsonProperty("content") Object rawContent,
                                         @JsonProperty("reasoning_content") Object reasoningContent,
+                                        @JsonProperty("reasoning") Object reasoning,
                                         @JsonProperty("role") Role role,
                                         @JsonProperty("name") String name,
                                         @JsonProperty("tool_call_id") String toolCallId,
@@ -1231,7 +1232,7 @@ public class OpenAiApi {
          * @param role    The role of the author of this message.
          */
         public ChatCompletionMessage(Object content, Role role) {
-            this(content, null, role, null, null, null, null, null);
+            this(content, null, null, role, null, null, null, null, null);
 
         }
 

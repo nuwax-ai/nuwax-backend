@@ -26,7 +26,7 @@ public class ComputerProxyResponseHandler extends ChannelInboundHandlerAdapter {
                 Date expire = nextChannel.attr(ComputerProxyServerContainer.SHARE_EXPIRE).get();
                 if (expire != null && expire.before(new Date())) {
                     // 共享链接已过期，发送消息并关闭连接
-                    log.info("Computer 分享已过期, 关闭链接. shareKey={}, expire={}", shareKey, expire);
+                    log.info("Computer share expired, closing link. shareKey={}, expire={}", shareKey, expire);
                     ReferenceCountUtil.release(msg);
                     sendShareExpiredMessage(nextChannel);
                     ctx.close();

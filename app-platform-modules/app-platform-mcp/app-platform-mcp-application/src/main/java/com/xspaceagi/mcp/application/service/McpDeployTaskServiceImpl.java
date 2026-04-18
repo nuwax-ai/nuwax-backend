@@ -12,12 +12,15 @@ import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.enums.DeployStatusEnum;
 import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.system.application.dto.SendNotifyMessageDto;
+import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
+import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.TaskExecuteService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,14 +28,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Service("mcpDeployTaskService")
 public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implements McpDeployTaskService, TaskExecuteService {
 
-    //每秒检查一次状态（5分钟没有部署成功就失败）
-    private static final Long MAX_EXECUTE_TIMES = 300L;
+    private static final Long MAX_EXECUTE_TIMES = 60L;
 
     @Resource
     private ScheduleTaskApiService scheduleTaskApiService;
@@ -45,6 +48,9 @@ public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implemen
 
     @Resource
     private NotifyMessageApplicationService notifyMessageApplicationService;
+
+    @Resource
+    private UserApplicationService userApplicationService;
 
     @Override
     public void addDeployTask(McpDto mcpDto) {
@@ -64,18 +70,22 @@ public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implemen
             if (notify) {
                 notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                         .scope(NotifyMessage.MessageScope.System)
-                        .content("你创建的MCP服务[" + mcpDto.getName() + "]已部署成功")
+                        .content(I18nUtil.systemMessage("Backend.Mcp.Deploy.Success", mcpDto.getName()))
                         .userIds(Arrays.asList(mcpDto.getCreatorId()))
                         .build());
             }
             return;
         }
         String taskId = "mcp:" + mcpDto.getId() + ":" + System.currentTimeMillis();
+        long maxExecuteTimes = MAX_EXECUTE_TIMES;
+        if (mcpDto.getInstallType() == InstallTypeEnum.SSE || mcpDto.getInstallType() == InstallTypeEnum.STREAMABLE_HTTP) {
+            maxExecuteTimes = 5;
+        }
         scheduleTaskApiService.start(ScheduleTaskDto.builder()
                 .taskId(taskId)
                 .beanId("mcpDeployTaskService")
-                .maxExecTimes(MAX_EXECUTE_TIMES)
-                .cron(ScheduleTaskDto.Cron.EVERY_SECOND.getCron())
+                .maxExecTimes(maxExecuteTimes)
+                .cron(ScheduleTaskDto.Cron.EVERY_10_SECOND.getCron())
                 .params(Map.of("id", mcpDto.getId(),
                         "tenantId", RequestContext.get().getTenantId(),
                         "userId", mcpDto.getCreatorId(),
@@ -97,7 +107,7 @@ public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implemen
     }
 
     public boolean execute1(ScheduleTaskDto scheduleTask) {
-        log.info("部署MCP {}", scheduleTask.getParams());
+        log.info("Deploy MCP {}", scheduleTask.getParams());
         Map<String, Object> param = (Map<String, Object>) scheduleTask.getParams();
         if (param.get("tenantId") == null) {
             return true;
@@ -114,13 +124,17 @@ public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implemen
     }
 
     private boolean execute0(ScheduleTaskDto scheduleTask) {
-        log.info("部署MCP {}", scheduleTask.getParams());
+        log.info("Deploy MCP {}", scheduleTask.getParams());
         Map<String, Object> param = (Map<String, Object>) scheduleTask.getParams();
         Long id = Long.parseLong(param.get("id").toString());
         Long userId = Long.parseLong(param.get("userId").toString());
         String serverConfig = param.get("mcpConfig").toString();
         String mcpName = param.get("name").toString();
         boolean isSSE = "SSE".equals(param.get("installType"));
+        UserDto userDto = userApplicationService.queryById(userId);
+        if (userDto == null) {
+            return true;
+        }
         McpDeployStatusResponse deployStatus;
         if (isSSE) {
             deployStatus = new McpDeployStatusResponse();
@@ -131,46 +145,48 @@ public class McpDeployTaskServiceImpl extends AbstractDeployTaskService implemen
         if (deployStatus.getStatus() == McpDeployStatusEnum.Ready) {
             try {
                 updateAndSaveMcpConfig(id, serverConfig, isSSE, null);
-            } catch (Exception e) {
-                return false;
-            }
-            if (userId != null) {
                 notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                         .scope(NotifyMessage.MessageScope.System)
-                        .content("你创建的MCP服务[" + mcpName + "]已部署成功")
-                        .userIds(Arrays.asList(userId))
+                        .content(I18nUtil.systemMessage(userDto.getLangMap(), "Backend.Mcp.Deploy.Success", mcpName))
+                        .userIds(List.of(userId))
                         .build());
+
+                log.info("MCP service [{}] deployed successfully", mcpName);
+                return true;
+            } catch (Exception e) {
+                if (isSSE && scheduleTask.getExecTimes() + 1 >= scheduleTask.getMaxExecTimes()) {
+                    deployStatus.setMessage(e.getMessage());
+                    deployStatus.setStatus(McpDeployStatusEnum.Error);
+                }
             }
-            log.info("MCP服务[" + mcpName + "]已部署成功");
-            return true;
         }
         if (deployStatus.getStatus() == McpDeployStatusEnum.Error) {
             McpConfig mcpConfig = new McpConfig();
             mcpConfig.setId(id);
             mcpConfig.setDeployStatus(DeployStatusEnum.DeployFailed);
             mcpConfigDomainService.update(mcpConfig);
-            if (userId != null) {
-                notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
-                        .scope(NotifyMessage.MessageScope.System)
-                        .content("你创建的MCP服务[" + mcpName + "]部署失败，请修改配置后重新提交部署\n```\n" + deployStatus.getMessage() + "\n```")
-                        .userIds(Arrays.asList(userId))
-                        .build());
-            }
+            notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
+                    .scope(NotifyMessage.MessageScope.System)
+                    .content(I18nUtil.systemMessage(userDto.getLangMap(), "Backend.Mcp.Deploy.Failed", mcpName, deployStatus.getMessage()))
+                    .userIds(List.of(userId))
+                    .build());
             return true;
         }
+        checkAndSendFailedNotifyMessage(userDto, id, mcpName, scheduleTask);
+        return false;
+    }
+
+    private void checkAndSendFailedNotifyMessage(UserDto userDto, Long id, String mcpName, ScheduleTaskDto scheduleTask) {
         if (scheduleTask.getExecTimes() + 1 >= scheduleTask.getMaxExecTimes()) {
             McpConfig mcpConfig = new McpConfig();
             mcpConfig.setId(id);
             mcpConfig.setDeployStatus(DeployStatusEnum.DeployFailed);
             mcpConfigDomainService.update(mcpConfig);
-            if (userId != null) {
-                notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
-                        .scope(NotifyMessage.MessageScope.System)
-                        .content("你创建的MCP服务[" + mcpName + "]部署超时，请检查配置后重新提交部署")
-                        .userIds(Arrays.asList(userId))
-                        .build());
-            }
+            notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
+                    .scope(NotifyMessage.MessageScope.System)
+                    .content(I18nUtil.systemMessage(userDto.getLangMap(), "Backend.Mcp.Deploy.Timeout", mcpName))
+                    .userIds(List.of(userDto.getId()))
+                    .build());
         }
-        return false;
     }
 }

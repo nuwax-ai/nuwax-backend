@@ -41,7 +41,7 @@ public class KnowledgeTaskDomainService implements IKnowledgeTaskDomainService {
     @Override
     public List<KnowledgeTaskModel> queryListByDocIds(List<Long> docIds) {
         if (CollectionUtils.isEmpty(docIds)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5012);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeFileIdNotFound);
         }
 
         return this.knowledgeTaskRepository.queryListByDocIds(docIds);

@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.google.common.base.Joiner;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
+import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.WorkflowNodeConfig;
@@ -32,7 +33,9 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -113,15 +116,15 @@ public class WorkflowController {
     public ReqResult<Long> save(@RequestBody @Valid WorkflowSaveDto workflowSaveDto) {
         JSONObject jsonObject = workflowSaveDto.getWorkflowConfig();
         if (jsonObject == null) {
-            return ReqResult.error("工作流整体配置json错误");
+            return ReqResult.error("Workflow configuration JSON is invalid");
         }
         Long workflowId = jsonObject.getLong("id");
         if (workflowId == null) {
-            return ReqResult.error("工作流id不能为空");
+            return ReqResult.error("Workflow ID cannot be empty");
         }
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowId);
         if (workflowConfigDto == null) {
-            return ReqResult.error("工作流id错误");
+            return ReqResult.error("Invalid workflow ID");
         }
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         Boolean forceCommit = workflowSaveDto.getWorkflowConfig().getBoolean("forceCommit");
@@ -129,7 +132,7 @@ public class WorkflowController {
             Long version = workflowApplicationService.workflowEditVersion(workflowId, false);
             Long editVersion = workflowSaveDto.getWorkflowConfig().getLong("editVersion");
             if (editVersion == null || !editVersion.equals(version)) {
-                return ReqResult.error("1011", "工作流已在其他窗口被修改，是否强制提交？");
+                return ReqResult.error("1011", I18nUtil.systemMessage("Backend.Workflow.ConcurrentModification"));
             }
         }
 
@@ -142,7 +145,7 @@ public class WorkflowController {
     public ReqResult<Long> copy(@PathVariable Long workflowId) {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("workflowId错误");
+            throw new IllegalArgumentException("Invalid workflowId");
         }
         // 检查权限
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
@@ -156,7 +159,7 @@ public class WorkflowController {
     public ReqResult<Void> restore(@PathVariable Long historyRecordId) {
         ConfigHistoryDto configHistoryDto = configHistoryApplicationService.queryConfigHistory(historyRecordId);
         if (configHistoryDto == null) {
-            throw new BizException("recordId参数错误");
+            throw new IllegalArgumentException("Invalid recordId parameter");
         }
         JSONObject config = JSONObject.parseObject(configHistoryDto.getConfig().toString());
         if (config.containsKey("workflowConfig")) {
@@ -165,7 +168,7 @@ public class WorkflowController {
             workflowApplicationService.restoreWorkflow(configHistoryDto.getConfig().toString());
             return ReqResult.success();
         }
-        //兼容老数据
+        // Compatible with old data
         WorkflowConfigDto workflowConfigDto = WorkflowConfigDto.convertToWorkflowConfigDto(configHistoryDto.getConfig().toString());
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         workflowApplicationService.restoreWorkflow(workflowConfigDto);
@@ -178,15 +181,15 @@ public class WorkflowController {
     public ReqResult<Long> copyToSpace(@PathVariable Long workflowId, @PathVariable Long targetSpaceId) {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("workflowId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowIdInvalid);
         }
         if (targetSpaceId.equals(workflowConfigDto.getSpaceId())) {
-            // 复制到本空间，只需检查普通用户权限
+            // Copy to this space, only need to check regular user permission
             spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         } else {
-            // 复制到本空间，只有管理员可复制
+            // Copy to this space, only admin can copy
             spacePermissionService.checkSpaceAdminPermission(workflowConfigDto.getSpaceId());
-            // 复制到其他空间，判断目标空间权限
+            // Copy to other space, check target space permission
             spacePermissionService.checkSpaceUserPermission(targetSpaceId);
         }
         Long id = workflowApplicationService.copyWorkflow(RequestContext.get().getUserId(), workflowConfigDto, targetSpaceId);
@@ -199,7 +202,7 @@ public class WorkflowController {
     public ReqResult<WorkflowConfigDto> getWorkflowConfig(@PathVariable Long workflowId) {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("workflowId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowIdInvalid);
         }
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         workflowConfigDto.setNodes(workflowApplicationService.organizeNodeHierarchicalRelationship(workflowConfigDto.getNodes()));
@@ -216,7 +219,7 @@ public class WorkflowController {
     public ReqResult<List<WorkflowNodeCheckDto>> validWorkflow(@PathVariable Long workflowId) {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("workflowId错误");
+            throw new IllegalArgumentException("Invalid workflowId");
         }
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         List<WorkflowNodeCheckDto> workflowNodeCheckDtos = workflowApplicationService.validWorkflow(workflowId);
@@ -227,7 +230,7 @@ public class WorkflowController {
     @Operation(summary = "试运行工作流（勿用）")
     @RequestMapping(path = "/test/execute", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<WorkflowExecutingDto> testExecuteWorkflowGET(WorkflowExecuteRequestDto workflowExecuteRequestDto, HttpServletRequest request, HttpServletResponse response) {
-        //request中获取参数，转成Map<String, String>
+        // Get parameters from request and convert to Map<String, String>
         Map<String, Object> param = request.getParameterMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));
         workflowExecuteRequestDto.setParams(param);
         return testExecuteWorkflow(workflowExecuteRequestDto, response);
@@ -240,13 +243,13 @@ public class WorkflowController {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowExecuteRequestDto.getWorkflowId());
 
         if (workflowConfigDto == null) {
-            return Flux.create(emitter -> sendError(emitter, workflowExecuteRequestDto.getRequestId(), "workflowId错误"));
+            return Flux.create(emitter -> sendError(emitter, workflowExecuteRequestDto.getRequestId(), "Invalid workflowId"));
         }
 
         try {
             spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         } catch (Exception e) {
-            log.warn("权限验证失败", e);
+            log.warn("Permission check failed", e);
             return Flux.create(emitter -> sendError(emitter, workflowExecuteRequestDto.getRequestId(), e.getMessage()));
         }
 
@@ -277,13 +280,13 @@ public class WorkflowController {
         return Flux.create(emitter -> {
             WorkflowNodeDto workflowNodeDto = workflowApplicationService.queryWorkflowNode(workflowNodeExecuteRequestDto.getNodeId());
             if (workflowNodeDto == null) {
-                sendError(emitter, workflowNodeExecuteRequestDto.getRequestId(), "nodeId错误");
+                sendError(emitter, workflowNodeExecuteRequestDto.getRequestId(), "Invalid nodeId");
                 return;
             }
             try {
                 checkNodePermission(workflowNodeDto.getId());
             } catch (Exception e) {
-                log.warn("权限验证失败", e);
+                log.warn("Permission check failed", e);
                 sendError(emitter, workflowNodeExecuteRequestDto.getRequestId(), e.getMessage());
                 return;
             }
@@ -301,7 +304,7 @@ public class WorkflowController {
             workflowContext1.setWorkflowConfig(workflowConfigDto);
             workflowContext1.setTestParams(workflowNodeExecuteRequestDto.getParams());
             WorkflowNodeDto nodeDto = workflowConfigDto.getNodes().stream().filter(node -> node.getId().equals(workflowNodeDto.getId())).findFirst().get();
-            //检查数据类型
+            // Check data type
             WorkflowNodeCheckDto workflowNodeCheckDto = workflowApplicationService.validWorkflowNode(nodeDto);
             if (CollectionUtils.isNotEmpty(workflowNodeCheckDto.getMessages())) {
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
@@ -315,7 +318,7 @@ public class WorkflowController {
             }
             long startTimestamp = System.currentTimeMillis();
             workflowExecutor.testExecuteNode(workflowContext1, nodeDto).doOnError(e -> {
-                log.warn("工作流节点执行失败 {}", nodeDto.getName(), e);
+                log.warn("Workflow node execution failed {}", nodeDto.getName(), e);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setSuccess(false);
                 workflowExecutingDto.setRequestId(workflowNodeExecuteRequestDto.getRequestId());
@@ -324,7 +327,7 @@ public class WorkflowController {
                 emitter.next(workflowExecutingDto);
                 emitter.complete();
             }).subscribe((result) -> {
-                log.info("工作流节点执行成功 {}", nodeDto.getName());
+                log.info("Workflow node executed successfully {}", nodeDto.getName());
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setData(result);
                 workflowExecutingDto.setSuccess(true);
@@ -373,20 +376,20 @@ public class WorkflowController {
         checkWorkflowPermission(workflowPublishApplyDto.getWorkflowId());
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(workflowPublishApplyDto.getWorkflowId());
         if (workflowConfigDto == null) {
-            throw new BizException("workflowId错误");
+            throw new IllegalArgumentException("Invalid workflowId");
         }
-        //校验
+        // Validate
         List<WorkflowNodeCheckDto> workflowNodeCheckDtos = workflowApplicationService.validWorkflow(workflowPublishApplyDto.getWorkflowId());
-        //如果workflowNodeCheckDtos有success为false的，不允许发布
+        // If any node check result is not success, disallow publish
         List<WorkflowNodeCheckDto> collect = workflowNodeCheckDtos.stream().filter(workflowNodeCheckDto -> !workflowNodeCheckDto.isSuccess()).collect(Collectors.toList());
-        if (collect.size() > 0) {
-            throw new BizException("工作流存在错误节点，不允许发布，请重新试运行");
+        if (!collect.isEmpty()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowHasInvalidNodesForPublish);
         }
         PublishApplyDto publishApplyDto = new PublishApplyDto();
         publishApplyDto.setApplyUser((UserDto) RequestContext.get().getUser());
         publishApplyDto.setTargetType(Published.TargetType.Workflow);
         publishApplyDto.setTargetId(workflowPublishApplyDto.getWorkflowId());
-        //发布范围不选择表示已发布的要下架
+        // If publish scope is not selected, it means already published items should be unpublished
         publishApplyDto.setChannels(workflowPublishApplyDto.getScope() == null ? new ArrayList<>() : List.of(Published.PublishChannel.System));
         publishApplyDto.setScope(workflowPublishApplyDto.getScope());
         publishApplyDto.setName(workflowConfigDto.getName());
@@ -397,14 +400,14 @@ public class WorkflowController {
         publishApplyDto.setSpaceId(workflowConfigDto.getSpaceId());
         Long applyId = publishApplicationService.publishApply(publishApplyDto);
         if (workflowPublishApplyDto.getScope() == Published.PublishScope.Space) {
-            return ReqResult.create(ReqResult.SUCCESS, "发布成功", "发布成功");
+            return ReqResult.create(ReqResult.SUCCESS, "Published successfully", "Published successfully");
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (tenantConfigDto.getWorkflowPublishAudit() == 0) {
             publishApplicationService.publish(applyId);
-            return ReqResult.create(ReqResult.SUCCESS, "发布成功", "发布成功");
+            return ReqResult.create(ReqResult.SUCCESS, "Published successfully", "Published successfully");
         }
-        return ReqResult.create(ReqResult.SUCCESS, "发布申请已提交，等待审核中", "发布申请已提交，等待审核中");
+        return ReqResult.create(ReqResult.SUCCESS, "Publish application submitted, awaiting review", "Publish application submitted, awaiting review");
     }
 
     @RequireResource(COMPONENT_LIB_QUERY_DETAIL)
@@ -413,6 +416,7 @@ public class WorkflowController {
     public ReqResult<List<WorkflowNodeDto>> getWorkflowNodeConfigList(@PathVariable Long workflowId) {
         checkWorkflowPermission(workflowId);
         List<WorkflowNodeDto> workflowNodeDtos = workflowApplicationService.queryWorkflowNodeList(workflowId);
+        workflowNodeDtos.forEach(this::replaceNodeArgsSystemMessage);
         return ReqResult.success(workflowApplicationService.organizeNodeHierarchicalRelationship(workflowNodeDtos));
     }
 
@@ -420,7 +424,7 @@ public class WorkflowController {
     @Operation(summary = "新增工作流节点")
     @RequestMapping(path = "/node/add", method = RequestMethod.POST)
     public ReqResult<WorkflowNodeDto> addWorkflowNode(@RequestBody WorkflowNodeAddDto workflowNodeAddDto) {
-        //权限验证
+        // Permission check
         WorkflowConfigDto workflowConfigDto = checkWorkflowPermission(workflowNodeAddDto.getWorkflowId());
         if (workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.Workflow) {
             workflowApplicationService.checkSpaceWorkflowPermission(workflowConfigDto.getSpaceId(), workflowNodeAddDto.getTypeId());
@@ -437,7 +441,7 @@ public class WorkflowController {
         if (workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.Knowledge && workflowNodeAddDto.getTypeId() != null) {
             KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(workflowNodeAddDto.getTypeId());
             if (knowledgeConfigModel == null) {
-                throw new BizException("知识库ID错误");
+                throw new IllegalArgumentException("Invalid knowledge base ID");
             }
             spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId());
         }
@@ -449,18 +453,20 @@ public class WorkflowController {
         if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Loop) {
             workflowNodeDto.setInnerNodes(List.of(workflowNodeDto.getStartNode(), workflowNodeDto.getEndNode()));
         }
+        I18nUtil.replaceSystemMessage(workflowNodeDto);
+        replaceNodeArgsSystemMessage(workflowNodeDto);
         return ReqResult.success(workflowNodeDto);
     }
 
     /**
-     * 工作流循环依赖检查
+     * Workflow cyclic dependency check
      *
      * @param workflowId
      * @param addWorkflowId
      */
     private void workflowLoopCheck(Long workflowId, Long addWorkflowId) {
         if (addWorkflowId == null || addWorkflowId.equals(workflowId)) {
-            throw new BizException("你添加的节点存在工作流循环依赖，请重新选择");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCyclicDependency);
         }
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(addWorkflowId, null, true);
         workflowLoopCheck(workflowId, workflowConfigDto);
@@ -471,7 +477,7 @@ public class WorkflowController {
         workflowNodeDtos.forEach(node -> {
             WorkflowAsNodeConfigDto workflowAsNodeConfigDto = (WorkflowAsNodeConfigDto) node.getNodeConfig();
             if (workflowAsNodeConfigDto.getWorkflowId().equals(workflowId)) {
-                throw new BizException("你添加的节点存在工作流循环依赖，请重新选择");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCyclicDependency);
             }
             workflowLoopCheck(workflowId, workflowAsNodeConfigDto.getWorkflowConfig());
         });
@@ -492,7 +498,7 @@ public class WorkflowController {
         }
         WorkflowConfigDto workflowConfigDto = (WorkflowConfigDto) JsonSerializeUtil.parseObjectGeneric(mcpComponentDto.getTargetConfig());
         if (workflowId == null || workflowId.equals(workflowConfigDto.getId())) {
-            throw new BizException("你添加的节点存在工作流循环依赖，请重新选择");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCyclicDependency);
         }
         workflowLoopCheck(workflowId, workflowConfigDto);
     }
@@ -502,7 +508,7 @@ public class WorkflowController {
         dorisTableDefineRequest.setTableId(typeId);
         TableDefineVo tableDefineVo = iComposeDbTableRpcService.queryTableDefinition(dorisTableDefineRequest);
         if (tableDefineVo == null) {
-            throw new BizException("表ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTableIdInvalid);
         }
         spacePermissionService.checkSpaceUserPermission(tableDefineVo.getSpaceId());
     }
@@ -511,7 +517,7 @@ public class WorkflowController {
     @Operation(summary = "更新工作流节点（通用）", description = "只包含输入输出的节点可以直接用，比如 开始节点、长期记忆节点、文档提取节点")
     @RequestMapping(path = "/node/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowNode(@RequestBody WorkflowNodeUpdateDto<NodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -521,7 +527,7 @@ public class WorkflowController {
     @Operation(summary = "更新结束节点")
     @RequestMapping(path = "/node/end/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowEndNode(@RequestBody WorkflowNodeUpdateDto<EndNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -531,7 +537,7 @@ public class WorkflowController {
     @Operation(summary = "更新大模型节点")
     @RequestMapping(path = "/node/llm/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowLLMNode(@RequestBody WorkflowNodeUpdateDto<LLMNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(workflowNodeUpdateDto.getNodeId());
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(workflowNodeDto.getWorkflowId());
         if (workflowNodeUpdateDto.getNodeConfig() != null && workflowNodeUpdateDto.getNodeConfig().getSkillComponentConfigs() != null) {
@@ -545,7 +551,8 @@ public class WorkflowController {
                 if (skillComponentConfigDto.getType() == LLMNodeConfigDto.SkillComponentConfigDto.Type.Knowledge) {
                     KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(skillComponentConfigDto.getTypeId());
                     if (knowledgeConfigModel == null) {
-                        throw new BizException("知识库[" + skillComponentConfigDto.getName() + "]不存在或已删除，请移除");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentKnowledgeBaseRemovedOrMissing,
+                                skillComponentConfigDto.getName());
                     }
                     spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId());
                 }
@@ -560,7 +567,7 @@ public class WorkflowController {
     @Operation(summary = "更新插件节点")
     @RequestMapping(path = "/node/plugin/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowPluginNode(@RequestBody WorkflowNodeUpdateDto<PluginNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(workflowNodeUpdateDto.getNodeId());
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(workflowNodeDto.getWorkflowId());
         pluginApplicationService.checkSpacePluginPermission(workflowConfigDto.getSpaceId(), workflowNodeUpdateDto.getNodeConfig().getPluginId());
@@ -572,7 +579,7 @@ public class WorkflowController {
     @Operation(summary = "更新MCP节点")
     @RequestMapping(path = "/node/mcp/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowMcpNode(@RequestBody WorkflowNodeUpdateDto<McpNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(workflowNodeUpdateDto.getNodeId());
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(workflowNodeDto.getWorkflowId());
         McpDto deployedMcp = mcpRpcService.queryMcp(workflowNodeUpdateDto.getNodeConfig().getMcpId(), workflowConfigDto.getSpaceId());
@@ -585,7 +592,7 @@ public class WorkflowController {
     @Operation(summary = "更新\"工作流\"节点")
     @RequestMapping(path = "/node/workflow/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowWorkflowNode(@RequestBody WorkflowNodeUpdateDto<WorkflowAsNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(workflowNodeUpdateDto.getNodeId());
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(workflowNodeDto.getWorkflowId());
         workflowApplicationService.checkSpaceWorkflowPermission(workflowConfigDto.getSpaceId(), workflowNodeUpdateDto.getNodeConfig().getWorkflowId());
@@ -597,7 +604,7 @@ public class WorkflowController {
     @Operation(summary = "更新过程输出节点")
     @RequestMapping(path = "/node/output/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowOutputNode(@RequestBody WorkflowNodeUpdateDto<ProcessOutputNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -607,7 +614,7 @@ public class WorkflowController {
     @Operation(summary = "更新代码节点")
     @RequestMapping(path = "/node/code/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowCodeNode(@RequestBody WorkflowNodeUpdateDto<CodeNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -617,7 +624,7 @@ public class WorkflowController {
     @Operation(summary = "更新条件分支节点")
     @RequestMapping(path = "/node/condition/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowConditionNode(@RequestBody WorkflowNodeUpdateDto<ConditionNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -627,7 +634,7 @@ public class WorkflowController {
     @Operation(summary = "更新意图识别节点")
     @RequestMapping(path = "/node/intent/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowIntentNode(@RequestBody WorkflowNodeUpdateDto<IntentRecognitionNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         if (workflowNodeUpdateDto.getNodeConfig() != null && workflowNodeUpdateDto.getNodeConfig().getIntentConfigs() != null) {
             workflowNodeUpdateDto.getNodeConfig().getIntentConfigs().forEach(intentConfigDto -> {
@@ -644,7 +651,7 @@ public class WorkflowController {
     @Operation(summary = "更新循环节点")
     @RequestMapping(path = "/node/loop/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowLoopNode(@RequestBody WorkflowNodeUpdateDto<LoopNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowNodeUpdateDto.setInnerStartNodeId(null);
         workflowNodeUpdateDto.setInnerEndNodeId(null);
@@ -659,14 +666,15 @@ public class WorkflowController {
     @Operation(summary = "更新知识库节点")
     @RequestMapping(path = "/node/knowledge/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowKnowledgeNode(@RequestBody WorkflowNodeUpdateDto<KnowledgeNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         List<KnowledgeNodeConfigDto.KnowledgeBaseConfigDto> knowledgeBaseConfigs = workflowNodeUpdateDto.getNodeConfig().getKnowledgeBaseConfigs();
         if (knowledgeBaseConfigs != null) {
             knowledgeBaseConfigs.forEach(knowledgeBaseConfigDto -> {
                 KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(knowledgeBaseConfigDto.getKnowledgeBaseId());
                 if (knowledgeConfigModel == null) {
-                    throw new BizException("知识库[" + knowledgeBaseConfigDto.getName() + "]不存在或已删除，请移除");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentKnowledgeBaseRemovedOrMissing,
+                            knowledgeBaseConfigDto.getName());
                 }
                 spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId(), RequestContext.get().getUserId());
             });
@@ -679,7 +687,7 @@ public class WorkflowController {
     @Operation(summary = "更新变量节点")
     @RequestMapping(path = "/node/variable/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowVariableNode(@RequestBody WorkflowNodeUpdateDto<VariableNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -689,7 +697,7 @@ public class WorkflowController {
     @Operation(summary = "更新变量聚合节点")
     @RequestMapping(path = "/node/variableAggregation/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowVariableAggregation(@RequestBody WorkflowNodeUpdateDto<VariableAggregationNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -699,7 +707,7 @@ public class WorkflowController {
     @Operation(summary = "更新问答节点")
     @RequestMapping(path = "/node/qa/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowQaNode(@RequestBody WorkflowNodeUpdateDto<QaNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowNodeUpdateDto.setLastWorkflowNodeDto(workflowNodeDto);
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
@@ -710,7 +718,7 @@ public class WorkflowController {
     @Operation(summary = "更新文本处理节点")
     @RequestMapping(path = "/node/text/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTextNode(@RequestBody WorkflowNodeUpdateDto<TextProcessingNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -720,7 +728,7 @@ public class WorkflowController {
     @Operation(summary = "更新HTTP节点")
     @RequestMapping(path = "/node/http/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowHttpNode(@RequestBody WorkflowNodeUpdateDto<HttpNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -730,7 +738,7 @@ public class WorkflowController {
     @Operation(summary = "更新<数据表数据查询>节点")
     @RequestMapping(path = "/node/tableDataQuery/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTableDataQueryNode(@RequestBody WorkflowNodeUpdateDto<TableDataQueryNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -740,7 +748,7 @@ public class WorkflowController {
     @Operation(summary = "更新<数据表数据新增>节点")
     @RequestMapping(path = "/node/tableDataAdd/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTableDataAddNode(@RequestBody WorkflowNodeUpdateDto<TableNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -750,7 +758,7 @@ public class WorkflowController {
     @Operation(summary = "更新<数据表数据删除>节点")
     @RequestMapping(path = "/node/tableDataDelete/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTableDataDeleteNode(@RequestBody WorkflowNodeUpdateDto<TableDataDeleteNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -760,7 +768,7 @@ public class WorkflowController {
     @Operation(summary = "更新<数据表数据更新>节点")
     @RequestMapping(path = "/node/tableDataUpdate/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTableDataUpdateNode(@RequestBody WorkflowNodeUpdateDto<TableDataUpdateNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -770,7 +778,7 @@ public class WorkflowController {
     @Operation(summary = "更新<数据表SQL自定义>节点")
     @RequestMapping(path = "/node/tableCustomSql/update", method = RequestMethod.POST)
     public ReqResult<Void> updateWorkflowTableCustomSqlNode(@RequestBody WorkflowNodeUpdateDto<TableCustomSqlNodeConfigDto> workflowNodeUpdateDto) {
-        //权限验证
+        // Permission check
         checkNodePermission(workflowNodeUpdateDto.getNodeId());
         workflowApplicationService.updateWorkflowNodeConfig(workflowNodeUpdateDto);
         return ReqResult.success();
@@ -780,7 +788,7 @@ public class WorkflowController {
     @Operation(summary = "删除工作流节点")
     @RequestMapping(path = "/node/delete/{id}", method = RequestMethod.POST)
     public ReqResult<Void> deleteWorkflowNode(@PathVariable Long id) {
-        //权限验证
+        // Permission check
         checkNodePermission(id);
         workflowApplicationService.deleteWorkflowNode(id);
         return ReqResult.success();
@@ -790,10 +798,10 @@ public class WorkflowController {
     @Operation(summary = "更新节点连线（下级节点）")
     @RequestMapping(path = "/node/{nodeId}/nextIds/update", method = RequestMethod.POST)
     public ReqResult<WorkflowNodeDto> updateNextIds(@PathVariable Long nodeId, @RequestBody List<Long> nextIds) {
-        //权限验证
+        // Permission check
         WorkflowNodeDto workflowNodeDto = checkNodePermission(nodeId);
         if (nextIds == null) {
-            return ReqResult.error("nextIds不能为空");
+            return ReqResult.error("nextIds cannot be empty");
         }
         if (workflowNodeDto.getLoopNodeId() != null) {
             nextIds.remove(workflowNodeDto.getLoopNodeId());
@@ -822,14 +830,16 @@ public class WorkflowController {
             return ReqResult.success(workflowApplicationService.queryWorkflowNode(nodeId));
         }
         workflowApplicationService.updateNextIds(nodeId, newNextIds);
-        return ReqResult.success(workflowApplicationService.queryWorkflowNode(nodeId));
+        WorkflowNodeDto workflowNodeDto1 = workflowApplicationService.queryWorkflowNode(nodeId);
+        replaceNodeArgsSystemMessage(workflowNodeDto1);
+        return ReqResult.success(workflowNodeDto1);
     }
 
     @RequireResource(COMPONENT_LIB_MODIFY)
     @Operation(summary = "复制工作流节点")
     @RequestMapping(path = "/node/copy/{id}", method = RequestMethod.POST)
     public ReqResult<WorkflowNodeDto> copyWorkflowNode(@PathVariable Long id) {
-        //权限验证
+        // Permission check
         checkNodePermission(id);
         Long nodeId = workflowApplicationService.copyWorkflowNode(id);
         WorkflowNodeDto workflowNodeDto = workflowApplicationService.queryWorkflowNode(nodeId);
@@ -837,6 +847,7 @@ public class WorkflowController {
             List<WorkflowNodeDto> workflowNodeDtos = workflowApplicationService.queryWorkflowNodeList(workflowNodeDto.getWorkflowId());
             workflowNodeDto.setInnerNodes(workflowNodeDtos.stream().filter(node -> node.getLoopNodeId() != null && node.getLoopNodeId().equals(workflowNodeDto.getId())).collect(Collectors.toList()));
         }
+        replaceNodeArgsSystemMessage(workflowNodeDto);
         return ReqResult.success(workflowNodeDto);
     }
 
@@ -844,17 +855,28 @@ public class WorkflowController {
     @Operation(summary = "查询工作流节点详情")
     @RequestMapping(path = "/node/{id}", method = RequestMethod.GET)
     public ReqResult<WorkflowNodeDto> queryWorkflowNode(@PathVariable Long id) {
-        //权限验证
+        // Permission check
         checkNodePermission(id);
         WorkflowNodeDto workflowNodeDto = workflowApplicationService.queryWorkflowNode(id);
+        replaceNodeArgsSystemMessage(workflowNodeDto);
         return ReqResult.success(workflowNodeDto);
+    }
+
+    private void replaceNodeArgsSystemMessage(WorkflowNodeDto workflowNodeDto) {
+        try {
+            List<Arg> inputArgs = workflowNodeDto.getNodeConfig().getInputArgs();
+            I18nUtil.replaceSystemMessage("WorkflowNodeInput", inputArgs);
+            List<Arg> outputArgs = workflowNodeDto.getNodeConfig().getOutputArgs();
+            I18nUtil.replaceSystemMessage("WorkflowNodeOutput", outputArgs);
+        } catch (Exception ignored) {
+        }
     }
 
     @RequireResource(COMPONENT_LIB_QUERY_DETAIL)
     @Operation(summary = "查询指定节点的前置节点信息")
     @RequestMapping(path = "/node/previous/{id}", method = RequestMethod.GET)
     public ReqResult<PreviousDto> queryPreviousNodes(@PathVariable Long id) {
-        //权限验证
+        // Permission check
         try {
             checkNodePermission(id);
         } catch (Exception e) {
@@ -872,7 +894,7 @@ public class WorkflowController {
     private WorkflowNodeDto checkNodePermission(Long id) {
         WorkflowNodeDto workflowNodeDto = workflowApplicationService.queryWorkflowNode(id);
         if (workflowNodeDto == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "节点ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNodeIdInvalid);
         }
 
         checkWorkflowPermission(workflowNodeDto.getWorkflowId());
@@ -883,7 +905,7 @@ public class WorkflowController {
     private WorkflowConfigDto checkWorkflowPermission(Long workflowId) {
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("Workflow不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFound);
         }
         spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
         return workflowConfigDto;

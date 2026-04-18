@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "域名绑定删除请求体")
+@Schema(description = "Domain binding delete request body")
 public class CustomPageDomainDeleteReq {
 
-    @NotNull(message = "id 不能为空")
-    @Schema(description = "域名绑定ID", required = true)
+    @NotNull(message = "id is required")
+    @Schema(description = "Domain binding ID", required = true)
     private Long id;
 
 }

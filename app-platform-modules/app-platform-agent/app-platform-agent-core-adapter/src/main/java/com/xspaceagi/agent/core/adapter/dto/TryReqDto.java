@@ -13,7 +13,7 @@ import java.util.Map;
 public class TryReqDto implements Serializable {
 
     @Schema(description = "会话唯一标识")
-    @NotNull(message = "conversationId不能为空")
+    @NotNull(message = "conversationId is required")
     private Long conversationId;
 
     @Schema(description = "变量参数，前端需要根据agent配置组装参数")
@@ -41,6 +41,9 @@ public class TryReqDto implements Serializable {
 
     @Schema(description = "长期记忆中是否过滤敏感信息")
     private Boolean filterSensitive;
+
+    @Schema(description = "用户选择的模型ID")
+    private Long modelId;
 
     @Data
     public static class SelectedComponentDto {

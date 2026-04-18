@@ -11,6 +11,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.annotation.SaasAdmin;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.controller.base.BaseController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,6 +58,8 @@ public class SysUserController extends BaseController {
             BeanUtils.copyProperties(role, roleDto);
             return roleDto;
         }).collect(Collectors.toList());
+
+        I18nUtil.replaceSystemMessage(dtoList);
         return ReqResult.success(dtoList);
     }
 
@@ -87,6 +90,8 @@ public class SysUserController extends BaseController {
             BeanUtils.copyProperties(group, groupDto);
             return groupDto;
         }).collect(Collectors.toList());
+
+        I18nUtil.replaceSystemMessage(dtoList);
         return ReqResult.success(dtoList);
     }
 
@@ -109,6 +114,8 @@ public class SysUserController extends BaseController {
             return ReqResult.error("参数不能为空");
         }
         List<MenuNodeDto> menuTree = sysUserPermissionCacheService.getUserMenuTree(userId);
+
+        I18nUtil.replaceSystemMessage(menuTree);
         return ReqResult.success(menuTree);
     }
 

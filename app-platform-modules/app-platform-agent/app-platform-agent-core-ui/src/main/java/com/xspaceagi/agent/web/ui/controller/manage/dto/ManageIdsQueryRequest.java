@@ -12,4 +12,6 @@ public class ManageIdsQueryRequest implements Serializable {
 
     private List<Long> agentIds;
 
+    private List<Long> knowledgeIds;
+
 }

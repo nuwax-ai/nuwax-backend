@@ -29,7 +29,7 @@ public class KnowledgeException extends KindlyException {
      * @return 异常
      */
     public static KnowledgeException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new KnowledgeException(codeEnum.getCode(), errorMessage);
     }
 
@@ -41,7 +41,7 @@ public class KnowledgeException extends KindlyException {
      * @return 异常
      */
     public static KnowledgeException build(BizExceptionCodeEnum codeEnum, Throwable cause) {
-        return new KnowledgeException(codeEnum.getCode(), codeEnum.getMessage(), cause);
+        return new KnowledgeException(codeEnum.getCode(), codeEnum.formatMessage(), cause);
     }
 
     @Override

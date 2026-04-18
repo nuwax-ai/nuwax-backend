@@ -9,9 +9,13 @@ import com.xspaceagi.im.infra.dao.enitity.ImSession;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
 import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
+import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import static com.xspaceagi.im.infra.enums.ImChannelEnum.*;
 
 /**
  * IM会话应用服务
@@ -36,11 +40,11 @@ public class ImSessionApplicationServiceImpl implements ImSessionApplicationServ
             // 验证会话是否仍然有效
             ConversationDto conversation = conversationApplicationService.getConversation(null, existing.getConversationId());
             if (conversation != null) {
-                log.debug("找到已存在的IM会话: platform={}, sessionKey={}, agentId={}, conversationId={}",
+                log.debug("Found existing IM session: platform={}, sessionKey={}, agentId={}, conversationId={}",
                         imSession.getChannel(), imSession.getSessionKey(), imSession.getAgentId(), existing.getConversationId());
                 return existing.getConversationId();
             } else {
-                log.info("IM会话对应的会话已不存在，删除会话: platform={}, sessionKey={}, agentId={}, conversationId={}",
+                log.info("Underlying conversation missing, deleting IM session: platform={}, sessionKey={}, agentId={}, conversationId={}",
                         imSession.getChannel(), imSession.getSessionKey(), imSession.getAgentId(), existing.getConversationId());
                 imSessionDomainService.deleteSession(imSession);
             }
@@ -59,28 +63,32 @@ public class ImSessionApplicationServiceImpl implements ImSessionApplicationServ
     private Long createAndSaveNewConversation(ImSession imSession) {
         // 创建新会话
         ConversationDto newConversation = conversationApplicationService.createConversation(imSession.getUserId(), imSession.getAgentId(), false, false);
-        log.info("创建新会话: platform={}, sessionKey={}, agentId={}, conversationId={}",
+        log.info("Created new session: platform={}, sessionKey={}, agentId={}, conversationId={}",
                 imSession.getChannel(), imSession.getSessionKey(), imSession.getAgentId(), newConversation.getId());
 
         ImChannelEnum imChannelEnum = ImChannelEnum.fromCode(imSession.getChannel());
         ImTargetTypeEnum imTargetTypeEnum = ImTargetTypeEnum.fromCode(imSession.getTargetType());
-        String topic = "IM机器人";
+
+        String lang = RequestContext.get().getLang();
+        boolean isCN = "zh-CN".equalsIgnoreCase(lang);
+
+        String topic = "";
         switch (imChannelEnum) {
             case FEISHU:
-                topic = "飞书机器人";
+                topic = isCN ? FEISHU.getName() : FEISHU.getCode();
                 break;
             case DINGTALK:
-                topic = "钉钉机器人";
+                topic = isCN ? DINGTALK.getName() : DINGTALK.getCode();
                 break;
             case WEWORK:
                 if (ImTargetTypeEnum.APP.equals(imTargetTypeEnum)) {
-                    topic = "企业微信应用";
+                    topic = isCN ? (WEWORK.getName() + ImTargetTypeEnum.APP.getName()) : (WEWORK.getCode() + ImTargetTypeEnum.APP.getCode());
                 } else if (ImTargetTypeEnum.BOT.equals(imTargetTypeEnum)) {
-                    topic = "企业微信机器人";
+                    topic = isCN ? (WEWORK.getName() + ImTargetTypeEnum.BOT.getName()) : (WEWORK.getCode() + ImTargetTypeEnum.BOT.getCode());
                 }
                 break;
             case WECHAT_ILINK:
-                topic = "微信机器人";
+                topic = isCN ? WECHAT_ILINK.getName() : WECHAT_ILINK.getCode();
                 break;
             default:
                 break;
@@ -90,7 +98,9 @@ public class ImSessionApplicationServiceImpl implements ImSessionApplicationServ
         if (sessionDisplay == null || sessionDisplay.trim().isEmpty()) {
             sessionDisplay = imSession.getSessionKey();
         }
-        topic = topic + " - " + ImChatTypeEnum.fromCode(imSession.getChatType()).getName() + " - " + sessionDisplay;
+        topic = topic + " - "
+                + (isCN ? ImChatTypeEnum.fromCode(imSession.getChatType()).getName() : ImChatTypeEnum.fromCode(imSession.getChatType()).getCode())
+                + " - " + sessionDisplay;
 
         ConversationUpdateDto conversationUpdateDto = new ConversationUpdateDto();
         conversationUpdateDto.setId(newConversation.getId());

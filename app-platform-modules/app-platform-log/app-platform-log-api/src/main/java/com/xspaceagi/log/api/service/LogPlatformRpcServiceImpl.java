@@ -34,7 +34,7 @@ public class LogPlatformRpcServiceImpl implements LogPlatformRpcService {
     @LogRecordPrint(content = "[智能体日志]-新增日志")
     @Override
     public boolean addLog(AgentLogEntryRequest logEntryRequest) {
-        log.info("开始新增智能体日志，请求ID: {}", logEntryRequest.getRequestId());
+        log.info("Adding agent log, requestId: {}", logEntryRequest.getRequestId());
         // 校验必填参数
         ValidateUtil.validate(logEntryRequest);
 

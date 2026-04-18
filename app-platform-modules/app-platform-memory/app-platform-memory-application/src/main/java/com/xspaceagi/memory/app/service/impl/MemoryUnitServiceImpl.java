@@ -8,7 +8,9 @@ import com.xspaceagi.memory.app.service.MemoryUnitTagService;
 import com.xspaceagi.memory.infra.dao.entity.MemoryUnit;
 import com.xspaceagi.memory.infra.dao.mapper.MemoryUnitMapper;
 import com.xspaceagi.memory.sdk.dto.*;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -72,7 +74,7 @@ public class MemoryUnitServiceImpl extends ServiceImpl<MemoryUnitMapper, MemoryU
 
         MemoryUnit entity = super.getById(updateDTO.getId());
         if (entity == null) {
-            throw new BizException("记忆单元不存在: " + updateDTO.getId());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.memoryUnitNotFound, updateDTO.getId());
         }
 
         if (updateDTO.getCategory() != null) {

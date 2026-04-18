@@ -16,7 +16,7 @@ public class ServerConfigBatchDetailReqDTO {
     /**
      * 配置UID列表
      */
-    @NotEmpty(message = "UID列表不能为空")
+    @NotEmpty(message = "UID list cannot be empty")
     @Schema(description = "配置UID列表", required = true)
     private List<String> uids;
 

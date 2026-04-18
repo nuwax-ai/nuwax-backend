@@ -19,7 +19,7 @@ import lombok.Setter;
 public class WorkflowAsNodeConfigDto extends NodeConfigDto {
 
     @Schema(description = "工作流ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "工作流ID不能为空")
+    @NotNull(message = "Workflow ID is required")
     private Long workflowId;
 
     @Schema(description = "工作流配置", hidden = true)

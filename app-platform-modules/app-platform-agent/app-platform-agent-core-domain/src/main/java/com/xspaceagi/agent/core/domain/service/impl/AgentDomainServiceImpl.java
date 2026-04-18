@@ -8,10 +8,9 @@ import com.xspaceagi.agent.core.adapter.repository.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.*;
 import com.xspaceagi.agent.core.domain.service.AgentDomainService;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
-import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
-import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -134,7 +133,7 @@ public class AgentDomainServiceImpl implements AgentDomainService {
         Assert.notNull(agentId, "agentId must be non-null");
         AgentConfig agentConfig = agentConfigRepository.getById(agentId);
         if (agentConfig == null) {
-            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "agentId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentIdInvalid);
         }
 
         AgentConfig newAgentConfig = new AgentConfig();
@@ -225,5 +224,10 @@ public class AgentDomainServiceImpl implements AgentDomainService {
         queryWrapper.eq(AgentConfig::getCreatorId, userId);
         queryWrapper.eq(AgentConfig::getType, "PageApp");
         return agentConfigRepository.count(queryWrapper);
+    }
+
+    @Override
+    public AgentConfig queryByUid(String agentUid) {
+        return agentConfigRepository.getOne(new QueryWrapper<>(AgentConfig.builder().uid(agentUid).build()));
     }
 }

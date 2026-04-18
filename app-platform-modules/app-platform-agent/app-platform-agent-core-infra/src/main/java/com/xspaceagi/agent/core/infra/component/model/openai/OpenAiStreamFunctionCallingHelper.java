@@ -116,7 +116,7 @@ public class OpenAiStreamFunctionCallingHelper {
                 toolCalls.add(lastPreviousTooCall);
             }
         }
-        return new ChatCompletionMessage(content, null, role, name, toolCallId, toolCalls, refusal, audioOutput);
+        return new ChatCompletionMessage(content, null, null, role, name, toolCallId, toolCalls, refusal, audioOutput);
     }
 
     private ChatCompletionMessage.ToolCall merge(ChatCompletionMessage.ToolCall previous, ChatCompletionMessage.ToolCall current) {

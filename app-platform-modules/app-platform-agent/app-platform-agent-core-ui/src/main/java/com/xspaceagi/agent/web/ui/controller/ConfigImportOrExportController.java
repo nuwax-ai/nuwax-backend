@@ -21,7 +21,9 @@ import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -85,14 +87,14 @@ public class ConfigImportOrExportController {
         if (targetType == Published.TargetType.Agent) {
             AgentConfigDto agentConfigDto = agentApplicationService.queryById(targetId);
             if (agentConfigDto == null) {
-                throw new BizException("智能体不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
             }
             checkPermission(agentConfigDto.getCreatorId(), agentConfigDto.getSpaceId());
         }
         if (targetType == Published.TargetType.Plugin) {
             PluginDto pluginDto = pluginApplicationService.queryById(targetId);
             if (pluginDto == null) {
-                throw new BizException("插件不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFound);
             }
             checkPermission(pluginDto.getCreatorId(), pluginDto.getSpaceId());
         }
@@ -100,7 +102,7 @@ public class ConfigImportOrExportController {
         if (targetType == Published.TargetType.Workflow) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(targetId);
             if (workflowConfigDto == null) {
-                throw new BizException("工作流不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFoundSimple);
             }
             checkPermission(workflowConfigDto.getCreatorId(), workflowConfigDto.getSpaceId());
         }
@@ -111,13 +113,13 @@ public class ConfigImportOrExportController {
             try {
                 dorisTableDefinitionVo = iComposeDbTableRpcService.queryTableDefinition(request);
             } catch (Exception e) {
-                throw new BizException("查询表结构定义失败");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTableSchemaQueryFailed);
             }
             checkPermission(dorisTableDefinitionVo.getCreatorId(), dorisTableDefinitionVo.getSpaceId());
         }
         ExportTemplateDto exportTemplateDto = templateExportOrImportService.queryTemplateConfig(targetType, targetId);
         if (exportTemplateDto.getTemplateConfig() == null) {
-            throw new BizException("生成导出文件失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentExportFileGenerationFailed);
         }
         exportTemplateDto.setSpaceId(null);
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(exportTemplateDto.getName(), Charset.forName("UTF-8")) + "." + targetType.name().toLowerCase());
@@ -132,7 +134,7 @@ public class ConfigImportOrExportController {
         } catch (Exception e) {
             spacePermissionService.checkSpaceUserPermission(spaceId);
             if (!RequestContext.get().getUserId().equals(creatorId)) {
-                throw new BizException("没有权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
     }

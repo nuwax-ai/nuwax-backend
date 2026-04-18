@@ -7,7 +7,9 @@ import com.xspaceagi.agent.core.adapter.repository.entity.PluginConfig;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.domain.service.PluginDomainService;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -73,7 +75,7 @@ public class PluginDomainServiceImpl implements PluginDomainService {
     public Long copy(Long userId, Long pluginId) {
         PluginConfig pluginConfig = queryById(pluginId);
         if (pluginConfig == null) {
-            throw new BizException("插件不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFound);
         }
         pluginConfig.setId(null);
         pluginConfig.setCreatorId(userId);

@@ -40,5 +40,8 @@ public class KnowledgeConfigRequestVo {
     @Schema(description = "数据类型,默认文本,1:文本;2:表格")
     private Integer dataType;
 
+    //新增
+    @Schema(description = "知识库的管控授权")
+    private List<Long> knowledgeIds;
 
 }

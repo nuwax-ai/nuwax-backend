@@ -99,7 +99,7 @@ public class CustomFieldDefinitionRepository implements ICustomFieldDefinitionRe
     public void deleteById(Long id, UserContext userContext) {
         var existOne = customFieldDefinitionService.queryOneInfoById(id);
         if (Objects.isNull(existOne)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         customFieldDefinitionService.deleteById(id);
@@ -110,7 +110,7 @@ public class CustomFieldDefinitionRepository implements ICustomFieldDefinitionRe
 
         var existCount = customFieldDefinitionService.queryCountByTableId(tableId);
         if (existCount == 0) {
-            log.info("表字段没有需要删除的字段,tableId={}", tableId);
+            log.info("No columns to drop, tableId={}", tableId);
         } else {
             customFieldDefinitionService.deleteByTableId(tableId);
         }

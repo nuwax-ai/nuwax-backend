@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "前端项目删除请求体")
+@Schema(description = "Frontend project delete request body")
 public class CustomPageDeleteReq {
 
-    @NotNull(message = "projectId 不能为空")
-    @Schema(description = "项目ID", required = true)
+    @NotNull(message = "projectId is required")
+    @Schema(description = "Project ID", required = true)
     private Long projectId;
 
 }

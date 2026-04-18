@@ -7,11 +7,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import lombok.Data;
 
 /**
  * 分类管理
  */
+@I18n(module = "Category")
 @Data
 @TableName(value = "category", autoResultMap = true)
 public class Category {
@@ -31,16 +34,19 @@ public class Category {
     /**
      * 分类名称
      */
+    @I18nField(field = "name")
     private String name;
 
     /**
      * 分类描述
      */
+    @I18nField(field = "description")
     private String description;
 
     /**
      * 分类编码
      */
+    @I18nField(field = "code", keyPrefix = true)
     private String code;
 
     /**

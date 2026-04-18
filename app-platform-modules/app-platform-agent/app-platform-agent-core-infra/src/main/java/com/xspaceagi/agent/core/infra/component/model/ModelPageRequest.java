@@ -11,25 +11,25 @@ public class ModelPageRequest {
     private RedisUtil redisUtil;
 
     public String getPageRequestResult(String requestId, String dataType) {
-        //从redis中读取内容，直到不为空，30秒超时
-        Long start = System.currentTimeMillis();
+        // Read content from redis until it's not null, 30 seconds timeout
+        long start = System.currentTimeMillis();
         Object val = redisUtil.get(buildKey(requestId));
         while (val == null) {
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                // ignore
             }
             if (System.currentTimeMillis() - start > 30000) {
                 break;
             }
             val = redisUtil.get(buildKey(requestId));
         }
-        return val == null ? "页面数据获取失败" : val.toString();
+        return val == null ? "Failed to retrieve page data" : val.toString();
     }
 
     public void setPageRequestResult(String requestId, String result) {
-        redisUtil.set(buildKey(requestId), result, 5);// 有效期5秒
+        redisUtil.set(buildKey(requestId), result, 5); // 5 seconds expiration
     }
 
     private String buildKey(String requestId) {

@@ -6,15 +6,19 @@ import java.util.List;
 
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
 
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+@I18n(module = "PermissionGroup")
 @Data
 public class SysGroupDto implements Serializable {
 
     @Schema(description = "ID")
     private Long id;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "编码")
     private String code;
 
@@ -60,6 +64,7 @@ public class SysGroupDto implements Serializable {
     @Schema(description = "token限制")
     private TokenLimit tokenLimit;
 
+    @I18nField(subObj = true)
     @Schema(description = "子用户组列表")
     private List<SysGroupDto> children;
 

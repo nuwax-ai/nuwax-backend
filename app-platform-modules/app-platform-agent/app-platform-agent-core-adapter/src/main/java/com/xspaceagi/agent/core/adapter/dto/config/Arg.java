@@ -2,6 +2,9 @@ package com.xspaceagi.agent.core.adapter.dto.config;
 
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +17,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@I18n(module = "Args")
 @Data
 @Builder
 @AllArgsConstructor
@@ -24,6 +28,7 @@ public class Arg implements Serializable {
     @Schema(description = "参数key，唯一标识，不需要前端传递，后台根据配置自动生成")
     private String key;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "参数名称，符合函数命名规则")
     private String name;
 
@@ -214,19 +219,21 @@ public class Arg implements Serializable {
     }
 
     public Boolean getEnable() {
-        return enable == null ? true : enable;
+        return enable == null || enable;
     }
 
     public static List<Arg> getSystemVariableArgs() {
         List<Arg> systemVariableArgs = new ArrayList<>();
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.SYS_USER_ID.name()).description("平台用户ID").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.USER_UID.name()).description("用户唯一标识").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.USER_NAME.name()).description("用户名称").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.AGENT_ID.name()).description("智能体唯一标识").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.CONVERSATION_ID.name()).description("会话唯一标识").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.REQUEST_ID.name()).description("请求唯一标识").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.AGENT_USER_MSG.name()).description("用户消息").require(true).enable(true).build());
-        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.CHAT_CONTEXT.name()).description("会话上下文消息列表").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.SYS_USER_ID.name()).description("Platform user ID").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.USER_UID.name()).description("User unique identifier").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.USER_LANG.name()).description("User language preference").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.USER_NAME.name()).description("User name").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.AGENT_ID.name()).description("Agent unique identifier").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.CONVERSATION_ID.name()).description("Conversation unique identifier").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.REQUEST_ID.name()).description("Request unique identifier").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.AGENT_USER_MSG.name()).description("User message").require(true).enable(true).build());
+        systemVariableArgs.add(Arg.builder().systemVariable(true).name(GlobalVariableEnum.CHAT_CONTEXT.name()).description("Conversation context message list").require(true).enable(true).build());
+        I18nUtil.replaceSystemMessage("SystemVariable", systemVariableArgs);
         return systemVariableArgs;
     }
 

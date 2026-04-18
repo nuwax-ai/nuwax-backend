@@ -37,8 +37,8 @@ public class UserRequestController {
     @Operation(summary = "执行统计SQL")
     @RequestMapping(path = "/sql", method = RequestMethod.POST)
     public ReqResult<List<Map<String, Object>>> sqlExecute(@RequestBody Map<String, Object> params) throws JSQLParserException {
-        Assert.notNull(params.get("sql"), "SQL不能为空");
-        Assert.isTrue(params.get("sql").toString().toLowerCase().trim().startsWith("select"), "SQL必须以select开头");
+        Assert.notNull(params.get("sql"), "SQL cannot be left blank.");
+        Assert.isTrue(params.get("sql").toString().toLowerCase().trim().startsWith("select"), "SQL must be start with select");
         //确保sql只能是查询
         Statement statement = CCJSqlParserUtil.parse(params.get("sql").toString());
         Select select = (Select) statement;

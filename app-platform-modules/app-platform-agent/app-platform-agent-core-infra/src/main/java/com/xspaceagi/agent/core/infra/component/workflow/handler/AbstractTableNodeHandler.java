@@ -31,7 +31,7 @@ public class AbstractTableNodeHandler extends AbstractNodeHandler {
                 .onErrorResume(throwable -> {
                     log.warn("executeSQL error", throwable);
                     if (throwable instanceof TimeoutException) {
-                        return Mono.error(new TimeoutException("executeSQL执行等待超时"));
+                        return Mono.error(new TimeoutException("SQL execution timeout"));
                     }
                     return Mono.error(throwable);
                 })
@@ -60,7 +60,7 @@ public class AbstractTableNodeHandler extends AbstractNodeHandler {
         while (iterator.hasNext()) {
             TableDataDeleteNodeConfigDto.ConditionArgDto conditionArgDto = iterator.next();
             if (conditionArgDto.getFirstArg() == null) {
-                throw new IllegalArgumentException("参数不能为空，请检查配置");
+                throw new IllegalArgumentException("Parameter cannot be empty; check configuration");
             }
             Object value = extraBindValue(workflowContext, node, conditionArgDto.getSecondArg());
             String name = conditionArgDto.getFirstArg().getName() == null ? conditionArgDto.getFirstArg().getBindValue() : conditionArgDto.getFirstArg().getName();
@@ -68,10 +68,10 @@ public class AbstractTableNodeHandler extends AbstractNodeHandler {
                 if (value instanceof List) {
                     List<Object> list = (List<Object>) value;
                     if (CollectionUtils.isEmpty(list)) {
-                        throw new IllegalArgumentException("IN/NOT_IN条件值不能为空");
+                        throw new IllegalArgumentException("IN/NOT_IN condition value cannot be empty");
                     }
                 } else if (value == null) {
-                    throw new IllegalArgumentException("IN/NOT_IN条件值不能为空");
+                    throw new IllegalArgumentException("IN/NOT_IN condition value cannot be empty");
                 } else {
                     value = List.of(value);
                 }

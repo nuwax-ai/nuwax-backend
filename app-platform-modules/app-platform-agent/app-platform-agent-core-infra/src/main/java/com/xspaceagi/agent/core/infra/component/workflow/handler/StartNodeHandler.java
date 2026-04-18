@@ -27,7 +27,7 @@ public class StartNodeHandler extends AbstractNodeHandler {
             }
             Object value = extraParams(inputArg, workflowContext.getParams());
             if ((value == null || value.equals("")) && inputArg.isRequire()) {
-                Assert.notNull(value, "参数" + inputArg.getName() + "不能为空");
+                Assert.notNull(value, "Param " + inputArg.getName() + " cannot be left blank.");
             }
             startNodeOutput.put(inputArg.getName(), value);
             inputMap.put(inputArg.getName(), value);

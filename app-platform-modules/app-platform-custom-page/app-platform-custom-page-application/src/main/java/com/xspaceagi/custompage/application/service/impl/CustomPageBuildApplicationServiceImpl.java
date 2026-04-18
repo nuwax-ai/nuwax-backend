@@ -25,11 +25,11 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
     // @Transactional(rollbackFor = Exception.class, timeout = 30)
     @Override
     public ReqResult<Map<String, Object>> startDev(Long projectId, UserContext userContext) {
-        log.info("[Application] projectId={},启动dev服务器", projectId);
+        log.info("[Application] project Id={},start dev server", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.startDev(projectId, userContext);
 
-        log.info("[Application] projectId={},启动dev器响应,result={}", projectId, result);
+        log.info("[Application] project Id={},start dev response,result={}", projectId, result);
         return result;
     }
 
@@ -37,11 +37,11 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
     @Transactional(rollbackFor = Exception.class, timeout = 60)
     @Override
     public ReqResult<Map<String, Object>> build(Long projectId, String publishType, UserContext userContext) {
-        log.info("[Application] projectId={},构建并发布前端项目", projectId);
+        log.info("[Application] project Id={},build and publish frontend project", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.build(projectId, publishType, userContext);
 
-        log.info("[Application] projectId={},构建并发布前端项目响应,result={}", projectId, result);
+        log.info("[Application] project Id={},build and publish frontend projectresponse,result={}", projectId, result);
         return result;
     }
 
@@ -49,11 +49,11 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
     // @Transactional(rollbackFor = Exception.class, timeout = 30)
     @Override
     public ReqResult<Map<String, Object>> stopDev(Long projectId, UserContext userContext) {
-        log.info("[Application] projectId={},停止dev服务器", projectId);
+        log.info("[Application] project Id={},stop dev server", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.stopDev(projectId, userContext);
 
-        log.info("[Application] projectId={},停止dev服务器响应,result={}", projectId, result);
+        log.info("[Application] project Id={},stop dev serverresponse,result={}", projectId, result);
         return result;
     }
 
@@ -61,11 +61,11 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
     // @Transactional(rollbackFor = Exception.class, timeout = 30)
     @Override
     public ReqResult<Map<String, Object>> restartDev(Long projectId, UserContext userContext) {
-        log.info("[Application] projectId={},重启dev服务器", projectId);
+        log.info("[Application] project Id={},restart dev server", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.restartDev(projectId, userContext);
 
-        log.info("[Application] projectId={},重启dev服务器响应,result={}", projectId, result);
+        log.info("[Application] project Id={},restart dev serverresponse,result={}", projectId, result);
         return result;
     }
 
@@ -73,11 +73,11 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
     // @Transactional(rollbackFor = Exception.class, timeout = 10)
     @Override
     public ReqResult<Map<String, Object>> keepAlive(Long projectId, UserContext userContext) {
-        log.debug("[keepAlive] projectId={},保活处理", projectId);
+        log.debug("[keep Alive] project Id={},keep-alivehandle", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.keepAlive(projectId, userContext);
 
-        log.info("[keepAlive] projectId={},保活处理响应,result={}", projectId, result);
+        log.info("[keep Alive] project Id={},keep-alivehandleresponse,result={}", projectId, result);
         return result;
     }
 
@@ -88,61 +88,61 @@ public class CustomPageBuildApplicationServiceImpl implements ICustomPageBuildAp
 
     @Override
     public ReqResult<Map<String, Object>> initProject(Long projectId, UserContext userContext) {
-        log.info("[initProject] projectId={},开始初始化项目工程", projectId);
+        log.info("[init Project] project Id={},startinitializeproject artifacts", projectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.initProject(projectId);
 
-        log.info("[initProject] projectId={},开始初始化项目响应,result={}", projectId, result);
+        log.info("[init Project] project Id={},startinitializeprojectresponse,result={}", projectId, result);
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> deleteProjectFiles(CustomPageBuildModel model, UserContext userContext) {
-        log.info("[deleteProjectFiles] projectId={},开始删除项目文件", model.getProjectId());
+        log.info("[delete Project Files] project Id={},startdelete project files", model.getProjectId());
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.deleteProjectFiles(model, userContext);
 
-        log.info("[deleteProjectFiles] projectId={},删除项目文件响应,result={}", model.getProjectId(), result);
+        log.info("[delete Project Files] project Id={},delete project filesresponse,result={}", model.getProjectId(), result);
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> getDevLog(Long projectId, Integer startIndex, String logType, UserContext userContext) {
-        log.debug("[getDevLog] projectId={}, startIndex={}, 开始查询日志", projectId, startIndex);
+        log.debug("[get Dev Log] project Id={}, start Index={}, startquery logs", projectId, startIndex);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.getDevLog(projectId, startIndex, logType, userContext);
 
-        log.debug("[getDevLog] projectId={}, 查询日志响应, code={}", projectId, result.getCode());
+        log.debug("[get Dev Log] project Id={}, query logsresponse, code={}", projectId, result.getCode());
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> copyProject(Long sourceProjectId, Long targetProjectId, UserContext userContext) {
-        log.info("[copyProject] sourceProjectId={},targetProjectId={},开始复制项目工程", sourceProjectId, targetProjectId);
+        log.info("[copy Project] source Project Id={},target Project Id={},startcopyproject artifacts", sourceProjectId, targetProjectId);
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.copyProject(sourceProjectId, targetProjectId);
 
-        log.info("[copyProject] sourceProjectId={},targetProjectId={},复制项目工程响应,result={}", sourceProjectId, targetProjectId, result);
+        log.info("[copy Project] source Project Id={},target Project Id={},copyproject artifactsresponse,result={}", sourceProjectId, targetProjectId, result);
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> getLogCacheStats() {
-        log.info("[Application] 获取日志缓存统计");
+        log.info("[Application] getlogcachestats");
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.getLogCacheStats();
 
-        log.info("[Application] 获取日志缓存统计响应, result={}", result);
+        log.info("[Application] getlogcachestatsresponse, result={}", result);
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> clearAllLogCache() {
-        log.info("[Application] 清理所有日志缓存");
+        log.info("[Application] clear all log cache");
 
         ReqResult<Map<String, Object>> result = customPageBuildDomainService.clearAllLogCache();
 
-        log.info("[Application] 清理所有日志缓存响应, result={}", result);
+        log.info("[Application] clear all log cacheresponse, result={}", result);
         return result;
     }
 }

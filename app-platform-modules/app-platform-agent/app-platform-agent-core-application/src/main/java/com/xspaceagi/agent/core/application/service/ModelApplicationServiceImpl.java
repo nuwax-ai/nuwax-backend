@@ -28,9 +28,11 @@ import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -114,15 +116,16 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
                 model.setScope(ModelConfig.ModelScopeEnum.Space);
             }
             modelRepository.save(model);
+            modelDto.setId(model.getId());
         }
     }
 
     @Override
     public void updateAccessControlStatus(Long id, Integer status) {
-        // 先查询原始状态，用于判断是否从「受限」变为「不受限」
+        // Query original status first, used to determine if changing from "restricted" to "unrestricted"
         ModelConfig originConfig = modelRepository.getById(id);
         if (originConfig == null) {
-            throw new BizException("数据不存在,id=" + id);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentDataNotFoundWithId, id);
         }
 
         int oldStatus = originConfig.getAccessControl() != null ? originConfig.getAccessControl() : 0;
@@ -132,13 +135,13 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         modelConfig.setAccessControl(newStatus);
         modelRepository.update(modelConfig, new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getId, id));
 
-        // 如果从受限(1)切换为不受限(0)，需要删除原有主体访问权限绑定并清除缓存
+        // If switching from restricted(1) to unrestricted(0), need to delete original subject access permission binding and clear cache
         if (oldStatus == 1 && newStatus == 0) {
             UserContext userContext = null;
             if (RequestContext.get() != null && RequestContext.get().getUser() instanceof UserContext) {
                 userContext = (UserContext) RequestContext.get().getUser();
             }
-            // 不设置 roleIds 和 groupIds，内部会按空集合处理，表示清空所有绑定
+            // Do not set roleIds and groupIds, internally will handle as empty set, representing clearing all bindings
             sysSubjectPermissionApplicationService.bindRestrictionTargets(
                     PermissionSubjectTypeEnum.MODEL,
                     id,
@@ -150,9 +153,9 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     @Override
     public void delete(Long modelId) {
-        //默认的模型不允许删除
+        // Default model deletion not allowed
         if (modelId.equals(DEFAULT_CHAT_MODEL_ID) || modelId.equals(DEFAULT_EMBED_MODEL_ID)) {
-            throw new BizException("默认模型不允许删除");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentDefaultModelDeleteForbidden);
         }
         modelRepository.removeById(modelId);
     }
@@ -174,21 +177,17 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         List<ModelConfigDto> modelList;
         if (modelQueryDto.getScope() == null) {
-            RequestContext.addTenantIgnoreEntity(ModelConfig.class);
-            model.setScope(ModelConfig.ModelScopeEnum.Global);
-            modelList = queryModelConfigList(queryWrapper);
-            RequestContext.removeTenantIgnoreEntity(ModelConfig.class);
-
             model.setScope(ModelConfig.ModelScopeEnum.Tenant);
-            modelList.addAll(queryModelConfigList(queryWrapper));
+            modelList = queryModelConfigList(queryWrapper);
 
-            //查询空间下的模型，放置在列表的最前面
+            // Query models under space, place them at the front of the list
             if (modelQueryDto.getSpaceId() != null) {
                 model.setSpaceId(modelQueryDto.getSpaceId());
                 model.setScope(ModelConfig.ModelScopeEnum.Space);
                 modelList.addAll(0, queryModelConfigList(queryWrapper));
             }
         } else {
+            model.setSpaceId(modelQueryDto.getSpaceId());
             modelList = queryModelConfigList(queryWrapper);
         }
         if (RequestContext.get() != null && RequestContext.get().getUserId() != null) {
@@ -299,7 +298,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             }
             modelDtos.add(modelDto);
         });
-        //modelDtos中的creatorIdList
+        // creatorIdList in modelDtos
         completeCreator(modelDtos);
         return modelDtos;
     }
@@ -307,7 +306,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     private void completeCreator(List<ModelConfigDto> modelDtos) {
         List<Long> creatorIdList = modelDtos.stream().map(ModelConfigDto::getCreatorId).collect(Collectors.toList());
         List<UserDto> userDtos = userApplicationService.queryUserListByIds(creatorIdList);
-        //userDtos转map
+        // userDtos converted to map
         Map<Long, UserDto> userMap = userDtos.stream().collect(Collectors.toMap(UserDto::getId, userDto -> userDto));
         modelDtos.forEach(modelDto -> {
             UserDto userDto = userMap.get(modelDto.getCreatorId());
@@ -329,12 +328,12 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     public void checkModelUsePermission(Long modelId) {
         ModelConfigDto modelDto = queryModelConfigById(modelId);
         if (modelDto == null) {
-            throw new BizException("模型不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelNotFound);
         }
-        // 模型使用范围为租户级别的时，判断是否为当前租户
+        // When model usage scope is tenant level, determine if it is current tenant
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Tenant
                 && !modelDto.getTenantId().equals(RequestContext.get().getTenantId())) {
-            throw new BizException("没有权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Space) {
             spacePermissionService.checkSpaceUserPermission(modelDto.getSpaceId());
@@ -345,17 +344,17 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     public void checkModelManagePermission(Long modelId) {
         ModelConfigDto modelDto = queryModelConfigById(modelId);
         if (modelDto == null) {
-            throw new BizException("模型不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelNotFound);
         }
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Space) {
             spacePermissionService.checkSpaceUserPermission(modelDto.getSpaceId());
         }
 
-        // 全局模型或租户模型，判断是否为当前租户管理员
+        // Global model or tenant model, determine if it is current tenant admin
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Global || modelDto.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
             UserDto userDto = (UserDto) RequestContext.get().getUser();
             if (userDto == null || userDto.getRole() != User.Role.Admin || !Objects.equals(userDto.getTenantId(), modelDto.getTenantId())) {
-                throw new BizException("没有权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
     }
@@ -373,21 +372,21 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     private <T> T call(ModelConfigDto modelConfig, String sysPrompt, String userPrompt, ParameterizedTypeReference<T> type, int retry) {
         if (sysPrompt == null) {
-            sysPrompt = "你是一个专业的JSON转换助手，能够依据用户提供的schema进行精准转换。";
+            sysPrompt = "You are a professional JSON conversion assistant, capable of precise conversion based on the schema provided by users.";
         }
         if (retry > 0) {
-            sysPrompt = sysPrompt + "\n用户提供的数据可能是一个格式有问题的JSON数据，请帮纠正成正确的JSON数据";
+            sysPrompt = sysPrompt + "\nThe data provided by users may be a JSON data with formatting issues, please help correct it into valid JSON data";
         }
-        //读取type的泛型
+        // Read generic type of type
         String jsonSchema = new BeanOutputConverter<>(type).getJsonSchema();
         String prompt = Prompts.JSON_FORMAT_PROMPT.replace("${schema}", jsonSchema);
         if (userPrompt != null) {
             prompt = userPrompt + prompt;
         }
-        //只重试一次
+        // Only retry once
         if (retry == 3) {
-            log.warn("模型返回的JSON格式不正确，请检查提示词\n原始内容 {}", prompt);
-            throw new BizException("模型返回的JSON格式不正确，请检查提示词");
+            log.warn("Model returned JSON format is incorrect, please check prompt\nOriginal content {}", prompt);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelJsonInvalid);
         }
         ChatClient.StreamResponseSpec stream = modelClientFactory.createChatClient(modelConfig)
                 .prompt(new Prompt(new SystemMessage(sysPrompt), new UserMessage(prompt))).stream();
@@ -395,7 +394,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         Mono.create(sink -> stream.chatResponse().onErrorResume(throwable -> {
                             log.warn("call error", throwable);
                             if (throwable instanceof TimeoutException) {
-                                return Mono.error(new TimeoutException("大模型执行等待超时"));
+                                return Mono.error(new TimeoutException("Large model execution timeout"));
                             }
                             return Mono.error(throwable);
                         })
@@ -423,8 +422,8 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         Object object = JSON.parseObject(jsonText, type.getType());
         if (object == null) {
-            log.warn("模型返回的JSON格式不正确，请检查提示词\n原始内容 {}\n返回内容：{}", prompt, responseStr);
-            throw new BizException("模型返回的JSON格式不正确，请检查提示词");
+            log.warn("Model returned JSON format is incorrect, please check prompt\nOriginal content {}\nReturned content：{}", prompt, responseStr);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelJsonInvalid);
         }
         return (T) object;
     }
@@ -442,7 +441,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     }
 
     public List<float[]> embeddings(List<String> texts, Long modelId) {
-        // 如果指定了 向量化模型id，则固定使用对应模型向量化
+        // If vectorization model ID is specified, use the corresponding model for vectorization
         ModelConfigDto modelConfig = null;
         if (modelId != null) {
             modelConfig = queryModelConfigById(modelId);
@@ -470,7 +469,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     public void checkUserModelPermission(Long userId, Long modelId) {
         ModelConfigDto modelDto = queryModelConfigById(modelId);
         if (modelDto == null) {
-            throw new BizException("模型不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelNotFound);
         }
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Space) {
             spacePermissionService.checkSpaceUserPermission(modelDto.getSpaceId(), userId);
@@ -478,7 +477,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         if (modelDto.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
             UserDto userDto = userApplicationService.queryById(userId);
             if (userDto == null || !Objects.equals(userDto.getTenantId(), modelDto.getTenantId())) {
-                throw new BizException("没有权限");
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }
     }
@@ -501,52 +500,52 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             CodeCheckResultDto codeCheckResultDto = call(queryDefaultModelConfig(), tenantConfigDto.getCodeSafeCheckPrompt(), code + "\n请检查上面的代码，并按照下面定义的格式返回", new ParameterizedTypeReference<CodeCheckResultDto>() {
             }, 0);
             if (codeCheckResultDto.getPass() != null && codeCheckResultDto.getPass()) {
-                redisUtil.set(hashKey, "1", 86400);//一次检测结果缓存1天
+                redisUtil.set(hashKey, "1", 86400);// Cache check result for 1 day
             }
             return codeCheckResultDto;
         } catch (Exception e) {
-            log.warn("代码安全检查失败", e);
-            return CodeCheckResultDto.builder().pass(false).reason("代码安全检查失败，请重试").build();
+            log.warn("Code security check failed", e);
+            return CodeCheckResultDto.builder().pass(false).reason("Code security check failed, please retry").build();
         }
     }
 
     @Override
     public String testModelConnectivity(ModelConfigDto modelConfig, String testPrompt) {
         if (modelConfig.getApiInfoList() == null || modelConfig.getApiInfoList().isEmpty()) {
-            return "API配置不能为空";
+            return "API configuration cannot be empty";
         }
         if (StringUtils.isBlank(testPrompt)) {
             testPrompt = "Hi";
         }
         try {
-            // 向量模型，调用向量化接口测试
+            // Vector model, call vectorization interface for testing
             if (modelConfig.getType() == ModelTypeEnum.Embeddings) {
                 EmbeddingModel embeddingModel = modelClientFactory.createEmbeddingModel(modelConfig);
                 List<float[]> embeddings = embeddingModel.embed(List.of(testPrompt));
-                log.info("向量模型连通测试name={},返回向量维度：{}", modelConfig.getName(),
+                log.info("Vector model connectivity test name={}, return vector dimension: {}", modelConfig.getName(),
                         !embeddings.isEmpty() ? embeddings.get(0).length : 0);
                 if (embeddings.isEmpty() || embeddings.get(0) == null || embeddings.get(0).length == 0) {
-                    return "无响应";
+                    return "No response";
                 }
                 return null;
             } else {
-                // 非向量模型，使用天接口测试
+                // Non-vector model, use chat interface for testing
                 ChatClient chatClient = modelClientFactory.createChatClient(modelConfig);
                 String response = chatClient.prompt()
                         .user(testPrompt)
                         .call().content();
-                log.info("模型连通测试name={},返回：{}", modelConfig.getName(), response);
+                log.info("Model connectivity test name={}, return: {}", modelConfig.getName(), response);
                 if (response == null || response.isBlank()) {
-                    return "无响应";
+                    return "No response";
                 }
                 return null;
             }
         } catch (BizException e) {
-            log.warn("模型连通业务校验失败: {}", e.getMessage());
-            return e.getMessage() == null ? "无响应" : e.getMessage();
+            log.warn("Model connectivity business validation failed: {}", e.getMessage());
+            return e.getMessage() == null ? "No response" : e.getMessage();
         } catch (Exception e) {
-            log.error("模型连通测试异常", e);
-            return e.getMessage() == null ? "无响应" : e.getMessage();
+            log.error("Model connectivity test exception", e);
+            return e.getMessage() == null ? "No response" : e.getMessage();
         }
     }
 }

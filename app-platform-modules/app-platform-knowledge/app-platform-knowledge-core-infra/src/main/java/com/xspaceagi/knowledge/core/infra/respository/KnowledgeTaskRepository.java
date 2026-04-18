@@ -82,7 +82,7 @@ public class KnowledgeTaskRepository implements IKnowledgeTaskRepository {
     public Long updateInfo(KnowledgeTaskModel model, UserContext userContext) {
         var existObj = this.knowledgeTaskService.getById(model.getId());
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         model.setCreatorId(null);
@@ -112,7 +112,7 @@ public class KnowledgeTaskRepository implements IKnowledgeTaskRepository {
 
         var existObj = this.knowledgeTaskService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
 

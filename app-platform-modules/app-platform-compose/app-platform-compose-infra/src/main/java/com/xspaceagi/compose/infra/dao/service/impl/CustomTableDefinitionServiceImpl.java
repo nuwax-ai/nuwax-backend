@@ -46,7 +46,7 @@ public class CustomTableDefinitionServiceImpl extends ServiceImpl<CustomTableDef
         var updateObj = this.getById(entity.getId());
 
         if (Objects.isNull(updateObj)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         entity.setCreated(null);
         entity.setModified(null);
@@ -67,7 +67,7 @@ public class CustomTableDefinitionServiceImpl extends ServiceImpl<CustomTableDef
     public void deleteById(Long id) {
         var existObj = this.getById(id);
         if (Objects.isNull(existObj)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         this.removeById(id);
     }

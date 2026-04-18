@@ -50,7 +50,7 @@ public class KnowledgeConfigServiceImpl extends ServiceImpl<KnowledgeConfigMappe
         var updateObj = this.getById(entity.getId());
 
         if (Objects.isNull(updateObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         entity.setCreated(null);
         entity.setModified(null);
@@ -96,7 +96,7 @@ public class KnowledgeConfigServiceImpl extends ServiceImpl<KnowledgeConfigMappe
     public void updateLatestModifyTime(Long id, UserContext userContext) {
         var existObj = this.getById(id);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var updateObj = new KnowledgeConfig();
         updateObj.setId(id);

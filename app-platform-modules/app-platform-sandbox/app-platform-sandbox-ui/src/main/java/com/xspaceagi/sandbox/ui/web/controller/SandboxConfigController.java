@@ -15,10 +15,13 @@ import com.xspaceagi.sandbox.ui.web.dto.UserSandBoxSelectDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.AuthService;
+import com.xspaceagi.system.application.service.I18nApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.I18nSideEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,6 +76,9 @@ public class SandboxConfigController {
     @Resource
     private AuthService authService;
 
+    @Resource
+    private I18nApplicationService i18nApplicationService;
+
     @Value("${installation-source}")
     private String installationSource;
 
@@ -117,7 +123,7 @@ public class SandboxConfigController {
             UserSandBoxSelectDto.SelectDto selectDto = new UserSandBoxSelectDto.SelectDto();
             selectDto.setSandboxId(sandboxConfigDto.getId().toString());
             selectDto.setName(sandboxConfigDto.getName());
-            String notice = "在使用非自己创建的智能体时，请注意识别风险";
+            String notice = I18nUtil.systemMessage("Backend.Sandbox.RiskNotice");
             if (StringUtils.isNotBlank(sandboxConfigDto.getDescription())) {
                 selectDto.setDescription(sandboxConfigDto.getDescription() + "\n");
             } else {
@@ -129,8 +135,8 @@ public class SandboxConfigController {
         if ("saas".equals(installationSource) || sandboxConfigApplicationService.hasGlobalConfigsForSelect()) {
             UserSandBoxSelectDto.SelectDto selectDto = new UserSandBoxSelectDto.SelectDto();
             selectDto.setSandboxId("-1");
-            selectDto.setName("云端电脑");
-            selectDto.setDescription("由平台提供的智能体电脑");
+            selectDto.setName(I18nUtil.systemMessage("Backend.Sandbox.CloudComputer"));
+            selectDto.setDescription(I18nUtil.systemMessage("Backend.Sandbox.CloudComputerDesc"));
             dto.getSandboxes().add(0, selectDto);
         }
 
@@ -152,7 +158,7 @@ public class SandboxConfigController {
         if (versionNum > START_VERSION && StringUtils.isNotBlank(sandboxRegDto.getUsername()) && StringUtils.isNotBlank(sandboxRegDto.getPassword())) {
             user = checkLoginInfo(sandboxRegDto);
         }
-        Assert.notNull(sandboxRegDto.getSandboxConfigValue(), "终端配置信息不能为空");
+        Assert.notNull(sandboxRegDto.getSandboxConfigValue(), I18nUtil.systemMessage("Backend.Sandbox.TerminalConfigRequired"));
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         String host = request.getHeader("Host");
         if (host != null) {
@@ -180,18 +186,23 @@ public class SandboxConfigController {
                 return ReqResult.success(byKey);
             }
         }
-        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getUsername()), "用户名、邮箱或手机号码不能为空");
-        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getPassword()), "动态认证吗或密码不能为空");
+        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getUsername()), I18nUtil.systemMessage("Backend.Sandbox.UsernameRequired"));
+        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getPassword()), I18nUtil.systemMessage("Backend.Sandbox.PasswordRequired"));
         if (user == null) {
             user = checkLoginInfo(sandboxRegDto);
         }
         RequestContext.get().setUser(user);
         RequestContext.get().setUserId(user.getId());
+        if (user.getLang() != null) {
+            user.setLangMap(i18nApplicationService.querySystemLangMap(user.getTenantId(), I18nSideEnum.Backend.getSide(), user.getLang()));
+            RequestContext.get().setLang(user.getLang());
+            RequestContext.get().setLangMap(user.getLangMap());
+        }
         SandboxConfigDto dto = new SandboxConfigDto();
         dto.setUserId(user.getId());
         dto.setScope(SandboxScopeEnum.USER);
         dto.setConfigKey(UUID.randomUUID().toString().replace("-", ""));
-        dto.setName("我的电脑");
+        dto.setName(I18nUtil.systemMessage("Backend.Sandbox.MyComputer"));
         dto.setConfigValue(sandboxRegDto.getSandboxConfigValue());
         dto.setDescription("");
         dto.setIsActive(true);
@@ -209,22 +220,22 @@ public class SandboxConfigController {
         if (increment <= 5) {
             redisUtil.expire(key, 1800);
         }
-        Assert.isTrue(increment <= 5, "你已错误尝试了5次，账号将锁定半个小时");
+        Assert.isTrue(increment <= 5, I18nUtil.systemMessage("Backend.Sandbox.LoginAttemptsExceeded"));
         UserDto user;
         if (sandboxRegDto.getUsername().matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
             user = userApplicationService.queryUserByEmail(sandboxRegDto.getUsername());
-            Assert.isTrue(user != null, "用户不存在或密码错误，失败5次将被锁定半小时，你已尝试" + increment + "次");
+            Assert.isTrue(user != null, I18nUtil.systemMessage("Backend.Sandbox.UserNotFoundPasswordError", increment.toString()));
         } else {
             user = userApplicationService.queryUserByPhone(sandboxRegDto.getUsername());
             if (user == null) {
                 user = userApplicationService.queryUserByUserName(sandboxRegDto.getUsername());
             }
-            Assert.isTrue(user != null, "用户不存在或密码错误，失败5次将被锁定半小时，你已尝试" + increment + "次");
+            Assert.isTrue(user != null, I18nUtil.systemMessage("Backend.Sandbox.UserNotFoundPasswordError", increment.toString()));
         }
         String userDynamicCode = userApplicationService.getUserDynamicCode(user.getId());
         if (!userDynamicCode.equals(sandboxRegDto.getPassword().trim())) {
             UserDto userDto = userApplicationService.queryUserByPhoneOrEmailWithPassword(sandboxRegDto.getUsername(), sandboxRegDto.getPassword().trim());
-            Assert.isTrue(userDto != null, "用户不存在或认证码错误，失败5次将被锁定半小时，你已尝试" + increment + "次");
+            Assert.isTrue(userDto != null, I18nUtil.systemMessage("Backend.Sandbox.UserNotFoundAuthCodeError", increment.toString()));
         }
         redisUtil.expire(key, 0);
         return user;
@@ -233,7 +244,7 @@ public class SandboxConfigController {
     @Operation(summary = "创建个人电脑（客户端配置）")
     @PostMapping("/create")
     public ReqResult<Void> create(@RequestBody SandboxConfigCreateDto configCreateDto) {
-        Assert.notNull(configCreateDto.getName(), "名称不能为空");
+        Assert.notNull(configCreateDto.getName(), I18nUtil.systemMessage("Backend.Sandbox.NameRequired"));
         SandboxConfigDto dto = new SandboxConfigDto();
         dto.setName(configCreateDto.getName());
         dto.setDescription(configCreateDto.getDescription());
@@ -248,7 +259,7 @@ public class SandboxConfigController {
     @Operation(summary = "更新配置")
     @PostMapping("/update")
     public ReqResult<Void> update(@RequestBody SandboxConfigDto dto) {
-        Assert.notNull(dto.getId(), "id不能为空");
+        Assert.notNull(dto.getId(), I18nUtil.systemMessage("Backend.Sandbox.IdRequired"));
         checkPermission(dto.getId());
         sandboxConfigApplicationService.update(dto);
         return ReqResult.success();
@@ -344,17 +355,17 @@ public class SandboxConfigController {
     public ReqResult<Object> health(@Parameter(description = "配置ID") @PathVariable String key) {
         SandboxConfigDto sandboxConfigDto = sandboxConfigApplicationService.getByKey(key);
         if (sandboxConfigDto == null) {
-            return ReqResult.error("配置不存在");
+            return ReqResult.error(I18nUtil.systemMessage("Backend.Sandbox.ConfigNotFound"));
         }
         if (sandboxConfigDto.getIsActive() != null && !sandboxConfigDto.getIsActive()) {
-            return ReqResult.error("客户端在平台已被禁用");
+            return ReqResult.error(I18nUtil.systemMessage("Backend.Sandbox.ClientDisabled"));
         }
         if (!sandboxConfigDto.isOnline()) {
-            return ReqResult.error("客户端已离线，请检查网络是否通畅");
+            return ReqResult.error(I18nUtil.systemMessage("Backend.Sandbox.ClientOffline"));
         }
         SandboxServerInfo sandboxServerInfo = sandboxConfigDto.getServerInfo();
         if (sandboxServerInfo == null) {
-            return ReqResult.error("配置信息错误");
+            return ReqResult.error(I18nUtil.systemMessage("Backend.Sandbox.ConfigError"));
         }
         String healthUrl = sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getAgentPort() + "/health";
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(healthUrl))
@@ -385,14 +396,14 @@ public class SandboxConfigController {
             return;
         }
         SandboxConfigDto byId = sandboxConfigApplicationService.getById(id);
-        Assert.isTrue(byId != null && byId.getUserId().equals(user.getId()), "无权限");
+        Assert.isTrue(byId != null && byId.getUserId().equals(user.getId()), I18nUtil.systemMessage("Backend.Sandbox.NoPermission"));
     }
 
 
     /**
      * 从User-Agent字符串中提取指定包的版本号
      *
-     * @param userAgent User-Agent字符串
+     * @param userAgent   User-Agent字符串
      * @param packageName 包名，如 "@nuwax-ai/nuwaclaw"
      * @return 版本号，如果未找到则返回null
      */

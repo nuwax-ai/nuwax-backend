@@ -68,7 +68,7 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
             return null;
         }
 
-        log.info("保存客户端密钥，租户ID: {}, 客户端ID: {}", clientSecretDTO.getTenantId(), clientSecretDTO.getClientId());
+        log.info("Save client secret, tenantId: {}, clientId: {}", clientSecretDTO.getTenantId(), clientSecretDTO.getClientId());
 
         // 先查询是否已存在该租户的密钥
         EcoMarketClientSecretModel existingModel = queryByTenantId(clientSecretDTO.getTenantId());
@@ -87,11 +87,11 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
             // 已存在，则更新
             model.setId(existingModel.getId());
             id = updateInfo(model, userContext);
-            log.info("更新客户端密钥成功，ID: {}", id);
+            log.info("Client secret updated, id: {}", id);
         } else {
             // 不存在，则新增
             id = addInfo(model, userContext);
-            log.info("新增客户端密钥成功，ID: {}", id);
+            log.info("Client secret created, id: {}", id);
         }
 
         return id;
@@ -125,8 +125,8 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
     @Override
     public ClientSecretDTO getOrRegisterClientSecret(Long tenantId, String name, String description) {
         if (Objects.isNull(tenantId)) {
-            log.error("租户ID不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8028);
+            log.error("Tenant ID cannot be empty");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
         }
         // 先查询是否存在
         EcoMarketClientSecretModel model = queryByTenantId(tenantId);
@@ -135,7 +135,7 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
         }
 
         // 不存在，调用服务器端API注册
-        log.info("客户端密钥不存在，开始调用服务器注册: tenantId={}, name={}", tenantId, name);
+        log.info("Client secret missing, registering on server: tenantId={}, name={}", tenantId, name);
 
         // 调用服务器API注册客户端
         // 主动生成租户的clientId, 并保存到内存中, 用于后续的注册.注:

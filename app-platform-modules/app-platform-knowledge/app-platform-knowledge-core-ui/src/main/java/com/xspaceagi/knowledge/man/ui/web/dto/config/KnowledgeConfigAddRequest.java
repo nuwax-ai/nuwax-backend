@@ -17,7 +17,7 @@ public class KnowledgeConfigAddRequest implements Serializable {
     /**
      * 所属空间ID
      */
-    @NotNull(message = "所属空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     @Schema(
             description = "所属空间ID",
             requiredMode = Schema.RequiredMode.REQUIRED
@@ -28,7 +28,7 @@ public class KnowledgeConfigAddRequest implements Serializable {
             description = "知识库名称",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    @NotNull(message = "知识库名称不能为空")
+    @NotNull(message = "Knowledge base name is required")
     private String name;
 
     @Schema(description = "知识库描述")
@@ -37,7 +37,7 @@ public class KnowledgeConfigAddRequest implements Serializable {
     /**
      * 知识库的嵌入模型ID
      */
-    @NotNull(message = "请选择向量模型")
+    @NotNull(message = "Embedding model is required")
     @Schema(
             description = "知识库的嵌入模型ID",
             requiredMode = Schema.RequiredMode.REQUIRED

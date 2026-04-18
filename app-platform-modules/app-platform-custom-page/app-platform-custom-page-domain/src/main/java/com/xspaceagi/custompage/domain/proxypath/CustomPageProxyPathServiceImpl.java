@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.domain.service.ICustomPageConfigDomainService;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 
 import jakarta.annotation.Resource;
@@ -39,14 +41,14 @@ public class CustomPageProxyPathServiceImpl implements ICustomPageProxyPathServi
         if (configModel != null) {
             return getDevProxyPath(configModel);
         } else {
-            throw new BizException("0001", "获取页面配置失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyPathLoadFailed);
         }
     }
 
     @Override
     public String getDevProxyPath(CustomPageConfigModel configModel) {
         if (configModel == null) {
-            throw new BizException("0001", "配置对象不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "configuration object");
         }
 
         String proxyPath = "/page" + configModel.getBasePath();
@@ -61,14 +63,14 @@ public class CustomPageProxyPathServiceImpl implements ICustomPageProxyPathServi
         if (configModel != null) {
             return getProdProxyPath(configModel);
         } else {
-            throw new BizException("0001", "获取页面配置失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyPathLoadFailed);
         }
     }
 
     @Override
     public String getProdProxyPath(CustomPageConfigModel configModel) {
         if (configModel == null) {
-            throw new BizException("0001", "配置对象不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "configuration object");
         }
 
         String proxyPath = "/page" + configModel.getBasePath();
@@ -81,13 +83,13 @@ public class CustomPageProxyPathServiceImpl implements ICustomPageProxyPathServi
     public void removeConfigCache(Long projectId) {
         String cacheKey = CONFIG_CACHE_KEY_PREFIX + projectId;
         redisUtil.expire(cacheKey, 0);
-        log.info("[ProxyPath] 已清除配置缓存，projectId={}", projectId);
+        log.info("[Proxy Path] config cache cleared, project Id={}", projectId);
     }
 
     private Long getAgentId(CustomPageConfigModel configModel) {
         Long devAgentId = configModel.getDevAgentId();
         if (devAgentId == null) {
-            throw new BizException("0001", "页面没有绑定智能体");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyPathNoAgent);
         }
         return devAgentId;
 
@@ -109,7 +111,7 @@ public class CustomPageProxyPathServiceImpl implements ICustomPageProxyPathServi
             // 先从缓存获取
             Object cachedValue = redisUtil.get(cacheKey);
             if (cachedValue != null) {
-                log.debug("[ProxyPath] 从缓存获取配置，projectId={}", projectId);
+                log.debug("[Proxy Path] from cachegetconfig, project Id={}", projectId);
                 CustomPageConfigModel cacheModel = objectMapper.readValue(cachedValue.toString(),
                         CustomPageConfigModel.class);
                 if (cacheModel.getBasePath() != null && cacheModel.getDevAgentId() != null) {
@@ -119,19 +121,19 @@ public class CustomPageProxyPathServiceImpl implements ICustomPageProxyPathServi
                 removeConfigCache(projectId);
             }
 
-            log.debug("[ProxyPath] 缓存未命中，从数据库查询配置，projectId={}", projectId);
+            log.debug("[Proxy Path] cache miss, from DBqueryconfig, project Id={}", projectId);
             configModel = customPageConfigDomainService.getById(projectId);
 
             if (configModel != null) {
                 String configJson = objectMapper.writeValueAsString(configModel);
                 redisUtil.set(cacheKey, configJson, CACHE_EXPIRE_SECONDS);
-                log.debug("[ProxyPath] 配置已缓存，projectId={}", projectId);
+                log.debug("[Proxy Path] configcached, project Id={}", projectId);
             }
 
             return configModel;
 
         } catch (Exception e) {
-            log.error("[ProxyPath] 序列化/反序列化配置失败，projectId={}", projectId, e);
+            log.error("[Proxy Path] serialize/deserializeconfigfailed, project Id={}", projectId, e);
             // 缓存异常时，直接查询数据库
             return configModel != null ? configModel : customPageConfigDomainService.getById(projectId);
         }

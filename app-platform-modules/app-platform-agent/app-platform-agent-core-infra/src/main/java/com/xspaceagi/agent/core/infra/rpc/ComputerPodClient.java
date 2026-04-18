@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -59,6 +60,9 @@ public class ComputerPodClient {
     public Map<String, Object> restart(Long cId, Long userId) {
         SandboxServerConfig.SandboxServer sandboxServer = selectSandboxServer(cId);
         String url = sandboxServer.getServerAgentUrl() + "/computer/pod/restart";
+        if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
+            url = sandboxServer.getServerAgentUrl() + "/admin/services/restart";
+        }
         log.info("[ComputerPodClient] restart userId={} cId={} , url={}", userId, cId, url);
 
         Map<String, Object> body = new HashMap<>();
@@ -101,10 +105,11 @@ public class ComputerPodClient {
         try {
             sandboxServer = sandboxServerConfigService.selectServer(cId);
         } catch (Exception e) {
-            throw new BizException(e.getMessage());
+            log.warn("[ComputerPodClient] selectServer failed cId={}", cId, e);
+            throw BizException.of(BizExceptionCodeEnum.agentDependencyServiceError);
         }
         if (sandboxServer == null || sandboxServer.getServerAgentUrl() == null) {
-            throw new BizException("关联的agent服务器已停止或已删除");
+            throw BizException.of(BizExceptionCodeEnum.agentSandboxServerStoppedOrRemoved);
         }
         return sandboxServer;
     }
@@ -126,10 +131,10 @@ public class ComputerPodClient {
                     }
             );
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[ComputerPodClient] logId={} 调用成功, 响应结果={}", logId, responseBody);
+            log.info("[ComputerPodClient] logId={} call OK, response={}", logId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[ComputerPodClient] logId={} 调用失败, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[ComputerPodClient] logId={} call failed, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(logId, e);
         }
     }
@@ -151,10 +156,10 @@ public class ComputerPodClient {
                     }
             );
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[ComputerPodClient] logId={} 调用成功, 响应结果={}", logId, responseBody);
+            log.info("[ComputerPodClient] logId={} call OK, response={}", logId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[ComputerPodClient] logId={} 调用失败, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[ComputerPodClient] logId={} call failed, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(logId, e);
         }
     }

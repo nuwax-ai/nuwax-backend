@@ -18,6 +18,7 @@ import com.xspaceagi.knowledge.domain.service.IKnowledgeQaSegmentDomainService;
 import com.xspaceagi.knowledge.domain.vectordb.VectorDBService;
 import com.xspaceagi.knowledge.sdk.enums.KnowledgePubStatusEnum;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.KnowledgeException;
@@ -83,7 +84,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
         var existModel = this.knowledgeQaSegmentRepository.queryOneInfoById(id);
         if (Objects.isNull(existModel)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         var kbId = existModel.getKbId();
@@ -107,7 +108,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         var kbId = existModel.getKbId();
         var knowledgeConfig = this.knowledgeConfigRepository.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var embeddingModelId = knowledgeConfig.getEmbeddingModelId();
 
@@ -140,7 +141,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         var kbId = existModel.getKbId();
         var knowledgeConfig = this.knowledgeConfigRepository.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var embeddingModelId = knowledgeConfig.getEmbeddingModelId();
 
@@ -185,8 +186,8 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
         var existFlag = vectorDBService.checkCollectionExists(collectionName);
         if (!existFlag) {
-            log.error("知识库[{}]向量数据库不存在", kbId);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5011, kbId);
+            log.error("KB [{}] vector store missing", kbId);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeVectorDatabaseNotFound, kbId);
         }
 
         return vectorDBService.searchEmbedding(qaQueryEmbeddingDto);
@@ -235,7 +236,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         var existObj = this.knowledgeRawSegmentDomainService.queryOneInfoById(rawId);
         //if(qaIds == null || qaIds.size() == 0 ) {
         if(existObj.getQaStatus() != null && existObj.getQaStatus() != 1) {
-            throw new BizException("操作失败：当前数据正在生成问答，请稍后重试！");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeQaGenerationBusy);
         }*/
         if(qaIds != null && qaIds.size() > 0) {
             this.vectorDBService.removeEmbeddingQaIds(docId, qaIds);
@@ -265,7 +266,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         // 校验知识库是否存在
         var knowledgeConfig = this.knowledgeConfigRepository.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         List<KnowledgeQaSegmentModel> qaSegmentList = new ArrayList<>();
@@ -314,8 +315,8 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
             threadTenantUtil.obtainOtherScheduledExecutor().execute(runnable);
 
         } catch (IOException e) {
-            log.error("导入CSV文件失败", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019, e.getMessage());
+            log.error("Import CSV failed", e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed, e.getMessage());
         }
     }
 
@@ -324,7 +325,7 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         // 校验知识库是否存在
         var knowledgeConfig = this.knowledgeConfigRepository.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
 
@@ -351,25 +352,25 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
                                     // 验证问题和答案的长度
                                     if (StringUtils.isNotBlank(question) && question.trim().length() > 500) {
-                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed,
                                                 String.format("第%d行数据校验失败：问题长度不能超过500字符，当前长度：%d",
                                                         rowNumber, question.trim().length()));
                                     }
 
                                     if (StringUtils.isNotBlank(answer) && answer.trim().length() > 5000) {
-                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed,
                                                 String.format("第%d行数据校验失败：答案长度不能超过5000字符，当前长度：%d",
                                                         rowNumber, answer.trim().length()));
                                     }
 
                                     // 如果问题或答案为空，则抛出异常
                                     if (StringUtils.isBlank(question)) {
-                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed,
                                                 String.format("第%d行数据校验失败：问题不能为空", rowNumber));
                                     }
 
                                     if (StringUtils.isBlank(answer)) {
-                                        throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019,
+                                        throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed,
                                                 String.format("第%d行数据校验失败：答案不能为空", rowNumber));
                                     }
 
@@ -407,9 +408,9 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
         } catch (KnowledgeException e) {
             throw e;
         } catch (Exception e) {
-            log.error("导入Excel文件失败", e);
+            log.error("Import Excel failed", e);
 
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5019, "导入Excel文件失败：" + e.getMessage());
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeImportFileFailed, "导入Excel文件失败：" + e.getMessage());
         }
     }
 
@@ -447,8 +448,8 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
                 this.knowledgeQaSegmentRepository.batchChangeEmbeddingStatus(qaIds, true, userContext);
             }
         } catch (Exception e) {
-            log.error("批量对新增的问答,进行向量化失败", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5022, e.getMessage());
+            log.error("Batch embed new QAs failed", e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeVectorizationFailed, e.getMessage());
         }
 
     }

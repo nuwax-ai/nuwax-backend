@@ -48,7 +48,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @RequestMapping(path = "/list", method = RequestMethod.POST)
     public ReqResult<IPage<ClientConfigVo>> list(
             @RequestBody PageQueryVo<ClientConfigQueryRequest> pageQueryVo) {
-        log.info("查询客户端配置列表: {}", pageQueryVo);
+        log.info("Query client config list: {}", pageQueryVo);
         var userContext = getUser();
         // 获取或注册客户端密钥
         ClientSecretDTO clientSecret = ecoMarkerSecretWrapper.obtainClientSecretOrRegister(userContext.getTenantId());
@@ -78,7 +78,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "客户端配置详情查询", description = "根据UID查询客户端配置详情")
     @PostMapping("/detail")
     public ReqResult<ClientConfigVo> getDetail(@RequestBody @Valid ClientConfigDetailReqDTO reqDTO) {
-        log.info("查询客户端配置详情: uid={}", reqDTO.getUid());
+        log.info("Query client config detail: uid={}", reqDTO.getUid());
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -107,7 +107,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "新增草稿", description = "创建客户端配置草稿")
     @PostMapping("/save/draft")
     public ReqResult<ClientConfigVo> saveDraft(@RequestBody @Valid ClientConfigSaveReqDTO reqDTO) {
-        log.info("保存客户端配置草稿: {}", reqDTO);
+        log.info("Save client config draft: {}", reqDTO);
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -135,7 +135,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "更新草稿", description = "根据UID更新客户端配置草稿")
     @PostMapping("/update/draft")
     public ReqResult<ClientConfigVo> updateDraft(@RequestBody @Valid ClientConfigUpdateDraftReqDTO reqDTO) {
-        log.info("更新客户端配置草稿: uid={}, name={}", reqDTO.getUid(), reqDTO.getName());
+        log.info("Update client config draft: uid={}, name={}", reqDTO.getUid(), reqDTO.getName());
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -167,7 +167,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "保存并发布", description = "保存客户端配置并提交审核")
     @PostMapping("/save/publish")
     public ReqResult<ClientConfigVo> saveAndPublish(@RequestBody @Valid ClientConfigSaveReqDTO reqDTO) {
-        log.info("保存客户端配置并发布: {}", reqDTO);
+        log.info("Save client config and publish: {}", reqDTO);
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -196,7 +196,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "更新并发布", description = "更新客户端配置并提交审核")
     @PostMapping("/update/publish")
     public ReqResult<ClientConfigVo> updateAndPublish(@RequestBody @Valid ClientConfigUpdateReqDTO reqDTO) {
-        log.info("更新客户端配置并发布: {}", reqDTO);
+        log.info("Update client config and publish: {}", reqDTO);
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -225,7 +225,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "删除配置", description = "删除客户端配置")
     @PostMapping("/delete/{uid}")
     public ReqResult<Boolean> delete(@PathVariable("uid") String uid) {
-        log.info("删除客户端配置: uid={}", uid);
+        log.info("Delete client config: uid={}", uid);
 
         var userContext = getUser();
         // 获取或注册客户端密钥
@@ -244,7 +244,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "下线配置", description = "下线已发布的客户端配置")
     @PostMapping("/offline/{uid}")
     public ReqResult<ClientConfigVo> offline(@PathVariable("uid") String uid) {
-        log.info("下线客户端配置: uid={}", uid);
+        log.info("Offline client config: uid={}", uid);
 
         // 获取当前用户上下文
         var userContext = getUser();
@@ -270,7 +270,7 @@ public class EcoMarketClientConfigController extends BaseController {
     @Operation(summary = "撤销发布", description = "撤销发布")
     @PostMapping("/unpublish/{uid}")
     public ReqResult<ClientConfigVo> unpublish(@PathVariable("uid") String uid) {
-        log.info("撤销发布客户端配置: uid={}", uid);
+        log.info("Revoke publish client config: uid={}", uid);
 
         // 获取当前用户上下文
         var userContext = getUser();

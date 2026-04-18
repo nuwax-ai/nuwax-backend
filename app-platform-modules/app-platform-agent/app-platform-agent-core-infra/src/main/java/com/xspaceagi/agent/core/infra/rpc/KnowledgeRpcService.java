@@ -72,7 +72,7 @@ public class KnowledgeRpcService {
         StringBuilder stringBuilder = new StringBuilder();
         int count = 0;
         if (CollectionUtils.isNotEmpty(knowledgeDocumentResponseVo.getDocumentVoList())) {
-            stringBuilder.append("知识库包含文档名称如下：");
+            stringBuilder.append("The knowledge base contains the following document names：");
             for (KnowledgeDocumentVo documentVo : knowledgeDocumentResponseVo.getDocumentVoList()) {
                 if (count >= MAX_DOCUMENT_COUNT) {
                     break;

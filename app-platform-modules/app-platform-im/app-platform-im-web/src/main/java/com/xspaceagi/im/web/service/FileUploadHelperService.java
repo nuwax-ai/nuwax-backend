@@ -45,7 +45,7 @@ public class FileUploadHelperService {
                                         ImChannelEnum imType,
                                         TenantConfigDto tenantConfig) {
         if (fileBytes == null || fileBytes.length == 0) {
-            log.warn("文件字节数组为空，无法上传");
+            log.warn("File bytes empty; cannot upload");
             return UploadResult.failed("文件字节数组为空");
         }
 
@@ -64,8 +64,7 @@ public class FileUploadHelperService {
                     // 使用默认文件名，Content-Type 使用通用类型
                     String fileName = defaultFileName;
                     String contentType = "application/octet-stream";
-
-                    log.info("文件类型检测失败，使用默认文件名: fileName={}", fileName);
+                    log.info("File type detection failed, using default fileName: fileName={}", fileName);
 
                     ImUploadResultDto uploadResult = fileUploadService.uploadBytes(
                             fileBytes, fileName, contentType, storageType, subPath, tenantConfig);
@@ -77,7 +76,7 @@ public class FileUploadHelperService {
                         return UploadResult.failed("文件上传失败");
                     }
                 } else {
-                    log.warn("文件类型检测失败，且无默认文件名，无法上传: originalType={}", originalType);
+                    log.warn("File type detection failed and no default name; cannot upload: originalType={}", originalType);
                     return UploadResult.failed("文件类型检测失败，且无默认文件名");
                 }
             }
@@ -91,22 +90,22 @@ public class FileUploadHelperService {
                 contentType = "application/octet-stream";  // 最后的兜底
             }
 
-            log.info("准备上传文件: fileName={}, contentType={}, source={}", fileName, contentType, detection.getDetectionSource());
+            log.info("Uploading file: fileName={}, contentType={}, source={}", fileName, contentType, detection.getDetectionSource());
 
             // 4. 上传文件
             ImUploadResultDto uploadResult = fileUploadService.uploadBytes(
                     fileBytes, fileName, contentType, storageType, subPath, tenantConfig);
 
             if (uploadResult != null && StringUtils.isNotBlank(uploadResult.getUrl())) {
-                log.info("文件上传成功: url={}, uploadFileName={}", uploadResult.getUrl(), uploadResult.getFileName());
+                log.info("File upload OK: url={}, uploadFileName={}", uploadResult.getUrl(), uploadResult.getFileName());
                 return UploadResult.success(uploadResult, detection);
             } else {
-                log.warn("文件上传失败");
+                log.warn("File upload failed");
                 return UploadResult.failed("文件上传失败");
             }
 
         } catch (Exception e) {
-            log.error("文件检测或上传异常", e);
+            log.error("File detect or upload error", e);
             return UploadResult.failed("文件检测或上传异常: " + e.getMessage());
         }
     }
@@ -146,7 +145,7 @@ public class FileUploadHelperService {
                 contentType = "application/octet-stream";
             }
 
-            log.info("从文件名推断MIME类型: fileName={}, contentType={}", originalFileName, contentType);
+            log.info("MIME inferred from file name: fileName={}, contentType={}", originalFileName, contentType);
 
             // 上传文件
             ImUploadResultDto uploadResult = fileUploadService.uploadBytes(
@@ -159,7 +158,7 @@ public class FileUploadHelperService {
             }
 
         } catch (Exception e) {
-            log.error("文件上传异常: fileName={}", originalFileName, e);
+            log.error("File upload error: fileName={}", originalFileName, e);
             return UploadResult.failed("文件上传异常: " + e.getMessage());
         }
     }
@@ -194,7 +193,7 @@ public class FileUploadHelperService {
         String fileName = typePrefix + "_" + System.currentTimeMillis() + extension;
 
         try {
-            log.info("使用 MIME 覆盖上传文件: fileName={}, contentType={}", fileName, contentType);
+            log.info("Overwrite upload with MIME: fileName={}, contentType={}", fileName, contentType);
             ImUploadResultDto uploadResult = fileUploadService.uploadBytes(
                     fileBytes, fileName, contentType, storageType, subPath, tenantConfig);
 
@@ -204,7 +203,7 @@ public class FileUploadHelperService {
                 return UploadResult.failed("文件上传失败");
             }
         } catch (Exception e) {
-            log.error("使用 MIME 覆盖上传文件异常: fileName={}", fileName, e);
+            log.error("MIME overwrite upload error: fileName={}", fileName, e);
             return UploadResult.failed("文件上传异常: " + e.getMessage());
         }
     }

@@ -26,6 +26,8 @@ public interface ScheduleTaskApiService {
 
     List<ScheduleTaskDto> queryTaskListBySpaceId(Long spaceId);
 
+    List<ScheduleTaskDto> queryTaskListByUserIdAndAgentId(Long userId, String agentId);
+
     /**
      * 分页查询任务列表（时间倒序）
      *

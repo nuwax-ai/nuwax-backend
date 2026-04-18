@@ -53,7 +53,7 @@ public class ResourcePermissionAspect {
         try {
             UserDto currentUser = (UserDto) RequestContext.get().getUser();
             if (currentUser == null) {
-                log.warn("用户未登录，拒绝访问: {}", joinPoint.getSignature().getName());
+                log.warn("User not logged in, access denied: {}", joinPoint.getSignature().getName());
                 throw new ResourcePermissionException("用户未登录");
             }
 
@@ -71,7 +71,7 @@ public class ResourcePermissionAspect {
             return joinPoint.proceed();
             
         } catch (ResourcePermissionException e) {
-            log.warn("资源权限验证失败: {}", e.getMessage());
+            log.warn("资源Permission check failed: {}", e.getMessage());
             throw e;
         } catch (Throwable e) {
             throw e;

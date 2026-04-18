@@ -34,7 +34,10 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -146,7 +149,7 @@ public class AgentController {
     public ReqResult<Long> copy(@PathVariable Long agentId) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
         if (agentConfigDto == null) {
-            throw new BizException("agentId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentIdInvalid);
         }
         // 检查权限
         spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
@@ -164,7 +167,7 @@ public class AgentController {
 
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
         if (agentConfigDto == null) {
-            throw new BizException("agentId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentIdInvalid);
         }
         if (targetSpaceId.equals(agentConfigDto.getSpaceId())) {
             // 复制到本空间，只需检查普通用户权限
@@ -212,7 +215,7 @@ public class AgentController {
     public ReqResult<AgentConfigDto> getAgentConfig(@PathVariable Long agentId) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryAgentByIdWithStatics(agentId);
         if (agentConfigDto == null) {
-            throw new BizException("agentId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentIdInvalid);
         }
         spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
         if (agentConfigDto.getDevConversationId() == null) {
@@ -286,7 +289,7 @@ public class AgentController {
     public ReqResult<Void> delete(@PathVariable Long agentId) {
         AgentConfigDto agentConfigDto = checkAgentPermission(agentId);
         if (agentConfigDto.getExtra().containsKey("private")) {
-            throw new BizException("私有电脑的智能体不允许在此删除");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPrivateComputerDeleteForbidden);
         }
         agentApplicationService.delete(agentId);
         return ReqResult.success();
@@ -330,9 +333,9 @@ public class AgentController {
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (tenantConfigDto.getAgentPublishAudit() == 0) {
             publishApplicationService.publish(applyId);
-            return ReqResult.create(ReqResult.SUCCESS, "发布成功", "发布成功");
+            return ReqResult.create(ReqResult.SUCCESS, I18nUtil.systemMessage("Backend.Agent.Publish.Success"), I18nUtil.systemMessage("Backend.Agent.Publish.Success"));
         }
-        return ReqResult.create(ReqResult.SUCCESS, "发布申请已提交，等待审核中", "发布申请已提交，等待审核中");
+        return ReqResult.create(ReqResult.SUCCESS, I18nUtil.systemMessage("Backend.Agent.Publish.SubmitPending"), I18nUtil.systemMessage("Backend.Agent.Publish.SubmitPending"));
     }
 
     @RequireResource(AGENT_QUERY_DETAIL)
@@ -369,9 +372,27 @@ public class AgentController {
             //校验选择的知识有没有使用权限
             KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(agentComponentConfigAddDto.getTargetId());
             if (knowledgeConfigModel == null) {
-                throw new BizException("知识ID错误");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentKnowledgeIdInvalid);
             }
-            spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId(), RequestContext.get().getUserId());
+
+            //新增特殊授权
+            UserDto userDto = (UserDto) RequestContext.get().getUser();
+            UserDataPermissionDto userDataPermissionDto = userDataPermissionRpcService.getUserDataPermission(userDto.getId());
+            List<Long> knowledgeIds = userDataPermissionDto.getKnowledgeIds();
+            boolean needCheckPermissionState = true;
+            if (knowledgeIds != null && !knowledgeIds.isEmpty()) {
+                for (Long knowledgeId : knowledgeIds) {
+                    if(knowledgeId.equals(knowledgeConfigModel.getId())) {
+                        needCheckPermissionState = false;
+                        break;
+                    }
+                }
+            }
+            //新增特殊授权
+            if(needCheckPermissionState) {
+                spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId(), RequestContext.get().getUserId());
+            }
+
         }
         //校验数据表权限
         if (agentComponentConfigAddDto.getType() == AgentComponentConfig.Type.Table) {
@@ -391,7 +412,7 @@ public class AgentController {
         if (agentComponentConfigAddDto.getType() == AgentComponentConfig.Type.Page) {
             PageDto pageDto = customPageRpcService.queryPageDto(agentComponentConfigAddDto.getTargetId());
             if (pageDto == null) {
-                throw new BizException("页面ID错误");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageIdInvalid);
             }
             spacePermissionService.checkSpaceUserPermission(pageDto.getSpaceId(), RequestContext.get().getUserId());
         }
@@ -435,7 +456,14 @@ public class AgentController {
     @RequestMapping(path = "/component/delete/{id}", method = RequestMethod.POST)
     public ReqResult<Void> deleteComponentModelConfig(@PathVariable Long id) {
         //权限验证
-        checkComponentPermission(id, null);
+        try {
+            checkComponentPermission(id, null);
+        } catch (Exception e) {
+            if (e instanceof BizException bizException && "0003".equals(bizException.getCode())) {
+                //已经不存在了
+                return ReqResult.success();
+            }
+        }
         agentApplicationService.deleteComponentConfig(id);
         return ReqResult.success();
     }
@@ -497,14 +525,14 @@ public class AgentController {
             args.forEach(arg -> {
                 if (arg.getBindValueType() == Arg.BindValueType.Input && StringUtils.isNotBlank(arg.getBindValue())) {
                     if (arg.getDataType() == DataTypeEnum.Boolean && !arg.getBindValue().toLowerCase().equals("true") && !arg.getBindValue().toLowerCase().equals("false")) {
-                        throw new BizException("参数[" + arg.getName() + "]类型为Boolean，默认值只能为true或false");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentArgBooleanDefaultInvalid, arg.getName());
                     }
                     //Integer只能为整数
                     if (arg.getDataType() == DataTypeEnum.Integer) {
                         try {
                             Integer.parseInt(arg.getBindValue());
                         } catch (NumberFormatException e) {
-                            throw new BizException("参数[" + arg.getName() + "]类型为Integer，默认值只能为整数");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentArgIntegerDefaultInvalid, arg.getName());
                         }
                     }
                     //Number
@@ -512,7 +540,7 @@ public class AgentController {
                         try {
                             Double.parseDouble(arg.getBindValue());
                         } catch (NumberFormatException e) {
-                            throw new BizException("参数[" + arg.getName() + "]类型为Number，默认值只能为数字");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentArgNumberDefaultInvalid, arg.getName());
                         }
                     }
                 }
@@ -581,7 +609,7 @@ public class AgentController {
             //校验选择的知识有没有使用权限
             KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(componentConfigUpdateDto.getTargetId());
             if (knowledgeConfigModel == null) {
-                throw new BizException("知识ID错误");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentKnowledgeIdInvalid);
             }
         }
         AgentComponentConfigDto agentComponentConfigDto = new AgentComponentConfigDto();
@@ -614,28 +642,29 @@ public class AgentController {
         Set<String> variableNames = new HashSet<>();
         variableConfigDto.getVariables().forEach(arg -> {
             if (variableNames.contains(arg.getName())) {
-                throw new BizException("变量名[" + arg.getName() + "]重复");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableNameDuplicated, arg.getName());
             }
             variableNames.add(arg.getName());
             if (arg.getInputType() == Arg.InputTypeEnum.Select || arg.getInputType() == Arg.InputTypeEnum.MultipleSelect) {
                 if (arg.getSelectConfig() == null) {
-                    throw new BizException("变量[" + arg.getName() + "]的输入类型为下拉选项，请设置下拉参数配置");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableSelectOptionsRequired, arg.getName());
                 }
                 if (arg.getSelectConfig().getDataSourceType() == SelectConfig.DataSourceTypeEnum.BINDING) {
                     if (arg.getSelectConfig().getTargetId() == null) {
-                        throw new BizException("变量[" + arg.getName() + "]的输入类型为下拉选项，请设置下拉参数配置");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableSelectOptionsRequired, arg.getName());
                     }
                     if (arg.getSelectConfig().getTargetType() == Published.TargetType.Plugin) {
                         PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(arg.getSelectConfig().getTargetId(), agentConfigDto.getSpaceId());
                         if (pluginDto == null) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的插件不存在或已下线");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariablePluginOffline, arg.getName());
                         }
                         PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginDto.getConfig();
                         if (pluginConfigDto == null) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的插件数据结构异常");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariablePluginDataInvalid, arg.getName());
                         }
                         if (pluginConfigDto.getOutputArgs() == null) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的插件[" + pluginDto.getName() + "]的输出参数为空");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariablePluginOutputEmpty,
+                                    arg.getName(), pluginDto.getName());
                         }
                         AtomicBoolean hasOptions = new AtomicBoolean(false);
                         pluginConfigDto.getOutputArgs().forEach(outputArg -> {
@@ -644,7 +673,7 @@ public class AgentController {
                             }
                         });
                         if (!hasOptions.get()) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的插件数据结构不符合规，缺少options");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariablePluginOptionsMissing, arg.getName());
                         }
                         arg.getSelectConfig().setTargetName(pluginDto.getName());
                         arg.getSelectConfig().setTargetDescription(pluginDto.getDescription());
@@ -653,10 +682,10 @@ public class AgentController {
                     if (arg.getSelectConfig().getTargetType() == Published.TargetType.Workflow) {
                         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(arg.getSelectConfig().getTargetId(), agentConfigDto.getSpaceId(), false);
                         if (workflowConfigDto == null) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的工作流不存在");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableWorkflowNotFound, arg.getName());
                         }
                         if (workflowConfigDto.getOutputArgs() == null) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的工作流没有输出参数");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableWorkflowNoOutput, arg.getName());
                         }
                         AtomicBoolean hasOptions = new AtomicBoolean(false);
                         workflowConfigDto.getOutputArgs().forEach(outputArg -> {
@@ -665,7 +694,7 @@ public class AgentController {
                             }
                         });
                         if (!hasOptions.get()) {
-                            throw new BizException("变量[" + arg.getName() + "]引用的工作流输出数据结构不符合规，缺少options");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableWorkflowOptionsMissing, arg.getName());
                         }
                         arg.getSelectConfig().setTargetName(workflowConfigDto.getName());
                         arg.getSelectConfig().setTargetDescription(workflowConfigDto.getDescription());
@@ -673,7 +702,7 @@ public class AgentController {
                     }
                 } else {
                     if (arg.getSelectConfig().getOptions() == null || CollectionUtils.isEmpty(arg.getSelectConfig().getOptions())) {
-                        throw new BizException("变量[" + arg.getName() + "]缺少选项");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentVariableOptionsMissing, arg.getName());
                     }
                 }
             }
@@ -780,10 +809,10 @@ public class AgentController {
     private AgentConfigDto checkComponentPermission(Long id, AgentComponentConfig.Type type) {
         AgentComponentConfigDto agentComponentConfigDto = agentApplicationService.queryComponentConfig(id);
         if (agentComponentConfigDto == null) {
-            throw new BizException("组件ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentComponentNotFoundOrRemoved);
         }
         if (type != null && type != agentComponentConfigDto.getType()) {
-            throw new BizException("组件类型错误，请检查是否使用了正确的接口");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentComponentTypeInvalid);
         }
         return checkAgentPermission(agentComponentConfigDto.getAgentId());
     }
@@ -791,7 +820,7 @@ public class AgentController {
     private AgentConfigDto checkAgentPermission(Long agentId) {
         AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
         if (agentDto == null) {
-            throw new BizException("Agent不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
         spacePermissionService.checkSpaceUserPermission(agentDto.getSpaceId());
         return agentDto;
@@ -800,7 +829,7 @@ public class AgentController {
     private void checkAgentAdminPermission(Long agentId) {
         AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
         if (agentDto == null) {
-            throw new BizException("Agent不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
         if (RequestContext.get().getUserId().equals(agentDto.getCreatorId())) {
             //除了智能体是用户创建的，还需是空间用户
@@ -815,7 +844,7 @@ public class AgentController {
         dorisTableDefineRequest.setTableId(tableId);
         TableDefineVo tableDefineVo = iComposeDbTableRpcService.queryTableDefinition(dorisTableDefineRequest);
         if (tableDefineVo == null) {
-            throw new BizException("表ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTableIdInvalid);
         }
         spacePermissionService.checkSpaceUserPermission(tableDefineVo.getSpaceId());
     }

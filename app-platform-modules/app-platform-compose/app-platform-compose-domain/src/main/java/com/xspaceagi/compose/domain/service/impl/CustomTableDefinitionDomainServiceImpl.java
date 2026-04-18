@@ -75,7 +75,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public Long addInfo(CustomEmptyTableVo model, UserContext userContext) {
-        log.debug("新增空表定义开始，参数：{}", model);
+        log.debug("Create empty table definition start, params: {}", model);
 
         // 1. 创建表定义模型
         CustomTableDefinitionModel tableModel = CustomEmptyTableVo.convertToModel(model, userContext);
@@ -83,7 +83,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         // 从配置中获取Doris数据库名称
         String dorisDatabase = tableDbWrapperUtil.getDorisDatabase();
         tableModel.setDorisDatabase(dorisDatabase);
-        log.debug("使用Doris数据库: {}", dorisDatabase);
+        log.debug("Using Doris database: {}", dorisDatabase);
 
         // 2. 保存表定义
         Long tableId = customTableDefinitionRepository.addInfo(tableModel);
@@ -91,7 +91,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         // 空表结构添加,新增默认的系统字段
         var fieldList = CustomFieldDefinitionModel.obatinTableSystemFields(tableId, model.getSpaceId(), userContext);
         customFieldDefinitionRepository.batchAddInfo(fieldList, userContext);
-        log.debug("新增空表定义完成，tableId：{}", tableId);
+        log.debug("Empty table definition created, tableId: {}", tableId);
 
         return tableId;
     }
@@ -100,23 +100,23 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
     @RedisLock(prefix = "lock:table_definition:", key = "#model.id", waitTime = 3, leaseTime = 30)
     public void updateInfo(CustomTableDefinitionModel model, List<CustomFieldDefinitionModel> fieldList,
                            UserContext userContext) {
-        log.debug("开始更新表定义，tableId: {}", model.getId());
+        log.debug("Updating table definition, tableId: {}", model.getId());
 
         // 校验所有新增/更新字段的字段名是否合法
         if (fieldList != null) {
             for (CustomFieldDefinitionModel field : fieldList) {
                 String fieldName = field.getFieldName();
                 if (!StringUtils.hasText(fieldName)) {
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6027);
+                    throw ComposeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "字段名");
                 }
                 if (fieldName.length() > 64) {
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6028);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeFieldNameTooLong);
                 }
                 if (!Character.isLowerCase(fieldName.charAt(0)) && !Character.isUpperCase(fieldName.charAt(0))) {
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6029);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeFieldNameMustStartWithLetter);
                 }
                 if (!fieldName.matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6030);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeFieldNameInvalidChars);
                 }
                 // 新增：数值型字段的默认值校验
                 Integer fieldType = field.getFieldType();
@@ -127,27 +127,27 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                     try {
                         new java.math.BigDecimal(defaultValue);
                     } catch (Exception e) {
-                        log.warn("字段[{}]的默认值[{}]不是数值类型", fieldName, defaultValue);
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6037, fieldName);
+                        log.warn("Field [{}] default [{}] is not numeric", fieldName, defaultValue);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueMustBeNumber, fieldName);
                     }
                 }
                 if (TableFieldTypeEnum.BOOLEAN.getCode().equals(fieldType) && StringUtils.hasText(defaultValue)) {
                     if (!(defaultValue.equals("true") || defaultValue.equals("false"))) {
-                        log.warn("字段[{}]的默认值[{}]不是布尔值", fieldName, defaultValue);
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6038, fieldName);
+                        log.warn("Field [{}] default [{}] is not boolean", fieldName, defaultValue);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueMustBeBoolean, fieldName);
                     }
                 }
                 if (TableFieldTypeEnum.STRING.getCode().equals(fieldType) && StringUtils.hasText(defaultValue)) {
                     if (defaultValue.length() > DorisConfigContants.DEFAULT_STRING_LENGTH) {
-                        log.warn("字段[{}]的默认值[{}]长度不能超过{}字符", fieldName, defaultValue,
+                        log.warn("Field [{}] default [{}] exceeds max length {}", fieldName, defaultValue,
                                 DorisConfigContants.DEFAULT_STRING_LENGTH);
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6039, fieldName);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueTooLong, fieldName);
                     }
                 }
                 // if (TableFieldTypeEnum.MEDIUMTEXT.getCode().equals(fieldType) &&
                 // StringUtils.hasText(defaultValue)) {
-                // log.warn("字段[{}]为MEDIUMTEXT类型，不允许设置默认值[{}]", fieldName, defaultValue);
-                // throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6040,
+                // log.warn("Field [{}] is MEDIUMTEXT, default not allowed [{}]", fieldName, defaultValue);
+                // throw ComposeException.build(BizExceptionCodeEnum.composeMediumtextNoDefault,
                 // fieldName);
                 // }
                 // check 默认值的范围,如果字段类型是 int,范围限制在: [-2147483648,2147483647] 区间
@@ -158,7 +158,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                         Long minValue = -2147483648L;
                         Long maxValue = 2147483647L;
                         if (defaultValueInt < minValue || defaultValueInt > maxValue) {
-                            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6045, field.getFieldName(),
+                            throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueOutOfRange, field.getFieldName(),
                                     minValue.toString(), maxValue.toString());
                         }
                     }
@@ -175,12 +175,12 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
 
                             if (defaultValueBigDecimal.compareTo(maxValue) > 0
                                     || defaultValueBigDecimal.compareTo(minValue) < 0) {
-                                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6045,
+                                throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueOutOfRange,
                                         field.getFieldName(), minValue.toString(), maxValue.toString());
                             }
                         } catch (NumberFormatException e) {
-                            log.warn("字段[{}]的默认值[{}]不是有效的数值", field.getFieldName(), field.getDefaultValue());
-                            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6037,
+                            log.warn("Field [{}] default [{}] is not a valid number", field.getFieldName(), field.getDefaultValue());
+                            throw ComposeException.build(BizExceptionCodeEnum.composeDefaultValueMustBeNumber,
                                     field.getFieldName());
                         }
                     }
@@ -190,20 +190,20 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         }
 
         this.self.updateTableDefinitionInTransaction(model, fieldList, userContext);
-        log.debug("完成更新表定义，tableId: {}", model.getId());
+        log.debug("Table definition update done, tableId: {}", model.getId());
     }
 
     @Override
     @DSTransactional(rollbackFor = Exception.class, propagation = DsPropagation.REQUIRED)
     public void updateTableDefinitionInTransaction(CustomTableDefinitionModel model,
                                                    List<CustomFieldDefinitionModel> fieldList, UserContext userContext) {
-        log.debug("更新表定义事务开始，参数：{}", model);
+        log.debug("Table definition tx start, params: {}", model);
 
         // 1. 获取原有表定义
         final CustomTableDefinitionModel existingTable = customTableDefinitionRepository
                 .queryOneInfoById(model.getId());
         if (existingTable == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在");
         }
 
         final List<CustomFieldDefinitionModel> fieldsToAdd = new ArrayList<>();
@@ -277,9 +277,9 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
 
             // 如果Doris表有数据且有字段要删除，抛出异常
             if (hasDorisDataFinal && !fieldsToDelete.isEmpty()) {
-                log.error("Doris表有数据且有字段要删除，抛出异常, table: {}.{},删除字段:{}", existingTable.getDorisDatabase(),
+                log.error("Doris has data and columns to drop, abort, table: {}.{}, columns:{}", existingTable.getDorisDatabase(),
                         existingTable.getDorisTable(), JSON.toJSON(fieldsToDelete));
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6018);
+                throw ComposeException.build(BizExceptionCodeEnum.composeCannotDropFieldWithData);
             }
 
             // 执行MySQL字段变更
@@ -305,7 +305,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         // 4. 处理Doris表结构
         if (!hasDorisDataFinal) {
             // Doris无数据: 重建表
-            log.info("Doris表无数据，将重建表结构, table: {}.{}", existingTable.getDorisDatabase(),
+            log.info("Doris empty, will recreate schema, table: {}.{}", existingTable.getDorisDatabase(),
                     existingTable.getDorisTable());
             // 库表字段更新后,需要重新插最新的库表结构定义
             var tableModel = customTableDefinitionRepository.queryOneInfoById(model.getId());
@@ -314,36 +314,36 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
             // Doris有数据: 生成并执行 ALTER TABLE 语句
             var sqlList = tableDbWrapperUtil.generateDorisAlterSqls(existingTable, fieldsToAdd, fieldsToUpdate,
                     existingFieldMapFinal);
-            log.info("Doris表有数据，将执行ALTER TABLE语句, tableName:{},sqlList:{}", existingTable.getTableName(),
+            log.info("Doris has data, will ALTER, tableName:{}, sqlList:{}", existingTable.getTableName(),
                     JSON.toJSONString(sqlList));
             dorisAlterSqls
                     .addAll(sqlList);
             if (!dorisAlterSqls.isEmpty()) {
-                log.info("Doris表有数据，将执行ALTER TABLE语句, table: {}.{}", existingTable.getDorisDatabase(),
+                log.info("Doris has data, will ALTER, table: {}.{}", existingTable.getDorisDatabase(),
                         existingTable.getDorisTable());
                 customDorisTableDomainService.alterTable(existingTable.getDorisDatabase(),
                         existingTable.getDorisTable(), dorisAlterSqls);
             }
         }
 
-        log.debug("更新表定义事务完成");
+        log.debug("Table definition tx complete");
     }
 
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public CustomTableDefinitionModel deleteById(Long tableId, UserContext userContext) {
-        log.debug("删除表定义开始，tableId：{}", tableId);
+        log.debug("Delete table definition start, tableId: {}", tableId);
         // 1. 获取表定义
         CustomTableDefinitionModel tableModel = customTableDefinitionRepository.queryOneInfoById(tableId);
         if (tableModel == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在");
         }
 
         // 3. 删除表定义
         customTableDefinitionRepository.deleteById(tableId);
         // 删除关联的字段定义
         customFieldDefinitionRepository.deleteByTableId(tableId);
-        log.debug("删除表定义完成");
+        log.debug("Delete table definition done");
         return tableModel;
     }
 
@@ -354,22 +354,22 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                                                 CustomFieldDefinitionModel newField) {
         // 检查唯一性约束变更
         if (!Objects.equals(existingField.getUniqueFlag(), newField.getUniqueFlag())) {
-            log.warn("字段[{}]唯一性约束发生变更,需要检查Doris表中是否存在数据,如果存在数据,则抛出异常", existingField.getFieldName());
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6019, existingField.getFieldName());
+            log.warn("Field [{}] uniqueness changed; abort if Doris has data", existingField.getFieldName());
+            throw ComposeException.build(BizExceptionCodeEnum.composeCannotChangeUniqueWithData, existingField.getFieldName());
         }
 
         // 检查非空约束变更,如果字段是从可空变更为不可空,则需要检查Doris表中是否存在数据,如果存在数据,则抛出异常
         // if (!Objects.equals(existingField.getNullableFlag(),
         // newField.getNullableFlag())) {
         // if (DorisConfigContants.FIXED_FIELD_NULLABLE) {
-        // log.warn("字段[{}]从可空变更为不可空,需要检查Doris表中是否存在数据,如果存在数据,则抛出异常",
+        // log.warn("Field [{}] nullability tightened; abort if Doris has data",
         // existingField.getFieldName());
-        // throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6020,
+        // throw ComposeException.build(BizExceptionCodeEnum.composeCannotChangeNullableWithData,
         // existingField.getFieldName());
         // }
         // }
         if (!Objects.equals(existingField.getFieldType(), newField.getFieldType())) {
-            log.warn("字段[{}]类型发生变更，将尝试修改Doris表结构，请注意潜在风险");
+            log.warn("Field [{}] type changed; Doris ALTER may be risky");
         }
     }
 
@@ -388,34 +388,34 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         field.setDefaultValue(defaultFieldVo.getDefaultValue());
         field.setFieldDescription(defaultField.getFieldDescription());
 
-        log.debug("系统字段[{}]使用默认配置覆盖用户修改", defaultField.getFieldName());
+        log.debug("System field [{}] reset to default config", defaultField.getFieldName());
     }
 
     @Override
     public void exportTableDataToExcel(Long tableId, OutputStream outputStream, UserContext userContext) {
-        log.info("开始导出表数据到Excel, tableId: {}", tableId);
+        log.info("Export table to Excel start, tableId: {}", tableId);
 
         if (tableId == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表ID不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表ID不能为空");
         }
 
         // 提前获取并检查 tableModel
         CustomTableDefinitionModel tableModel = this.customTableDefinitionRepository.queryOneInfoById(tableId);
         if (tableModel == null) {
-            log.error("尝试导出数据时未找到表定义, tableId: {}", tableId);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在");
+            log.error("Table definition not found for export, tableId: {}", tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在");
         }
         String database = tableModel.getDorisDatabase();
         String table = tableModel.getDorisTable();
         if (StrUtil.hasBlank(database, table)) {
-            log.error("表定义中数据库名或表名不能为空, tableId: {}, database: {}, table: {}", tableId, database, table);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义中数据库名或表名不能为空");
+            log.error("Table definition has empty database or table name, tableId: {}, database: {}, table: {}", tableId, database, table);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义中数据库名或表名不能为空");
         }
         // 2. 获取字段定义列表 (仍然可能抛异常或返回空，留在try里)
         List<CustomFieldDefinitionModel> fields = tableModel.getFieldList();
         if (CollUtil.isEmpty(fields)) {
-            log.warn("表字段定义不存在或为空, tableId: {}", tableId);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            log.warn("Field definitions missing or empty, tableId: {}", tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         try {
 
@@ -448,7 +448,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                     if (fieldValue instanceof Number) {
                         String stringValue = formatNumberForExcel(fieldValue);
                         rowData.put(fieldName, stringValue);
-                        log.debug("字段[{}]的数值[{}]（类型:{}）已强制转换为字符串[{}]以确保Excel按字符串格式处理",
+                        log.debug("Field [{}] value [{}] ({}) coerced to string [{}] for Excel",
                                 fieldName, fieldValue, fieldValue.getClass().getSimpleName(), stringValue);
                     }
                 }
@@ -493,34 +493,34 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
 
             outputStream.flush();
 
-            log.info("导出表数据到Excel完成, tableId: {}, database: {}, table: {}, 总行数: {}",
+            log.info("Export to Excel done, tableId: {}, database: {}, table: {}, rows: {}",
                     tableId, database, table, excelData.size());
 
         } catch (Exception e) {
             // 记录完整的异常堆栈信息
-            log.error("导出表数据到Excel时发生异常, tableId: {}, database: {}, table: {}",
+            log.error("Export to Excel error, tableId: {}, database: {}, table: {}",
                     tableId, database, table, e); // Can use variables defined outside try
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "导出Excel时发生异常: " + e.getMessage());
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "导出Excel时发生异常: " + e.getMessage());
         }
     }
 
     @Override
     public CustomTableDefinitionModel queryOneTableInfoById(Long tableId) {
-        log.debug("查询表定义信息, tableId: {}", tableId);
+        log.debug("Query table definition, tableId: {}", tableId);
         return this.customTableDefinitionRepository.queryOneInfoById(tableId);
     }
 
     @Override
     public List<CustomTableDefinitionModel> queryAllTableDefineList(DorisToolTableDefineRequest request) {
-        log.debug("开始查询表定义列表, request: {}", request);
+        log.debug("Query table definition list, request: {}", request);
 
         if (request == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "请求参数不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "请求参数不能为空");
         }
 
         // 必须传入租户ID
         if (request.getTenantId() == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "租户ID不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "租户ID不能为空");
         }
 
         // 构建查询条件
@@ -544,7 +544,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
             return Collections.emptyList();
         }
 
-        log.debug("查询到 {} 个表定义", tableList.size());
+        log.debug("Found {} table definitions", tableList.size());
         return tableList;
     }
 
@@ -587,8 +587,8 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
     public Long copyTableDefinition(Long tableId, UserContext userContext) {
         var tableModel = this.customTableDefinitionRepository.queryOneInfoById(tableId);
         if (tableModel == null) {
-            log.error("表定义不存在, tableId: {}", tableId);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6025);
+            log.error("Table definition not found, tableId: {}", tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.composeTableDefinitionNotFound);
         }
         var newTableId = this.customTableDefinitionRepository.copyTableDefinition(tableId, userContext);
         return newTableId;
@@ -729,7 +729,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
 
         // 字段类型检查：如果字段类型为null，则不进行转换
         if (fieldType == null) {
-            log.debug("字段类型为null，跳过数值转换处理");
+            log.debug("Field type null, skip numeric conversion");
             return false;
         }
 
@@ -782,7 +782,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
 
         } catch (Exception e) {
             // 如果在处理过程中发生任何异常，记录错误但不影响整体流程
-            log.error("判断数值转换时发生异常，fieldValue: {}, fieldType: {}", fieldValue, fieldType, e);
+            log.error("Numeric conversion check error, fieldValue: {}, fieldType: {}", fieldValue, fieldType, e);
             return false;
         }
 
@@ -818,12 +818,12 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         }
 
         try {
-            log.debug("开始格式化数值: [{}], 类型: [{}]", fieldValue, fieldValue.getClass().getSimpleName());
+            log.debug("Format numeric: [{}], type: [{}]", fieldValue, fieldValue.getClass().getSimpleName());
 
             // 优先处理BigDecimal类型，使用toPlainString()避免科学计数法
             if (fieldValue instanceof BigDecimal) {
                 String result = ((BigDecimal) fieldValue).toPlainString();
-                log.debug("BigDecimal [{}] 转换为字符串: [{}]", fieldValue, result);
+                log.debug("BigDecimal [{}] -> string [{}]", fieldValue, result);
                 return result;
             }
 
@@ -832,7 +832,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                 Double doubleValue = (Double) fieldValue;
                 BigDecimal bd = BigDecimal.valueOf(doubleValue);
                 String result = bd.toPlainString();
-                log.debug("Double [{}] 转换为字符串: [{}]", fieldValue, result);
+                log.debug("Double [{}] -> string [{}]", fieldValue, result);
                 return result;
             }
 
@@ -841,7 +841,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                 Float floatValue = (Float) fieldValue;
                 BigDecimal bd = BigDecimal.valueOf(floatValue.doubleValue());
                 String result = bd.toPlainString();
-                log.debug("Float [{}] 转换为字符串: [{}]", fieldValue, result);
+                log.debug("Float [{}] -> string [{}]", fieldValue, result);
                 return result;
             }
 
@@ -849,7 +849,7 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
             if (fieldValue instanceof Long || fieldValue instanceof Integer ||
                     fieldValue instanceof Short || fieldValue instanceof Byte) {
                 String result = fieldValue.toString();
-                log.debug("整数类型 [{}] 转换为字符串: [{}]", fieldValue, result);
+                log.debug("Integer [{}] -> string [{}]", fieldValue, result);
                 return result;
             }
 
@@ -858,17 +858,17 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
                 Number number = (Number) fieldValue;
                 BigDecimal bd = new BigDecimal(number.toString());
                 String result = bd.toPlainString();
-                log.debug("其他数值类型 [{}] 转换为字符串: [{}]", fieldValue, result);
+                log.debug("Other numeric [{}] -> string [{}]", fieldValue, result);
                 return result;
             }
 
             // 非数值类型，直接toString
             String result = fieldValue.toString();
-            log.debug("非数值类型 [{}] 转换为字符串: [{}]", fieldValue, result);
+            log.debug("Non-numeric [{}] -> string [{}]", fieldValue, result);
             return result;
 
         } catch (Exception e) {
-            log.error("格式化数值[{}]为Excel字符串时发生异常", fieldValue, e);
+            log.error("Format numeric [{}] to Excel string error", fieldValue, e);
             // 异常时使用默认转换
             return String.valueOf(fieldValue);
         }

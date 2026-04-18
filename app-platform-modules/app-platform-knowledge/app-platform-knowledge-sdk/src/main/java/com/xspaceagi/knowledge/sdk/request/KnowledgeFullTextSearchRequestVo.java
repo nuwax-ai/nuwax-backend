@@ -39,7 +39,7 @@ public class KnowledgeFullTextSearchRequestVo implements Serializable {
         requiredMode = Schema.RequiredMode.REQUIRED, 
         example = "1"
     )
-    @NotNull(message = "租户ID不能为空")
+    @NotNull(message = "Tenant ID is required")
     private Long tenantId;
 
     @Schema(
@@ -54,7 +54,7 @@ public class KnowledgeFullTextSearchRequestVo implements Serializable {
         requiredMode = Schema.RequiredMode.REQUIRED, 
         example = "Spring Boot 开发框架"
     )
-    @NotBlank(message = "查询文本不能为空")
+    @NotBlank(message = "Query text is required")
     private String queryText;
 
     // ==================== 可选参数（有默认值）==================== //
@@ -64,8 +64,8 @@ public class KnowledgeFullTextSearchRequestVo implements Serializable {
         requiredMode = Schema.RequiredMode.NOT_REQUIRED, 
         example = "10"
     )
-    @Min(value = 1, message = "返回结果数量至少为1")
-    @Max(value = 100, message = "返回结果数量最多为100")
+    @Min(value = 1, message = "Result size must be at least 1")
+    @Max(value = 100, message = "Result size must be at most 100")
     private Integer topK = 10;
 
     @Schema(

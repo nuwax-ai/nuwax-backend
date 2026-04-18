@@ -50,7 +50,7 @@ public class UserRequestApplicationServiceImpl implements UserRequestApplication
             redisUtil.leftPush("user_request_queue", JSON.toJSONString(userRequest));
         } catch (Exception e) {
             // 忽略
-            log.error("记录用户请求异常：{}", userRequest, e);
+            log.error("Exception recording user request: {}", userRequest, e);
         }
     }
 
@@ -72,7 +72,7 @@ public class UserRequestApplicationServiceImpl implements UserRequestApplication
                             userRequestList.clear();
                         }
                     } catch (Exception e) {
-                        log.error("记录用户请求异常：{}", val, e);
+                        log.error("Exception recording user request: {}", val, e);
                     }
                     val = redisUtil.rightPop("user_request_queue");
                 }
@@ -81,7 +81,7 @@ public class UserRequestApplicationServiceImpl implements UserRequestApplication
                 }
             } catch (Exception e) {
                 // 忽略
-                log.error("记录用户请求异常：{}", val, e);
+                log.error("Exception recording user request: {}", val, e);
                 sink.success(false);
             }
             sink.success(false);

@@ -89,7 +89,7 @@ public class KnowledgeDocumentRepository implements IKnowledgeDocumentRepository
             return ans;
         } catch (Exception e) {
             log.error("Error in pageQuery: ", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
     }
 
@@ -285,7 +285,7 @@ public class KnowledgeDocumentRepository implements IKnowledgeDocumentRepository
     public void deleteById(Long id) {
         var existObj = this.knowledgeDocumentService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         this.knowledgeDocumentService.removeById(id);
@@ -315,7 +315,7 @@ public class KnowledgeDocumentRepository implements IKnowledgeDocumentRepository
         var docId = model.getId();
         var existObj = this.knowledgeDocumentService.queryOneInfoById(docId);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         model.setCreatorId(null);
@@ -336,7 +336,7 @@ public class KnowledgeDocumentRepository implements IKnowledgeDocumentRepository
         var docId = model.getId();
         var existObj = this.knowledgeDocumentService.queryOneInfoById(docId);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         KnowledgeDocument updateObj = new KnowledgeDocument();

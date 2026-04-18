@@ -15,7 +15,9 @@ import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -115,7 +117,7 @@ public class TaskCenterManageController extends BaseManageController {
 
     private void checkTenantId(ScheduleTaskDto scheduleTaskDto1) {
         if (!scheduleTaskDto1.getTenantId().equals(RequestContext.get().getTenantId())) {
-            throw new BizException("无操作权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 

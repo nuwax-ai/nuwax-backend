@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "查询页面绑定的域名列表", description = "查询页面绑定的域名列表")
+@Tag(name = "Custom page domains", description = "List domains bound to custom pages")
 @RestController
 @Slf4j
 public class CustomPageDomainApiController extends BaseController {
@@ -21,7 +21,7 @@ public class CustomPageDomainApiController extends BaseController {
     @Resource
     private ICustomPageDomainApplicationService customPageDomainApplicationService;
 
-    @Operation(summary = "域名列表")
+    @Operation(summary = "Domain list")
     @GetMapping(value = "/api/v1/tenant/custom-page/domains", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<String>> list() {
         return ReqResult.success(TenantFunctions.callWithIgnoreCheck(() -> customPageDomainApplicationService.listAllDomains()));

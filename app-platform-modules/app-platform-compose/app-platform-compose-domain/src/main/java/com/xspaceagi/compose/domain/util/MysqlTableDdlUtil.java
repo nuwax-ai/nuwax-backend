@@ -40,10 +40,10 @@ public class MysqlTableDdlUtil {
             List<CustomFieldDefinitionModel> fields) {
         if (tableModel == null || !StringUtils.hasText(tableModel.getDorisDatabase())
                 || !StringUtils.hasText(tableModel.getDorisTable())) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义、数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义、数据库名或表名不能为空");
         }
         if (CollectionUtils.isEmpty(fields)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "创建表时至少需要一个字段");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "创建表时至少需要一个字段");
         }
 
         StringBuilder sql = new StringBuilder();
@@ -72,7 +72,7 @@ public class MysqlTableDdlUtil {
                 .append("DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n")
                 .append("COMMENT='").append(BuildSqlUtil.escapeSqlString(tableModel.getTableDescription())).append("'");
 
-        log.debug("构建的 CREATE TABLE SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
+        log.debug("Built CREATE TABLE SQL for {}.{}: \n{}", tableModel.getDorisDatabase(), tableModel.getDorisTable(),
                 sql.toString());
         return sql.toString();
     }
@@ -82,7 +82,7 @@ public class MysqlTableDdlUtil {
      */
     private static String buildColumnDefinitionSql(CustomFieldDefinitionModel field) {
         if (field == null || !StringUtils.hasText(field.getFieldName())) {
-            log.warn("跳过无效的字段定义");
+            log.warn("Skipping invalid field definition");
             return "";
         }
 
@@ -116,7 +116,7 @@ public class MysqlTableDdlUtil {
                     if (formattedDefault != null && (!isNotNull || !"NULL".equals(formattedDefault))) {
                         fieldSql.append(" DEFAULT ").append(formattedDefault);
                     } else if (formattedDefault != null && isNotNull && "NULL".equals(formattedDefault)) {
-                        log.warn("字段 '{}' 被定义为 NOT NULL，但提供的默认值解析为 NULL。将不为此字段添加 DEFAULT 子句。", field.getFieldName());
+                        log.warn("Field '{}' is NOT NULL but default resolves to NULL; no DEFAULT clause will be added.", field.getFieldName());
                     }
                 }
             }
@@ -133,7 +133,7 @@ public class MysqlTableDdlUtil {
      */
     private static String convertToMysqlTypeDefinition(Integer fieldTypeCode) {
         if (fieldTypeCode == null) {
-            log.warn("字段类型代码为 null，返回默认定义: {}", TableFieldTypeEnum.STRING.getMysqlDefinition());
+            log.warn("Field type code is null, returning default definition: {}", TableFieldTypeEnum.STRING.getMysqlDefinition());
             return TableFieldTypeEnum.STRING.getMysqlDefinition();
         }
 
@@ -177,7 +177,7 @@ public class MysqlTableDdlUtil {
             }
         }
         if (typeEnum == null) {
-            log.warn("未知的字段类型代码: {}, 将按字符串处理", fieldTypeCode);
+            log.warn("Unknown field type code: {}, treat as string", fieldTypeCode);
             typeEnum = TableFieldTypeEnum.STRING;
         }
 
@@ -188,7 +188,7 @@ public class MysqlTableDdlUtil {
                     Double.parseDouble(defaultValue);
                     return defaultValue;
                 } catch (NumberFormatException e) {
-                    log.warn("字段类型为数字，但默认值 '{}' 格式不正确，将按字符串处理", defaultValue);
+                    log.warn("Field is numeric but default '{}' is invalid, treating as string", defaultValue);
                     return "'" + BuildSqlUtil.escapeSqlString(defaultValue) + "'";
                 }
             case BOOLEAN:
@@ -196,13 +196,13 @@ public class MysqlTableDdlUtil {
                     return "1";
                 if ("false".equalsIgnoreCase(defaultValue) || "0".equals(defaultValue))
                     return "0";
-                log.warn("字段类型为布尔，但默认值 '{}' 格式不正确，将使用 '0'", defaultValue);
+                log.warn("Field is boolean but default '{}' is invalid, using '0'", defaultValue);
                 return "0";
             case DATE:
                 if ("CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue.trim())) {
                     return "CURRENT_TIMESTAMP";
                 }
-                log.warn("字段类型为日期，但默认值 '{}' 不是 'CURRENT_TIMESTAMP' 且不是有效的日期默认值. 不会为此字段生成 DEFAULT 子句.", defaultValue);
+                log.warn("Date field: default '{}' invalid; no DEFAULT clause.", defaultValue);
                 return null;
             case MEDIUMTEXT:
                 return "'" + BuildSqlUtil.escapeSqlString(defaultValue) + "'";
@@ -220,7 +220,7 @@ public class MysqlTableDdlUtil {
             List<CustomFieldDefinitionModel> newFields) {
         List<String> alterStatements = new ArrayList<>();
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            log.error("数据库名或表名不能为空");
+            log.error("Database name or table name cannot be empty");
             return alterStatements;
         }
 
@@ -323,7 +323,7 @@ public class MysqlTableDdlUtil {
      */
     public static String getCreateTableDdl(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SHOW CREATE TABLE `" + database + "`.`" + table + "`";
     }
@@ -337,7 +337,7 @@ public class MysqlTableDdlUtil {
      */
     public static String getTableExistsSql(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '"
                 + BuildSqlUtil.escapeSqlString(database) +
@@ -353,7 +353,7 @@ public class MysqlTableDdlUtil {
      */
     public static String getTableCountSql(String database, String table) {
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "数据库名或表名不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "数据库名或表名不能为空");
         }
         return "SELECT COUNT(*) FROM `" + BuildSqlUtil.escapeSqlString(database) + "`.`"
                 + BuildSqlUtil.escapeSqlString(table) + "`";
@@ -453,7 +453,7 @@ public class MysqlTableDdlUtil {
                     || !Objects.equals(existingField.getFieldDescription(), field.getFieldDescription()));
 
             if (existingField != null && Objects.isNull(defaultTableFieldEnum) && fieldChange) {
-                log.warn("字段 [{}] 类型从 {} 变更为 {}，正在生成 MODIFY COLUMN 语句，请确认Doris支持此变更且无数据丢失风险",
+                log.warn("Field [{}] type changed from {} to {}, generating MODIFY COLUMN; confirm Doris supports this without data loss",
                         field.getFieldName(), existingField.getFieldType(), field.getFieldType());
                 boolean isNotNull = DorisConfigContants.FIXED_FIELD_NULLABLE ? false
                         : field.getNullableFlag() != null && field.getNullableFlag() == -1;

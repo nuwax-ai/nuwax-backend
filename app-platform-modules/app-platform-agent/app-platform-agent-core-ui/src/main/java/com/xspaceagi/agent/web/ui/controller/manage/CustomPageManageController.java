@@ -19,8 +19,10 @@ import com.xspaceagi.system.application.dto.permission.SubjectTargetsDto;
 import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -160,7 +162,7 @@ public class CustomPageManageController extends BaseManageController {
     @PostMapping("/bind-restriction-targets")
     public ReqResult<Void> bindRestrictionTargets(@RequestBody @Valid BindRestrictionTargetsDto bindDto) {
         if (iCustomPageRpcService.queryDetailByAgentId(bindDto.getSubjectId()) == null) {
-            throw new BizException("网页应用不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWebAppNotFound);
         }
         sysSubjectPermissionApplicationService.bindRestrictionTargets(
                 PermissionSubjectTypeEnum.PAGE, bindDto.getSubjectId(), bindDto, getUser());

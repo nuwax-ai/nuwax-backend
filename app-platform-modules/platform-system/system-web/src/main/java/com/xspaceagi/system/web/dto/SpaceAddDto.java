@@ -11,7 +11,7 @@ public class SpaceAddDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "空间名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间名称不能为空")
+    @NotNull(message = "Space name is required")
     private String name;
 
     @Schema(description = "空间类型")

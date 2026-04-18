@@ -69,4 +69,7 @@ public class KnowledgeConfigVo {
 
     @Schema(description = "工作流ID")
     private Long workflowId;
+
+    @Schema(description = "是否受后台权限控制，0 不受，1 受")
+    private Integer accessControl;
 }

@@ -25,7 +25,7 @@ public class EcoMarketException extends KindlyException {
      * @return 异常
      */
     public static EcoMarketException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new EcoMarketException(codeEnum.getCode(), errorMessage);
     }
 

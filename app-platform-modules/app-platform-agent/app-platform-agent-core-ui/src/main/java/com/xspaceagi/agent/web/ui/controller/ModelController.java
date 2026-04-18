@@ -10,6 +10,9 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -40,10 +43,15 @@ public class ModelController {
     @Operation(summary = "在空间中添加或更新模型配置接口")
     @RequestMapping(path = "/save", method = RequestMethod.POST)
     public ReqResult<Void> addOrUpdate(@RequestBody @Valid ModelConfigAddDto modelConfigAddDto) {
-        Assert.notNull(modelConfigAddDto.getSpaceId(), "空间ID不能为空");
+        Assert.notNull(modelConfigAddDto.getSpaceId(), "Invalid spaceId");
         //新增时校验空间权限
         spacePermissionService.checkSpaceUserPermission(modelConfigAddDto.getSpaceId());
-
+        if (modelConfigAddDto.getId() != null) {
+            ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(modelConfigAddDto.getId());
+            if (modelConfigDto == null || !modelConfigDto.getSpaceId().equals(modelConfigAddDto.getSpaceId())) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOpenapiModelIdInvalid);
+            }
+        }
         ModelConfigDto modelConfigDto = new ModelConfigDto();
         BeanUtils.copyProperties(modelConfigAddDto, modelConfigDto);
         modelConfigDto.setNetworkType(ModelConfig.NetworkType.Internet);
@@ -74,7 +82,7 @@ public class ModelController {
     @RequireResource({COMPONENT_LIB_QUERY_LIST, SYSTEM_SETTING_MODEL_DEFAULT})
     @Operation(summary = "查询可使用模型列表接口")
     @RequestMapping(path = "/list", method = RequestMethod.POST)
-    public ReqResult<List<ModelConfigDto>> list(@RequestBody ModelQueryDto modelQueryDto, HttpServletRequest request) {
+    public ReqResult<List<ModelConfigDto>> list(@RequestBody ModelQueryDto modelQueryDto) {
         if (modelQueryDto.getSpaceId() != null) {
             spacePermissionService.checkSpaceUserPermission(modelQueryDto.getSpaceId());
         }

@@ -39,7 +39,7 @@ public class AiAgentClient {
 
     public Map<String, Object> sendChat(Map<String, Object> chatBody) {
         String url = baseUrl + "/chat";
-        log.info("[Infra] 调用 AI Agent /chat, url={}", url);
+        log.info("[Infra] call AI Agent /chat, url={}", url);
         RestTemplate restTemplate = createRestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -53,7 +53,7 @@ public class AiAgentClient {
                 new ParameterizedTypeReference<Map<String, Object>>() {
                 });
         Map<String, Object> body = entity.getBody();
-        log.info("[Infra] 调用 AI Agent /chat, 响应={}", body);
+        log.info("[Infra] call AI Agent /chat, response={}", body);
         return body;
     }
 
@@ -63,7 +63,7 @@ public class AiAgentClient {
             HttpURLConnection connection = null;
             try {
                 String urlStr = baseUrl + "/agent/progress/" + sessionId;
-                log.info("[Infra] 开始订阅AI Agent SSE，url={}", urlStr);
+                log.info("[Infra] start subscribing to AI Agent SSE, url={}", urlStr);
                 URL url = new URL(urlStr);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
@@ -76,7 +76,7 @@ public class AiAgentClient {
 
                 int status = connection.getResponseCode();
                 if (status != 200) {
-                    emitter.completeWithError(new IllegalStateException("SSE订阅失败, httpStatus=" + status));
+                    emitter.completeWithError(new IllegalStateException("SSE subscribe failed, httpStatus=" + status));
                     return;
                 }
                 try (InputStream inputStream = connection.getInputStream();
@@ -110,9 +110,9 @@ public class AiAgentClient {
                                     emitter.send(eventBuilder);
                                 } catch (Exception sendEx) {
                                     if (isClientDisconnected(sendEx)) {
-                                        log.warn("[Infra] SSE 发送给前端失败,客户端已断开连接,sessionId={}", sessionId, sendEx);
+                                        log.warn("[Infra] SSE send to frontend failed, client disconnected,session Id={}", sessionId, sendEx);
                                     } else {
-                                        log.warn("[Infra] SSE 发送给前端失败,sessionId={}", sendEx, sessionId, sendEx);
+                                        log.warn("[Infra] SSE send to frontend failed,session Id={}", sendEx, sessionId, sendEx);
                                     }
                                     break;
                                 }
@@ -124,7 +124,7 @@ public class AiAgentClient {
                 }
                 emitter.complete();
             } catch (Exception e) {
-                log.error("[Infra] 订阅 AI Agent SSE 异常", e);
+                log.error("[Infra] AI Agent SSE exception", e);
                 try {
                     emitter.completeWithError(e);
                 } catch (Exception ignore) {
@@ -153,7 +153,7 @@ public class AiAgentClient {
             builder = builder.queryParam("session_id", sessionId);
         }
         String url = builder.toUriString();
-        log.info("[Infra] 调用取消 agent 任务接口, url={}, projectId={}, sessionId={}", url, projectId, sessionId);
+        log.info("[Infra] callcancel agent task API, url={}, project Id={}, session Id={}", url, projectId, sessionId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -167,13 +167,13 @@ public class AiAgentClient {
                 new ParameterizedTypeReference<Map<String, Object>>() {
                 });
         Map<String, Object> body = entity.getBody();
-        log.info("[Infra] 调用取消 agent 任务接口, 响应结果={}", body);
+        log.info("[Infra] callcancel agent task API, response={}", body);
         return body;
     }
 
     public Map<String, Object> getAgentStatus(String projectId) {
         String url = baseUrl + "/agent/status/" + projectId;
-        log.info("[Infra] 调用查询 Agent 状态接口, url={}, projectId={}", url, projectId);
+        log.info("[Infra] callquery Agent status API, url={}, project Id={}", url, projectId);
         RestTemplate restTemplate = createRestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -187,13 +187,13 @@ public class AiAgentClient {
                 new ParameterizedTypeReference<Map<String, Object>>() {
                 });
         Map<String, Object> body = entity.getBody();
-        log.info("[Infra] 调用查询 Agent 状态接口, 响应结果={}", body);
+        log.info("[Infra] callquery Agent status API, response={}", body);
         return body;
     }
 
     public Map<String, Object> stopAgent(String projectId) {
         String url = baseUrl + "/agent/stop?project_id=" + projectId;
-        log.info("[Infra] 调用停止 Agent 服务接口, url={}, projectId={}", url, projectId);
+        log.info("[Infra] callstop Agent service API, url={}, project Id={}", url, projectId);
         RestTemplate restTemplate = createRestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -207,7 +207,7 @@ public class AiAgentClient {
                 new ParameterizedTypeReference<Map<String, Object>>() {
                 });
         Map<String, Object> body = entity.getBody();
-        log.info("[Infra] 调用停止 Agent 服务接口, 响应结果={}", body);
+        log.info("[Infra] callstop Agent service API, response={}", body);
         return body;
     }
 }

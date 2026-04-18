@@ -10,9 +10,11 @@ import com.xspaceagi.system.infra.verify.VerifyCodeSendAndCheckService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.CodeTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.JwtUtils;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -44,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
         UserDto userDto;
         String phone = null;
         String email = null;
-        //验证邮箱格式
+        // Verify email format
         if (emailOrPhone.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
             verifyCodeSendAndCheckService.checkEmailCode(CodeTypeEnum.LOGIN_OR_REGISTER, emailOrPhone, code);
             userDto = userApplicationService.queryUserByEmail(emailOrPhone);
@@ -57,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
         if (userDto == null) {
             TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
             if (tenantConfigDto.getOpenRegister() != null && tenantConfigDto.getOpenRegister() == 0) {
-                throw new BizException("注册已关闭");
+                throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.RegistrationClosed"));
             }
             userDto = new UserDto();
             userDto.setPhone(phone);
@@ -65,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
             userApplicationService.add(userDto);
         }
         if (userDto.getStatus() == User.Status.Disabled) {
-            throw new BizException("账号已被禁用");
+            throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.AccountDisabled"));
         }
         updateLastLoginTime(userDto);
         return createToken(userDto, UUID.randomUUID().toString().replace("-", ""));
@@ -79,14 +81,14 @@ public class AuthServiceImpl implements AuthService {
         if (userDto == null) {
             TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
             if (tenantConfigDto.getOpenRegister() != null && tenantConfigDto.getOpenRegister() == 0) {
-                throw new BizException("注册已关闭");
+                throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.RegistrationClosed"));
             }
             userDto = new UserDto();
             userDto.setPhone(phone);
             userApplicationService.add(userDto);
         }
         if (userDto.getStatus() == User.Status.Disabled) {
-            throw new BizException("账号已被禁用");
+            throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.AccountDisabled"));
         }
         updateLastLoginTime(userDto);
         return createToken(userDto, UUID.randomUUID().toString().replace("-", ""));
@@ -96,25 +98,19 @@ public class AuthServiceImpl implements AuthService {
         UserDto update = new UserDto();
         update.setId(userDto.getId());
         update.setLastLoginTime(new Date());
+        if (StringUtils.isNotBlank(RequestContext.get().getLang())) {
+            update.setLang(RequestContext.get().getLang());
+        }
         userApplicationService.update(update);
     }
 
     public String createToken(UserDto userDto, String clientId) {
         //过期token检查
         Map<String, Object> map = redisUtil.hashGetAll("user-token:" + userDto.getId());
-        //不能无限膨胀，一个账号同时最多100个token
-        if (map.size() > 100) {
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                String key = entry.getKey();
-                redisUtil.expire("token:" + key, 0);
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = entry.getKey();
+            if (redisUtil.get("token:" + key) == null) {
                 redisUtil.hashDelete("user-token:" + userDto.getId(), key);
-            }
-        } else {
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                String key = entry.getKey();
-                if (redisUtil.get("token:" + key) == null) {
-                    redisUtil.hashDelete("user-token:" + userDto.getId(), key);
-                }
             }
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
@@ -134,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
             updateLastLoginTime(userDto);
             return createToken(userDto, UUID.randomUUID().toString().replace("-", ""));
         }
-        throw new BizException("用户不存在或密码错误");
+        throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.UserNotFoundOrPasswordError"));
     }
 
     @Override
@@ -201,6 +197,18 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         redisUtil.expire("user-token:" + userId, 0);
+    }
+
+    @Override
+    public void expireUserAllToken(Long userId, String clientIdPrefix) {
+        Map<String, Object> map = redisUtil.hashGetAll("user-token:" + userId);
+        if (map != null) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                if (entry.getValue() != null && entry.getValue().toString().startsWith(clientIdPrefix)) {
+                    redisUtil.expire("token:" + entry.getKey(), 0);
+                }
+            }
+        }
     }
 
     @Override

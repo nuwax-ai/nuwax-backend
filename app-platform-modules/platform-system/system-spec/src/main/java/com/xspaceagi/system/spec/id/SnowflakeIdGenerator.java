@@ -45,7 +45,7 @@ public class SnowflakeIdGenerator implements IdGenerator {
     @Override
     public long nextId(int digits) {
         if (digits < 1 || digits > 19) {
-            throw new IllegalArgumentException("位数必须在1-19之间");
+            throw new IllegalArgumentException("Bit count must be between 1 and 19");
         }
 
         long id = snowflake.nextId();

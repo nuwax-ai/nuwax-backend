@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 数据源 DTO
+ * Data source DTO
  */
 @Data
 @Builder
@@ -17,18 +17,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DataSourceDto implements Serializable {
 
-    @Schema(description = "数据源类型：plugin-插件, workflow-工作流")
+    @Schema(description = "Data source type: plugin or workflow")
     private String type;
 
-    @Schema(description = "数据源ID")
+    @Schema(description = "Data source ID")
     private Long id;
 
-    @Schema(description = "数据源Key，添加保存的时候可以和ID一致")
+    @Schema(description = "Data source key (may match ID on save)")
     private String key;
 
-    @Schema(description = "数据源名称")
+    @Schema(description = "Data source display name")
     private String name;
 
-    @Schema(description = "数据源图标")
+    @Schema(description = "Data source icon URL")
     private String icon;
 }

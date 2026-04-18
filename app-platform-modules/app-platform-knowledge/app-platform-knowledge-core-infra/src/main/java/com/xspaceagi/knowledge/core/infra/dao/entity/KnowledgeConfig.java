@@ -117,6 +117,11 @@ public class KnowledgeConfig {
     private Long workflowId;
 
     /**
+     * 是否受后台权限控制，0 不受，1 受
+     */
+    private Integer accessControl;
+
+    /**
      * 全文检索同步状态: 0-未同步, 1-同步中, 2-已同步, -1-同步失败
      */
     private Integer fulltextSyncStatus;

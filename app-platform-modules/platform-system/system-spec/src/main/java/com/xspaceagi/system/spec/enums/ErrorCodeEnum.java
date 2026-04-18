@@ -16,7 +16,10 @@ public enum ErrorCodeEnum {
     METHOD_NOT_ALLOWED("4050", "未登录或登录超时"),
     SYS_ERROR("5000", "系统异常"),
 
-    PROJECT_STARTING("6001", "项目启动中,请稍等");
+    PROJECT_STARTING("6001", "项目启动中,请稍等"),
+
+    /** License 文件内容解析失败（与历史契约码 0400 对齐） */
+    LICENSE_CONTENT_INVALID("0400", "许可证内容无效");
 
     private String code;
     private String msg;

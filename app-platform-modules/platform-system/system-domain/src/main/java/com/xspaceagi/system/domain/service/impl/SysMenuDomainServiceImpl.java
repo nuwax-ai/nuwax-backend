@@ -37,7 +37,9 @@ import com.xspaceagi.system.spec.enums.OpenTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -67,29 +69,29 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
         menu.setPath(StringUtils.trim(menu.getPath()));
 
         if (StringUtils.isNotBlank(menu.getCode()) && !menu.getCode().matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-            throw new BizException("编码只能包含字母、数字和下划线，且必须以字母开头");
+            throw new IllegalArgumentException("Code may only contain letters, digits and underscores, and must start with a letter");
         }   
         if (StringUtils.length(menu.getCode()) > 100) {
-            throw new BizException("编码长度不能超过100");
+            throw new IllegalArgumentException("Code length cannot exceed 100");
         }
         if (StringUtils.length(menu.getName()) > 50) {
-            throw new BizException("名称长度不能超过50");
+            throw new IllegalArgumentException("Name length cannot exceed 50");
         }
         if (StringUtils.length(menu.getDescription()) > 500) {
-            throw new BizException("描述长度不能超过500");
+            throw new IllegalArgumentException("Description length cannot exceed 500");
         }
         if (StringUtils.length(menu.getPath()) > 500) {
-            throw new BizException("路径长度不能超过500");
+            throw new IllegalArgumentException("Path length cannot exceed 500");
         }
         if (menu.getOpenType() != null && OpenTypeEnum.isInValid(menu.getOpenType())) {
-            throw new BizException("打开方式参数错误");
+            throw new IllegalArgumentException("Invalid open mode parameter");
         }
     }
 
     @Override
     public void addMenu(SysMenu menu, MenuNode menuNode, Integer source, UserContext userContext) {
         if (StringUtils.isBlank(menu.getName())) {
-            throw new BizException("名称不能为空");
+            throw new IllegalArgumentException("Name cannot be empty");
         }
 
         // 如果编码为空，根据名称自动生成编码
@@ -111,18 +113,18 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
 
         SysMenu exists = queryMenuByCode(menu.getCode());
         if (exists != null) {
-            throw new BizException("已存在此菜单编码");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuCodeAlreadyExists);
         }
         if (menu.getParentId() != null && menu.getParentId() != 0) {
             if (menu.getParentId() < 0) {
-                throw new BizException("父级菜单ID无效");
+                throw new IllegalArgumentException("Invalid parent menu ID");
             } else {
                 SysMenu parent = queryMenuById(menu.getParentId());
                 if (parent == null) {
-                    throw new BizException("父级菜单不存在");
+                    throw new IllegalArgumentException("Parent menu does not exist");
                 }
                 if (menu.getParentId().equals(menu.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + menu.getId() + "]");
+                    throw new IllegalArgumentException("Parent node cannot be itself [id:" + menu.getId() + "]");
                 }
             }
         }
@@ -156,29 +158,29 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
     @Override
     public void updateMenu(SysMenu menu, MenuNode menuNode, Integer source, UserContext userContext) {
         if (menu.getId() == null) {
-            throw new BizException("ID不能为空");
+            throw new IllegalArgumentException("ID cannot be empty");
         }
         normalizeMenu(menu);
 
         SysMenu exist = queryMenuById(menu.getId());
         if (exist == null) {
-            throw new BizException("菜单不存在");
+            throw new IllegalArgumentException("Menu does not exist");
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
             if (menu.getCode() != null && !menu.getCode().equals(exist.getCode())) {
-                throw new BizException("系统内置菜单编码不能修改");
+                throw new IllegalArgumentException("Built-in menu code cannot be changed");
             }
         }
         if (menu.getParentId() != null && menu.getParentId() != 0) {
             if (menu.getParentId() < 0) {
-                throw new BizException("父级ID无效");
+                throw new IllegalArgumentException("Invalid parent ID");
             } else {
                 SysMenu parent = queryMenuById(menu.getParentId());
                 if (parent == null) {
-                    throw new BizException("父级菜单不存在");
+                    throw new IllegalArgumentException("Parent menu does not exist");
                 }
                 if (menu.getParentId().equals(menu.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + menu.getId() + "]");
+                    throw new IllegalArgumentException("Parent node cannot be itself [id:" + menu.getId() + "]");
                 }
             }
         }
@@ -198,14 +200,14 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
     public void deleteMenu(Long menuId, UserContext userContext) {
         SysMenu root = queryMenuById(menuId);
         if (root == null) {
-            throw new BizException("菜单不存在");
+            throw new IllegalArgumentException("Menu does not exist");
         }
         SysMenu exist = queryMenuById(menuId);
         if (exist == null) {
-            throw new BizException("菜单不存在");
+            throw new IllegalArgumentException("Menu does not exist");
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
-            //throw new BizException("系统内置菜单不能删除");
+            //throw new IllegalArgumentException("Built-in menu cannot be deleted");
         }
 
         // 收集以该菜单为根的整棵子树的所有菜单ID（含自身）
@@ -315,7 +317,7 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
     @Override
     public void bindResource(MenuNode menuNode, UserContext userContext) {
         if (menuNode == null || menuNode.getId() == null) {
-            throw new BizException("菜单ID不能为空");
+            throw new IllegalArgumentException("Menu ID cannot be empty");
         }
 
         Long menuId = menuNode.getId();
@@ -355,19 +357,19 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
         for (ResourceNode resourceNode : resourceList) {
             Long resourceId = resourceNode.getId();
             if (resourceId == null) {
-                throw new BizException("资源ID不能为空");
+                throw new IllegalArgumentException("Resource ID cannot be empty");
             }
             
             // 根节点 resourceId=0 是合法的，不需要校验是否存在
             // 验证资源是否存在（跳过根节点 id=0）
             if (resourceId != 0L && !resourceMap.containsKey(resourceId)) {
-                throw new BizException("资源ID[" + resourceId + "]不存在");
+                throw new IllegalArgumentException("Resource ID [" + resourceId + "] does not exist");
             }
             
             // 验证绑定类型是否有效
             Integer resourceBindType = resourceNode.getResourceBindType();
             if (resourceBindType != null && BindTypeEnum.isInValid(resourceBindType)) {
-                throw new BizException("资源ID[" + resourceId + "]的绑定类型[" + resourceBindType + "]无效，只能是0(NONE)、1(ALL)或2(PART)");
+                throw new IllegalArgumentException("For resource ID [" + resourceId + "], bind type [" + resourceBindType + "] is invalid; must be 0 (NONE), 1 (ALL), or 2 (PART)");
             }
         }
 
@@ -441,20 +443,20 @@ public class SysMenuDomainServiceImpl implements SysMenuDomainService {
         }
         for (SortIndex item : sortIndexList) {
             if (item == null || item.getId() == null) {
-                throw new BizException("菜单ID不能为空");
+                throw new IllegalArgumentException("Menu ID cannot be empty");
             }
             SysMenu updateMenu = new SysMenu();
             updateMenu.setId(item.getId());
             boolean hasUpdate = false;
             if (item.getParentId() != null) {
                 if (item.getParentId() < 0) {
-                    throw new BizException("父级ID无效: menuId=" + item.getId());
+                    throw new IllegalArgumentException("Invalid parent ID: menuId=" + item.getId());
                 }
                 if (item.getParentId() != 0 && !existingParentIds.contains(item.getParentId())) {
-                    throw new BizException("父级节点不存在 [parentId:" + item.getParentId() + "]");
+                    throw new IllegalArgumentException("Parent node does not exist [parentId:" + item.getParentId() + "]");
                 }
                 if (item.getParentId().equals(item.getId())) {
-                    throw new BizException("父级节点不能是自身 [id:" + item.getId() + "]");
+                    throw new IllegalArgumentException("Parent node cannot be itself [id:" + item.getId() + "]");
                 }
                 updateMenu.setParentId(item.getParentId());
                 hasUpdate = true;

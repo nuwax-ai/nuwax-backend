@@ -11,7 +11,7 @@ public class SpaceUpdateDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long id;
 
     @Schema(description = "空间名称")

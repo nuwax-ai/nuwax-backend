@@ -25,7 +25,7 @@ public class CustomPageException extends KindlyException {
      * @return 异常
      */
     public static CustomPageException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new CustomPageException(codeEnum.getCode(), errorMessage);
     }
 

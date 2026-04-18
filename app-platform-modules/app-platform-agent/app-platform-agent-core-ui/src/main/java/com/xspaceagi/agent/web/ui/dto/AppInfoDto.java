@@ -13,11 +13,11 @@ public class AppInfoDto implements Serializable {
     private String pubName;
 
      @Schema(description =  "应用LOGO地址", required = true)
-    @NotNull(message = "LOGO地址不能为空")
+    @NotNull(message = "Logo URL is required")
     private String logoUrl;
 
      @Schema(description =  "应用描述", required = true)
-    @NotNull(message = "应用描述信息不能为空")
+    @NotNull(message = "App description is required")
     private String description;
 
      @Schema(description =  "后续接口访问路径")

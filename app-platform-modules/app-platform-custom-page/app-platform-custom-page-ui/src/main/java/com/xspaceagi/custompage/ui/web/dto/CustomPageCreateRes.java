@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "前端项目创建响应体")
+@Schema(description = "Frontend project create response body")
 public class CustomPageCreateRes {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "开发服务器URL")
+    @Schema(description = "Dev server URL")
     private String devServerUrl;
 
-    @Schema(description = "空间ID")
+    @Schema(description = "Space ID")
     private Long spaceId;
 }

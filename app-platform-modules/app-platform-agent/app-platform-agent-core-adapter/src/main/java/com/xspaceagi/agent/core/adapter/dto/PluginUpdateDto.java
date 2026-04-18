@@ -10,7 +10,7 @@ import java.io.Serializable;
 public class PluginUpdateDto<T> implements Serializable {
 
     @Schema(description =  "插件ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "插件ID不能为空")
+    @NotNull(message = "Plugin ID is required")
     private Long id;
 
     @Schema(description =  "插件名称")

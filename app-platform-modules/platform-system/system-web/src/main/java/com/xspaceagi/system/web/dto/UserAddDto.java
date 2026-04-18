@@ -9,6 +9,9 @@ import java.io.Serializable;
 @Data
 public class UserAddDto implements Serializable {
 
+    @Schema(description = "用户唯一标识，可以记录三方账号系统唯一标识")
+    private String uid;
+
     @Schema(description = "手机号码")
     private String phone;
 

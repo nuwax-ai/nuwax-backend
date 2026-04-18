@@ -53,7 +53,7 @@ public class KnowledgeFullTextPeriodicSyncTask extends AbstractTaskExecuteServic
         try {
             this.periodicSyncUnsyncedKnowledgeBases();
         } catch (Exception e) {
-            log.error("定时任务执行失败", e);
+            log.error("Scheduled task failed", e);
         }
         return false;
     }
@@ -106,7 +106,7 @@ public class KnowledgeFullTextPeriodicSyncTask extends AbstractTaskExecuteServic
             log.info("========== 定时任务完成: 总租户数={}, 成功={}, 失败={} ==========",
                     tenants.size(), totalSuccess, totalFail);
         } catch (Exception e) {
-            log.error("定时任务执行失败", e);
+            log.error("Scheduled task failed", e);
         }
     }
 }

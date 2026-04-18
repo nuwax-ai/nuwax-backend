@@ -46,7 +46,7 @@ public class SSEMcpUpdateTaskServiceImpl extends AbstractDeployTaskService imple
     }
 
     public boolean execute0(ScheduleTaskDto scheduleTask) {
-        log.info("sse 更新任务执行");
+        log.info("SSE update task running");
         Long id = 0L;
         List<McpConfig> mcpConfigs = mcpConfigDomainService.queryDeployedSSEMcpConfigList(id, 100);
         while (!mcpConfigs.isEmpty()) {
@@ -57,9 +57,9 @@ public class SSEMcpUpdateTaskServiceImpl extends AbstractDeployTaskService imple
                             .tenantId(mcpConfig.getTenantId())
                             .build());
                     updateAndSaveMcpConfig(mcpConfig.getId(), mcpConfigDto.getServerConfig(), true, mcpConfig.getModified());
-                    log.info("sse 配置更新成功 {}, {}, {}", mcpConfig.getId(), mcpConfig.getName(), mcpConfigDto.getServerConfig());
+                    log.info("SSE config updated {}, {}, {}", mcpConfig.getId(), mcpConfig.getName(), mcpConfigDto.getServerConfig());
                 } catch (Exception e) {
-                    log.error("sse 配置更新失败 {}", mcpConfigDto.getServerConfig(), e);
+                    log.error("SSE config update failed {}", mcpConfigDto.getServerConfig(), e);
                 } finally {
                     RequestContext.remove();
                 }

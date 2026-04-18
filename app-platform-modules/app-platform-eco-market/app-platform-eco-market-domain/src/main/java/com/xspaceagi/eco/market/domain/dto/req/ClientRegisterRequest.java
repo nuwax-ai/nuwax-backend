@@ -15,7 +15,7 @@ public class ClientRegisterRequest {
     /**
      * 名称
      */
-    @NotBlank(message = "名称不能为空")
+    @NotBlank(message = "Name is required")
     @Schema(description = "名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
@@ -28,7 +28,7 @@ public class ClientRegisterRequest {
     /**
      * 租户ID
      */
-    @NotNull(message = "租户ID不能为空")
+    @NotNull(message = "Tenant ID is required")
     @Schema(description = "租户ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long tenantId;
 }

@@ -9,6 +9,7 @@ import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ResourceTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.controller.base.BaseController;
 import com.xspaceagi.system.application.converter.ResourceTreeUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -107,6 +108,8 @@ public class SysResourceController extends BaseController {
         }
         ResourceNodeDto dto = new ResourceNodeDto();
         BeanUtils.copyProperties(resource, dto);
+
+        I18nUtil.replaceSystemMessage(dto);
         return ReqResult.success(dto);
     }
 
@@ -123,6 +126,8 @@ public class SysResourceController extends BaseController {
         }
         ResourceNodeDto dto = new ResourceNodeDto();
         BeanUtils.copyProperties(resource, dto);
+
+        I18nUtil.replaceSystemMessage(dto);
         return ReqResult.success(dto);
     }
 
@@ -169,9 +174,12 @@ public class SysResourceController extends BaseController {
             rootNode.setChildren(tree);
             List<ResourceNodeDto> result = new ArrayList<>();
             result.add(rootNode);
+
+            I18nUtil.replaceSystemMessage(result);
             return ReqResult.success(result);
         }
-        
+
+        I18nUtil.replaceSystemMessage(tree);
         return ReqResult.success(tree);
     }
     

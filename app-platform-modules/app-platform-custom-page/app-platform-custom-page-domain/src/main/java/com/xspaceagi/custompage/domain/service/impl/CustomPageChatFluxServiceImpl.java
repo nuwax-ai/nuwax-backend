@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.model.ModelContext;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
 import com.xspaceagi.agent.core.infra.component.model.dto.ModelCallConfigDto;
 import com.xspaceagi.agent.core.infra.rpc.MarketClientRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ModelApiProxyRpcService;
 import com.xspaceagi.agent.core.sdk.IAgentRpcService;
 import com.xspaceagi.agent.core.sdk.enums.TargetTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
@@ -31,14 +33,19 @@ import com.xspaceagi.custompage.sdk.dto.VersionInfoDto;
 import com.xspaceagi.custompage.sdk.enums.CustomPageActionEnum;
 import com.xspaceagi.eco.market.sdk.reponse.ClientSecretResponse;
 import com.xspaceagi.eco.market.sdk.request.ClientSecretRequest;
+import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
+import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.file.FileSystemMultipartFile;
 import com.xspaceagi.system.spec.utils.DateUtil;
 import com.xspaceagi.system.spec.utils.FileAkUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -87,6 +94,9 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     @Resource
     private ModelInvoker modelInvoker;
 
+    @Resource
+    private ModelApiProxyRpcService modelApiProxyRpcService;
+
     private final static ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -95,7 +105,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     public Flux<Map<String, Object>> sendAgentChatFlux(Map<String, Object> chatBody, UserContext userContext) {
         // 验证参数
         if (chatBody == null) {
-            return Flux.error(new IllegalArgumentException("请求体不能为空"));
+            return Flux.error(new IllegalArgumentException("Request body cannot be empty"));
         }
 
         Long projectId;
@@ -103,19 +113,19 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         Object promptObj = chatBody.get("prompt");
 
         if (projectIdObj == null) {
-            return Flux.error(new IllegalArgumentException("project_id不能为空"));
+            return Flux.error(new IllegalArgumentException("project_id is required"));
         }
         if (promptObj == null || StringUtils.isBlank(String.valueOf(promptObj))) {
-            return Flux.error(new IllegalArgumentException("prompt不能为空"));
+            return Flux.error(new IllegalArgumentException("prompt is required"));
         }
         try {
             projectId = Long.valueOf(String.valueOf(projectIdObj));
         } catch (Exception e) {
-            return Flux.error(new IllegalArgumentException("project_id 非法"));
+            return Flux.error(new IllegalArgumentException("Invalid project_id"));
         }
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return Flux.error(new IllegalArgumentException("项目不存在"));
+            return Flux.error(new IllegalArgumentException("Project does not exist"));
         }
         spacePermissionService.checkSpaceUserPermission(buildModel.getSpaceId());
 
@@ -132,14 +142,14 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
                 executeChatFlux(chatBody, userContext, sink, buildModel, promptObj);
             } catch (Exception e) {
-                log.error("[FluxService] 流式聊天执行异常", e);
+                log.error("[Flux Service] chat exception", e);
                 sink.error(e);
             } finally {
                 // 完成流并移除会话
                 try {
                     sink.complete();
                 } catch (Exception e) {
-                    log.debug("[FluxService] sink 已完成，忽略重复调用", e);
+                    log.debug("[Flux Service] sink already completed, ignore duplicate call", e);
                 }
                 sessionManager.removeSession(sessionId);
             }
@@ -164,7 +174,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             processAttachmentFilesFlux(chatBody, projectId, promptObj, sink);
 
             // 3: 处理模型配置
-            Long chatModelId = processModelConfigFlux(chatBody, sink);
+            Long chatModelId = processModelConfigFlux(chatBody, userContext, sink);
 
             // 4: 处理数据源
             processDataSourcesFlux(chatBody, projectId, sink);
@@ -236,7 +246,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             sendSuccessFlux(sink, dataMap);
 
         } catch (Exception e) {
-            log.error("[FluxService] Flux 流式聊天执行异常", e);
+            log.error("[Flux Service] Flux chat exception", e);
             sendErrorFlux(sink, "0001", "执行失败: " + e.getMessage());
         }
     }
@@ -246,13 +256,13 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         Long multiModelId = null;
         Object multiModelIdObj = chatBody.get("multi_model_id");
         if (multiModelIdObj == null) {
-            log.info("[FluxService] 发送聊天消息,projectId={},传了原型图片,但未传多模态模型ID", projectId);
+            log.info("[Flux Service] send chat message,project Id={}, , not provided ID", projectId);
 
             // 从 RequestContext 获取租户配置
             TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
             if (tenantConfig == null || tenantConfig.getDefaultVisualModelId() == null
                     || tenantConfig.getDefaultVisualModelId() == 0) {
-                log.info("[FluxService] 发送聊天消息,projectId={},没有配置默认多模态模型,不解析", projectId);
+                log.info("[Flux Service] send chat message,project Id={},no default multimodal model configured, parse", projectId);
                 return multiModelId;
             } else {
                 multiModelId = tenantConfig.getDefaultVisualModelId();
@@ -268,17 +278,17 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         try {
             modelApplicationService.checkModelUsePermission(multiModelId);
         } catch (Exception e) {
-            log.warn("[FluxService] 当前多模态模型不可用：{}", e.getMessage());
-            throw new BizException("当前多模态模型不可用：" + e.getMessage());
+            log.warn("[Flux Service] unavailable: {}", e.getMessage());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageMultimodalModelUnavailable, e.getMessage());
         }
         ModelConfigDto modelConfig = modelApplicationService.queryModelConfigById(multiModelId);
 
         if (modelConfig.getType() != ModelTypeEnum.Multi) {
-            log.warn("[FluxService] 当前模型不支持多模态，无法解析图片，模型 id={}", multiModelId);
-            throw new BizException("当前模型不支持多模态，无法解析图片，模型 id=" + multiModelId);
+            log.warn("[Flux Service] unsupported , parse , id={}", multiModelId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageModelNotMultimodal, multiModelId);
         }
 
-        log.info("[FluxService] 发送聊天消息,projectId={},prototypeImages={}", projectId, JSON.toJSONString(prototypeImages));
+        log.info("[Flux Service] send chat message,project Id={},prototype Images={}", projectId, JSON.toJSONString(prototypeImages));
 
         Object promptObj = chatBody.get("prompt");
 
@@ -290,10 +300,10 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 Object fileKeyObj = m.get("fileKey");
 
                 if (urlObj == null) {
-                    throw new IllegalArgumentException("附件URL不能为空");
+                    throw new IllegalArgumentException("Attachment URL cannot be empty");
                 }
                 if (mimeTypeObj == null) {
-                    throw new IllegalArgumentException("附件类型不能为空");
+                    throw new IllegalArgumentException("Attachment type cannot be empty");
                 }
 
                 sendProgressFlux(sink, "开始解析原型图片[" + fileNameObj + "]", 10);
@@ -342,7 +352,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                     throw new RuntimeException(throwableAtomicReference.get());
                 }
                 String markdownContent = modelContext.getModelCallResult().getResponseText();
-                log.info("[FluxService] projectId={} 原型图片解析完成,url={}", projectId, urlObj);
+                log.info("[Flux Service] project Id={} parsecompleted,url={}", projectId, urlObj);
 
                 // 发送图片解析结果事件
                 sendImageAnalysisResultFlux(sink, String.valueOf(urlObj), String.valueOf(fileNameObj), markdownContent);
@@ -361,17 +371,17 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             return;
         }
 
-        log.info("[FluxService] 发送聊天消息,projectId={},开始处理附件,files={}", projectId, JSON.toJSONString(attachmentFiles));
+        log.info("[Flux Service] send chat message,project Id={},starthandle ,files={}", projectId, JSON.toJSONString(attachmentFiles));
 
         for (Object attachment : (List<?>) attachmentFiles) {
             if (attachment instanceof Map<?, ?> m) {
                 Object urlObj = m.get("url");
                 Object fileNameObj = m.get("fileName");
                 if (urlObj == null) {
-                    throw new IllegalArgumentException("附件URL不能为空");
+                    throw new IllegalArgumentException("Attachment URL cannot be empty");
                 }
                 if (fileNameObj == null) {
-                    throw new IllegalArgumentException("附件文件名不能为空");
+                    throw new IllegalArgumentException("Attachment file name cannot be empty");
                 }
 
                 // 发送心跳
@@ -387,22 +397,22 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         }
     }
 
-    private Long processModelConfigFlux(Map<String, Object> chatBody,
+    private Long processModelConfigFlux(Map<String, Object> chatBody, UserContext userContext,
                                         FluxSink<Map<String, Object>> sink) {
         Long projectId = Long.valueOf(String.valueOf(chatBody.get("project_id")));
         Object chatModelIdObj = chatBody.get("chat_model_id");
-        log.info("[FluxService] 发送聊天消息,projectId={},chatModelId={}", projectId, chatModelIdObj);
+        log.info("[Flux Service] send chat message,project Id={},chat Model Id={}", projectId, chatModelIdObj);
 
         Long chatModelId;
         if (chatModelIdObj == null) {
-            log.info("[FluxService] 发送聊天消息,没有配置聊天模型");
+            log.info("[Flux Service] send chat message, configchat");
 
             // 从 RequestContext 获取租户配置
             TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
             if (tenantConfig == null || tenantConfig.getDefaultCodingModelId() == null
                     || tenantConfig.getDefaultCodingModelId() == 0) {
-                log.info("[FluxService] 发送聊天消息,projectId={},没有配置默认聊天模型,不解析", projectId);
-                throw new IllegalArgumentException("没有配置默认聊天模型");
+                log.info("[Flux Service] send chat message,project Id={},no default chat model configured, parse", projectId);
+                throw new IllegalArgumentException("No default chat model is configured");
             } else {
                 chatModelId = tenantConfig.getDefaultCodingModelId();
             }
@@ -412,8 +422,8 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         try {
             modelApplicationService.checkModelUsePermission(chatModelId);
         } catch (Exception e) {
-            log.warn("[FluxService] 当前聊天模型不可用：{}", e.getMessage());
-            throw new BizException("当前聊天模型不可用：" + e.getMessage());
+            log.warn("[Flux Service] chat unavailable: {}", e.getMessage());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageChatModelUnavailable, e.getMessage());
         }
         // sendProgressFlux(sink, "正在配置模型...", 40);
         sendHeartbeatFlux(sink);
@@ -421,7 +431,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(chatModelId);
 
         // 按照权重随机选择一个 ApiInfo
-        ModelConfigDto.ApiInfo selectedApiInfo = selectByWeight(modelConfigDto.getApiInfoList());
+        ModelConfigDto.ApiInfo selectedApiInfo = modelConfigDto.getApiInfoList().get((int) (projectId % modelConfigDto.getApiInfoList().size()));//selectByWeight(modelConfigDto.getApiInfoList());
 
         if (selectedApiInfo.getKey() != null && selectedApiInfo.getKey().contains("TENANT_SECRET")) {
             ClientSecretRequest clientSecretRequest = new ClientSecretRequest();
@@ -429,6 +439,27 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             ClientSecretResponse clientSecretResponse = marketClientRpcService.queryClientSecret(clientSecretRequest);
             selectedApiInfo.setKey(selectedApiInfo.getKey().replace("TENANT_SECRET", clientSecretResponse.getClientSecret()));
         }
+
+        // 全局模型走代理模式，为用户生成独立的key
+        if (modelConfigDto.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
+            BackendModelDto backendModelDto = new BackendModelDto();
+            backendModelDto.setBaseUrl(selectedApiInfo.getUrl());
+            backendModelDto.setApiKey(selectedApiInfo.getKey());
+            backendModelDto.setModelName(modelConfigDto.getModel());
+            backendModelDto.setProtocol(modelConfigDto.getApiProtocol().name());
+            backendModelDto.setScope(modelConfigDto.getScope().name());
+            backendModelDto.setModelId(modelConfigDto.getId());
+            backendModelDto.setUserName(userContext.getUserName());
+            backendModelDto.setConversationId(projectId.toString());
+            backendModelDto.setRequestId(UUID.randomUUID().toString().replace("-", ""));
+            String siteUrl = userContext.getTenantConfig() != null ? ((TenantConfigDto) userContext.getTenantConfig()).getSiteUrl() : "";
+            FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(userContext.getTenantId(), userContext.getUserId()
+                    , -1L, backendModelDto, siteUrl);
+            selectedApiInfo = new ModelConfigDto.ApiInfo();
+            selectedApiInfo.setKey(frontendModelDto.getApiKey());
+            selectedApiInfo.setUrl(frontendModelDto.getBaseUrl());
+        }
+
 
         Map<String, Object> modelProvider = new HashMap<>();
         modelProvider.put("api_key", selectedApiInfo.getKey());
@@ -439,15 +470,13 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 + (modelConfigDto.getModified() == null ? 0 : modelConfigDto.getModified().getTime()));
         modelProvider.put("name", modelConfigDto.getName());
         modelProvider.put("requires_openai_auth", true);
-
         chatBody.put("model_provider", modelProvider);
-
         return chatModelId;
     }
 
     private ModelConfigDto.ApiInfo selectByWeight(List<ModelConfigDto.ApiInfo> apiInfoList) {
         if (apiInfoList == null || apiInfoList.isEmpty()) {
-            throw new IllegalArgumentException("模型API列表为空");
+            throw new IllegalArgumentException("Model API list is empty");
         }
         if (apiInfoList.size() == 1) {
             return apiInfoList.get(0);
@@ -487,7 +516,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             return;
         }
 
-        log.info("[FluxService] 发送聊天消息,projectId={},dataSources={}", projectId, JSON.toJSONString(dataSources));
+        log.info("[Flux Service] send chat message,project Id={},data Sources={}", projectId, JSON.toJSONString(dataSources));
 
         List<DataSourceDto> dataSourceList = new ArrayList<>();
         if (dataSources instanceof List<?>) {
@@ -512,10 +541,10 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             if (dataSourceList.size() > 0) {
                 CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
                 if (configModel == null) {
-                    throw new IllegalArgumentException("项目配置不存在: " + projectId);
+                    throw new IllegalArgumentException("Project configuration does not exist: " + projectId);
                 }
                 List<DataSourceDto> existingDataSources = Optional.ofNullable(configModel.getDataSources())
-                        .orElseThrow(() -> new IllegalArgumentException("项目未绑定任何数据源"));
+                        .orElseThrow(() -> new IllegalArgumentException("Project has no data sources bound"));
 
                 // 判断传入的dataSourceList是否都在existingDataSources中
                 for (DataSourceDto incoming : dataSourceList) {
@@ -525,7 +554,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                                     && existing.getType() != null && existing.getType().equals(incoming.getType()));
                     if (!found) {
                         throw new IllegalArgumentException(
-                                "数据源未授权: dataSouceId=" + incoming.getId() + ", type=" + incoming.getType());
+                                "Data source not authorized: dataSouceId=" + incoming.getId() + ", type=" + incoming.getType());
                     }
                 }
 
@@ -541,7 +570,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                             ? TargetTypeEnum.Workflow
                             : null;
                     if (typeEnum == null) {
-                        throw new IllegalArgumentException("数据源类型不支持: " + type);
+                        throw new IllegalArgumentException("Unsupported data source type: " + type);
                     }
 
                     // 发送心跳
@@ -550,13 +579,13 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                     com.xspaceagi.agent.core.sdk.dto.ReqResult<String> queryApiSchemaResult = agentRpcService
                             .queryApiSchema(typeEnum, id, projectId);
                     if (!queryApiSchemaResult.isSuccess()) {
-                        throw new IllegalArgumentException("查询数据源Schema失败: " + queryApiSchemaResult.getMessage());
+                        throw new IllegalArgumentException("Failed to query data source schema: " + queryApiSchemaResult.getMessage());
                     }
 
                     String dataSourceSchema = queryApiSchemaResult.getData();
                     dataSourceSchemaList.add(dataSourceSchema);
                 }
-                log.info("[FluxService] 发送聊天消息,projectId={},数据源提示={}", projectId, dataSourceSchemaList);
+                log.info("[Flux Service] send chat message,project Id={},data source prompt={}", projectId, dataSourceSchemaList);
                 chatBody.put("data_source_attachments", dataSourceSchemaList);
             }
         }
@@ -568,7 +597,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         data.put("message", message);
         data.put("progress", progress);
         sink.next(data);
-        log.info("[FluxService] Flux 发送进度: {}", message);
+        log.info("[Flux Service] Flux : {}", message);
     }
 
     private void sendSessionIdFlux(FluxSink<Map<String, Object>> sink, String sessionId) {
@@ -576,7 +605,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         data.put("type", "session_id");
         data.put("session_id", sessionId);
         sink.next(data);
-        log.info("[FluxService] Flux 发送会话ID: {}", sessionId);
+        log.info("[Flux Service] Flux session ID: {}", sessionId);
     }
 
     private void sendHeartbeatFlux(FluxSink<Map<String, Object>> sink) {
@@ -591,7 +620,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             data.put("remark", remark);
         }
         sink.next(data);
-        log.debug("[FluxService] Flux 发送心跳");
+        log.debug("[Flux Service] Flux");
     }
 
     /**
@@ -599,6 +628,215 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
      */
     private Map<String, Object> callSendChatSync(Map<String, Object> chatBody) {
         try {
+            String systemPrompt = I18nUtil.systemMessage("Backend.CustomPage.Chat.SystemPrompt");
+            if ("Backend.CustomPage.Chat.SystemPrompt".equals(systemPrompt)) {
+                systemPrompt = "<SYSTEM_INSTRUCTIONS>\n" +
+                        "\n" +
+                        "You are a professional frontend project development expert integrated with MCP (Model Context Protocol) tools. You are proficient in modern frontend technology stacks including React, Vue, Vite, TypeScript and other mainstream frameworks and tools. You are designed to identify the framework used by a project and develop based on the existing technology stack, rather than forcibly converting frameworks.\n" +
+                        "\n" +
+                        "**Core Capabilities**:\n" +
+                        "• **Framework Identification**: Automatically identify the frontend framework used by the project (React, Vue, etc.)\n" +
+                        "• **Framework Adaptation**: Write code based on the project's current framework, maintaining technology stack consistency\n" +
+                        "• **General Tools**: Vite, TypeScript, Tailwind CSS, ESLint, Prettier\n" +
+                        "• **HTTP Clients**: Axios, Fetch API\n" +
+                        "• **Package Managers**: pnpm, npm, yarn\n" +
+                        "• **Build Tools**: Vite (Hot Module Replacement, Fast Builds)\n" +
+                        "• **Code Standards**: ESLint + Prettier + TypeScript Strict Mode\n" +
+                        "\n" +
+                        "**Key Principles**:\n" +
+                        "1. **Prioritize Framework Identification**: Before modifying code, first detect the framework used by the project (through package.json, file structure, etc.)\n" +
+                        "2. **Maintain Technology Stack Consistency**: If the project uses Vue, develop with Vue; if it's React, develop with React\n" +
+                        "3. **No Forced Framework Conversion**: Never convert Vue code to React or React code to Vue\n" +
+                        "4. **Project Development**: Develop new features or fix existing features based on the existing project structure\n" +
+                        "\n" +
+                        "<ROLE_DEFINITION>\n" +
+                        "You are a professional frontend development expert proficient in multiple modern frontend frameworks and toolchains. You have access to various MCP tools, including context7 for web search and documentation retrieval.\n" +
+                        "**Technical Capability Scope**:\n" +
+                        "• **Mainstream Frameworks**: React, Vue, Angular, Svelte and other modern frontend frameworks with their ecosystems\n" +
+                        "• **Development Languages**: TypeScript, JavaScript (ES6+), HTML5, CSS3\n" +
+                        "• **Styling Solutions**: Tailwind CSS, CSS Modules, Sass, Less, Styled Components\n" +
+                        "• **Build Tools**: Vite, Webpack, Rollup, esbuild and other modern build tools\n" +
+                        "• **State Management**: State management solutions for each framework (Redux, Pinia, NgRx, Zustand, etc.)\n" +
+                        "• **HTTP Clients**: Axios, Fetch API, HTTP libraries for each framework\n" +
+                        "• **Code Quality Tools**: ESLint, Prettier, TSLint and other code quality tools\n" +
+                        "\n" +
+                        "**Core Working Principles**:\n" +
+                        "1. **Identify Framework First**: Must identify the project's framework and technology stack before writing code\n" +
+                        "2. **Respect Existing Technology Stack**: Develop based on the project's existing frameworks and tools without unauthorized changes\n" +
+                        "3. **Maintain Consistency**: Use the project's current framework syntax, conventions, and best practices\n" +
+                        "4. **Use Tools**: Use available MCP tools when they can provide better answers\n" +
+                        "5. **Best Practices**: Follow the latest best practices and design patterns for each framework and tool\n" +
+                        "\n" +
+                        "<CODE_FORMAT_RULES>\n" +
+                        "**General Code Standards**:\n" +
+                        "1. Always write code in TypeScript strict mode\n" +
+                        "2. Component files use PascalCase naming, utility functions use camelCase\n" +
+                        "3. Interface types use PascalCase with 'Interface' or 'Type' suffix\n" +
+                        "4. Prefer Tailwind CSS for styling\n" +
+                        "5. API calls use Axios client or Fetch API\n" +
+                        "6. Add JSDoc-style comments for complex logic\n" +
+                        "7. Follow the project's code conventions and file structure conventions\n" +
+                        "8. Ensure code formatting is correct and readable\n" +
+                        "9. Consider error handling and edge cases\n" +
+                        "10. Use appropriate variable and function names\n" +
+                        "11. Leverage Vite's fast builds and hot module replacement\n" +
+                        "12. The 'title' tag in the 'index.html' file in the project root directory should NOT contain any frontend framework names such as: React, Vite, Vue, Antd, Angular, etc.\n" +
+                        "13. **Important: Router Mode Specification**: When developing involving routing, you MUST use hash mode. For example: React Router uses `HashRouter`, Vue Router configures `mode: 'hash'`, Angular Router uses `HashLocationStrategy` from LocationStrategy.\n" +
+                        "14. **Important: Protect Injected Code Blocks**: It is strictly forbidden to delete or modify code blocks surrounded by `DEV-INJECT-START` and `DEV-INJECT-END` markers. These code blocks are automatically injected by development tools and must be completely preserved. When editing code, preserve these markers and all content between them.\n" +
+                        "\n" +
+                        "**React Project Specific Standards**:\n" +
+                        "• Follow React functional component best practices, use React.FC types\n" +
+                        "• Use Radix UI component library for building UI\n" +
+                        "• Forms use React Hook Form + Zod for validation\n" +
+                        "• Use React.memo, useCallback, useMemo for performance optimization\n" +
+                        "• Follow React Hooks rules\n" +
+                        "• Routing must use `HashRouter` (from react-router-dom), do not use `BrowserRouter`\n" +
+                        "\n" +
+                        "**Vue Project Specific Standards**:\n" +
+                        "• Prefer Composition API (setup syntax sugar)\n" +
+                        "• Use Element Plus or other Vue UI component libraries\n" +
+                        "• Use Pinia for state management\n" +
+                        "• Follow Vue best practices and reactivity system rules\n" +
+                        "• Use computed, watch, ref, reactive and other Composition API features\n" +
+                        "• Vue Router must be configured in hash mode: `createRouter({ history: createWebHashHistory(), ... })`\n" +
+                        "\n" +
+                        "<DEVELOPMENT_CONSTRAINTS>\n" +
+                        "**Strictly Prohibited Operations - Absolutely Not Allowed**:\n" +
+                        "\n" +
+                        "\uD83D\uDEAB **Security Ban** (Highest Priority):\n" +
+                        "- **Absolutely prohibited** from probing, scanning, or accessing private network IP addresses (such as 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8)\n" +
+                        "- **Absolutely prohibited** from attempting to access local services (localhost, 127.0.0.1, 0.0.0.0)\n" +
+                        "- **Absolutely prohibited** from port scanning, network probing, private network service discovery, etc.\n" +
+                        "- **Absolutely prohibited** from hardcoding private network IP addresses or private network addresses in code\n" +
+                        "- **Absolutely prohibited** from using curl, wget, nc, telnet, nmap and other tools to probe private networks\n" +
+                        "- **Absolutely prohibited** from executing any commands or code that may compromise system security\n" +
+                        "- **Absolutely prohibited** from bypassing security restrictions or attempting privilege escalation\n" +
+                        "- **Absolutely prohibited** from executing reverse shells, remote code execution, or other malicious operations\n" +
+                        "- **Core Principle**: All network requests must point to public network services or legitimate API endpoints explicitly provided by the user\n" +
+                        "\n" +
+                        "\uD83D\uDEAB **Framework Conversion Ban** (Most Important):\n" +
+                        "- **Absolutely prohibited** from rewriting Vue code as React code\n" +
+                        "- **Absolutely prohibited** from rewriting React code as Vue code\n" +
+                        "- **Absolutely prohibited** from arbitrarily switching frameworks in existing projects\n" +
+                        "- **Must Follow**: After identifying the project framework, only use that framework's syntax and APIs\n" +
+                        "- **Core Principle**: Respect the project's existing technology stack and maintain framework consistency\n" +
+                        "\n" +
+                        "\uD83D\uDEAB **Project Initialization Ban**:\n" +
+                        "- Prohibited from using npm create, npm init\n" +
+                        "- Prohibited from using yarn create, yarn init\n" +
+                        "- Prohibited from using npx create-react-app, npx create-vue\n" +
+                        "- Prohibited from using pnpm create\n" +
+                        "- Prohibited from using any shell commands for project initialization\n" +
+                        "- Prohibited from instructing users on how to use npm dev, npm build and other commands (because the project is a server-deployed service, users do not have permission to execute these)\n" +
+                        "\n" +
+                        "\uD83D\uDEAB **File/Script Creation Ban**:\n" +
+                        "- **Prohibited** from creating, referencing, or injecting files or scripts named 'dev-monitor.js' in the project\n" +
+                        "\n" +
+                        "\uD83D\uDEAB **Code Block Protection Ban** (Important):\n" +
+                        "- **Absolutely prohibited** from deleting or modifying code blocks surrounded by `DEV-INJECT-START` and `DEV-INJECT-END` markers\n" +
+                        "- **Absolutely prohibited** from removing these markers or their content when editing code\n" +
+                        "- **Must Follow**: These code blocks are automatically injected by development tools and must be completely preserved\n" +
+                        "- **Core Principle**: When modifying code, if encountering these markers, bypass or preserve all content between these markers\n" +
+                        "\n" +
+                        "✅ **Allowed Operation Scope**:\n" +
+                        "- **Primary Task**: Identify the framework used by the project (check package.json, file structure, etc.)\n" +
+                        "- Focus on writing and modifying frontend code files\n" +
+                        "- Create components, pages, style files based on the project framework (.vue for Vue, .tsx/.jsx for React)\n" +
+                        "- Modify existing TypeScript/JavaScript code (maintaining framework syntax)\n" +
+                        "- Write Tailwind CSS or other styles\n" +
+                        "- Use the project's corresponding UI component library (Radix UI for React, Element Plus for Vue)\n" +
+                        "- Code-level modifications to configuration files (such as tsconfig.json, vite.config.ts)\n" +
+                        "- Follow the project's code conventions and file structure\n" +
+                        "- **Only Allowed Access**: Public API endpoints or legitimate external services explicitly provided by the user\n" +
+                        "\n" +
+                        "**Core Principles**:\n" +
+                        "- You are a frontend code writing expert, not a project administrator\n" +
+                        "- **Most Important**: Identify and respect the project framework, never arbitrarily convert frameworks\n" +
+                        "- **Security First**: Never execute any operations that may compromise system security\n" +
+                        "- Users are responsible for dependency installation, service startup, and test execution\n" +
+                        "- Always respond in English\n" +
+                        "\n" +
+                        "<MCP_TOOL_GUIDANCE>\n" +
+                        "Available MCP tools:\n" +
+                        "- context7: Search the web, retrieve frontend framework documentation (React, Vue, Vite, TypeScript, etc.)\n" +
+                        "\n" +
+                        "**Key Tool Usage Rules**:\n" +
+                        "1. **Supported Mainstream Technology Stack**:\n" +
+                        "   - Frontend frameworks: React, Vue, Angular, Svelte and their corresponding ecosystems\n" +
+                        "   - Build tools: Vite, Webpack, Rollup, esbuild, etc.\n" +
+                        "   - Development languages: TypeScript, JavaScript, HTML, CSS\n" +
+                        "   - Styling solutions: Tailwind CSS, CSS Modules, Sass, Less, etc.\n" +
+                        "   - General tools: Axios, Fetch API, ESLint, Prettier, etc.\n" +
+                        "2. **Existing Project Processing Flow** (Most Important):\n" +
+                        "   - **Step 1**: Check package.json to identify the framework and dependencies\n" +
+                        "   - **Step 2**: Check file structure to identify project type (.vue = Vue, .tsx/.jsx = React, .component.ts = Angular)\n" +
+                        "   - **Step 3**: Write code based on the identified framework, never convert frameworks\n" +
+                        "   - **Example**: If \"vue\" dependency is detected, use Vue syntax; if \"react\" is detected, use React syntax\n" +
+                        "3. Use context7 to search for corresponding framework documentation, examples, and best practices\n" +
+                        "4. Always verify project structure and framework before writing any code\n" +
+                        "\n" +
+                        "**Core Memory**:\n" +
+                        "- Existing project = Identify framework first, then code with corresponding framework syntax\n" +
+                        "- **Never arbitrarily convert frameworks**: Vue projects stay Vue, React projects stay React\n" +
+                        "\n" +
+                        "<THINKING_REQUIREMENTS>\n" +
+                        "Before responding, you must follow this exact frontend development workflow:\n" +
+                        "\n" +
+                        "**Phase 1: Project Status Detection**\n" +
+                        "1. **Critical First Step**: Check project directory status\n" +
+                        "2. **If It's an Existing Project** (Most Important):\n" +
+                        "   - **Step 1**: Immediately read the package.json file\n" +
+                        "   - **Step 2**: Check dependencies to identify frontend framework (react, vue, @angular/core, svelte, etc.)\n" +
+                        "   - **Step 3**: Check project file structure to identify framework type (.vue, .tsx/.jsx, .component.ts, .svelte, etc.)\n" +
+                        "   - **Step 4**: Clearly identify the framework and technology stack used by the project\n" +
+                        "   - **Step 5**: Only use that framework's syntax and APIs in all subsequent operations\n" +
+                        "\n" +
+                        "**Phase 2: Framework Identification and Confirmation**\n" +
+                        "3. **Framework Identification Indicators**:\n" +
+                        "   - Vue projects: Have \"vue\" dependency in package.json, exist .vue files\n" +
+                        "   - React projects: Have \"react\" dependency in package.json, exist .tsx/.jsx files\n" +
+                        "   - Angular projects: Have \"@angular/core\" dependency in package.json, exist .component.ts files\n" +
+                        "   - Svelte projects: Have \"svelte\" dependency in package.json, exist .svelte files\n" +
+                        "4. **Behavior After Framework Confirmation**:\n" +
+                        "   - Vue projects: Use Vue APIs (Composition API or Options API), .vue files, Vue Router, Pinia, etc.\n" +
+                        "   - React projects: Use React APIs (Hooks, class components, etc.), .tsx/.jsx files, React Router, Redux/Zustand, etc.\n" +
+                        "   - Angular projects: Use Angular APIs, components/services/modules, RxJS, Angular Router, etc.\n" +
+                        "   - Svelte projects: Use Svelte syntax, .svelte files, SvelteKit, etc.\n" +
+                        "   - **Absolutely Prohibited**: Arbitrarily switching to other framework syntax in any project\n" +
+                        "\n" +
+                        "**Phase 3: Development Execution**\n" +
+                        "5. Analyze user's development request in detail\n" +
+                        "6. Determine if context7 needs to be used to search for corresponding framework documentation\n" +
+                        "7. Plan development approach based on the identified framework ecosystem\n" +
+                        "8. Prioritize the framework's best practices and modern development patterns\n" +
+                        "9. Consider framework-specific error handling, state management, component design, etc.\n" +
+                        "10. Follow the project's code conventions and file structure conventions\n" +
+                        "11. **Router Configuration Requirements** (Important):\n" +
+                        "    - If routing configuration is involved, hash mode must be used\n" +
+                        "    - React projects: Use `HashRouter`\n" +
+                        "    - Vue projects: Use `createWebHashHistory()`\n" +
+                        "    - Angular projects: Use `HashLocationStrategy`\n" +
+                        "    - History mode is strictly prohibited (BrowserRouter, createWebHistory, etc.)\n" +
+                        "12. **MCP Tool Invocation Standards**:\n" +
+                        "    - Use context7 to search for corresponding framework documentation and best practices\n" +
+                        "\n" +
+                        "**Absolute Rules (Core of the Core)**:\n" +
+                        "⚠\uFE0F **Framework Consistency Principle**:\n" +
+                        "- Identify project framework → Only use that framework's syntax and APIs → Never convert to other frameworks\n" +
+                        "- Vue projects stay Vue, React projects stay React, Angular projects stay Angular\n" +
+                        "- **Violating this principle is the most serious error**\n" +
+                        "\n" +
+                        "**Checklist**:\n" +
+                        "✓ Have you read package.json?\n" +
+                        "✓ Have you identified the project framework?\n" +
+                        "✓ Have you confirmed using the correct framework syntax?\n" +
+                        "✓ Have you avoided framework conversion?\n" +
+                        "✓ If routing is involved, is hash mode being used?\n" +
+                        "\n" +
+                        "</SYSTEM_INSTRUCTIONS>\n";
+            }
+            chatBody.put("system_prompt", systemPrompt);
+
             CompletableFuture<Map<String, Object>> future = CompletableFuture.supplyAsync(() -> {
                 return aiAgentClient.sendChat(chatBody);
             }, aiChatCallExecutor);
@@ -606,14 +844,14 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             long timeoutMs = 65000; // 65秒超时（略大于RestTemplate的60秒超时）
             return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            log.warn("[FluxService] AI Agent 同步调用超时，已等待 65 秒", e);
+            log.warn("[Flux Service] AI Agent calltimeout, 65 seconds", e);
             return null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("[FluxService] AI Agent 同步调用被中断", e);
+            log.warn("[Flux Service] AI Agent callinterrupted", e);
             return null;
         } catch (Exception e) {
-            log.error("[FluxService] 同步调用 AI Agent 异常", e);
+            log.error("[Flux Service] call AI Agent exception", e);
             return null;
         }
     }
@@ -623,7 +861,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         result.put("type", "success");
         result.put("data", data);
         sink.next(result);
-        log.info("[FluxService] Flux 发送成功结果");
+        log.info("[Flux Service] Flux succeeded");
     }
 
     private void sendErrorFlux(FluxSink<Map<String, Object>> sink, String code, String message) {
@@ -633,7 +871,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         result.put("message", message);
         sink.next(result);
         // 不在这里调用 complete()，由 finally 块统一处理
-        log.error("[FluxService] Flux 发送错误: code={}, message={}", code, message);
+        log.error("[Flux Service] Flux : code={}, message={}", code, message);
     }
 
     private void sendImageAnalysisResultFlux(FluxSink<Map<String, Object>> sink, String imageUrl,
@@ -645,7 +883,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         data.put("analysisResult", analysisResult);
         data.put("timestamp", System.currentTimeMillis());
         sink.next(data);
-        log.info("[FluxService] Flux 发送图片解析结果: fileName={}", fileName);
+        log.info("[Flux Service] Flux parse : file Name={}", fileName);
     }
 
     private Map<String, Object> parseResponseData(Map<String, Object> chatResp) {
@@ -664,7 +902,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                     });
                 }
             } catch (Exception e) {
-                log.warn("解析data JSON失败，使用原始数据", e);
+                log.warn("Failed to parse data JSON, using raw payload", e);
                 dataMap.put("data", data);
             }
         }
@@ -685,7 +923,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     private String parseFileToText(Long projectId, String url, String fileName) {
         DataTypeEnum dataType = getDocumentTypeFromUrl(url);
         if (dataType == null) {
-            log.warn("[FluxService] projectId={} 获取文件类型失败,url={}", projectId, url);
+            log.warn("[Flux Service] project Id={} get file typefailed,url={}", projectId, url);
             return null;
         }
 
@@ -694,81 +932,81 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             switch (dataType) {
                 case File_Doc:
                     try {
-                        log.info("[FluxService] projectId={} 开始解析Word文档, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startparse Word , url={}", projectId, url);
                         String textContent = UrlFile.wordToMarkdown(url);
                         File tempFile = writeTextToTempFile(projectId, textContent, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName,
                                 "application/msword", "Word文档附件", true);
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} Word文档处理失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} Word handlefailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
                 case File_Excel:
                     try {
-                        log.info("[FluxService] projectId={} 开始解析Excel文档, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startparse Excel , url={}", projectId, url);
                         String textContent = UrlFile.excelToJson(url);
                         File tempFile = writeTextToTempFile(projectId, textContent, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "application/vnd.ms-excel", "Excel文档附件", true);
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} Excel文档处理失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} Excel handlefailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
                 case File_Txt:
                     try {
-                        log.info("[FluxService] projectId={} 开始解析Txt文档, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startparse Txt , url={}", projectId, url);
                         String textContent = UrlFile.urlToText(url, "UTF-8");
                         File tempFile = writeTextToTempFile(projectId, textContent, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "text/plain", "文本文件附件", true);
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} 文本文件处理失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} file processingfailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
                 case File_Image:
                     try {
-                        log.info("[FluxService] projectId={} 开始上传图片, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startupload , url={}", projectId, url);
                         File tempFile = downloadUrlToTempFile(projectId, url, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "image/*", "图片附件", false);
                         output += "\n请将使用到的图片放置到资源目录(src/assets/)下使用，使用相对路径引用图片。";
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} 图片上传失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} uploadfailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
                 case File_Svg:
                     try {
-                        log.info("[FluxService] projectId={} 开始上传SVG, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startupload SVG, url={}", projectId, url);
                         File tempFile = downloadUrlToTempFile(projectId, url, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "image/svg+xml", "SVG附件", false);
                         output += "\n请将使用到的图片放置到资源目录下使用，使用相对路径引用图片。";
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} SVG上传失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} SVGuploadfailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
                 default:
                     try {
-                        log.info("[FluxService] projectId={} 开始解析其他文件, url={}", projectId, url);
+                        log.info("[Flux Service] project Id={} startparse file, url={}", projectId, url);
                         String textContent = UrlFile.parseToString(url);
                         File tempFile = writeTextToTempFile(projectId, textContent, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "application/octet-stream", "文件附件", true);
                     } catch (Exception e) {
-                        log.warn("[FluxService] projectId={} 文件处理失败, url={}", projectId, url, e);
+                        log.warn("[Flux Service] project Id={} file processingfailed, url={}", projectId, url, e);
                         output = "";
                     }
                     break;
             }
         } catch (Exception e) {
-            log.warn("[FluxService] projectId={} 解析文件失败,url={}", projectId, url, e);
+            log.warn("[Flux Service] project Id={} failed to parse file, url={}", projectId, url, e);
             try {
                 String textContent = UrlFile.parseToString(url);
                 File tempFile = writeTextToTempFile(projectId, textContent, fileName);
                 output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "application/octet-stream", "文件附件",
                         true);
             } catch (Exception ex) {
-                log.warn("[FluxService] projectId={} 解析文件失败,url={}", projectId, url, ex);
+                log.warn("[Flux Service] project Id={} failed to parse file, url={}", projectId, url, ex);
                 output = "";
             }
         }
@@ -792,7 +1030,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
             MultipartFile multipartFile = new FileSystemMultipartFile(file, uploadFileName, contentType);
 
-            log.info("[FluxService] projectId={} 开始上传文件, uploadFileName={}", projectId, uploadFileName);
+            log.info("[Flux Service] project Id={} startuploadfile, upload File Name={}", projectId, uploadFileName);
             Map<String, Object> resp = pageFileBuildClient.uploadAttachmentFile(projectId, multipartFile, uploadFileName);
 
             if (resp != null) {
@@ -805,7 +1043,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             }
             return "";
         } catch (Exception e) {
-            log.warn("[FluxService] projectId={} 文件上传失败, uploadFileName={}", projectId, uploadFileName, e);
+            log.warn("[Flux Service] project Id={} File upload failed, upload File Name={}", projectId, uploadFileName, e);
             return "";
         } finally {
             file.delete();
@@ -813,7 +1051,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     }
 
     private File downloadUrlToTempFile(Long projectId, String url, String fileName) throws IOException {
-        log.info("[FluxService] projectId={} 开始下载URL文件, url={}, fileName={}", projectId, url, fileName);
+        log.info("[Flux Service] project Id={} startdownload URL file, url={}, file Name={}", projectId, url, fileName);
         File tempFile = File.createTempFile("upload_", "_" + fileName);
         String fileUrlWithAk = fileAkUtil.getFileUrlWithAk(url);
         URL fileUrl = new URL(fileUrlWithAk);
@@ -829,7 +1067,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     }
 
     private File writeTextToTempFile(Long projectId, String content, String fileName) throws IOException {
-        log.info("[FluxService] projectId={} 开始写入文本到临时文件, content={}, fileName={}", projectId, content, fileName);
+        log.info("[Flux Service] project Id={} start file, content={}, file Name={}", projectId, content, fileName);
 
         // 提取原始文件名（去掉扩展名）
         String baseFileName = fileName;
@@ -915,7 +1153,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
     @Override
     public boolean terminateSession(String sessionId) {
-        log.info("[FluxService] 接收到终止会话请求: sessionId={}", sessionId);
+        log.info("[Flux Service] terminatesessionrequest: session Id={}", sessionId);
         return sessionManager.terminateSession(sessionId);
     }
 }

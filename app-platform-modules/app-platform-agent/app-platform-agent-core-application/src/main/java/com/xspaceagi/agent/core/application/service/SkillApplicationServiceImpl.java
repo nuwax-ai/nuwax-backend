@@ -22,9 +22,12 @@ import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -71,7 +74,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         SkillConfig skillConfig = new SkillConfig();
         BeanUtils.copyProperties(skillConfigDto, skillConfig);
         if (StringUtils.isBlank(skillConfig.getName())) {
-            throw new BizException("技能名称不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "skill name");
         }
 
         if (skillConfig.getFiles() != null) {
@@ -93,7 +96,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         skillConfig.setModifiedName(null);
 
         Long skillId = skillDomainService.add(skillConfig);
-        addConfigHistory(skillId, ConfigHistory.Type.Add, "新增技能");
+        addConfigHistory(skillId, ConfigHistory.Type.Add, I18nUtil.systemMessage("Skill.ConfigHistory.Add"));
         return skillId;
     }
 
@@ -103,7 +106,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         // 这里查一遍，是为了取之前的 files，跟本次传入的files做比对
         SkillConfigDto exist = queryById(skillConfigDto.getId(), true);
         if (exist == null) {
-            throw new BizException("技能不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillNotFound);
         }
 
         SkillConfig skillConfig = new SkillConfig();
@@ -132,14 +135,14 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             });
         }
         skillDomainService.update(skillConfig);
-        addConfigHistory(skillConfig.getId(), ConfigHistory.Type.Edit, "更新技能");
+        addConfigHistory(skillConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Skill.ConfigHistory.Edit"));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long skillId) {
         if (skillId == null) {
-            throw new IllegalArgumentException("技能ID不能为空");
+            throw new IllegalArgumentException("Skill ID cannot be empty");
         }
         skillDomainService.delete(skillId);
     }
@@ -271,10 +274,10 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     @Override
     public SkillExportResultDto exportSkill(SkillConfigDto skillConfigDto) {
         if (skillConfigDto == null) {
-            throw new BizException("技能不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "skill");
         }
         if (StringUtils.isBlank(skillConfigDto.getName())) {
-            throw new BizException("技能名称不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "skill name");
         }
         String folderName = skillConfigDto.getName();
         String fileName = folderName + ".zip";
@@ -292,22 +295,22 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     @Override
     public Long importSkill(MultipartFile file, SkillConfigDto existSkill, Long targetSpaceId) {
         if (file == null || file.isEmpty()) {
-            throw new BizException("请选择要上传的文件");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillUploadFileRequired);
         }
         String fileName = file.getOriginalFilename();
         if (fileName == null) {
-            throw new BizException("文件名不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, I18nUtil.systemMessage("Skill.Import.FileName"));
         }
         String fileNameLower = fileName.toLowerCase();
         boolean isZipLike = fileNameLower.endsWith(".zip") || fileNameLower.endsWith(".skill");
         boolean isSingleSkillMd = "skill.md".equals(fileNameLower);
 
         if (!isZipLike && !isSingleSkillMd) {
-            throw new BizException("文件必须是zip/.skill格式，或者为SKILL.md文件");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFileFormatInvalid);
         }
 
         if (existSkill == null && targetSpaceId == null) {
-            throw new BizException("请选择目标空间");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillTargetSpaceRequired);
         }
 
         SkillConfigDto skillConfigDto = new SkillConfigDto();
@@ -337,8 +340,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                         // 处理不支持的 ZIP 压缩方法（如 STORED 方法带 EXT descriptor）
                         // 记录错误信息，继续处理下一个
                         entryIndex++;
-                        String errorMsg = String.format("文件: 第 %d 个条目(无法获取文件名), 错误: %s",
-                                entryIndex, e.getMessage());
+                        String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ZipEntryError"), entryIndex, e.getMessage());
                         errorFiles.add(errorMsg);
                         log.warn("ZIP 条目解析失败: {}", errorMsg);
                         continue;
@@ -350,7 +352,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                         try {
                             zipInputStream.closeEntry();
                         } catch (Exception e) {
-                            log.warn("关闭 ZIP 条目失败: {}", entryName, e);
+                            log.warn("Failed to close ZIP entry: {}", entryName, e);
                         }
                         continue;
                     }
@@ -365,8 +367,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             // ZipEntry.STORED = 0, ZipEntry.DEFLATED = 8
                             // 如果是不支持的方法，记录错误
                             if (method != ZipEntry.STORED && method != ZipEntry.DEFLATED) {
-                                String errorMsg = String.format("文件: %s, 错误: 不支持的压缩方法 %d (仅支持 STORED(0) 和 DEFLATED(8))",
-                                        entryName, method);
+                                String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.UnsupportedCompressionMethod"), entryName, method);
                                 errorFiles.add(errorMsg);
                                 log.warn("不支持的压缩方法: {}", errorMsg);
                                 try {
@@ -387,8 +388,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                                 }
                                 double entrySizeMB = entrySize / (1024.0 * 1024.0);
                                 double maxSizeMB = MAX_SINGLE_FILE_SIZE / (1024.0 * 1024.0);
-                                String errorMsg = String.format("文件: %s, 错误: 文件大小 %.2f M 超过限制 %.2f M",
-                                        entryName, entrySizeMB, maxSizeMB);
+                                String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.FileSizeExceeded"), entryName, entrySizeMB, maxSizeMB);
                                 errorFiles.add(errorMsg);
                                 // 文件大小超限是严重错误，继续收集其他错误后统一抛出
                                 continue;
@@ -405,7 +405,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             }
                         } catch (ZipException e) {
                             // 处理读取条目内容时的 ZIP 异常，记录错误信息
-                            String errorMsg = String.format("文件: %s, 错误: %s", entryName, e.getMessage());
+                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
                             errorFiles.add(errorMsg);
                             log.warn("读取 ZIP 条目内容失败: {}", errorMsg);
                             try {
@@ -416,7 +416,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             continue;
                         } catch (BizException e) {
                             // 文件大小超限等业务异常，记录错误信息
-                            String errorMsg = String.format("文件: %s, 错误: %s", entryName, e.getMessage());
+                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
                             errorFiles.add(errorMsg);
                             try {
                                 zipInputStream.closeEntry();
@@ -426,7 +426,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             continue;
                         } catch (Exception e) {
                             // 其他读取异常，记录错误信息
-                            String errorMsg = String.format("文件: %s, 错误: %s", entryName, e.getMessage());
+                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
                             errorFiles.add(errorMsg);
                             log.warn("读取 ZIP 条目失败: {}", errorMsg);
                             try {
@@ -442,30 +442,33 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                     try {
                         zipInputStream.closeEntry();
                     } catch (Exception e) {
-                        log.warn("关闭 ZIP 条目失败: {}", entryName, e);
+                        log.warn("Failed to close ZIP entry: {}", entryName, e);
                     }
                 }
 
                 // 如果有错误文件，统一抛出异常
                 if (!errorFiles.isEmpty()) {
-                    StringBuilder errorMessage = new StringBuilder("ZIP 文件中存在以下问题文件：\n");
+                    StringBuilder errorMessage = new StringBuilder(I18nUtil.systemMessage("Skill.Import.ErrorFilesHeader"));
                     for (int i = 0; i < errorFiles.size(); i++) {
                         errorMessage.append(String.format("%d. %s\n", i + 1, errorFiles.get(i)));
                     }
-                    errorMessage.append("\n请检查并修复这些问题文件后重新上传。");
-                    throw new BizException(errorMessage.toString());
+                    errorMessage.append("\n").append(I18nUtil.systemMessage("Skill.Import.ErrorFilesFooter"));
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                            errorMessage.toString());
                 }
 
             } catch (BizException e) {
-                log.error("解析技能导入文件失败", e);
+                log.error("Failed to parse skill import file", e);
                 throw e;
             } catch (Exception e) {
-                log.error("解析技能导入文件失败", e);
+                log.error("Failed to parse skill import file", e);
                 // 如果是 ZipException，提供更具体的错误信息
                 if (e instanceof ZipException) {
-                    throw new BizException("ZIP 文件格式错误或不兼容，请使用标准的 ZIP 压缩格式重新打包文件。错误详情: " + e.getMessage());
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillZipFormatInvalid,
+                            e.getMessage());
                 }
-                throw new BizException("文件格式错误，请上传正确的技能文件。错误详情: " + e.getMessage());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFileFormatError,
+                        e.getMessage());
             }
 
             // 找到共同的顶层目录前缀
@@ -520,7 +523,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             try {
                 byte[] fileBytes = file.getBytes();
                 if (fileBytes.length > MAX_SINGLE_FILE_SIZE) {
-                    throw new BizException("文件大小不能超过 100M");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFileSizeExceeded100m);
                 }
                 // SKILL.md 作为文本文件处理
                 skillMdContent = new String(fileBytes, StandardCharsets.UTF_8);
@@ -534,13 +537,13 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                 files.add(fileDto);
             } catch (IOException e) {
                 log.error("读取 SKILL.md 文件失败", e);
-                throw new BizException("读取 SKILL.md 文件失败");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillReadSkillMdFailed);
             }
         }
 
         // 校验 SKILL.md 是否存在
         if (!hasSkillMd) {
-            throw new BizException("技能包中缺少必需的 SKILL.md 文件");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillMdRequired);
         }
 
         // 从 SKILL.md 中解析 name 和 description
@@ -548,7 +551,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         String descriptionInMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "description");
 
         if (StringUtils.isAnyBlank(nameInMd, descriptionInMd)) {
-            throw new BizException("SKILL.md 文件中必须包含 name 和 description 信息");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillMdNameDescRequired);
         }
 
         skillConfigDto.setFiles(files);
@@ -605,8 +608,9 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             skillConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(null, "Template", "skill"));
             return skillConfigDto;
         } catch (Exception e) {
-            log.error("读取技能模板失败", e);
-            throw new BizException("读取技能模板失败: " + e.getMessage());
+            log.error("Failed to read skill template", e);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillTemplateReadFailed,
+                    e.getMessage());
         }
     }
 
@@ -620,23 +624,23 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         // 检查已发布的技能
         SkillConfigDto publishedSkill = queryPublishedSkillConfig(skillId, spaceId, false);
         if (publishedSkill == null) {
-            throw new BizException("技能不存在或无权限使用");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillNotFoundOrDenied);
         }
     }
 
     @Override
     public SkillFileDto processUploadFile(MultipartFile file, String filePath) {
         if (file == null || file.isEmpty()) {
-            throw new BizException("请选择要上传的文件");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillUploadFileRequired);
         }
         if (filePath == null || filePath.trim().isEmpty()) {
-            throw new BizException("filePath 无效");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFilePathInvalid);
         }
 
         try {
             byte[] fileBytes = file.getBytes();
             if (fileBytes.length > MAX_SINGLE_FILE_SIZE) {
-                throw new BizException("文件大小不能超过 100M");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFileSizeExceeded100m);
             }
 
             SkillFileDto fileDto = new SkillFileDto();
@@ -656,7 +660,8 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             return fileDto;
         } catch (IOException e) {
             log.error("处理上传文件失败", e);
-            throw new BizException("处理上传文件失败: " + e.getMessage());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillUploadProcessFailed,
+                    e.getMessage());
         }
     }
 
@@ -664,11 +669,11 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     public void saveRecentlyUsedSkills(List<Long> skillIds) {
         Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
         if (userId == null) {
-            throw new BizException("用户未登录");
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.userNotLoggedIn);
         }
         List<Long> targetIds = skillIds.stream().filter(Objects::nonNull).toList();
         if (CollectionUtils.isEmpty(targetIds)) {
-            throw new BizException("skillIds不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "skillIds");
         }
         for (Long skillId : targetIds) {
             UserTargetRelation userTargetRelation = new UserTargetRelation();
@@ -684,7 +689,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     public List<PublishedDto> queryRecentlyUsedSkills(String kw, Integer size) {
         Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
         if (userId == null) {
-            throw new BizException("用户未登录");
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.userNotLoggedIn);
         }
         List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Skill, size, 1);
         if (CollectionUtils.isEmpty(userTargetRelations)) {
@@ -761,7 +766,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                     // 删除单个文件
                     // 不允许删除SKILL.md
                     if ("SKILL.md".equalsIgnoreCase(fileUpdate.getName())) {
-                        throw new BizException("SKILL.md 文件不允许删除");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillMdDeleteForbidden);
                     }
                     currentFiles.remove(fileUpdate.getName());
                 }
@@ -783,7 +788,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             }
                         }
                         if (keysToRename.isEmpty()) {
-                            throw new BizException("目录重命名失败，源目录不存在或为空");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillDirRenameFailed);
                         }
                         for (String oldKey : keysToRename) {
                             SkillFileDto file = currentFiles.remove(oldKey);
@@ -805,14 +810,14 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                             file.setName(renameTo);
                             currentFiles.put(renameTo, file);
                         } else {
-                            throw new BizException("文件重命名失败，源文件不存在");
+                            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFileRenameFailed);
                         }
                     }
                 } else {
-                    throw new BizException("缺少文件重命名的源文件名");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillRenameSourceMissing);
                 }
             } else {
-                throw new BizException("未知的文件操作类型");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillUnknownFileOperation);
             }
         }
 
@@ -827,7 +832,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         while ((len = zipInputStream.read(buffer)) != -1) {
             total += len;
             if (total > MAX_SINGLE_FILE_SIZE) {
-                throw new BizException("单个文件大小不能超过 100M");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillSingleFileSizeExceeded);
             }
             outputStream.write(buffer, 0, len);
         }
@@ -868,7 +873,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             return Base64.getDecoder().decode(contents);
         } catch (IllegalArgumentException e) {
             // 如果不是有效的 base64，则按文本处理（兼容旧数据）
-            log.warn("文件 {} 的内容不是有效的 base64 编码，按文本处理", fileName);
+            log.warn("File {} is not valid base64, treating as text", fileName);
             return contents.getBytes(StandardCharsets.UTF_8);
         }
     }
@@ -1074,7 +1079,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             return baos.toByteArray();
         } catch (IOException e) {
             log.error("[exportSkill] 打包技能 zip 失败, skillId={}", skillConfigDto.getId(), e);
-            throw new BizException("导出技能失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillExportFailed);
         }
     }
 

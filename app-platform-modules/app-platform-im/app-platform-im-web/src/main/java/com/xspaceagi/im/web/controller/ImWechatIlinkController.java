@@ -5,7 +5,9 @@ import com.xspaceagi.im.web.dto.ImWechatIlinkQrPollResponse;
 import com.xspaceagi.im.web.dto.ImWechatIlinkQrStartResponse;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -44,7 +46,7 @@ public class ImWechatIlinkController {
     @Operation(summary = "查询扫码状态（可能长阻塞）", description = "返回 status、configData；落库请使用 POST /api/im-config/channel/add。")
     public ReqResult<ImWechatIlinkQrPollResponse> qrStatus(@RequestParam String sessionId) {
         if (StringUtils.isBlank(sessionId)) {
-            throw new BizException("sessionId 不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "sessionId");
         }
         WechatIlinkQrService.QrPollResult r = wechatIlinkQrService.pollStatus(sessionId);
         return ReqResult.success(ImWechatIlinkQrPollResponse.builder()

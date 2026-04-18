@@ -4,15 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "查询项目文件内容响应")
+@Schema(description = "Project file content query response")
 public class ProjectContentRes {
 
-    @Schema(description = "项目文件内容")
+    @Schema(description = "Project file tree / content payload")
     private Object files;
 
-    @Schema(description = "前端框架")
+    @Schema(description = "Frontend framework identifier")
     private String frontendFramework;
 
-    @Schema(description = "开发框架")
+    @Schema(description = "Dev framework identifier")
     private String devFramework;
 }

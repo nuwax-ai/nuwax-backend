@@ -71,7 +71,7 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
     @DSTransactional(propagation = DsPropagation.NOT_SUPPORTED)
     @Override
     public TableDefineVo queryTableDefinition(DorisTableDefineRequest request) {
-        log.info("查询表定义信息, request: {}", request);
+        log.info("Query table def, request: {}", request);
         var tableId = request.getTableId();
         // 先通过spaceId查询表定义信息
         var tableInfo = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
@@ -112,15 +112,15 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
         CustomTableDefinitionModel tableInfo = customTableDefinitionDomainService
                 .queryOneTableInfoById(request.getTableId());
         if (tableInfo == null) {
-            log.error("表定义信息为空, tableId: {}", request.getTableId());
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            log.error("Table definition empty, tableId: {}", request.getTableId());
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         DorisTableDataResponse response = new DorisTableDataResponse();
 
         // 表定义
         var tableDefine = CustomTableDefinitionModelTranslator.translate(tableInfo);
         if (Objects.isNull(tableDefine)) {
-            log.error("表定义信息为空, tableId: {}", request.getTableId());
+            log.error("Table definition empty, tableId: {}", request.getTableId());
             return null;
         }
 
@@ -159,15 +159,15 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
 
             return response;
         } catch (ComposeException ce) {
-            log.error("执行DML的SQL异常", ce);
+            log.error("DML SQL execution error", ce);
             throw ce;
         } catch (JSQLParserException e) {
-            log.error("SQL解析失败: tableId={}", request.getTableId(), e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6015, e.getMessage());
+            log.error("SQL parse failed: tableId={}", request.getTableId(), e);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlParseFailed, e.getMessage());
         } catch (Exception e) {
-            log.error("执行SQL失败: tableId={}", request.getTableId(), e);
+            log.error("SQL exec failed: tableId={}", request.getTableId(), e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -175,7 +175,7 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
     @DSTransactional(propagation = DsPropagation.NOT_SUPPORTED)
     @Override
     public DorisToolTableDefineResponse queryUserToolTableDefine(DorisToolTableDefineRequest request) {
-        log.info("查询用户工具表定义, request: {}", request);
+        log.info("Query user tool table def, request: {}", request);
         // 先通过tableId查询表定义信息
         var tableInfoList = customTableDefinitionDomainService.queryAllTableDefineList(request);
 
@@ -274,15 +274,15 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
     @DSTransactional(propagation = DsPropagation.NOT_SUPPORTED)
     @Override
     public Long createTable(CreateTableDefineVo tableDefineVo) {
-        log.info("创建数据表, tableDefineVo: {}", tableDefineVo.getTableName());
+        log.info("Create data table, tableDefineVo: {}", tableDefineVo.getTableName());
 
         // 检查创建人id是否为空
         if (tableDefineVo.getCreatorId() == null) {
-            log.warn("创建人id不能为空, tableDefineVo: {}", tableDefineVo);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6046);
+            log.warn("Creator id required, tableDefineVo: {}", tableDefineVo);
+            throw ComposeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "创建人id");
         }
         var tableId = this.customTableDefinitionApplicationService.createTable(tableDefineVo);
-        log.debug("创建数据表成功, tableId: {}", tableId);
+        log.debug("Data table created, tableId: {}", tableId);
         return tableId;
     }
 
@@ -290,7 +290,7 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
     @DSTransactional(propagation = DsPropagation.NOT_SUPPORTED)
     @Override
     public CreateTableDefineVo queryCreateTableInfo(DorisTableDefineRequest request) {
-        log.info("查询创建表的表结构定义信息, request: {}", request);
+        log.info("Query created table schema, request: {}", request);
         var tableId = request.getTableId();
         // 先通过spaceId查询表定义信息
         var tableInfo = customTableDefinitionDomainService.queryOneTableInfoById(tableId);
@@ -330,7 +330,7 @@ public class ComposeDbTableRpcServiceImpl implements IComposeDbTableRpcService {
                 }
             }
         } catch (Exception e) {
-            log.error("图片地址解析异常, iconUrl: {}", tableDefineVo.getIcon(), e);
+            log.error("iconUrl parse error: {}", tableDefineVo.getIcon(), e);
         }
 
         // 转换为CreateTableDefineVo

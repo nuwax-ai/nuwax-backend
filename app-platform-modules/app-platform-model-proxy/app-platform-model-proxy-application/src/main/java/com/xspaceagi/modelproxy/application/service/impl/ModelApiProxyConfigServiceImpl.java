@@ -11,7 +11,9 @@ import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
@@ -97,13 +99,13 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         if (userDataPermission.getTokenLimit() != null && userDataPermission.getTokenLimit().getLimitPerDay() != null && userDataPermission.getTokenLimit().getLimitPerDay() >= 0
                 && tokenCount.compareTo(BigDecimal.valueOf(userDataPermission.getTokenLimit().getLimitPerDay())) >= 0) {
             log.warn("token limit exceeded, userId: {}, modelId: {}, tokenCount: {}, limitPerDay: {}", backendModelDto.getUserId(), backendModelDto.getModelId(), tokenCount, userDataPermission.getTokenLimit().getLimitPerDay());
-            throw new BizException("token limit exceeded");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.modelProxyTokenLimitExceeded);
         }
     }
 
     @Override
     public FrontendModelDto generateUserFrontendModelConfig(Long tenantId, Long userId, Long agentId, BackendModelDto backendModel, String siteUrl) {
-        if ("false".equalsIgnoreCase(enableModelProxy)) {
+        if ("false".equalsIgnoreCase(enableModelProxy) || userId == null || userId == -1L) {
             FrontendModelDto frontendModelDto = new FrontendModelDto();
             frontendModelDto.setBaseUrl(backendModel.getBaseUrl());
             frontendModelDto.setApiKey(backendModel.getApiKey());

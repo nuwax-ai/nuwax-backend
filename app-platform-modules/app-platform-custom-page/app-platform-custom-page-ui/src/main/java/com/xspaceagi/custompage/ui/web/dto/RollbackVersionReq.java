@@ -6,10 +6,10 @@ import lombok.Data;
 @Data
 public class RollbackVersionReq {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "回滚到的版本号")
+    @Schema(description = "Version number to roll back to")
     private Integer rollbackTo;
 
 }

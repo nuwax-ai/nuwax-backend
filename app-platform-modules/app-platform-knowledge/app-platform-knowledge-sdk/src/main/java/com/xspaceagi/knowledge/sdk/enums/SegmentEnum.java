@@ -8,6 +8,6 @@ import lombok.Getter;
 @Getter
 public enum SegmentEnum {
     WORDS,
-    DELIMITER
-
+    DELIMITER,
+    SMART
 }

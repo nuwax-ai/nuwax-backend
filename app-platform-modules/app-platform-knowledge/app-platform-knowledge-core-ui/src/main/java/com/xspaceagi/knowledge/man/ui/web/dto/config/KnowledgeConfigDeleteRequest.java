@@ -12,7 +12,7 @@ public class KnowledgeConfigDeleteRequest implements Serializable {
 
 
     @Schema(description = "数据ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "数据ID不能为空")
+    @NotNull(message = "Data ID is required")
     private Long id;
 
 }

@@ -19,7 +19,9 @@ import com.xspaceagi.system.sdk.service.dto.TokenLimit;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.enums.*;
 import com.xspaceagi.system.spec.constants.PermissionConstants;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.CodeGeneratorUtil;
 import jakarta.annotation.Resource;
@@ -66,23 +68,23 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         role.setDescription(StringUtils.trim(role.getDescription()));
 
         if (StringUtils.isNotBlank(role.getCode()) && !role.getCode().matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-            throw new BizException("编码只能包含字母、数字和下划线，且必须以字母开头");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacCodeFormatInvalid);
         }
         if (StringUtils.length(role.getCode()) > 100) {
-            throw new BizException("编码长度不能超过100");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacCodeLengthExceeded);
         }
         if (StringUtils.length(role.getName()) > 50) {
-            throw new BizException("名称长度不能超过50");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacNameLengthExceeded);
         }
         if (StringUtils.length(role.getDescription()) > 500) {
-            throw new BizException("描述长度不能超过500");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacDescLengthExceeded);
         }
     }
 
     @Override
     public void addRole(SysRole role, UserContext userContext) {
         if (StringUtils.isBlank(role.getName())) {
-            throw new BizException("名称不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "名称");
         }
 
         // 如果编码为空，根据名称自动生成编码
@@ -99,7 +101,7 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
 
         SysRole exist = queryRoleByCode(role.getCode());
         if (exist != null) {
-            throw new BizException("已存在此角色编码");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleCodeDuplicate);
         }
 
         if (role.getSource() == null) {
@@ -118,30 +120,30 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         sysRoleService.save(role);
 
         if (role.getId() == null) {
-            throw new BizException("保存失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacSaveFailed);
         }
     }
 
     @Override
     public boolean updateRole(SysRole role, UserContext userContext) {
         if (role.getId() == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
         normalizeRole(role);
 
         SysRole exist = queryRoleById(role.getId());
         if (exist == null) {
-            throw new BizException("角色不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFound);
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
             if (role.getCode() != null && !role.getCode().equals(exist.getCode())) {
-                throw new BizException("系统内置角色编码不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinRoleCodeImmutable);
             }
             if (role.getName() != null && !role.getName().equals(exist.getName())) {
-                throw new BizException("系统内置角色名称不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinRoleNameImmutable);
             }
             if (role.getStatus() != null && !role.getStatus().equals(StatusEnum.ENABLED.getCode())) {
-                throw new BizException("系统内置角色不能禁用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinRoleCannotDisable);
             }
         }
 
@@ -157,14 +159,14 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void bindDataPermission(Long roleId, SysDataPermission dataPermission, UserContext userContext) {
         if (roleId == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
         SysRole exist = queryRoleById(roleId);
         if (exist == null) {
-            throw new BizException("角色不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFound);
         }
         if (dataPermission == null) {
-            throw new BizException("数据权限配置不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacDataPermissionRequired);
         }
 
         if (CollectionUtils.isNotEmpty(dataPermission.getModelIds())) {
@@ -185,10 +187,27 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
                     .toList();
             dataPermission.setPageAgentIds(pageAgentIds);
         }
+        if (dataPermission.getOpenApiConfigMap() != null && !dataPermission.getOpenApiConfigMap().isEmpty()) {
+            Map<String, String> normalizedConfig = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : dataPermission.getOpenApiConfigMap().entrySet()) {
+                if (StringUtils.isBlank(entry.getKey())) {
+                    continue;
+                }
+                normalizedConfig.put(entry.getKey(), entry.getValue());
+            }
+            dataPermission.setOpenApiConfigMap(normalizedConfig);
+        }
+
+        if (CollectionUtils.isNotEmpty(dataPermission.getKnowledgeIds())) {
+            List<Long> knowledgeIds = dataPermission.getKnowledgeIds().stream()
+                    .filter(knowledgeId -> Objects.nonNull(knowledgeId) && knowledgeId >= 1)
+                    .toList();
+            dataPermission.setKnowledgeIds(knowledgeIds);
+        }
 
         if (dataPermission.getTokenLimit() != null) {
             if (dataPermission.getTokenLimit().getLimitPerDay() < -1) {
-                throw new BizException("最大Token不能小于-1");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacTokenLimitMinInvalid);
             }
         } else {
             dataPermission.setTokenLimit(new TokenLimit(-1L));
@@ -204,12 +223,16 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         }
 
         // 全量覆盖写入
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.ROLE, roleId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.ROLE, roleId,
                 PermissionSubjectTypeEnum.MODEL, dataPermission.getModelIds(), userContext);
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.ROLE, roleId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.ROLE, roleId,
                 PermissionSubjectTypeEnum.AGENT, dataPermission.getAgentIds(), userContext);
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.ROLE, roleId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.ROLE, roleId,
                 PermissionSubjectTypeEnum.PAGE, dataPermission.getPageAgentIds(), userContext);
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectKeyConfig(PermissionTargetTypeEnum.ROLE, roleId,
+                PermissionSubjectTypeEnum.OPEN_API, dataPermission.getOpenApiConfigMap(), userContext);
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.ROLE, roleId,
+                PermissionSubjectTypeEnum.KNOWLEDGE, dataPermission.getKnowledgeIds(), userContext);
     }
 
     @Override
@@ -219,11 +242,11 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         }
         for (SortIndex item : sortIndexList) {
             if (item == null || item.getId() == null) {
-                throw new BizException("角色ID不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
             }
             SysRole exist = queryRoleById(item.getId());
             if (exist == null) {
-                throw new BizException("角色不存在: id=" + item.getId());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFoundWithRowId, item.getId());
             }
             if (item.getSortIndex() == null) {
                 continue;
@@ -240,11 +263,11 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void deleteRole(Long roleId, UserContext userContext) {
         if (roleId == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
         SysRole exist = queryRoleById(roleId);
         if (exist == null) {
-            throw new BizException("角色不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFound);
         }
 
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
@@ -384,11 +407,11 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void roleBindUser(Long roleId, List<Long> userIds, UserContext userContext) {
         if (roleId == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
         SysRole sysRole = queryRoleById(roleId);
         if (sysRole == null) {
-            throw new BizException("角色不存在,id=" + roleId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFoundWithRoleId, roleId);
         }
 
         // 校验用户是否存在且为管理员类型
@@ -399,12 +422,13 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
 
             userIds.forEach(userId -> {
                 if (!existUserIds.contains(userId)) {
-                    throw new BizException("用户不存在,id=" + userId);
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
                 }
             });
             users.forEach(user -> {
                 if (user.getRole() == null || !User.Role.Admin.equals(user.getRole())) {
-                    throw new BizException("仅管理员类型用户才可以绑定角色 [" + user.getUserName() + "]");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleBindRequiresAdminUser,
+                            user.getUserName());
                 }
             });
         }
@@ -436,21 +460,22 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void roleAddUser(Long roleId, Long userId, UserContext userContext) {
         if (roleId == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         SysRole sysRole = queryRoleById(roleId);
         if (sysRole == null) {
-            throw new BizException("角色不存在,id=" + roleId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFoundWithRoleId, roleId);
         }
         User user = userService.getById(userId);
         if (user == null) {
-            throw new BizException("用户不存在,id=" + userId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
         }
         if (user.getRole() == null || !User.Role.Admin.equals(user.getRole())) {
-            throw new BizException("仅管理员类型用户才可以绑定角色 [" + user.getUserName() + "]");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleBindRequiresAdminUser,
+                    user.getUserName());
         }
         // 检查是否已绑定，避免重复插入
         LambdaQueryWrapper<SysUserRole> queryWrapper = Wrappers.<SysUserRole>lambdaQuery()
@@ -473,10 +498,10 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void roleRemoveUser(Long roleId, Long userId, UserContext userContext) {
         if (roleId == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         LambdaUpdateWrapper<SysUserRole> wrapper = Wrappers.<SysUserRole>lambdaUpdate()
                 .eq(SysUserRole::getRoleId, roleId)
@@ -487,14 +512,15 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void userBindRole(Long userId, List<Long> roleIds, UserContext userContext) {
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         User user = userService.getById(userId);
         if (user == null) {
-            throw new BizException("用户不存在,id=" + userId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
         }
         if ((user.getRole() == null || !User.Role.Admin.equals(user.getRole())) && CollectionUtils.isNotEmpty(roleIds)) {
-            throw new BizException("仅管理员类型用户才可以绑定角色 [" + user.getUserName() + "]");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleBindRequiresAdminUser,
+                    user.getUserName());
         }
 
         // 校验角色是否存在
@@ -502,12 +528,12 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
             Set<Long> distinctRoleIds = new HashSet<>(roleIds);
             List<SysRole> roles = sysRoleService.listByIds(distinctRoleIds);
             if (CollectionUtils.isEmpty(roles)) {
-                throw new BizException("角色不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFound);
             }
             Set<Long> existRoleIds = roles.stream().map(SysRole::getId).collect(Collectors.toSet());
             roleIds.forEach(roleId -> {
                 if (!existRoleIds.contains(roleId)) {
-                    throw new BizException("角色不存在,id=" + roleId);
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFoundWithRoleId, roleId);
                 }
             });
         }
@@ -539,19 +565,19 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
     @Override
     public void bindMenu(RoleBindMenuModel model, UserContext userContext) {
         if (model == null || model.getRoleId() == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
 
         Long roleId = model.getRoleId();
         SysRole role = sysRoleService.getById(roleId);
         if (role == null) {
-            throw new BizException("角色不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRoleNotFound);
         }
 
         List<MenuNode> menuBindResourceList = model.getMenuBindResourceList();
         if (CollectionUtils.isEmpty(menuBindResourceList)) {
             if (RoleEnum.SUPER_ADMIN.getCode().equals(role.getCode())) {
-                throw new BizException("超级管理员角色必须绑定必要 菜单[角色管理] 和 资源[查询、菜单权限]");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminRequiresRoleMenuResources);
             }
             LambdaUpdateWrapper<SysRoleMenu> deleteWrapper = Wrappers.<SysRoleMenu>lambdaUpdate().eq(SysRoleMenu::getRoleId, roleId);
             sysRoleMenuService.remove(deleteWrapper);
@@ -578,7 +604,7 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
                 continue;
             }
             if (menuId != 0L && !maps.menuMap.containsKey(menuId)) {
-                throw new BizException("菜单ID[" + menuId + "]不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacMenuIdNotFound, menuId);
             }
             Integer menuBindType = menuBindTypeMap.getOrDefault(menuId, BindTypeEnum.NONE.getCode());
             if (menuBindType == null || BindTypeEnum.NONE.getCode().equals(menuBindType)) {
@@ -610,7 +636,7 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         List<SysMenu> allMenus = sysMenuDomainService.queryMenuList(null);
         List<SysResource> allResources = sysResourceDomainService.queryResourceList(null);
         if (CollectionUtils.isEmpty(allMenus) || CollectionUtils.isEmpty(allResources)) {
-            throw new BizException("超级管理员角色必须绑定必要 菜单[角色管理] 及资源 [查询、菜单权限]");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminRequiresRoleMenuResourcesAlt);
         }
         Map<String, SysMenu> menuCodeMap = allMenus.stream()
                 .filter(m -> StringUtils.isNotBlank(m.getCode()))
@@ -632,7 +658,8 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
             }
             Integer bindType = menuBindTypeMap.get(menu.getId());
             if (bindType == null || BindTypeEnum.NONE.getCode().equals(bindType)) {
-                throw new BizException("超级管理员角色必须绑定必要菜单 [" + menu.getName() + "]");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminRequiresMenuByName,
+                        menu.getName());
             }
         }
 
@@ -663,15 +690,17 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
         for (String resourceCode : necessaryResourceCodes) {
             SysResource resource = allResourceCodeMap.get(resourceCode);
             if (resource == null || resource.getId() == null) {
-                throw new BizException("超级管理员角色必须绑定必要菜单 [角色管理] 及资源 [查询、菜单权限]，系统未找到资源[" + resourceCode + "]，请联系管理员检查配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminResourceCodeMissing,
+                        resourceCode);
             }
             Long menuId = resourceIdToMenuId.get(resource.getId());
             if (menuId == null) {
-                throw new BizException("超级管理员角色必须绑定必要菜单 [角色管理] 及资源 [查询、菜单权限]，资源[" + resource.getName() + "]未关联菜单，请联系管理员检查配置");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminResourceMenuOrphan,
+                        resource.getName());
             }
             MenuNode menuNode = bindMap.get(menuId);
             if (menuNode == null) {
-                throw new BizException("超级管理员角色必须绑定必要菜单 [角色管理] 及资源 [查询、菜单权限]");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminBindIncomplete);
             }
 
             List<ResourceNode> flatResources = menuNode.getFlattenResourceList();
@@ -680,14 +709,14 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
                             && r.getResourceBindType() != null
                             && !BindTypeEnum.NONE.getCode().equals(r.getResourceBindType()));
             if (!hasValidBind) {
-                throw new BizException("超级管理员角色必须绑定必要菜单 [角色管理] 及资源 [查询、菜单权限]");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSuperAdminBindIncomplete);
             }
         }
     }
 
     public List<MenuNode> getMenuTreeByRoleId(Long roleId) {
         if (roleId == null) {
-            throw new BizException("角色ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "角色ID");
         }
 
         // 查询角色绑定的菜单关系

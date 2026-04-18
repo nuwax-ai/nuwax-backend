@@ -235,7 +235,7 @@ public class ImOutputProcessor {
                 entries.add(new FileEntry(normalizedName, basename, proxyUrl));
             }
         } catch (Exception e) {
-            log.warn("[fetchFileEntries] 获取文件列表失败: userId={}, conversationId={}, error={}",
+            log.warn("[fetchFileEntries] Failed to list files: userId={}, conversationId={}, error={}",
                     userId, conversationId, e.getMessage());
         }
         return entries;
@@ -663,23 +663,12 @@ public class ImOutputProcessor {
                 return null;
             }
             String separator = proxyUrl.contains("?") ? "&" : "?";
-            return domain + "/static/file-preview.html" + separator + "sk=" + shareKey;
+            return domain + "/static/file-preview.html" + separator + "sk=" + shareKey + "&dl=1";
         } catch (Exception e) {
-            log.warn("[getShareUrl] 生成分享链接失败, conversationId={}, proxyUrl={}, error={}", conversationId, proxyUrl, e.getMessage());
+            log.warn("[getShareUrl] Failed to build share URL, conversationId={}, proxyUrl={}, error={}", conversationId, proxyUrl, e.getMessage());
             return null;
         }
     }
-
-
-//    private static String getShareUrl(String domain, ImFileShareService fileShareService, Long tenantId, Long userId, Long conversationId, String relativePath) {
-//        String shareKey = getShareKey(fileShareService, tenantId, userId, conversationId, relativePath);
-//        if (shareKey != null) {
-//            return domain + "/static/file-preview.html?sk=" + shareKey;
-//        } else {
-//            log.warn("[getShareUrl] 文件分享创建失败，使用直接访问链接: relativePath={}", relativePath);
-//            return getDirectUrl(domain, conversationId, relativePath);
-//        }
-//    }
 
     /**
      * 将文本中的文件信息替换为 Markdown 链接 [文件](fileProxyUrl)，用于在钉钉/飞书/企业微信中可点击。
@@ -904,9 +893,9 @@ public class ImOutputProcessor {
                                        ImFileShareService fileShareService, IComputerFileApplicationService computerFileApplicationService,
                                        String imChannelCode) {
         log.info("---------------------- ImOutputProcessor start ----------------------");
-        log.info("处理前: {}", text);
+        log.info("Before: {}", text);
         if (text == null) {
-            log.debug("处理后: null");
+            log.debug("After: null");
             log.debug("==================== ImOutputProcessor end ====================");
             return "";
         }
@@ -922,7 +911,7 @@ public class ImOutputProcessor {
         }
 
         text = processed;
-        log.info("处理后: {}", text);
+        log.info("After: {}", text);
         log.info("==================== ImOutputProcessor end ====================");
         return text;
     }

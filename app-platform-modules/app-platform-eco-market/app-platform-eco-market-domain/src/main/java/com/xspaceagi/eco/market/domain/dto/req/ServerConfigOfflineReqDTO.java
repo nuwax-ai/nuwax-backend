@@ -9,14 +9,14 @@ import lombok.Data;
 public class ServerConfigOfflineReqDTO {
 
     @Schema(description = "配置UID")
-    @NotBlank(message = "配置UID不能为空")
+    @NotBlank(message = "Configuration UID is required")
     private String uid;
 
     @Schema(description = "客户端ID")
-    @NotBlank(message = "clientId不能为空")
+    @NotBlank(message = "clientId is required")
     private String clientId;
 
     @Schema(description = "客户端密钥")
-    @NotBlank(message = "clientSecret不能为空")
+    @NotBlank(message = "clientSecret is required")
     private String clientSecret;
 } 

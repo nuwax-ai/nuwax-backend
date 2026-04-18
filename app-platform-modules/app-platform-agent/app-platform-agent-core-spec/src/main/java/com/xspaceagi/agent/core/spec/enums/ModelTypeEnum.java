@@ -8,5 +8,6 @@ public enum ModelTypeEnum {
     Images,
     Embeddings,
     Audio,
+    Video,
     Other
 }

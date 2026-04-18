@@ -1,6 +1,5 @@
 package com.xspaceagi.agent.web.ui.controller;
 
-import com.xspaceagi.agent.core.adapter.application.AgentWorkspaceApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConfigHistoryApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.application.SkillApplicationService;
@@ -13,18 +12,22 @@ import com.xspaceagi.agent.web.ui.dto.SkillCopyDto;
 import com.xspaceagi.agent.web.ui.dto.SkillDto;
 import com.xspaceagi.agent.web.ui.dto.SkillUpdateDto;
 import com.xspaceagi.custompage.sdk.dto.CopyTypeEnum;
+import com.xspaceagi.sandbox.SandboxRequestAttributes;
+import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
+import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
-import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.SpacePermissionException;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -62,23 +65,25 @@ public class SkillController {
     private PublishApplicationService publishApplicationService;
     @Resource
     private ConfigHistoryApplicationService configHistoryApplicationService;
-    @Resource
-    private AgentWorkspaceApplicationService agentWorkspaceApplicationService;
 
     @RequireResource(SKILL_CREATE)
     @Operation(summary = "新增技能")
     @PostMapping(value = "/add", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Long> add(@RequestBody @Valid SkillAddDto skillAddDto) {
+    public ReqResult<Long> add(@RequestBody @Valid SkillAddDto skillAddDto, HttpServletRequest request) {
+        if (isSandboxSource(request)) {
+            Long personalSpaceId = getPersonalSpaceId();
+            skillAddDto.setSpaceId(personalSpaceId);
+        }
         if (skillAddDto.getSpaceId() == null) {
-            throw new BizException("spaceId 错误");
+            throw new IllegalArgumentException("Invalid spaceId");
         }
         if (skillAddDto.getName() == null) {
-            throw new BizException("技能名称不能为空");
+            throw new IllegalArgumentException("Skill name is required");
         }
 
         String name = skillAddDto.getName();
         if (!name.matches("^[\\u4e00-\\u9fa5A-Za-z0-9_-]+$")) {
-            throw new BizException("技能名称只能包含中文、英文、数字、下划线(_)和中划线(-)");
+            throw new IllegalArgumentException("Skill name may only contain letters, digits, underscore (_), and hyphen (-)");
         }
 
         spacePermissionService.checkSpaceUserPermission(skillAddDto.getSpaceId());
@@ -105,7 +110,7 @@ public class SkillController {
 
         if (skillUpdateDto.getName() != null) {
             if (!skillUpdateDto.getName().matches("^[\\u4e00-\\u9fa5A-Za-z0-9_-]+$")) {
-                throw new BizException("技能名称只能包含中文、英文、数字、下划线(_)和中划线(-)");
+                throw new IllegalArgumentException("Skill name may only contain letters, digits, underscore (_), and hyphen (-)");
             }
         }
 
@@ -117,7 +122,7 @@ public class SkillController {
         try {
             skillApplicationService.update(skillConfigDto, false);
         } catch (Exception e) {
-            throw new BizException(e.getMessage());
+            throw e;
         }
         return ReqResult.success();
     }
@@ -127,13 +132,13 @@ public class SkillController {
     @PostMapping(value = "/upload-file", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("filePath") String filePath, @RequestParam("skillId") Long skillId) throws IOException {
         if (skillId == null) {
-            throw new BizException("skillId错误");
+            throw new IllegalArgumentException("Invalid skillId");
         }
 
         // 检查单个文件大小，限制为 20M
         long maxSingleFileSize = 20L * 1024 * 1024;
         if (file.getSize() >= maxSingleFileSize) {
-            throw new BizException("请控制技能包大小不超过 20M");
+            throw new IllegalArgumentException("Skill package size must not exceed 20 MB");
         }
 
         // 检查技能权限
@@ -146,7 +151,7 @@ public class SkillController {
         long maxTotalSize = 30L * 1024 * 1024;
         long newFileSize = file.getSize();
         if (existingTotalSize + newFileSize > maxTotalSize) {
-            throw new BizException("请控制技能包大小不超过 20M");
+            throw new IllegalArgumentException("Skill package size must not exceed 20 MB");
         }
 
         List<SkillFileDto> updateFiles = new ArrayList<>();
@@ -182,13 +187,13 @@ public class SkillController {
     @PostMapping(value = "/upload-files", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> uploadFiles(@RequestParam("files") List<MultipartFile> files, @RequestParam("filePaths") List<String> filePaths, @RequestParam("skillId") Long skillId) throws IOException {
         if (files == null || files.isEmpty()) {
-            throw new BizException("请选择要上传的文件");
+            throw new IllegalArgumentException("Please select a file to upload");
         }
         if (filePaths == null || filePaths.isEmpty() || filePaths.size() != files.size()) {
-            throw new BizException("filePaths 与 files 数量不一致");
+            throw new IllegalArgumentException("filePaths and files count mismatch");
         }
         if (skillId == null) {
-            throw new BizException("skillId错误");
+            throw new IllegalArgumentException("Invalid skillId");
         }
 
         // 检查单个文件大小，限制为 20M
@@ -199,7 +204,7 @@ public class SkillController {
                 continue;
             }
             if (file.getSize() >= maxSingleFileSize) {
-                throw new BizException("请控制技能包大小不超过 20M");
+                throw new IllegalArgumentException("Skill package size must not exceed 20 MB");
             }
             newFilesTotalSize += file.getSize();
         }
@@ -213,7 +218,7 @@ public class SkillController {
         // 检查新文件 + 原文件总大小，限制为 30M
         long maxTotalSize = 30L * 1024 * 1024;
         if (existingTotalSize + newFilesTotalSize > maxTotalSize) {
-            throw new BizException("请控制技能包大小不超过 20M");
+            throw new IllegalArgumentException("Skill package size must not exceed 20 MB");
         }
 
         List<SkillFileDto> updateFiles = new ArrayList<>();
@@ -235,10 +240,10 @@ public class SkillController {
             String filePath = filePaths.get(i);
 
             if (file == null || file.isEmpty()) {
-                throw new BizException("存在空文件，请检查后重新上传");
+                throw new IllegalArgumentException("Empty file found; fix and upload again");
             }
             if (filePath == null || filePath.trim().isEmpty()) {
-                throw new BizException("存在无效的 filePath，请检查后重新上传");
+                throw new IllegalArgumentException("Invalid filePath found; fix and upload again");
             }
 
             SkillFileDto uploadFileDto = skillApplicationService.processUploadFile(file, filePath);
@@ -281,9 +286,13 @@ public class SkillController {
     @RequireResource(value = SKILL_QUERY_LIST)
     @Operation(summary = "查询技能列表")
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<List<SkillDto>> list(SkillQueryDto queryDto) {
+    public ReqResult<List<SkillDto>> list(SkillQueryDto queryDto, HttpServletRequest request) {
+        if (isSandboxSource(request)) {
+            Long personalSpaceId = getPersonalSpaceId();
+            queryDto.setSpaceId(personalSpaceId);
+        }
         if (queryDto.getSpaceId() == null) {
-            throw new BizException("spaceId错误");
+            throw new IllegalArgumentException("Invalid spaceId");
         }
         spacePermissionService.checkSpaceUserPermission(queryDto.getSpaceId());
 
@@ -314,21 +323,31 @@ public class SkillController {
     @RequireResource(SKILL_IMPORT)
     @Operation(summary = "导入技能")
     @PostMapping(value = "/import", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Long> importSkill(@RequestParam("file") MultipartFile file, @RequestParam(value = "targetSkillId", required = false) Long targetSkillId, @RequestParam(value = "targetSpaceId", required = false) Long targetSpaceId) throws IOException {
+    public ReqResult<Long> importSkill(@RequestParam("file") MultipartFile file,
+                                         @RequestParam(value = "targetSkillId", required = false) Long targetSkillId,
+                                         @RequestParam(value = "targetSpaceId", required = false) Long targetSpaceId,
+                                         HttpServletRequest request) throws IOException {
         if (file.isEmpty()) {
-            throw new BizException("请选择要上传的文件");
+            throw new IllegalArgumentException("Please select a file to upload");
         }
         // 检查文件大小，限制为 20M
         long maxSize = 20L * 1024 * 1024;
         if (file.getSize() > maxSize) {
-            throw new BizException("导入的文件需小于 20M");
+            throw new IllegalArgumentException("Import file must be smaller than 20 MB");
         }
+        if (isSandboxSource(request)) {
+            Long personalSpaceId = getPersonalSpaceId();
+            targetSpaceId = personalSpaceId;
+            // sandbox 场景下，targetSpaceId 由个人空间决定，需要校验权限
+            spacePermissionService.checkSpaceUserPermission(targetSpaceId);
+        }
+
         SkillConfigDto existSkill = null;
         if (targetSkillId != null) {
             existSkill = checkSkillPermission(targetSkillId);
         } else {
             if (targetSpaceId == null) {
-                throw new BizException("请选择目标空间");
+                throw new IllegalArgumentException("Please select a target space");
             }
             spacePermissionService.checkSpaceUserPermission(targetSpaceId);
         }
@@ -346,20 +365,20 @@ public class SkillController {
         CopyTypeEnum copyType = skillCopyDto.getCopyType();
 
         if (skillId == null) {
-            throw new BizException("skillId错误");
+            throw new IllegalArgumentException("Invalid skillId");
         }
         if (targetSpaceId == null) {
-            throw new BizException("targetSpaceId错误");
+            throw new IllegalArgumentException("Invalid targetSpaceId");
         }
         if (copyType == null) {
-            throw new BizException("copyType错误");
+            throw new IllegalArgumentException("Invalid copyType");
         }
         //校验目标空间权限
         spacePermissionService.checkSpaceUserPermission(targetSpaceId);
 
         SkillConfigDto skillConfigDto = skillApplicationService.queryById(skillId, true);
         if (skillConfigDto == null) {
-            throw new BizException("技能不存在");
+            throw new IllegalArgumentException("Skill does not exist");
         }
 
         if (copyType == CopyTypeEnum.SQUARE) {
@@ -367,7 +386,7 @@ public class SkillController {
             //校验技能复制权限
             PublishedPermissionDto permissionDto = publishApplicationService.hasPermission(Published.TargetType.Skill, skillId);
             if (!permissionDto.isCopy()) {
-                throw new SpacePermissionException("您没有此技能的复制权限");
+                throw new SpacePermissionException(I18nUtil.systemMessage("Backend.Skill.CopyPermissionDenied"));
             }
         } else {
             //开发复制
@@ -395,8 +414,8 @@ public class SkillController {
         try {
             InputStream inputStream = SkillController.class.getClassLoader().getResourceAsStream("skill-template.json");
             if (inputStream == null) {
-                log.error("无法找到技能模板文件: skill-template.json");
-                throw new BizException("技能模板文件不存在");
+                log.error("Cannot find skill template file: skill-template.json");
+                throw new IllegalArgumentException("Skill template file does not exist");
             }
 
             SkillConfigDto skillConfigDto = skillApplicationService.getSkillTemplate(inputStream);
@@ -404,22 +423,43 @@ public class SkillController {
             BeanUtils.copyProperties(skillConfigDto, skillDto);
             return ReqResult.success(skillDto);
         } catch (Exception e) {
-            log.error("读取技能模板失败", e);
-            throw new BizException("读取技能模板失败: " + e.getMessage());
+            log.error("Failed to read skill template", e);
+            throw e;
         }
     }
 
     //检查技能权限
     private SkillConfigDto checkSkillPermission(Long skillId) {
         if (skillId == null) {
-            throw new BizException("skillId错误");
+            throw new IllegalArgumentException("Invalid skillId");
         }
         SkillConfigDto skillDto = skillApplicationService.queryById(skillId, true);
         if (skillDto == null) {
-            throw new BizException("技能不存在");
+            throw new IllegalArgumentException("Skill does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(skillDto.getSpaceId());
         return skillDto;
+    }
+
+    private boolean isSandboxSource(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
+        Object src = request.getAttribute(SandboxRequestAttributes.REQUEST_SOURCE);
+        return SandboxRequestAttributes.SOURCE_SANDBOX.equals(src);
+    }
+
+    private Long getPersonalSpaceId() {
+        Long userId = RequestContext.get().getUserId();
+        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
+        SpaceDto personalSpace = spaceDtos.stream()
+                .filter(spaceDto -> spaceDto.getType() == Space.Type.Personal)
+                .findFirst()
+                .orElse(null);
+        if (personalSpace == null) {
+            throw new IllegalArgumentException("User has no personal space");
+        }
+        return personalSpace.getId();
     }
 
     /**

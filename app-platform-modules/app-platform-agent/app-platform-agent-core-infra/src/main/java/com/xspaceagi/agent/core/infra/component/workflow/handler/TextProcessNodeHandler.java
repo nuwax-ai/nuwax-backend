@@ -35,10 +35,10 @@ public class TextProcessNodeHandler extends AbstractNodeHandler {
                 firstDelimiter = " ";
             }
             List<String> textList = new ArrayList<>();
-            //获取params第一个元素
+            // Get the first element of params
             for (Object object : params.values().toArray()) {
                 String text = String.valueOf(object);
-                //textProcessingNodeConfigDto.getSplits() 分隔text，getSplits是数组，很多分隔符
+                // textProcessingNodeConfigDto.getSplits() splits text, getSplits is an array, many delimiters
                 for (String split : textProcessingNodeConfigDto.getSplits()) {
                     String delimiter = safeUnescape(split);
                     if (split.equals("&nbsp;") || split.equals(" ")) {
@@ -48,7 +48,7 @@ public class TextProcessNodeHandler extends AbstractNodeHandler {
                     text = text.replace(delimiter, firstDelimiter);
                 }
                 String[] texts = text.split(firstDelimiter);
-                //texts转换为List
+                // Convert texts to List
                 textList.addAll(Arrays.asList(texts));
             }
             return Mono.just(Map.of("output", textList));

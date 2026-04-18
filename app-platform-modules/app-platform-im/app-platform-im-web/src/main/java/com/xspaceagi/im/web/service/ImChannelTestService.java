@@ -47,7 +47,7 @@ public class ImChannelTestService {
                         .build();
             }
         } catch (Exception e) {
-            log.error("测试IM渠道连通性失败: channel={}, targetType={}, error={}", channel, targetType, e.getMessage(), e);
+            log.error("IM channel connectivity test failed: channel={}, targetType={}, error={}", channel, targetType, e.getMessage(), e);
             return ImChannelConfigTestResponse.builder()
                     .success(false)
                     .message(e.getMessage())
@@ -138,12 +138,12 @@ public class ImChannelTestService {
                 return errorResponse("连接飞书服务器失败，HTTP状态码: " + response.getStatusCode());
 
             } catch (Exception e) {
-                log.error("飞书API调用异常", e);
+                log.error("Feishu API error", e);
                 return errorResponse("连接飞书服务器异常: " + e.getMessage());
             }
 
         } catch (Exception e) {
-            log.error("测试飞书连通性失败", e);
+            log.error("Feishu connectivity test failed", e);
             return ImChannelConfigTestResponse.builder()
                     .success(false)
                     .message(e.getMessage())
@@ -201,7 +201,7 @@ public class ImChannelTestService {
             }
 
         } catch (Exception e) {
-            log.error("测试钉钉连通性失败", e);
+            log.error("DingTalk connectivity test failed", e);
             String errorMsg = e.getMessage();
             // 提取更有用的错误信息
             if (errorMsg != null) {
@@ -316,7 +316,7 @@ public class ImChannelTestService {
 
                                     return errorResponse("获取应用信息失败，响应为空");
                                 } catch (Exception e) {
-                                    log.error("验证 agentId 异常", e);
+                                    log.error("agentId validation error", e);
                                     // agentId 验证失败，但不影响整体测试结果（可能只是权限问题）
                                     return ImChannelConfigTestResponse.builder()
                                             .success(true)
@@ -336,7 +336,7 @@ public class ImChannelTestService {
                     return errorResponse("连接企业微信服务器失败，响应为空");
 
                 } catch (Exception e) {
-                    log.error("企业微信API调用异常", e);
+                    log.error("WeCom API error", e);
                     return errorResponse("连接企业微信服务器异常: " + e.getMessage());
                 }
             } else {
@@ -344,7 +344,7 @@ public class ImChannelTestService {
             }
 
         } catch (Exception e) {
-            log.error("测试企业微信连通性失败", e);
+            log.error("WeCom connectivity test failed", e);
             return ImChannelConfigTestResponse.builder()
                     .success(false)
                     .message(e.getMessage())

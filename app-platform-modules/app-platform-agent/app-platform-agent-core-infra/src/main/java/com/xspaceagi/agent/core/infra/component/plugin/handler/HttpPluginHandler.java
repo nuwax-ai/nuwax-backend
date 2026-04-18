@@ -8,7 +8,9 @@ import com.xspaceagi.agent.core.infra.component.ArgExtractUtil;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginContext;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.SystemArgNameEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.Header;
@@ -40,12 +42,13 @@ public class HttpPluginHandler extends AbstractPluginHandler {
         Map<String, Object> body = new HashMap<>();
         Map<String, Object> path = new HashMap<>();
         String apiUrl = httpPluginConfigDto.getUrl();
-        Assert.notNull(apiUrl, "url不能为空");
+        Assert.notNull(apiUrl, "url cannot be left blank.");
         // 提取参数
         for (Arg inputArg : httpPluginConfigDto.getInputArgs()) {
             Object value = extraParams(inputArg, pluginContext.getParams());
             if ((value == null || value.equals("")) && inputArg.isRequire()) {
-                throw new BizException(ArgExtractUtil.requireArgMsg(inputArg));
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                        ArgExtractUtil.requireArgMsg(inputArg));
             }
             if (value == null) {
                 continue;

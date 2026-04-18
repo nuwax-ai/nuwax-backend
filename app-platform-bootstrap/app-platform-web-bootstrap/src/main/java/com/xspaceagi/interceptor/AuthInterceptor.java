@@ -2,18 +2,20 @@ package com.xspaceagi.interceptor;
 
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.infra.service.ProxyConfigService;
+import com.xspaceagi.sandbox.SandboxRequestAttributes;
+import com.xspaceagi.system.application.dto.I18nLangDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
-import com.xspaceagi.system.application.service.AuthService;
-import com.xspaceagi.system.application.service.TenantConfigApplicationService;
-import com.xspaceagi.system.application.service.UserRequestApplicationService;
+import com.xspaceagi.system.application.service.*;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.dao.entity.UserReq;
 import com.xspaceagi.system.spec.auth.UserAuthProperties;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.HttpStatusEnum;
+import com.xspaceagi.system.spec.enums.I18nSideEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.IPUtil;
 import com.xspaceagi.system.spec.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
@@ -36,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
@@ -60,6 +63,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Resource
     private UserRequestApplicationService userRequestApplicationService;
+
+    @Resource
+    private I18nApplicationService i18nApplicationService;
+
+    @Resource
+    private I18nLangApplicationService i18nLangApplicationService;
 
     @Value("${server.port:8080}")
     private Integer port;
@@ -100,6 +109,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         //license check
         checkLicense();
 
+        // 优先使用 Sandbox Filter 记录的“原始 URI”
+        String originalRequestUri = getOriginalRequestUri(request);
+
         String domainName = request.getHeader("Host");
         if (domainName == null) {
             return false;
@@ -118,10 +130,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         if (tenantId == null) {
             // 对于无需鉴权的路径（如飞书/钉钉 webhook），使用默认租户，不要求登录
-            if (isExcludedPath(request.getRequestURI())) {
+            if (isExcludedPath(originalRequestUri)) {
                 tenantId = 1L;
             } else if (domainName.contains("nuwax.com")) {
-                throw new BizException("4011", "https://nuwax.com");
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl, "https://nuwax.com");
             }
             String headerTenantId = request.getHeader("x-tenant-id");
             if (StringUtils.isNotBlank(headerTenantId)) {
@@ -161,6 +173,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         tenantConfig.setTenantId(requestContext.getTenantId());
         requestContext.setTenantConfig(tenantConfig);
 
+        //获取终端语言
+        requestContext.setClientLang("en-us");
+        Locale locale = request.getLocale();
+        requestContext.setClientLang(locale.toLanguageTag().toLowerCase());
+
         String token = null;
         //优先使用cookie中的token
         Cookie[] cookies = request.getCookies();
@@ -168,7 +185,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals("ticket")) {
                     token = cookie.getValue();
-                    break;
+                }
+                if (cookie.getName().equals("lang")) {
+                    requestContext.setClientCookieLang(cookie.getValue());
                 }
             }
         }
@@ -184,7 +203,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if (userDto != null && userDto.getTenantId().equals(tenantId)) {
                     if (userDto.getStatus() == User.Status.Disabled) {
                         authService.expireUserAllToken(userDto.getId());
-                        throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), "账号已被禁用");
+                        throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.systemAccountDisabled);
                     }
                     var userContent = UserDto.convertToUserContext(userDto);
                     requestContext.setUserContext(userContent);
@@ -194,11 +213,13 @@ public class AuthInterceptor implements HandlerInterceptor {
                     requestContext.setClientIp(IPUtil.getIpAddr(request));
                     requestContext.setLogin(true);
                     requestContext.setToken(token);
-                    log.debug("jwt token验证通过, userId: {} ", userDto.getId());
-                    if (request.getRequestURI().startsWith("/api/system/")) {
+                    requestContext.setLangMap(userDto.getLangMap());
+                    requestContext.setLang(userDto.getLang());
+                    log.debug("JWT token OK, userId: {} ", userDto.getId());
+                    if (originalRequestUri.startsWith("/api/system/")) {
                         //判断是不是管理员
                         if (userDto.getRole() != User.Role.Admin) {
-                            throw new BizException("你没有权限");
+                            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
                         }
                     }
 
@@ -225,19 +246,41 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if (e instanceof BizException) {
                     throw e;
                 }
-                log.warn("jwt token验证错误 {}", e.getMessage());
+                log.warn("JWT token error {}", e.getMessage());
             }
         }
-        log.debug("jwt token is null, check uri: {}", request.getRequestURI());
+        log.debug("jwt token is null, check uri: {}", originalRequestUri);
         try {
-            checkAndThrowAuthException(request.getRequestURI());
+            checkAndThrowAuthException(originalRequestUri);
         } catch (Exception e) {
             if (StringUtils.isNotBlank(referer)) {
-                throw new BizException("4011", "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl,
+                        "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
             }
             throw e;
         }
+        if (requestContext.getLangMap() == null) {
+            String lang = requestContext.getClientCookieLang();
+            if (lang == null) {
+                I18nLangDto aDefault = i18nLangApplicationService.getDefault(tenantId);
+                if (aDefault != null) {
+                    lang = aDefault.getLang();
+                } else {
+                    lang = requestContext.getClientLang();
+                }
+            }
+            requestContext.setLang(lang);
+            requestContext.setLangMap(i18nApplicationService.querySystemLangMap(tenantId, I18nSideEnum.Backend.getSide(), lang));
+        }
         return true;
+    }
+
+    private String getOriginalRequestUri(HttpServletRequest request) {
+        Object val = request.getAttribute(SandboxRequestAttributes.ORIGINAL_REQUEST_URI);
+        if (val instanceof String s && !s.isEmpty()) {
+            return s;
+        }
+        return request.getRequestURI();
     }
 
     private void checkLicense() {
@@ -249,10 +292,10 @@ public class AuthInterceptor implements HandlerInterceptor {
                 expireDate = AESCrypto.decryptWithHexKey(license, hexKey, hexIV);
             } catch (Exception e) {
                 log.error("license error: {}", e.getMessage());
-                throw new BizException("0400", "error license content");
+                throw BizException.of(ErrorCodeEnum.LICENSE_CONTENT_INVALID, BizExceptionCodeEnum.bootstrapLicenseContentInvalid);
             }
             if (parseToTimestamp(expireDate) * 1000L < System.currentTimeMillis()) {
-                throw new BizException("4011", "/license-expired");
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl, "/license-expired");
             }
 
         }
@@ -312,6 +355,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (isExcludedPath(uri)) {
             return;
         }
-        throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+        throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
+                BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
     }
 }

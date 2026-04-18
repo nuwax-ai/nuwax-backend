@@ -12,7 +12,7 @@ import java.util.List;
 @Schema(description = "技能列表请求DTO")
 public class SkillQueryDto implements Serializable {
 
-    @NotNull(message = "spaceId 不能为空")
+    @NotNull(message = "spaceId is required")
     @Schema(description = "空间ID")
     private Long spaceId;
 

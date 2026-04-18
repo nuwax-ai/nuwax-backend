@@ -145,7 +145,7 @@ public class KnowledgeFullTextSearchController extends BaseController {
     @PostMapping("/sync/kb/{kbId}")
     public ReqResult<SyncResultVo> syncKnowledgeBase(@PathVariable Long kbId) {
 
-        log.info("开始同步知识库: kbId={}", kbId);
+        log.info("Starting knowledge base sync: kbId={}", kbId);
 
         UserContext userContext = this.getUser();
         Long tenantId = userContext.getTenantId();
@@ -161,7 +161,7 @@ public class KnowledgeFullTextSearchController extends BaseController {
             return ReqResult.success(result);
 
         } catch (Exception e) {
-            log.error("知识库同步失败: kbId={}", kbId, e);
+            log.error("Knowledge base sync failed: kbId={}", kbId, e);
 
             SyncResultVo result = new SyncResultVo();
             result.setSuccess(false);
@@ -186,7 +186,7 @@ public class KnowledgeFullTextSearchController extends BaseController {
     @PostMapping("/validate")
     public ReqResult<SyncResultVo> validateSync() {
 
-        log.info("开始验证同步结果");
+        log.info("Starting sync result verification");
 
         UserContext userContext = this.getUser();
         Long tenantId = userContext.getTenantId();

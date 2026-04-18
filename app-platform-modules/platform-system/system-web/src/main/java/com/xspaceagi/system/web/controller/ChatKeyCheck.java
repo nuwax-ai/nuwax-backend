@@ -5,6 +5,7 @@ import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.HttpStatusEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -36,7 +37,8 @@ public class ChatKeyCheck {
         if (StringUtils.isNotBlank(chatKey)) {
             UserAccessKeyDto userAccessKeyDto = userAccessKeyApiService.queryAccessKey(chatKey);
             if (userAccessKeyDto == null) {
-                throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+                throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
+                        BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
             }
         }
     }

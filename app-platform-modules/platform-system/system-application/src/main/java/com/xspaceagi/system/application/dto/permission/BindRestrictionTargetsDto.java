@@ -14,7 +14,7 @@ import java.util.List;
 @Data
 public class BindRestrictionTargetsDto implements Serializable {
 
-    @NotNull(message = "subjectId不能为空")
+    @NotNull(message = "subjectId is required")
     @Schema(description = "主体ID（如模型ID、智能体ID、网页应用智能体ID）")
     private Long subjectId;
 

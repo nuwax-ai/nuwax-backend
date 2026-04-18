@@ -4,7 +4,9 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.xspaceagi.system.infra.dao.entity.TenantConfig;
 import com.xspaceagi.system.infra.dao.service.TenantConfigService;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
@@ -54,7 +56,7 @@ public class WeChatMpService {
             redisUtil.set("mp.accessToken", jsonObject.getString("access_token"), jsonObject.getLong("expires_in") - 10);
             return jsonObject.getString("access_token");
         }
-        throw new BizException("获取微信 access_token 失败");
+        throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.systemWeChatAccessTokenFetchFailed);
     }
 
     public String getPhoneNumber(String code) {
@@ -74,7 +76,8 @@ public class WeChatMpService {
                         return getPhoneNumber(code, false);
                     }
                 }
-                throw new BizException(jsonObject.getString("errmsg"));
+                throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.systemWeChatApiReturnedError,
+                        jsonObject.getString("errmsg"));
             }
             if (jsonObject.containsKey("phone_info")) {
                 JSONObject phoneInfo = jsonObject.getJSONObject("phone_info");
@@ -83,6 +86,6 @@ public class WeChatMpService {
                 }
             }
         }
-        throw new BizException("获取微信手机号失败");
+        throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.systemWeChatPhoneNumberFetchFailed);
     }
 }

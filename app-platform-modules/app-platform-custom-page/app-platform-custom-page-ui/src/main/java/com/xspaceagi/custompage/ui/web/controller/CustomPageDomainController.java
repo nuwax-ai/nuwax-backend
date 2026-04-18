@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.PAGE_APP_BIND_DOMAIN;
 
-@Tag(name = "自定义页面域名绑定", description = "自定义页面域名绑定相关接口")
+@Tag(name = "Custom page domain binding", description = "APIs for custom page domain binding")
 @RestController
 @RequestMapping("/api/custom-page/domain")
 @Slf4j
@@ -57,28 +57,28 @@ public class CustomPageDomainController extends BaseController {
      * GET /api/custom-page-domain/list
      */
     @RequireResource(PAGE_APP_BIND_DOMAIN)
-    @Operation(summary = "根据project_id查询域名列表")
+    @Operation(summary = "List domains by project ID")
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<CustomPageDomainModel>> listByProject(@RequestParam("projectId") Long projectId) {
-        log.info("[listByProject] 查询域名列表, projectId={}", projectId);
+        log.info("[list By Project] querydomainlist, project Id={}", projectId);
         try {
             // 校验项目权限
             CustomPageConfigModel configModel = customPageConfigApplicationService.getByProjectId(projectId);
             if (configModel == null) {
-                return ReqResult.error("0001", "项目不存在");
+                return ReqResult.error("0001", "Project does not exist");
             }
             spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
             List<CustomPageDomainModel> result = customPageDomainApplicationService.listByProjectId(projectId);
 
-            log.info("[listByProject] 查询域名列表成功, projectId={}, count={}", projectId, result.size());
+            log.info("[list By Project] querydomainlistsucceeded, project Id={}, count={}", projectId, result.size());
             return ReqResult.success(result);
         } catch (SpacePermissionException e) {
-            log.error("[listByProject] 查询域名列表失败, projectId={}, {}", projectId, e.getMessage());
+            log.error("[list By Project] querydomainlistfailed, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[listByProject] 查询域名列表异常, projectId={}", projectId, e);
-            return ReqResult.error("0000", "查询失败: " + e.getMessage());
+            log.error("[list By Project] querydomainlistexception, project Id={}", projectId, e);
+            return ReqResult.error("0000", "Query failed: " + e.getMessage());
         }
     }
 
@@ -87,14 +87,14 @@ public class CustomPageDomainController extends BaseController {
      * POST /api/custom-page-domain/create
      */
     @RequireResource(PAGE_APP_BIND_DOMAIN)
-    @Operation(summary = "新增域名绑定")
+    @Operation(summary = "Create domain binding")
     @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageDomainModel> create(@RequestBody CustomPageDomainCreateReq req) {
-        log.info("[create] 创建域名绑定, projectId={}, domain={}", req.getProjectId(), req.getDomain());
+        log.info("[create] Create domain binding, project Id={}, domain={}", req.getProjectId(), req.getDomain());
         try {
             //写个正则校验域名合法性
             if (!req.getDomain().matches("^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}$")) {
-                return ReqResult.error("0001", "域名格式错误");
+                return ReqResult.error("0001", "Invalid domain format");
             }
             if (CollectionUtils.isNotEmpty(cnames)) {
                 boolean isBindOfficialCname = false;
@@ -107,13 +107,13 @@ public class CustomPageDomainController extends BaseController {
                     }
                 }
                 if (!isBindOfficialCname) {
-                    return ReqResult.error("0001", "请将域名解析到官方指定的CNAME上，10分钟后再尝试绑定");
+                    return ReqResult.error("0001", "Point your domain to the official CNAME and try again after about 10 minutes");
                 }
             }
             // 校验项目权限
             CustomPageConfigModel configModel = customPageConfigApplicationService.getByProjectId(req.getProjectId());
             if (configModel == null) {
-                return ReqResult.error("0001", "项目不存在");
+                return ReqResult.error("0001", "Project does not exist");
             }
             spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
@@ -125,15 +125,15 @@ public class CustomPageDomainController extends BaseController {
 
             ReqResult<CustomPageDomainModel> result = customPageDomainApplicationService.create(model, userContext);
 
-            log.info("[create] 创建域名绑定完成, projectId={}, domain={}, result={}",
+            log.info("[create] createdomain bindingcompleted, project Id={}, domain={}, result={}",
                     req.getProjectId(), req.getDomain(), result.isSuccess());
             return result;
         } catch (SpacePermissionException e) {
-            log.error("[create] 创建域名绑定失败, projectId={}, domain={}, {}", req.getProjectId(), req.getDomain(), e.getMessage());
+            log.error("[create] createdomain bindingfailed, project Id={}, domain={}, {}", req.getProjectId(), req.getDomain(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[create] 创建域名绑定异常, projectId={}, domain={}", req.getProjectId(), req.getDomain(), e);
-            return ReqResult.error("0000", "创建失败: " + e.getMessage());
+            log.error("[create] createdomain bindingexception, project Id={}, domain={}", req.getProjectId(), req.getDomain(), e);
+            return ReqResult.error("0000", "Create failed: " + e.getMessage());
         }
     }
 
@@ -142,21 +142,21 @@ public class CustomPageDomainController extends BaseController {
      * POST /api/custom-page-domain/update
      */
     @RequireResource(PAGE_APP_BIND_DOMAIN)
-    @Operation(summary = "修改域名绑定")
+    @Operation(summary = "Update domain binding")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageDomainModel> update(@RequestBody CustomPageDomainUpdateReq req) {
-        log.info("[update] 更新域名绑定, id={},  domain={}", req.getId(), req.getDomain());
+        log.info("[update] updatedomain binding, id={}, domain={}", req.getId(), req.getDomain());
         try {
             // 校验原记录的权限：通过id查询现有域名绑定
             CustomPageDomainModel existingDomain = customPageDomainApplicationService.getById(req.getId());
             if (existingDomain == null) {
-                return ReqResult.error("0002", "域名绑定不存在");
+                return ReqResult.error("0002", "Domain binding does not exist");
             }
 
             // 校验原projectId对应的项目权限
             CustomPageConfigModel existingConfigModel = customPageConfigApplicationService.getByProjectId(existingDomain.getProjectId());
             if (existingConfigModel == null) {
-                return ReqResult.error("0001", "原项目不存在");
+                return ReqResult.error("0001", "Original project does not exist");
             }
             spacePermissionService.checkSpaceUserPermission(existingConfigModel.getSpaceId());
 
@@ -168,14 +168,14 @@ public class CustomPageDomainController extends BaseController {
 
             ReqResult<CustomPageDomainModel> result = customPageDomainApplicationService.update(model, userContext);
 
-            log.info("[update] 更新域名绑定完成, id={}, result={}", req.getId(), result.isSuccess());
+            log.info("[update] updatedomain bindingcompleted, id={}, result={}", req.getId(), result.isSuccess());
             return result;
         } catch (SpacePermissionException e) {
-            log.error("[update] 更新域名绑定失败, id={}, {}", req.getId(), e.getMessage());
+            log.error("[update] updatedomain bindingfailed, id={}, {}", req.getId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[update] 更新域名绑定异常, id={}", req.getId(), e);
-            return ReqResult.error("0000", "更新失败: " + e.getMessage());
+            log.error("[update] updatedomain bindingexception, id={}", req.getId(), e);
+            return ReqResult.error("0000", "Update failed: " + e.getMessage());
         }
     }
 
@@ -184,21 +184,21 @@ public class CustomPageDomainController extends BaseController {
      * POST /api/custom-page-domain/delete
      */
     @RequireResource(PAGE_APP_BIND_DOMAIN)
-    @Operation(summary = "删除域名绑定")
+    @Operation(summary = "Delete domain binding")
     @PostMapping(value = "/delete", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> delete(@RequestBody CustomPageDomainDeleteReq req) {
-        log.info("[delete] 删除域名绑定, id={}", req.getId());
+        log.info("[delete] Delete domain binding, id={}", req.getId());
         try {
             // 校验域名绑定是否存在并获取项目ID
             CustomPageDomainModel targetDomain = customPageDomainApplicationService.getById(req.getId());
             if (targetDomain == null) {
-                return ReqResult.error("0002", "域名绑定不存在");
+                return ReqResult.error("0002", "Domain binding does not exist");
             }
 
             // 校验项目权限
             CustomPageConfigModel configModel = customPageConfigApplicationService.getByProjectId(targetDomain.getProjectId());
             if (configModel == null) {
-                return ReqResult.error("0001", "项目不存在");
+                return ReqResult.error("0001", "Project does not exist");
             }
             spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
@@ -206,14 +206,14 @@ public class CustomPageDomainController extends BaseController {
 
             ReqResult<Void> result = customPageDomainApplicationService.delete(req.getId(), userContext);
 
-            log.info("[delete] 删除域名绑定完成, id={}, result={}", req.getId(), result.isSuccess());
+            log.info("[delete] deletedomain bindingcompleted, id={}, result={}", req.getId(), result.isSuccess());
             return result;
         } catch (SpacePermissionException e) {
-            log.error("[delete] 删除域名绑定失败, id={}, {}", req.getId(), e.getMessage());
+            log.error("[delete] deletedomain bindingfailed, id={}, {}", req.getId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[delete] 删除域名绑定异常, id={}", req.getId(), e);
-            return ReqResult.error("0000", "删除失败: " + e.getMessage());
+            log.error("[delete] deletedomain bindingexception, id={}", req.getId(), e);
+            return ReqResult.error("0000", "Delete failed: " + e.getMessage());
         }
     }
 

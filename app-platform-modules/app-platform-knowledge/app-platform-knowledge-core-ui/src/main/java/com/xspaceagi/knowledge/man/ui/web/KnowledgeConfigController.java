@@ -20,7 +20,9 @@ import com.xspaceagi.system.sdk.operate.SystemEnum;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.page.PageQueryParamVo;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
@@ -216,7 +218,8 @@ public class KnowledgeConfigController extends BaseController {
             //System.out.println("currentKnowledgeTotal:" + currentKnowledgeTotal + ",Permissions_KnowledgeTotal" + userDataPermissions.getMaxKnowledgeCount());
             if (userDataPermissions.getMaxKnowledgeCount() != null && userDataPermissions.getMaxKnowledgeCount() != -1 && userDataPermissions.getMaxKnowledgeCount() <= currentKnowledgeTotal) {
                 //throw new BizException("操作失败，添加的知识库数量超过上限！（目前最多只能创建" + userDataPermissions.getMaxKnowledgeCount() + "个知识库");
-                throw new BizException("操作失败，添加的知识库数量超过上限（" + userDataPermissions.getMaxKnowledgeCount() + "）");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeKbCreateCountExceeded,
+                        userDataPermissions.getMaxKnowledgeCount());
             }
         }
         //新增权限内容

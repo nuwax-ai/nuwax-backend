@@ -17,7 +17,10 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -66,17 +69,17 @@ public class TaskCenterController {
         if (userDataPermission.getMaxScheduledTaskCount() != null && userDataPermission.getMaxScheduledTaskCount() >= 0) {
             Long l = scheduleTaskApiService.countUserTotalTasks(RequestContext.get().getUserId());
             if (l >= userDataPermission.getMaxScheduledTaskCount()) {
-                return ReqResult.error("你能创建的任务数量已达上限，当前最多可创建任务数为" + userDataPermission.getMaxScheduledTaskCount());
+                return ReqResult.error(I18nUtil.systemMessage("Backend.TaskCenter.TaskLimitReached", userDataPermission.getMaxScheduledTaskCount().toString()));
             }
         }
 
         spacePermissionService.checkSpaceUserPermission(scheduleTaskAddDto.getSpaceId());
         PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.valueOf(scheduleTaskAddDto.getTargetType()), Long.valueOf(scheduleTaskAddDto.getTargetId()));
         if (publishedDto == null) {
-            return ReqResult.error("目标对象不存在或已下架");
+            return ReqResult.error("Target object does not exist or has been removed");
         }
         if (!publishedDto.getSpaceId().equals(scheduleTaskAddDto.getSpaceId())) {
-            return ReqResult.error("目标对象空间ID与任务空间ID不一致");
+            return ReqResult.error("Target object space ID does not match task space ID");
         }
         ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
         BeanUtils.copyProperties(scheduleTaskAddDto, scheduleTaskDto);
@@ -85,7 +88,7 @@ public class TaskCenterController {
         scheduleTaskDto.setCreatorId(RequestContext.get().getUserId());
         scheduleTaskDto.setBeanId("taskCenterApplicationService");
         if (scheduleTaskAddDto.getMaxExecTimes() != null && scheduleTaskAddDto.getMaxExecTimes() == 1) {
-            Assert.notNull(scheduleTaskAddDto.getLockTime(), "锁定时间不能为空");
+            Assert.notNull(scheduleTaskAddDto.getLockTime(), "Lock time cannot be null");
             scheduleTaskDto.setMaxExecTimes(1L);
             scheduleTaskDto.setCron(toCron(scheduleTaskAddDto.getLockTime().getTime()));
         } else {
@@ -136,7 +139,7 @@ public class TaskCenterController {
     public ReqResult<Void> update(@RequestBody @Valid ScheduleTaskUpdateDto scheduleTaskUpdateDto) {
         ScheduleTaskDto scheduleTaskDto1 = scheduleTaskApiService.queryById(scheduleTaskUpdateDto.getId());
         if (scheduleTaskDto1 == null) {
-            return ReqResult.error("任务不存在");
+            return ReqResult.error("Task does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(scheduleTaskDto1.getSpaceId());
         checkTenantId(scheduleTaskDto1);
@@ -153,7 +156,7 @@ public class TaskCenterController {
         BeanUtils.copyProperties(scheduleTaskUpdateDto, scheduleTaskDto);
         createAgentTaskConversationIfNeed(scheduleTaskUpdateDto.getKeepConversation(), scheduleTaskDto);
         if (scheduleTaskUpdateDto.getMaxExecTimes() != null && scheduleTaskUpdateDto.getMaxExecTimes() == 1) {
-            Assert.notNull(scheduleTaskUpdateDto.getLockTime(), "锁定时间不能为空");
+            Assert.notNull(scheduleTaskUpdateDto.getLockTime(), "Lock time cannot be null");
             scheduleTaskDto.setMaxExecTimes(1L);
             scheduleTaskDto.setCron(toCron(scheduleTaskUpdateDto.getLockTime().getTime()));
         } else {
@@ -181,7 +184,7 @@ public class TaskCenterController {
 
     private void checkTenantId(ScheduleTaskDto scheduleTaskDto1) {
         if (!scheduleTaskDto1.getTenantId().equals(RequestContext.get().getTenantId())) {
-            throw new BizException("无操作权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 
@@ -191,7 +194,7 @@ public class TaskCenterController {
     public ReqResult<Void> delete(@PathVariable Long id) {
         ScheduleTaskDto scheduleTaskDto1 = scheduleTaskApiService.queryById(id);
         if (scheduleTaskDto1 == null) {
-            return ReqResult.error("任务不存在");
+            return ReqResult.error("Task does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(scheduleTaskDto1.getSpaceId());
         checkTenantId(scheduleTaskDto1);
@@ -205,7 +208,7 @@ public class TaskCenterController {
     public ReqResult<Void> execute(@PathVariable Long id) {
         ScheduleTaskDto scheduleTaskDto1 = scheduleTaskApiService.queryById(id);
         if (scheduleTaskDto1 == null) {
-            return ReqResult.error("任务不存在");
+            return ReqResult.error("Task does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(scheduleTaskDto1.getSpaceId());
         checkTenantId(scheduleTaskDto1);
@@ -219,7 +222,7 @@ public class TaskCenterController {
     public ReqResult<Void> cancel(@PathVariable Long id) {
         ScheduleTaskDto scheduleTaskDto1 = scheduleTaskApiService.queryById(id);
         if (scheduleTaskDto1 == null) {
-            return ReqResult.error("任务不存在");
+            return ReqResult.error("Task does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(scheduleTaskDto1.getSpaceId());
         checkTenantId(scheduleTaskDto1);
@@ -236,7 +239,7 @@ public class TaskCenterController {
     public ReqResult<Void> enable(@PathVariable Long id) {
         ScheduleTaskDto scheduleTaskDto1 = scheduleTaskApiService.queryById(id);
         if (scheduleTaskDto1 == null) {
-            return ReqResult.error("任务不存在");
+            return ReqResult.error("Task does not exist");
         }
         checkTenantId(scheduleTaskDto1);
         spacePermissionService.checkSpaceUserPermission(scheduleTaskDto1.getSpaceId());

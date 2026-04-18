@@ -19,15 +19,15 @@ import java.util.List;
 public class QAEmbeddingDto implements Serializable {
 
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     @Schema(description = "问答ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "问答ID不能为空")
+    @NotNull(message = "Q&A ID is required")
     private Long qaId;
 
     @Schema(description = "文档ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "文档ID不能为空")
+    @NotNull(message = "Document ID is required")
     private Long docId;
 
     @Schema(description = "归属分段对应的原始分段ID,可能没有", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
@@ -38,15 +38,15 @@ public class QAEmbeddingDto implements Serializable {
 
 
     @Schema(description = "分段问题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "分段问题不能为空")
+    @NotNull(message = "Segment question is required")
     private String question;
 
     @Schema(description = "分段答案", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "分段答案不能为空")
+    @NotNull(message = "Segment answer is required")
     private String answer;
 
     @Schema(description = "嵌入向量", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "嵌入向量不能为空")
+    @NotNull(message = "Embedding vector is required")
     private List<BigDecimal> embeddings;
 
     /**

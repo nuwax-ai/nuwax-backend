@@ -15,7 +15,7 @@ public class KnowledgeDocumentUpdateNameRequest implements Serializable {
 
 
     @Schema(description = "文档ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "文档ID不能为空")
+    @NotNull(message = "Document ID is required")
     private Long docId;
 
     @Schema(description = "文档名称")

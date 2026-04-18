@@ -18,7 +18,7 @@ public class EcoMarketConfig {
 
     public EcoMarketConfig(EcoMarketProperties ecoMarketProperties) {
         this.ecoMarketProperties = ecoMarketProperties;
-        log.info("生态市场配置加载完成，服务器URL: {}",
+        log.info("Eco-market config loaded, server URL: {}",
                 ecoMarketProperties.getServer().getBaseUrl());
     }
 

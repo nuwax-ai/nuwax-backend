@@ -11,7 +11,7 @@ import lombok.Data;
 @Schema(description = "分类更新请求")
 public class CategoryUpdateDto {
 
-    @NotNull(message = "ID不能为空")
+    @NotNull(message = "ID is required")
     @Schema(description = "分类ID", required = true)
     private Long id;
 

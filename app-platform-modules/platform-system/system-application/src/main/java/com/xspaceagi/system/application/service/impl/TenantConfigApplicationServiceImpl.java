@@ -13,7 +13,9 @@ import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.dao.service.TenantConfigService;
 import com.xspaceagi.system.infra.dao.service.TenantService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +121,7 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
             tenantConfigDto.getDomainNames().forEach(domainName -> {
                 Long tenantId = queryTenantIdByDomainName(domainName);
                 if (tenantId != null && tenantId.longValue() != tenantConfigDto.getTenantId().longValue()) {
-                    throw new BizException("域名" + domainName + "已被占用");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemTenantDomainAlreadyInUse, domainName);
                 }
             });
             redisUtil.expire("tenant_domain", 0);

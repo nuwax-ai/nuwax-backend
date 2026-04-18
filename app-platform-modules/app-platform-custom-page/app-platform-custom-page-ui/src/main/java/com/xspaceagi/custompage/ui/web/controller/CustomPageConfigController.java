@@ -1,24 +1,5 @@
 package com.xspaceagi.custompage.ui.web.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.xspaceagi.system.spec.annotation.RequireResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
@@ -30,45 +11,36 @@ import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.domain.proxypath.ICustomPageProxyPathService;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
-import com.xspaceagi.custompage.sdk.dto.CopyTypeEnum;
-import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
-import com.xspaceagi.custompage.sdk.dto.CustomPageQueryReq;
-import com.xspaceagi.custompage.sdk.dto.DataSourceDto;
-import com.xspaceagi.custompage.sdk.dto.DataTypeEnum;
-import com.xspaceagi.custompage.sdk.dto.InputTypeEnum;
-import com.xspaceagi.custompage.sdk.dto.PageArg;
-import com.xspaceagi.custompage.sdk.dto.PageArgConfig;
-import com.xspaceagi.custompage.sdk.dto.ProjectType;
-import com.xspaceagi.custompage.sdk.dto.ProxyConfig;
-import com.xspaceagi.custompage.sdk.dto.ProxyConfigBackend;
-import com.xspaceagi.custompage.ui.web.dto.BindDataSourceReq;
-import com.xspaceagi.custompage.ui.web.dto.CustomPageCopyReq;
-import com.xspaceagi.custompage.ui.web.dto.CustomPageCreateReq;
-import com.xspaceagi.custompage.ui.web.dto.CustomPageCreateRes;
-import com.xspaceagi.custompage.ui.web.dto.CustomPageDeleteReq;
-import com.xspaceagi.custompage.ui.web.dto.CustomPageUpdateReq;
-import com.xspaceagi.custompage.ui.web.dto.DeletePathReq;
-import com.xspaceagi.custompage.ui.web.dto.PageArgConfigReq;
-import com.xspaceagi.custompage.ui.web.dto.ProjectContentRes;
-import com.xspaceagi.custompage.ui.web.dto.ProxyConfigBatchReq;
+import com.xspaceagi.custompage.sdk.dto.*;
+import com.xspaceagi.custompage.ui.web.dto.*;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
-import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.SpacePermissionException;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
 
-@Tag(name = "网页应用", description = "网页应用相关接口")
+@Tag(name = "Web app", description = "Custom page web app APIs")
 @RestController
 @RequestMapping("/api/custom-page")
 @Slf4j
@@ -93,10 +65,10 @@ public class CustomPageConfigController extends BaseController {
     private ICustomPageBuildApplicationService customPageBuildApplicationService;
 
     @RequireResource(PAGE_APP_CREATE)
-    @Operation(summary = "创建项目", description = "创建项目")
+    @Operation(summary = "Create project", description = "Create a new project")
     @PostMapping(value = "/create", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> create(@RequestBody CustomPageCreateReq req) {
-        log.info("[Web] 接收到创建项目请求，projectName={}", req.getProjectName());
+        log.info("[Web] createprojectrequest, project Name={}", req.getProjectName());
         try {
             UserContext userContext = getUser();
 
@@ -115,16 +87,16 @@ public class CustomPageConfigController extends BaseController {
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
-            log.info("[Web] 创建项目成功,开始初始化,projectId={}", result.getData().getId());
+            log.info("[Web] createprojectsucceeded,startinitialize,project Id={}", result.getData().getId());
 
             // 初始化项目
             ReqResult<Map<String, Object>> initResult = customPageBuildApplicationService
                     .initProject(result.getData().getId(), userContext);
-            log.info("[Web] projectId={},初始化项目结果,{}:{}, resp={}",
+            log.info("[Web] project Id={},initialize project result,{}:{}, resp={}",
                     result.getData().getId(), initResult.getCode(), initResult.getMessage(), initResult.getData());
 
             if (!initResult.isSuccess()) {
-                log.warn("[Web] projectId={},初始化项目失败,开始删除项目",
+                log.warn("[Web] project Id={},initializeprojectfailed,startdelete project",
                         result.getData().getId());
                 customPageConfigApplicationService.deleteProject(result.getData().getId(), userContext);
                 return ReqResult.error("9999", initResult.getMessage());
@@ -133,19 +105,19 @@ public class CustomPageConfigController extends BaseController {
             CustomPageCreateRes res = CustomPageCreateRes.builder().projectId(result.getData().getId()).build();
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 创建项目失败，projectName={}, {}", req.getProjectName(), e.getMessage());
+            log.error("[Web] create project failed, project Name={}, {}", req.getProjectName(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 创建项目失败，projectName={}", req.getProjectName(), e);
+            log.error("[Web] create project failed, project Name={}", req.getProjectName(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_IMPORT)
-    @Operation(summary = "上传项目", description = "上传zip，创建项目")
+    @Operation(summary = "Upload project", description = "Upload a zip to create or update a project")
     @PostMapping(value = "/upload-and-start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> uploadProject(@ModelAttribute CustomPageCreateReq req) {
-        log.info("[Web] 接收到上传项目请求，projectName={}, projectId={}", req.getProjectName(), req.getProjectId());
+        log.info("[Web] upload projectrequest, project Name={}, project Id={}", req.getProjectName(), req.getProjectId());
         try {
             UserContext userContext = getUser();
             CustomPageConfigModel configModel = null;
@@ -155,7 +127,7 @@ public class CustomPageConfigController extends BaseController {
             if (req.getProjectId() != null && req.getProjectId() > 0) {
                 configModel = customPageConfigApplicationService.getByProjectId(req.getProjectId());
                 if (configModel == null) {
-                    return ReqResult.error("0001", "项目不存在");
+                    return ReqResult.error("0001", "Project does not exist");
                 }
                 isInitProject = false;
             } else {
@@ -181,10 +153,10 @@ public class CustomPageConfigController extends BaseController {
                     userContext);
             if (!result.isSuccess()) {
                 if (isInitProject) {
-                    log.warn("[Web] projectId={},上传项目失败,开始删除项目", configModel.getId());
+                    log.warn("[Web] project Id={},upload projectfailed,startdelete project", configModel.getId());
                     customPageConfigApplicationService.deleteProject(configModel.getId(), userContext);
                 }
-                return ReqResult.error("9999", "上传项目失败: " + result.getMessage());
+                return ReqResult.error("9999", "Upload project failed: " + result.getMessage());
             }
 
             CustomPageCreateRes res = CustomPageCreateRes.builder().projectId(configModel.getId()).build();
@@ -198,20 +170,20 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 上传项目失败，projectName={}, projectId={}, {}", req.getProjectName(), req.getProjectId(),
+            log.error("[Web] upload projectfailed, project Name={}, project Id={}, {}", req.getProjectName(), req.getProjectId(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 上传项目异常，projectName={}, projectId={}", req.getProjectName(), req.getProjectId(), e);
+            log.error("[Web] upload projectexception, project Name={}, project Id={}", req.getProjectName(), req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_MODIFY)
-    @Operation(summary = "修改项目", description = "修改项目基本信息")
+    @Operation(summary = "Update project", description = "Update basic project information")
     @PostMapping(value = "/update-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> updateProject(@RequestBody CustomPageUpdateReq req) {
-        log.info("[Web] 接收到修改项目请求，projectId={}, projectName={}", req.getProjectId(), req.getProjectName());
+        log.info("[Web] modify projectrequest, project Id={}, project Name={}", req.getProjectId(), req.getProjectName());
         try {
             UserContext userContext = getUser();
 
@@ -227,32 +199,32 @@ public class CustomPageConfigController extends BaseController {
 
             var result = customPageConfigApplicationService.updateProject(model, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},修改项目失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},modify projectfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 修改项目失败，projectId={}, projectName={}, {}", req.getProjectId(), req.getProjectName(),
+            log.error("[Web] modify projectfailed, project Id={}, project Name={}, {}", req.getProjectId(), req.getProjectName(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 修改项目失败，projectId={}, projectName={}", req.getProjectId(), req.getProjectName(), e);
+            log.error("[Web] modify projectfailed, project Id={}, project Name={}", req.getProjectId(), req.getProjectName(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_DELETE)
-    @Operation(summary = "删除项目", description = "删除项目")
+    @Operation(summary = "Delete project", description = "Delete a project")
     @PostMapping(value = "/delete-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> deleteProject(@RequestBody CustomPageDeleteReq req) {
-        log.info("[Web] 接收到删除项目请求，projectId={}", req.getProjectId());
+        log.info("[Web] delete projectrequest, project Id={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             var result = customPageConfigApplicationService.deleteProject(req.getProjectId(), userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},删除项目失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},delete projectfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -266,27 +238,27 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 删除项目失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] delete projectfailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 删除项目失败，projectId={}", req.getProjectId(), e);
+            log.error("[Web] delete projectfailed, project Id={}", req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_COPY_TO_SPACE)
-    @Operation(summary = "复制项目", description = "复制项目到目标空间")
+    @Operation(summary = "Copy project", description = "Copy project to target space")
     @PostMapping(value = "/copy-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> copyProject(@RequestBody CustomPageCopyReq req) {
-        log.info("[Web] 接收到复制项目请求，projectId={}, targetSpaceId={}", req.getProjectId(), req.getTargetSpaceId());
+        log.info("[Web] copyprojectrequest, project Id={}, target Space Id={}", req.getProjectId(), req.getTargetSpaceId());
         Long projectId = req.getProjectId();
         try {
             UserContext userContext = getUser();
 
             CustomPageConfigModel sourceConfig = customPageConfigApplicationService.getByProjectId(projectId);
             if (sourceConfig == null) {
-                log.error("[copyProject] 源项目不存在, projectId={}", projectId);
-                return ReqResult.error("0001", "源项目不存在");
+                log.error("[copy Project] source project not found, project Id={}", projectId);
+                return ReqResult.error("0001", "Source project does not exist");
             }
             Long devAgentId = sourceConfig.getDevAgentId();
             Long targetSpaceId = req.getTargetSpaceId();
@@ -300,7 +272,7 @@ public class CustomPageConfigController extends BaseController {
                 //校验项目复制权限
                 PublishedPermissionDto permissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, devAgentId);
                 if (!permissionDto.isCopy()) {
-                    throw new SpacePermissionException("您没有此应用的复制权限");
+                    throw new SpacePermissionException("You do not have permission to copy this app");
                 }
             } else {
                 //开发复制
@@ -324,7 +296,7 @@ public class CustomPageConfigController extends BaseController {
 
             ReqResult<CustomPageConfigModel> createResult = customPageConfigApplicationService.create(newConfigModel, userContext);
             if (!createResult.isSuccess()) {
-                log.error("[copyProject] 复制项目失败, message={}", createResult.getMessage());
+                log.error("[copy Project] copyprojectfailed, message={}", createResult.getMessage());
                 return ReqResult.error("0001", createResult.getMessage());
             }
             CustomPageConfigModel targetConfig = createResult.getData();
@@ -345,7 +317,7 @@ public class CustomPageConfigController extends BaseController {
             //删除项目
             var deleteResult = customPageConfigApplicationService.deleteProject(targetConfig.getId(), userContext);
             if (!deleteResult.isSuccess()) {
-                log.warn("[copyProject] targetProjectId={},复制项目工程失败后,删除项目失败,message={}", targetConfig.getId(), deleteResult.getMessage());
+                log.warn("[copy Project] target Project Id={},after copy project artifacts failed,delete projectfailed,message={}", targetConfig.getId(), deleteResult.getMessage());
             }
             //删除数据源
             if (newCreateDataSources != null && !newCreateDataSources.isEmpty()) {
@@ -359,7 +331,7 @@ public class CustomPageConfigController extends BaseController {
                             workflowApplicationService.delete(id);
                         }
                     } catch (Exception e) {
-                        log.error("[copyProject] 复制项目失败，projectId={}, targetSpaceId={},删除组件失败: type={}, id={}",
+                        log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={},delete component failed: type={}, id={}",
                                 req.getProjectId(), req.getTargetSpaceId(), type, id, e);
                     }
                 });
@@ -367,21 +339,21 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.error(copyResult.getCode(), copyResult.getMessage());
         } catch (SpacePermissionException e) {
-            log.error("[copyProject] 复制项目失败，projectId={}, targetSpaceId={}, {}",
+            log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={}, {}",
                     req.getProjectId(), req.getTargetSpaceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[copyProject] 复制项目失败，projectId={}, targetSpaceId={}",
+            log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={}",
                     req.getProjectId(), req.getTargetSpaceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_CREATE)
-    @Operation(summary = "创建反向代理项目", description = "创建反向代理项目")
+    @Operation(summary = "Create reverse-proxy project", description = "Create a reverse-proxy type project")
     @PostMapping(value = "/create-reverse-proxy", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> createReverseProxy(@RequestBody CustomPageCreateReq req) {
-        log.info("[Web] 接收到创建反向代理项目请求，projectName={}", req.getProjectName());
+        log.info("[Web] create reverse proxy projectrequest, project Name={}", req.getProjectName());
         try {
             UserContext userContext = getUser();
             CustomPageConfigModel model = new CustomPageConfigModel();
@@ -393,119 +365,119 @@ public class CustomPageConfigController extends BaseController {
 
             var result = customPageConfigApplicationService.createReverseProxyProject(model, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] 创建反向代理项目失败,message={}", result.getMessage());
+                log.warn("[Web] create reverse proxy projectfailed,message={}", result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             CustomPageCreateRes res = CustomPageCreateRes.builder().projectId(result.getData().getId()).build();
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 创建反向代理项目失败，projectName={}, {}", req.getProjectName(), e.getMessage());
+            log.error("[Web] create reverse proxy projectfailed, project Name={}, {}", req.getProjectName(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 创建反向代理项目失败，projectName={}", req.getProjectName(), e);
+            log.error("[Web] create reverse proxy projectfailed, project Name={}", req.getProjectName(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_LIST)
-    @Operation(summary = "查询项目列表", description = "查询项目列表")
+    @Operation(summary = "List projects", description = "Query project list")
     @GetMapping(value = "/list-projects", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<CustomPageDto>> listProjects(CustomPageQueryReq req) {
-        log.info("[Web]  接收到查询项目列表请求，req={}", req);
+        log.info("[Web] queryprojectlistrequest, req={}", req);
         try {
             List<CustomPageDto> listData = iCustomPageRpcService.list(req);
             return ReqResult.success(listData);
         } catch (Exception e) {
-            log.error("[Web] 查询项目列表失败", e);
+            log.error("[Web] queryprojectlistfailed", e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_LIST)
-    @Operation(summary = "分页查询项目", description = "分页查询项目")
+    @Operation(summary = "Page query projects", description = "Paginated project query")
     @GetMapping(value = "/page-query-projects", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<SuperPage<CustomPageDto>> pageQueryProjects(
             @RequestBody PageQueryVo<CustomPageQueryReq> pageQueryVo) {
-        log.info("[Web]  接收到分页查询项目请求，pageQueryVo={}", pageQueryVo);
+        log.info("[Web] pagedqueryprojectrequest, page Query Vo={}", pageQueryVo);
         try {
             CustomPageQueryReq req = pageQueryVo.getQueryFilter();
             if (req == null) {
-                throw new IllegalArgumentException("参数为空");
+                throw new IllegalArgumentException("Parameters are empty");
             }
             if (req.getSpaceId() == null) {
-                throw new IllegalArgumentException("spaceId为必填参数");
+                throw new IllegalArgumentException("spaceId is required");
             }
             // 校验空间权限
             spacePermissionService.checkSpaceUserPermission(req.getSpaceId());
             SuperPage<CustomPageDto> page = iCustomPageRpcService.pageQuery(pageQueryVo);
             return ReqResult.success(page);
         } catch (Exception e) {
-            log.error("[Web] 分页查询项目失败", e);
+            log.error("[Web] pagedqueryprojectfailed", e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询项目详情", description = "根据项目ID查询项目详情信息")
+    @Operation(summary = "Get project detail", description = "Get project details by project ID")
     @GetMapping(value = "/get-project-info", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageDto> getProjectInfo(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] 接收到查询项目详情请求，projectId={}", projectId);
+        log.info("[Web] query project detail request, project Id={}", projectId);
         try {
             if (projectId == null || projectId <= 0) {
-                return ReqResult.error("0001", "项目ID不能为空或无效");
+                return ReqResult.error("0001", "projectId is required or invalid");
             }
 
             CustomPageDto dto = iCustomPageRpcService.queryDetailWithVersion(projectId);
             if (dto == null) {
-                return ReqResult.error("0002", "项目不存在");
+                return ReqResult.error("0002", "Project does not exist");
             }
 
             return ReqResult.success(dto);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 查询项目详情，projectId={}, {}", projectId, e.getMessage());
+            log.error("[Web] query project detail, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 查询项目详情异常，projectId={}", projectId, e);
+            log.error("[Web] query project detailexception, project Id={}", projectId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询项目详情(根据agentId)", description = "根据agentId查询项目详情信息")
+    @Operation(summary = "Get project by agentId", description = "Get project details by agent ID")
     @GetMapping(value = "/get-project-info-by-agent", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageDto> getProjectInfoByAgentId(@RequestParam("agentId") Long agentId) {
-        log.info("[Web] 接收到查询项目详情请求，agentId={}", agentId);
+        log.info("[Web] query project detail request, agent Id={}", agentId);
         try {
             if (agentId == null || agentId <= 0) {
-                return ReqResult.error("0001", "agentId不能为空或无效");
+                return ReqResult.error("0001", "agentId is required or invalid");
             }
 
             CustomPageDto dto = iCustomPageRpcService.queryDetailByAgentId(agentId);
             if (dto == null) {
-                return ReqResult.error("0002", "项目不存在");
+                return ReqResult.error("0002", "Project does not exist");
             }
 
             return ReqResult.success(dto);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 查询项目详情，agentId={}, {}", agentId, e.getMessage());
+            log.error("[Web] query project detail, agent Id={}, {}", agentId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 查询项目详情异常，agentId={}", agentId, e);
+            log.error("[Web] query project detailexception, agent Id={}", agentId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询项目文件内容", description = "查询项目文件内容")
+    @Operation(summary = "Get project file content", description = "Query project workspace file content")
     @GetMapping(value = "/get-project-content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<ProjectContentRes> getProjectContent(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] 接收到查询项目文件内容请求，projectId={}", projectId);
+        log.info("[Web] query project file contentrequest, project Id={}", projectId);
         try {
             String proxyPath = "/page/static/" + projectId;
             var result = customPageConfigApplicationService.queryProjectContent(projectId, proxyPath);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},查询项目文件内容失败,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},query project file contentfailed,message={}", projectId, result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -523,31 +495,31 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 查询项目文件内容失败，projectId={}, {}", projectId, e.getMessage());
+            log.error("[Web] query project file contentfailed, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 查询项目文件内容失败，projectId={}", projectId, e);
+            log.error("[Web] query project file contentfailed, project Id={}", projectId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询项目历史版本内容", description = "查询项目历史版本内容")
+    @Operation(summary = "Get historical project content", description = "Query project file content for a historical version")
     @GetMapping(value = "/get-project-content-by-version", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<ProjectContentRes> getProjectContentByVersion(@RequestParam("projectId") Long projectId,
                                                                    @RequestParam("codeVersion") Integer codeVersion) {
-        log.info("[Web] 接收到查询项目历史版本内容请求，projectId={}, codeVersion={}", projectId, codeVersion);
+        log.info("[Web] queryprojecthistorical version contentrequest, project Id={}, code Version={}", projectId, codeVersion);
         try {
             if (projectId == null || projectId <= 0) {
-                return ReqResult.error("0001", "项目ID不能为空或无效");
+                return ReqResult.error("0001", "projectId is required or invalid");
             }
             if (codeVersion == null || codeVersion < 0) {
-                return ReqResult.error("0001", "版本号不能为空或无效");
+                return ReqResult.error("0001", "Version number is required or invalid");
             }
             String proxyPath = "/page/static/_his/" + projectId;
             var result = customPageConfigApplicationService.queryProjectContentByVersion(projectId, codeVersion, proxyPath);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},查询项目历史版本内容失败,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},queryprojecthistorical version contentfailed,message={}", projectId, result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -556,19 +528,19 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 查询项目历史版本内容失败，projectId={}, codeVersion={}, {}", projectId, codeVersion, e.getMessage());
+            log.error("[Web] queryprojecthistorical version contentfailed, project Id={}, code Version={}, {}", projectId, codeVersion, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 查询项目历史版本内容失败，projectId={}, codeVersion={}", projectId, codeVersion, e);
+            log.error("[Web] queryprojecthistorical version contentfailed, project Id={}, code Version={}", projectId, codeVersion, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_EXPORT)
-    @Operation(summary = "导出用户前端项目", description = "导出项目为zip文件")
+    @Operation(summary = "Export project", description = "Export project as a zip file")
     @GetMapping(value = "/export-project")
     public ResponseEntity<byte[]> exportProject(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] 接收到导出项目请求，projectId={}", projectId);
+        log.info("[Web] exportprojectrequest, project Id={}", projectId);
         try {
             if (projectId == null || projectId <= 0) {
                 return ResponseEntity.badRequest().build();
@@ -577,7 +549,7 @@ public class CustomPageConfigController extends BaseController {
             UserContext userContext = getUser();
             var result = customPageConfigApplicationService.exportProjectLatest(projectId, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},导出项目失败,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},exportprojectfailed,message={}", projectId, result.getMessage());
                 return ResponseEntity.badRequest().build();
             }
 
@@ -601,22 +573,22 @@ public class CustomPageConfigController extends BaseController {
                     .body(bytes);
 
         } catch (IOException e) {
-            log.error("[Web] 导出项目异常，projectId={}", projectId, e);
+            log.error("[Web] Export project error, project Id={}", projectId, e);
             return ResponseEntity.internalServerError().build();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 导出项目失败，projectId={}, {}", projectId, e.getMessage());
+            log.error("[Web] exportprojectfailed, project Id={}, {}", projectId, e.getMessage());
             return ResponseEntity.internalServerError().build();
         } catch (Exception e) {
-            log.error("[Web] 导出项目异常，projectId={}", projectId, e);
+            log.error("[Web] Export project error, project Id={}", projectId, e);
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @RequireResource(PAGE_APP_CONFIG_PROXY)
-    @Operation(summary = "配置反向代理", description = "配置反向代理，会完全替换现有的代理配置")
+    @Operation(summary = "Batch configure reverse proxy", description = "Replace reverse-proxy configuration entirely")
     @PostMapping(value = "/batch-config-proxy", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> batchConfigProxy(@RequestBody ProxyConfigBatchReq req) {
-        log.info("[Web] 接收到批量配置反向代理请求，projectId={}, configCount={}",
+        log.info("[Web] batch configure reverse proxyrequest, project Id={}, config Count={}",
                 req.getProjectId(), req.getProxyConfigs() != null ? req.getProxyConfigs().size() : 0);
         try {
             UserContext userContext = getUser();
@@ -638,25 +610,25 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.batchConfigProxy(req.getProjectId(), proxyConfigs,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},批量配置反向代理失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},batch configure reverse proxyfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 批量配置反向代理失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] batch configure reverse proxyfailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 批量配置反向代理失败，projectId={}", req.getProjectId(), e);
+            log.error("[Web] batch configure reverse proxyfailed, project Id={}", req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_CONFIG_PATH)
-    @Operation(summary = "保存路径参数", description = "保存路径参数")
+    @Operation(summary = "Save path arguments", description = "Save path argument schema for a page URI")
     @PostMapping(value = "/save-path-args", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> savePathArgs(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] 接收到保存路径参数请求，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] savepath request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -676,8 +648,8 @@ public class CustomPageConfigController extends BaseController {
                                 try {
                                     pageArg.setDataType(DataTypeEnum.valueOf(argReq.getDataType()));
                                 } catch (IllegalArgumentException e) {
-                                    log.warn("无效的数据类型: {}", argReq.getDataType());
-                                    throw new BizException("无效的数据类型: " + argReq.getDataType());
+                                    log.warn("invalid data type: {}", argReq.getDataType());
+                                    throw new IllegalArgumentException("Invalid data type: " + argReq.getDataType());
                                 }
                             }
                             pageArg.setRequire(argReq.getRequire() != null ? argReq.getRequire() : false);
@@ -687,8 +659,8 @@ public class CustomPageConfigController extends BaseController {
                                 try {
                                     pageArg.setInputType(InputTypeEnum.valueOf(argReq.getInputType()));
                                 } catch (IllegalArgumentException e) {
-                                    log.warn("无效的输入类型: {}", argReq.getInputType());
-                                    throw new BizException("无效的输入类型: " + argReq.getInputType());
+                                    log.warn("invalid input type: {}", argReq.getInputType());
+                                    throw new IllegalArgumentException("Invalid input type: " + argReq.getInputType());
                                 }
                             }
                             return pageArg;
@@ -699,26 +671,26 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.savePathArgs(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},保存路径参数失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},savepath failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 保存路径参数失败，projectId={}, pageUri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] savepath failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 保存路径参数失败，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] savepath failed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_CONFIG_PATH)
-    @Operation(summary = "添加路径配置", description = "添加路径配置，如果pageUri已存在则报错")
+    @Operation(summary = "Add path config", description = "Add path config; fails if pageUri already exists")
     @PostMapping(value = "/add-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> addPath(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] 接收到添加路径配置请求，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] add path configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -731,26 +703,26 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.addPath(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},添加路径配置失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},add path configfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 添加路径配置失败，projectId={}, pageUri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] add path configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 添加路径配置失败，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] add path configfailed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_CONFIG_PATH)
-    @Operation(summary = "编辑路径配置", description = "编辑路径配置，如果路径不存在则报错")
+    @Operation(summary = "Edit path config", description = "Edit path config; fails if path does not exist")
     @PostMapping(value = "/edit-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> editPath(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] 接收到编辑路径配置请求，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] editpath configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -762,52 +734,52 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.editPath(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},编辑路径配置失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},editpath configfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 编辑路径配置失败，projectId={}, pageUri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] editpath configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 编辑路径配置异常，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] editpath configexception, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_CONFIG_PATH)
-    @Operation(summary = "删除路径配置", description = "删除路径配置，如果路径不存在则报错")
+    @Operation(summary = "Delete path config", description = "Delete path config; fails if path does not exist")
     @PostMapping(value = "/delete-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> deletePath(@RequestBody DeletePathReq req) {
-        log.info("[Web] 接收到删除路径配置请求，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] delete path configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
             var result = customPageConfigApplicationService.deletePath(req.getProjectId(), req.getPageUri(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},删除路径配置失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},delete path configfailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 删除路径配置失败，projectId={}, pageUri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] delete path configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 删除路径配置失败，projectId={}, pageUri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] delete path configfailed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_MODIFY)
-    @Operation(summary = "绑定数据源", description = "绑定数据源，支持plugin和workflow类型")
+    @Operation(summary = "Bind data source", description = "Bind plugin or workflow data source")
     @PostMapping(value = "/bind-data-source", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> bindDataSource(@RequestBody BindDataSourceReq req) {
-        log.info("[Web] 接收到绑定数据源请求，projectId={}, type={}, dataSourceId={}",
+        log.info("[Web] binddata sourcerequest, project Id={}, type={}, data Source Id={}",
                 req.getProjectId(), req.getType(), req.getDataSourceId());
         try {
             UserContext userContext = getUser();
@@ -818,27 +790,27 @@ public class CustomPageConfigController extends BaseController {
                     req.getDataSourceId(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},绑定数据源失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},binddata sourcefailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 绑定数据源失败，projectId={}, type={}, dataSourceId={}, {}", req.getProjectId(), req.getType(),
+            log.error("[Web] binddata sourcefailed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
                     req.getDataSourceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 绑定数据源失败，projectId={}, type={}, dataSourceId={}",
+            log.error("[Web] binddata sourcefailed, project Id={}, type={}, data Source Id={}",
                     req.getProjectId(), req.getType(), req.getDataSourceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_MODIFY)
-    @Operation(summary = "解绑数据源", description = "解绑数据源")
+    @Operation(summary = "Unbind data source", description = "Unbind a data source from the project")
     @PostMapping(value = "/unbind-data-source", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> unbindDataSource(@RequestBody BindDataSourceReq req) {
-        log.info("[Web] 接收到解绑数据源请求，projectId={}, type={}, dataSourceId={}",
+        log.info("[Web] unbinddata sourcerequest, project Id={}, type={}, data Source Id={}",
                 req.getProjectId(), req.getType(), req.getDataSourceId());
         try {
             UserContext userContext = getUser();
@@ -849,17 +821,17 @@ public class CustomPageConfigController extends BaseController {
                     req.getDataSourceId(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] projectId={},解绑数据源失败,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},unbinddata sourcefailed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] 解绑数据源失败，projectId={}, type={}, dataSourceId={}, {}", req.getProjectId(), req.getType(),
+            log.error("[Web] unbinddata sourcefailed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
                     req.getDataSourceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 解绑数据源失败，projectId={}, type={}, dataSourceId={}",
+            log.error("[Web] unbinddata sourcefailed, project Id={}, type={}, data Source Id={}",
                     req.getProjectId(), req.getType(), req.getDataSourceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }

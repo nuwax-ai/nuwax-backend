@@ -62,7 +62,7 @@ public class FileParseService {
             //判断非空的分段内容长度,如果长度小于等于 SEGMENT_MIN_WORDS (比如:10),不处理
             var strLen = s.length();
             if (strLen < Constants.SEGMENT_MIN_WORDS) {
-                log.info("分段内容长度小于等于{},不处理,分段内容:{}", Constants.SEGMENT_MIN_WORDS, s);
+                log.info("Segment length <= {}, skip, segment: {}", Constants.SEGMENT_MIN_WORDS, s);
                 continue;
             }
             KnowledgeRawSegmentModel segment = new KnowledgeRawSegmentModel();

@@ -34,17 +34,17 @@ public class CustomPageCodingApplicationServiceImpl implements ICustomPageCoding
 
     @Override
     public ReqResult<Map<String, Object>> specifiedFilesUpdate(Long projectId, List<PageFileInfo> files, UserContext userContext) {
-        log.info("[Application] projectId={},指定文件修改", projectId);
+        log.info("[Application] project Id={},specifiedfileupdate", projectId);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         if (files == null || files.isEmpty()) {
-            throw new IllegalArgumentException("files不能为空");
+            throw new IllegalArgumentException("files cannot be empty");
         }
 
         ReqResult<Map<String, Object>> result = customPageCodingDomainService.specifiedFilesUpdate(projectId, files,
                 userContext);
 
-        log.info("[Application] projectId={},指定文件修改结束,result={}", projectId, result);
+        log.info("[Application] project Id={},specifiedfileupdatecompleted,result={}", projectId, result);
         return result;
     }
 
@@ -53,17 +53,17 @@ public class CustomPageCodingApplicationServiceImpl implements ICustomPageCoding
     @Override
     public ReqResult<Map<String, Object>> allFilesUpdate(Long projectId, List<PageFileInfo> files,
                                                          UserContext userContext) {
-        log.info("[Application] projectId={},全量文件修改", projectId);
+        log.info("[Application] project Id={},fullfileupdate", projectId);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         if (files == null || files.isEmpty()) {
-            throw new IllegalArgumentException("files不能为空");
+            throw new IllegalArgumentException("files cannot be empty");
         }
 
         ReqResult<Map<String, Object>> result = customPageCodingDomainService.allFilesUpdate(projectId, files,
                 userContext);
 
-        log.info("[Application] projectId={},全量文件修改结束,result={}", projectId, result);
+        log.info("[Application] project Id={},fullfileupdatecompleted,result={}", projectId, result);
         return result;
     }
 
@@ -72,26 +72,26 @@ public class CustomPageCodingApplicationServiceImpl implements ICustomPageCoding
     @Override
     public ReqResult<Map<String, Object>> uploadSingleFile(Long projectId, MultipartFile file, String filePath,
                                                            UserContext userContext) {
-        log.info("[Application] projectId={},上传单个文件,filePath={}", projectId, filePath);
+        log.info("[Application] project Id={},upload single file,file Path={}", projectId, filePath);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
-        Optional.ofNullable(file).orElseThrow(() -> new IllegalArgumentException("file不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
+        Optional.ofNullable(file).orElseThrow(() -> new IllegalArgumentException("file is required"));
         Optional.ofNullable(filePath).filter(x -> !x.trim().isEmpty())
-                .orElseThrow(() -> new IllegalArgumentException("filePath不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("filePath is required"));
 
         ReqResult<Map<String, Object>> result = customPageCodingDomainService.uploadSingleFile(projectId, file,
                 filePath, userContext);
-        log.info("[Application] projectId={},上传单个文件结束,result={}", projectId, result);
+        log.info("[Application] project Id={},upload single filecompleted,result={}", projectId, result);
         return result;
     }
 
     @Override
     public ReqResult<String> getFileProxyUrl(Long projectId, String filePath, UserContext userContext) {
-        log.info("[Application] projectId={},获取文件代理地址,filePath={}", projectId, filePath);
+        log.info("[Application] project Id={},getfileproxy URL,file Path={}", projectId, filePath);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(filePath).filter(x -> !x.trim().isEmpty())
-                .orElseThrow(() -> new IllegalArgumentException("filePath不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("filePath is required"));
 
         try {
             // 获取开发环境代理路径
@@ -100,27 +100,27 @@ public class CustomPageCodingApplicationServiceImpl implements ICustomPageCoding
             String normalizedFilePath = filePath.replaceAll("^/+", "");
             String devProxyUrl = devProxyPath + normalizedFilePath;
 
-            log.info("[Application] projectId={},获取文件代理地址响应,proxyUrl={}", devProxyUrl);
+            log.info("[Application] project Id={},getfileproxy URLresponse,proxy Url={}", devProxyUrl);
             return ReqResult.success(devProxyUrl);
         } catch (Exception e) {
-            log.error("[Application] projectId={},获取文件代理地址异常,filePath={}", projectId, filePath, e);
-            return ReqResult.error("0001", "获取文件代理地址异常: " + e.getMessage());
+            log.error("[Application] project Id={},getfileproxy URLexception,file Path={}", projectId, filePath, e);
+            return ReqResult.error("0001", "Failed to get file proxy URL: " + e.getMessage());
         }
     }
 
     @Override
     public ReqResult<Map<String, Object>> rollbackVersion(Long projectId, Integer rollbackTo,
             UserContext userContext) {
-        log.info("[Application] projectId={},回滚版本,rollbackTo={}", projectId, rollbackTo);
+        log.info("[Application] project Id={},rollback version,rollback To={}", projectId, rollbackTo);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(rollbackTo).filter(x -> x >= 0)
-                .orElseThrow(() -> new IllegalArgumentException("rollbackTo不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("rollbackTo is required or invalid"));
 
         ReqResult<Map<String, Object>> result = customPageCodingDomainService.rollbackVersion(projectId,
                 rollbackTo, userContext);
 
-        log.info("[Application] projectId={},回滚版本结束,result={}", projectId, result);
+        log.info("[Application] project Id={},rollback versioncompleted,result={}", projectId, result);
         return result;
     }
 

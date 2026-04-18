@@ -8,7 +8,9 @@ import com.xspaceagi.im.wechat.ilink.IlinkConstants;
 import com.xspaceagi.im.wechat.ilink.IlinkHttpClient;
 import com.xspaceagi.im.wechat.ilink.dto.QrCodeStartResponse;
 import com.xspaceagi.im.wechat.ilink.dto.QrCodeStatusResponse;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.AllArgsConstructor;
@@ -56,7 +58,7 @@ public class WechatIlinkQrService {
                     .build();
         } catch (Exception e) {
             log.error("get_bot_qrcode failed", e);
-            throw new BizException("获取微信二维码失败: " + e.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.imWechatQrFetchFailed, e.getMessage());
         }
     }
 
@@ -67,7 +69,7 @@ public class WechatIlinkQrService {
     public QrPollResult pollStatus(String sessionId) {
         String raw = redisUtil.get(SESSION_PREFIX + sessionId) instanceof String s ? s : null;
         if (StringUtils.isBlank(raw)) {
-            throw new BizException("扫码会话已过期或不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imWechatQrSessionExpired);
         }
         JSONObject o = JSON.parseObject(raw);
         if ("confirmed".equals(o.getString("lastStatus"))) {
@@ -79,7 +81,7 @@ public class WechatIlinkQrService {
         String qrcode = o.getString("qrcode");
         String apiBase = o.getString("baseUrl");
         if (StringUtils.isBlank(qrcode)) {
-            throw new BizException("会话数据异常");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imWechatQrSessionDataInvalid);
         }
         try {
             QrCodeStatusResponse st = ilinkHttpClient.getQrCodeStatus(apiBase, qrcode,
@@ -104,7 +106,7 @@ public class WechatIlinkQrService {
                     .build();
         } catch (Exception e) {
             log.warn("get_qrcode_status: {}", e.getMessage());
-            throw new BizException("查询扫码状态失败: " + e.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.imWechatQrQueryStatusFailed, e.getMessage());
         }
     }
 

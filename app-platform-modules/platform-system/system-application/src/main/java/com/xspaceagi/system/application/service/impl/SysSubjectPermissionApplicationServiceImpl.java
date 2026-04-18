@@ -1,20 +1,13 @@
 package com.xspaceagi.system.application.service.impl;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.xspaceagi.system.spec.annotation.ClearAllUserPermissionCache;
-import com.xspaceagi.system.spec.enums.StatusEnum;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.xspaceagi.system.application.dto.permission.BindRestrictionTargetsDto;
 import com.xspaceagi.system.application.dto.permission.SubjectTargetsDto;
 import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationService;
@@ -22,15 +15,9 @@ import com.xspaceagi.system.application.service.SysGroupApplicationService;
 import com.xspaceagi.system.application.service.SysRoleApplicationService;
 import com.xspaceagi.system.domain.service.SysSubjectPermissionDomainService;
 import com.xspaceagi.system.infra.dao.entity.SysSubjectPermission;
-import com.xspaceagi.system.infra.dao.entity.SysGroup;
-import com.xspaceagi.system.infra.dao.entity.SysRole;
-import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
-import com.xspaceagi.system.spec.constants.RedisKeyConstants;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
-import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
-import com.xspaceagi.system.spec.utils.PermissionCacheUtil;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +45,16 @@ public class SysSubjectPermissionApplicationServiceImpl implements SysSubjectPer
     @Override
     public List<Long> listSubjectIdsByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType) {
         return sysSubjectPermissionDomainService.listSubjectIdsByTarget(targetType, targetId, subjectType);
+    }
+
+    @Override
+    public List<String> listSubjectKeysByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType) {
+        return sysSubjectPermissionDomainService.listSubjectKeysByTarget(targetType, targetId, subjectType);
+    }
+
+    @Override
+    public Map<String, String> listSubjectKeyConfigByTarget(PermissionTargetTypeEnum targetType, Long targetId, PermissionSubjectTypeEnum subjectType) {
+        return sysSubjectPermissionDomainService.listSubjectKeyConfigByTarget(targetType, targetId, subjectType);
     }
 
     @Override

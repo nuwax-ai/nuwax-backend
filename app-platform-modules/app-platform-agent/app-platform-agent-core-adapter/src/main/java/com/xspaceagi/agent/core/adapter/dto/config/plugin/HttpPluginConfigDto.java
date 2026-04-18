@@ -11,20 +11,20 @@ public class HttpPluginConfigDto extends PluginConfigDto {
 
     //请求方法
     @Schema(description = "请求方法", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "请求方法不能为空")
+    @NotNull(message = "HTTP method is required")
     private HttpMethodEnum method;
 
     @Schema(description = "请求地址", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "请求地址不能为空")
+    @NotNull(message = "Request URL is required")
     private String url;
 
     //请求内容格式
     @Schema(description = "请求内容格式", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "请求内容格式不能为空")
+    @NotNull(message = "Request body format is required")
     private HttpNodeConfigDto.ContentTypeEnum contentType;
 
     //请求超时时间
     @Schema(description = "请求超时时间", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "请求超时时间不能为空")
+    @NotNull(message = "Request timeout is required")
     private Integer timeout;
 }

@@ -110,20 +110,20 @@ public abstract class AbstractNodeHandler extends BaseComponent implements NodeH
         try {
             bindNodeId = extractLeadingNumber(arg.getBindValue()).toString();
         } catch (Exception e) {
-            log.warn("解析绑定值出错", e);
+            log.warn("Error parsing binding value", e);
             return null;
         }
-        //变量
+        // Variable
         if (arg.getBindValue() != null && arg.getBindValue().startsWith(bindNodeId + "-var")) {
             Map<String, Map<String, Object>> variableValueMap = workflowContext.getNodeVariableValueMap();
             return ArgExtractUtil.extraBindValue(variableValueMap, arg.getBindValue().replaceFirst(bindNodeId + "-var", bindNodeId));
         }
-        //输入，只有循环内才会有-input
+        // Input, only loop has -input
         if (arg.getBindValue() != null && arg.getBindValue().startsWith(bindNodeId + "-input")) {
             LoopNodeExecutingDto loopNodeDto = workflowContext.getExecutingLoopNodeMap().get(bindNodeId);
             if (loopNodeDto != null) {
                 String[] keys = arg.getBindValue().split("\\.");
-                //引用的元素
+                // Referenced element
                 Map<String, Object> currentLoopItemValueMap = loopNodeDto.getCurrentLoopItemValueMap();
                 if (SystemArgNameEnum.INDEX.name().equals(keys[1])) {
                     return loopNodeDto.getIndex();
@@ -134,7 +134,7 @@ public abstract class AbstractNodeHandler extends BaseComponent implements NodeH
             }
             return null;
         }
-        //输出
+        // Output
         if (node.getLoopNodeId() != null) {
             LoopNodeExecutingDto loopNodeDto = workflowContext.getExecutingLoopNodeMap().get(node.getLoopNodeId().toString());
             if (loopNodeDto != null) {

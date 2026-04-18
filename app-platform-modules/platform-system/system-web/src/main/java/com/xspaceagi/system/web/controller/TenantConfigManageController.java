@@ -1,11 +1,12 @@
 package com.xspaceagi.system.web.controller;
 
-import com.xspaceagi.system.spec.annotation.RequireResource;
-import com.xspaceagi.system.spec.common.RequestContext;
-import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.TenantConfigItemDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.spec.annotation.RequireResource;
+import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -30,7 +31,9 @@ public class TenantConfigManageController {
     @Operation(summary = "查询配置列表")
     @RequestMapping(path = "/list", method = RequestMethod.POST)
     public ReqResult<List<TenantConfigItemDto>> listQuery() {
-        return ReqResult.success(tenantConfigApplicationService.getTenantConfigList());
+        List<TenantConfigItemDto> tenantConfigList = tenantConfigApplicationService.getTenantConfigList();
+        I18nUtil.replaceSystemMessage(tenantConfigList);
+        return ReqResult.success(tenantConfigList);
     }
 
     @RequireResource({SYSTEM_SETTING_SAVE})

@@ -127,6 +127,21 @@ public class ScheduleTaskApplicationServiceImpl implements ScheduleTaskApiServic
     }
 
     @Override
+    public List<ScheduleTaskDto> queryTaskListByUserIdAndAgentId(Long userId, String agentId) {
+        LambdaQueryWrapper<ScheduleTask> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ScheduleTask::getCreatorId, userId);
+        queryWrapper.eq(ScheduleTask::getTargetId, agentId);
+        queryWrapper.in(ScheduleTask::getStatus, ScheduleTaskDto.Status.CREATE, ScheduleTaskDto.Status.CONTINUE, ScheduleTaskDto.Status.EXECUTING, ScheduleTaskDto.Status.FAIL);
+        queryWrapper.orderByDesc(ScheduleTask::getId);
+        List<ScheduleTask> scheduleTaskList = scheduleTaskService.list(queryWrapper);
+        return scheduleTaskList.stream().map(scheduleTask -> {
+            ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
+            BeanUtils.copyProperties(scheduleTask, scheduleTaskDto);
+            return scheduleTaskDto;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
     public void updateToExecuteNow(Long id) {
         ScheduleTask scheduleTask = new ScheduleTask();
         scheduleTask.setId(id);

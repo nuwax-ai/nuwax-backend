@@ -63,7 +63,7 @@ public class ComputerPodController {
 
     private ReqResult<Object> buildResponse(ComputerPodResultDto result) {
         if (result == null) {
-            return ReqResult.error("容器服务调用失败");
+            return ReqResult.error("Container service invocation failed");
         }
 
         String code = result.getCode();
@@ -75,7 +75,7 @@ public class ComputerPodController {
             return ReqResult.create(code, message, data);
         } else {
             // code 不是 0000，返回错误结果
-            return ReqResult.create(code, code, message != null ? message : "容器操作失败", data);
+            return ReqResult.create(code, code, message != null ? message : "Container operation failed", data);
         }
     }
 

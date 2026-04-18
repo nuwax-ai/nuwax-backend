@@ -1,5 +1,6 @@
 package com.xspaceagi.im.web.service;
 
+import com.google.gson.JsonIOException;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceReq;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceResp;
@@ -12,8 +13,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-
-import com.google.gson.JsonIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -67,7 +66,7 @@ public class FeishuAttachmentService {
                 GetMessageResourceResp resp = client.im().v1().messageResource().get(req);
 
                 if (resp.getData() == null) {
-                    log.warn("飞书附件下载失败: messageId={}, fileKey={}, type={}", messageId, fileKey, type);
+                    log.warn("Feishu attachment download failed: messageId={}, fileKey={}, type={}", messageId, fileKey, type);
                     result.getUnsupportedKeys().add(fileKey);
                     continue;
                 }
@@ -106,18 +105,18 @@ public class FeishuAttachmentService {
                         imUploadResult.getMimeType()
                     );
                     result.getAttachments().add(dto);
-                    log.info("飞书附件处理成功: fileKey={}, url={}", fileKey, dto.getFileUrl());
+                    log.info("Feishu attachment OK: fileKey={}, url={}", fileKey, dto.getFileUrl());
                 } else {
-                    log.warn("飞书附件处理失败: fileKey={}, error={}", fileKey, uploadResult.getErrorMessage());
+                    log.warn("Feishu attachment failed: fileKey={}, error={}", fileKey, uploadResult.getErrorMessage());
                     result.getUnsupportedKeys().add(fileKey);
                 }
 
             } catch (JsonIOException e) {
                 // 飞书 SDK 在解析错误响应时可能抛出（如文件夹等不支持的类型）
-                log.warn("飞书附件跳过（可能为文件夹或不支持的类型）: messageId={}, fileKey={}, type={}", messageId, fileKey, type);
+                log.warn("Feishu attachment skipped (folder or unsupported): messageId={}, fileKey={}, type={}", messageId, fileKey, type);
                 result.getUnsupportedKeys().add(fileKey);
             } catch (Exception e) {
-                log.warn("飞书附件下载或上传异常: messageId={}, fileKey={}", messageId, fileKey, e);
+                log.warn("Feishu attachment download/upload error: messageId={}, fileKey={}", messageId, fileKey, e);
                 result.getUnsupportedKeys().add(fileKey);
             }
         }

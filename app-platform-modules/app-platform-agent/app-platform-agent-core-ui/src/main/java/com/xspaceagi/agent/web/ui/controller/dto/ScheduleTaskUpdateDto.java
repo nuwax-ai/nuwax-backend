@@ -17,23 +17,23 @@ import java.util.Date;
 public class ScheduleTaskUpdateDto {
 
     @Schema(description = "任务ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "任务ID不能为空")
+    @NotNull(message = "Task ID is required")
     private Long id;
 
     @Schema(description = "任务目标类型，Agent、Workflow", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "任务目标类型不能为空")
+    @NotNull(message = "Task target type is required")
     private String targetType;
 
     @Schema(description = "任务目标ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "任务目标ID不能为空")
+    @NotNull(message = "Task target ID is required")
     private String targetId;
 
     @Schema(description = "任务名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "任务名称不能为空")
+    @NotNull(message = "Task name is required")
     private String taskName;
 
     @Schema(description = "任务执行周期", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "任务执行周期不能为空")
+    @NotNull(message = "Task schedule (cron) is required")
     private String cron;
 
     @Schema(description = "任务参数，智能体参数格式为 {\"message\": \"消息内容\", \"variables\":{}}，工作流参数根据实际定义参数")

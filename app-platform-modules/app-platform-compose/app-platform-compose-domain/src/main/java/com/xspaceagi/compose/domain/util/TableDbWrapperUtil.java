@@ -42,7 +42,7 @@ public class TableDbWrapperUtil {
      */
     public String getDorisDatabase() {
         if (!StringUtils.hasText(dorisUrl)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6023);
+            throw ComposeException.build(BizExceptionCodeEnum.composeDorisUrlNotConfigured);
         }
         try {
             // 示例URL:
@@ -54,15 +54,15 @@ public class TableDbWrapperUtil {
             String databaseName = parts[parts.length - 1];
 
             if (!StringUtils.hasText(databaseName)) {
-                log.error("从URL[{}]中解析出数据库名称失败, URL: {}", dorisUrl);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6003, "无法从URL中解析出数据库名称");
+                log.error("Failed to parse DB name from URL[{}], URL: {}", dorisUrl);
+                throw ComposeException.build(BizExceptionCodeEnum.composeDorisDbNameParseFailed, "无法从URL中解析出数据库名称");
             }
 
-            log.debug("从URL[{}]中解析出数据库名称: {}", dorisUrl, databaseName);
+            log.debug("Parsed DB name from URL[{}]: {}", dorisUrl, databaseName);
             return databaseName;
         } catch (Exception e) {
-            log.error("解析Doris数据库名称失败, URL: {}", dorisUrl, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6003, e.getMessage());
+            log.error("Parse Doris DB name failed, URL: {}", dorisUrl, e);
+            throw ComposeException.build(BizExceptionCodeEnum.composeDorisDbNameParseFailed, e.getMessage());
         }
     }
 
@@ -151,7 +151,7 @@ public class TableDbWrapperUtil {
         } else {
             sql = MysqlTableDdlUtil.getTableExistsSql(database, table);
         }
-        log.debug("检查sql是否存在,database: {}, table: {},sql={}", database, table, sql);
+        log.debug("Check SQL exists, database: {}, table: {}, sql={}", database, table, sql);
         return sql;
     }
 
@@ -165,10 +165,10 @@ public class TableDbWrapperUtil {
     public String getTableCountSql(String database, String table) {
         validateDbType();
         if (DB_TYPE_DORIS.equalsIgnoreCase(dbType)) {
-            log.debug("获取Doris表总记录数的SQL语句, database: {}, table: {}", database, table);
+            log.debug("Count SQL for Doris, database: {}, table: {}", database, table);
             return DorisTableDdlUtil.getTableCountSql(database, table);
         }
-        log.debug("获取Mysql表总记录数的SQL语句, database: {}, table: {}", database, table);
+        log.debug("Count SQL for MySQL, database: {}, table: {}", database, table);
         return MysqlTableDdlUtil.getTableCountSql(database, table);
     }
 
@@ -177,12 +177,12 @@ public class TableDbWrapperUtil {
      */
     private void validateDbType() {
         if (!StringUtils.hasText(dbType)) {
-            log.error("未配置数据库类型,配置: spring.datasource.sql-generator.type, dbType: {}", dbType);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6021);
+            log.error("DB type not configured, spring.datasource.sql-generator.type, dbType: {}", dbType);
+            throw ComposeException.build(BizExceptionCodeEnum.composeDbTypeNotConfigured);
         }
         if (!DB_TYPE_MYSQL.equalsIgnoreCase(dbType) && !DB_TYPE_DORIS.equalsIgnoreCase(dbType)) {
-            log.error("不支持的数据库类型: {}, 仅支持 mysql 或 doris", dbType);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6022, dbType);
+            log.error("Unsupported DB type: {}, only mysql or doris", dbType);
+            throw ComposeException.build(BizExceptionCodeEnum.composeUnsupportedDbType, dbType);
         }
     }
 

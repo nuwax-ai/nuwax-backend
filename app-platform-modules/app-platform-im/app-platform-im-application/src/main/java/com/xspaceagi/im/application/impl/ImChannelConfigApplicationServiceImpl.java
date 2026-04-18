@@ -13,7 +13,9 @@ import com.xspaceagi.im.infra.enums.ImOutputModeEnum;
 import com.xspaceagi.im.infra.enums.ImTargetTypeEnum;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -150,7 +152,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
         if (explicitConfigId != null) {
             boolean ok = list.stream().anyMatch(d -> explicitConfigId.equals(d.getId()));
             if (!ok) {
-                throw new BizException("指定的 im_channel_config 不存在、未启用或不是当前空间下可用的微信 iLink 渠道");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imChannelConfigInvalidOrUnavailable);
             }
             return explicitConfigId;
         }
@@ -158,9 +160,39 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
             return list.get(0).getId();
         }
         if (list.isEmpty()) {
-            throw new BizException("当前空间未配置可用的微信 iLink 渠道");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imNoWechatIlinkInSpace);
         }
-        throw new BizException("存在多条启用的微信 iLink 配置，主动/定时任务须显式指定 im_channel_config.id（对齐 openclaw-weixin 1.0.3 delivery.accountId）");
+        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imMultipleWechatIlinkNeedExplicitId);
+    }
+
+    @Override
+    public ImChannelConfigDto resolveWechatIlinkConfigIdForUserPush(Long tenantId, Long userId, String botId) {
+        if (tenantId == null || userId == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantOrUserMissing);
+        }
+        ImChannelConfig q = new ImChannelConfig();
+        q.setChannel(ImChannelEnum.WECHAT_ILINK.getCode());
+        q.setTargetType(ImTargetTypeEnum.BOT.getCode());
+        q.setUserId(userId);
+        q.setTenantId(tenantId);
+        if (StringUtils.isNotBlank(botId)) {
+            q.setTargetId(botId);
+        }
+        List<ImChannelConfig> list = imChannelConfigDomainService.list(q);
+        if (CollectionUtils.isEmpty(list)) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM,
+                    StringUtils.isNotBlank(botId) ? BizExceptionCodeEnum.imWechatChannelNotFoundForBot : BizExceptionCodeEnum.imWechatChannelNotFoundForUser);
+        }
+        // list 按 modified 降序；在仍为启用状态的记录中取第一条，若全部为未启用则报错
+        ImChannelConfig cfg = list.stream()
+                .filter(c -> Boolean.TRUE.equals(c.getEnabled()))
+                .findFirst()
+                .orElseThrow(() -> BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imWechatChannelDisabled));
+        ImChannelConfigDto dto = toDto(cfg);
+        if (dto == null || dto.getWechatIlink() == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imWechatIlinkParseFailed);
+        }
+        return dto;
     }
 
     private static String extractIlinkUserIdFromConfigData(String configData) {
@@ -276,10 +308,10 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     public List<ImChannelConfig> list(ImChannelConfig query) {
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw new BizException("获取租户信息失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
         }
         if (query.getSpaceId() == null) {
-            throw new BizException("spaceId不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "spaceId");
         }
 
         return imChannelConfigDomainService.list(query);
@@ -306,22 +338,22 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     public ImChannelConfig add(ImChannelConfig config) {
         // 校验必要参数
         if (config == null) {
-            throw new BizException("配置信息不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemParamRequired);
         }
         if (config.getSpaceId() == null) {
-            throw new BizException("spaceId不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "spaceId");
         }
         if (StringUtils.isBlank(config.getChannel())) {
-            throw new BizException("渠道类型不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "渠道类型");
         }
         if (StringUtils.isBlank(config.getTargetType())) {
-            throw new BizException("目标类型不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "目标类型");
         }
         if (config.getAgentId() == null) {
-            throw new BizException("关联智能体ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "关联智能体ID");
         }
         if (StringUtils.isBlank(config.getConfigData())) {
-            throw new BizException("配置数据不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "配置数据");
         }
 
         ImChannelEnum imChannelEnum = ImChannelEnum.fromCode(config.getChannel());
@@ -330,7 +362,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
         // 从 configData 中解析 targetId
         String targetId = extractTargetIdFromConfigData(config.getConfigData(), imChannelEnum, imTargetTypeEnum);
         if (StringUtils.isBlank(targetId)) {
-            throw new BizException("无法从配置数据中解析目标唯一标识");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imCannotResolveTargetId);
         }
         config.setTargetId(targetId);
 
@@ -344,7 +376,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
 
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw new BizException("获取租户信息失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
         }
         var userDto = (UserDto) RequestContext.get().getUser();
         config.setUserId(userDto.getId());
@@ -360,7 +392,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
                 config.getTargetId()
         );
         if (existing != null) {
-            throw new BizException("该渠道配置已存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imChannelConfigDuplicate);
         }
 
         config = imChannelConfigDomainService.add(config);
@@ -376,7 +408,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     private ImChannelConfig addWechatIlinkBotConfig(ImChannelConfig config) {
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw new BizException("获取租户信息失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
         }
         Long tenantId = requestContext.getTenantId();
         Long spaceId = config.getSpaceId();
@@ -418,7 +450,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
         ImChannelConfig dup = imChannelConfigDomainService.findOne(
                 config.getChannel(), config.getTargetType(), config.getTargetId());
         if (dup != null) {
-            throw new BizException("该渠道配置已存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imChannelConfigDuplicate);
         }
 
         var userDto = (UserDto) RequestContext.get().getUser();
@@ -440,10 +472,10 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     public ImChannelConfig update(ImChannelConfig config, ImChannelConfig exist) {
         // 校验必要参数
         if (config == null) {
-            throw new BizException("配置信息不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemParamRequired);
         }
         if (config.getId() == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
 
         // 从 configData 中解析 targetId
@@ -451,7 +483,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
         ImTargetTypeEnum imTargetTypeEnum = ImTargetTypeEnum.fromCode(config.getTargetType());
         String targetId = extractTargetIdFromConfigData(config.getConfigData(), imChannelEnum, imTargetTypeEnum);
         if (StringUtils.isBlank(targetId)) {
-            throw new BizException("无法从配置数据中解析目标唯一标识");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imCannotResolveTargetId);
         }
         config.setTargetId(targetId);
 
@@ -478,9 +510,9 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
                     config.getTargetId()
             );
             if (duplicate != null && !duplicate.getId().equals(config.getId())) {
-                throw new BizException(String.format("该渠道配置已存在: %s %s %s",
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imChannelConfigDuplicateDetail,
                         ImChannelEnum.fromCode(config.getChannel()).getName(),
-                        ImTargetTypeEnum.fromCode(config.getTargetType()).getName(), config.getTargetId()));
+                        ImTargetTypeEnum.fromCode(config.getTargetType()).getName(), config.getTargetId());
             }
         }
 
@@ -552,7 +584,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     @Override
     public List<ImChannelStatisticsResponse> statistics(Long spaceId) {
         if (spaceId == null) {
-            throw new BizException("spaceId不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "spaceId");
         }
 
         ImChannelConfig query = new ImChannelConfig();

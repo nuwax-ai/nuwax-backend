@@ -45,13 +45,13 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
      * @return 检索结果列表
      */
     public List<FullTextSearchResultModel> search(FullTextSearchRequestModel request, UserContext userContext) {
-        log.info("全文检索: kbId={}, query={}, userId={}", 
+        log.info("Full-text search: kbId={}, query={}, userId={}", 
             request.getKbId(), request.getQueryText(), userContext.getUserId());
 
         // 1. 查询知识库信息
         KnowledgeConfigModel config = knowledgeConfigRepository.queryOneInfoById(request.getKbId());
         if (config == null) {
-            throw new IllegalArgumentException("知识库不存在: kbId=" + request.getKbId());
+            throw new IllegalArgumentException("Knowledge base does not exist: kbId=" + request.getKbId());
         }
 
         // 2. 权限校验
@@ -64,7 +64,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
         // 4. 调用 Domain 服务执行检索
         List<FullTextSearchResultModel> results = fullTextSearchDomainService.search(request);
 
-        log.info("全文检索完成: kbId={}, resultCount={}", request.getKbId(), results.size());
+        log.info("Full-text done: kbId={}, resultCount={}", request.getKbId(), results.size());
 
         return results;
     }
@@ -77,7 +77,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
      * @return 检索结果列表
      */
     public List<FullTextSearchResultDto> searchFullText(FullTextSearchRequestDto requestDto, UserContext userContext) {
-        log.info("全文检索: kbId={}, query={}, userId={}", 
+        log.info("Full-text search: kbId={}, query={}, userId={}", 
             requestDto.getKbId(), requestDto.getQueryText(), userContext.getUserId());
 
         // 1. 转换 DTO 为 Domain Model
@@ -106,7 +106,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
      */
     @Override
     public List<FullTextSearchResultModel> searchFullTextForRpc(FullTextSearchRequestModel requestModel, Long tenantId) {
-        log.info("全文检索（RPC）: tenantId={}, kbIds={}, query={}", 
+        log.info("Full-text (RPC): tenantId={}, kbIds={}, query={}", 
             tenantId, requestModel.getKbIds(), requestModel.getQueryText());
 
         // 1. 处理 kbIds（支持多个知识库或不传）
@@ -125,7 +125,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
         // 3. 调用 Domain 服务执行检索（不做权限校验）
         List<FullTextSearchResultModel> results = fullTextSearchDomainService.search(requestModel);
 
-        log.info("全文检索完成: kbIds={}, resultCount={}", requestModel.getKbIds(), results.size());
+        log.info("Full-text done: kbIds={}, resultCount={}", requestModel.getKbIds(), results.size());
 
         return results;
     }
@@ -138,7 +138,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
      * @return 统计信息
      */
     public FullTextStatsModel getStats(Long kbId, UserContext userContext) {
-        log.info("获取全文检索统计信息: kbId={}, userId={}", kbId, userContext.getUserId());
+        log.info("FTS stats: kbId={}, userId={}", kbId, userContext.getUserId());
 
         Long spaceId = null;
 
@@ -146,7 +146,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
         if (kbId != null) {
             KnowledgeConfigModel config = knowledgeConfigRepository.queryOneInfoById(kbId);
             if (config == null) {
-                throw new IllegalArgumentException("知识库不存在: kbId=" + kbId);
+                throw new IllegalArgumentException("Knowledge base does not exist: kbId=" + kbId);
             }
             spacePermissionService.checkSpaceUserPermission(config.getSpaceId());
             spaceId = config.getSpaceId();
@@ -159,7 +159,7 @@ public class KnowledgeFullTextSearchApplicationService implements IKnowledgeFull
             spaceId
         );
 
-        log.info("统计信息获取完成: docCount={}, totalSegments={}", 
+        log.info("Stats OK: docCount={}, totalSegments={}", 
             stats.getDocCount(), stats.getTotalSegments());
 
         return stats;

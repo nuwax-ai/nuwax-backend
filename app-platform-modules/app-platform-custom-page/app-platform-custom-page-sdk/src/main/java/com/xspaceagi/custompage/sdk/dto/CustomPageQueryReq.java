@@ -1,25 +1,24 @@
 package com.xspaceagi.custompage.sdk.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * 自定义页面分页查询请求参数
+ * Custom page list / page query filter
  */
 @Data
-@Schema(description = "前端项目查询请求体")
+@Schema(description = "Frontend project query request body")
 public class CustomPageQueryReq {
 
-    @Schema(description = "空间ID")
+    @Schema(description = "Space ID")
     private Long spaceId;
 
-    @Schema(description = "发布状态,true:已发布,false:未发布")
+    @Schema(description = "Publish/build running filter")
     private Boolean buildRunning;
 
-    @Schema(description = "用户ID")
+    @Schema(description = "User ID filter")
     private Long userId;
 
-    @Schema(description = "发布类型")
+    @Schema(description = "Publish type filter")
     private PublishTypeEnum publishType;
 }

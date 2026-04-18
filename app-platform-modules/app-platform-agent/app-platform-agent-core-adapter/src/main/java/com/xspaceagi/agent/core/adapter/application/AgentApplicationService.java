@@ -6,6 +6,7 @@ import com.xspaceagi.agent.core.adapter.dto.UserAgentDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
+import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 
 import java.util.List;
 
@@ -83,6 +84,8 @@ public interface AgentApplicationService {
      * @return
      */
     AgentConfigDto queryById(Long agentId);
+
+    AgentConfigDto queryByUid(String agentUid);
 
     AgentConfigDto queryAgentByIdWithStatics(Long agentId);
 
@@ -225,5 +228,14 @@ public interface AgentApplicationService {
      * 统计用户创建的网页应用数量
      */
     Long countUserCreatedPageApp(Long userId);
+
+    /**
+     * 获取用户可选择的模型列表
+     *
+     * @param userId 用户ID
+     * @param agentId 智能体ID
+     * @return 模型列表
+     */
+    List<ModelConfigDto> queryUserCanSelectModelListForAgent(Long userId, Long agentId);
 }
 

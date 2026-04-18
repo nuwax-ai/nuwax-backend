@@ -13,7 +13,7 @@ import java.util.Map;
 public class WorkflowNodeAddDto implements Serializable {
 
     @Schema(description = "工作流ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "工作流ID不能为空")
+    @NotNull(message = "Workflow ID is required")
     private Long workflowId;
 
     @Schema(description = "可选，循环节点ID，如果在循环体里添加节点，需要传该参数")

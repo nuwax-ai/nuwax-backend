@@ -55,7 +55,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
 
         var knowledgeQaSegment = this.knowledgeQaSegmentDomainService.queryOneInfoById(id);
         if (Objects.isNull(knowledgeQaSegment)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeQaSegment.getSpaceId();
         spacePermissionService.checkSpaceUserPermission(spaceId);
@@ -67,7 +67,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
     public Long updateInfo(KnowledgeQaSegmentModel model, UserContext userContext) {
         var knowledgeQaSegment = this.knowledgeQaSegmentDomainService.queryOneInfoById(model.getId());
         if (Objects.isNull(knowledgeQaSegment)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeQaSegment.getSpaceId();
         spacePermissionService.checkSpaceUserPermission(spaceId);
@@ -81,7 +81,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
         // 查询基础配置,补全基础信息
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(model.getKbId());
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         model.setSpaceId(spaceId);
@@ -96,7 +96,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
         // 根据kbId查询知识库配置,校验用户和空间对应权限
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(qaQueryDto.getKbId());
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var dataList = this.knowledgeQaSegmentDomainService.search(qaQueryDto, ignoreKBStatus);
         return dataList;
@@ -107,7 +107,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
         // 根据kbId查询知识库配置,校验用户和空间对应权限
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(qaQueryDto.getKbId());
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         spacePermissionService.checkSpaceUserPermission(spaceId);
@@ -181,7 +181,7 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(kbId);
         if (Objects.isNull(knowledgeConfig)) {
             log.warn("知识库不存在,知识库ID={}", kbId);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5021, kbId);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeKbNotFoundById, kbId);
         }
 
         var spaceId = knowledgeConfig.getSpaceId();

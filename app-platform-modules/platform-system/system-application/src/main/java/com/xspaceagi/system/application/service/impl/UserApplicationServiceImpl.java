@@ -5,26 +5,22 @@ import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xspaceagi.system.application.dto.SpaceDto;
-import com.xspaceagi.system.application.dto.TenantConfigDto;
-import com.xspaceagi.system.application.dto.UserDto;
-import com.xspaceagi.system.application.dto.UserQueryDto;
-import com.xspaceagi.system.application.service.SpaceApplicationService;
-import com.xspaceagi.system.application.service.SysGroupApplicationService;
-import com.xspaceagi.system.application.service.SysRoleApplicationService;
-import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
-import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.application.dto.*;
+import com.xspaceagi.system.application.service.*;
 import com.xspaceagi.system.domain.service.UserDomainService;
 import com.xspaceagi.system.infra.dao.entity.Space;
+import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.dao.service.UserService;
-import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
-import com.xspaceagi.system.spec.enums.GroupEnum;
 import com.xspaceagi.system.spec.enums.AuthTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.GroupEnum;
+import com.xspaceagi.system.spec.enums.I18nSideEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
@@ -61,17 +57,23 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     @Resource
     private SysGroupApplicationService sysGroupApplicationService;
 
+    @Resource
+    private I18nApplicationService i18nApplicationService;
+
+    @Resource
+    private I18nLangApplicationService i18nLangApplicationService;
+
     @Override
     @DSTransactional
     public void add(UserDto userDto) {
         if (StringUtils.isNotBlank(userDto.getEmail())) {
             if (userDomainService.queryByEmail(userDto.getEmail()) != null) {
-                throw new BizException("邮箱地址已被占用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailAlreadyInUse);
             }
         }
         if (StringUtils.isNotBlank(userDto.getPhone())) {
             if (userDomainService.queryByPhone(userDto.getPhone()) != null) {
-                throw new BizException("手机号已被占用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemPhoneAlreadyInUse);
             }
         }
         if (StringUtils.isBlank(userDto.getPassword())) {
@@ -85,21 +87,21 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         } else {
             // username不能为纯数字
             if (userDto.getUserName().matches("^[0-9]+$")) {
-                throw new BizException("用户名不能为纯数字");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameDigitsOnlyForbidden);
             }
             User user = userDomainService.queryByUserName(userDto.getUserName());
             if (user != null) {
-                throw new BizException("用户名已被占用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameAlreadyInUse);
             }
             // 用户名禁止为user开头后面为10位的纯数字
             if (userDto.getUserName().matches("^user[0-9]{10}$")) {
-                throw new BizException("用户名不符合规范");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameFormatInvalid);
             }
         }
         if (StringUtils.isNotBlank(userDto.getNickName())) {
             // 昵称不能为纯数字
             if (userDto.getNickName().matches("^[0-9]+$")) {
-                throw new BizException("昵称不能为纯数字");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemNicknameDigitsOnlyForbidden);
             }
         }
         if (StringUtils.isBlank(userDto.getUid())) {
@@ -154,37 +156,37 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         if (StringUtils.isNotBlank(userDto.getUserName())) {
             // username不能为纯数字
             if (userDto.getUserName().matches("^[0-9]+$")) {
-                throw new BizException("用户名不能为纯数字");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameDigitsOnlyForbidden);
             }
             User user = userDomainService.queryByUserName(userDto.getUserName());
             if (user != null && !user.getId().equals(userDto.getId())) {
-                throw new BizException("用户名已被占用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameAlreadyInUse);
             }
             TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
             if (tenantConfigDto.getAuthType() != null && tenantConfigDto.getAuthType() == AuthTypeEnum.CAS.getCode()) {//2.单点登录
-                throw new BizException("当前认证模式不允许修改用户名");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameChangeDisallowedInCurrentAuthMode);
             }
             // 用户名禁止为user开头后面为10位的纯数字
             if (user != null && !user.getId().equals(userDto.getId())
                     && userDto.getUserName().matches("^user[0-9]{10}$")) {
-                throw new BizException("用户名不符合规范");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameFormatInvalid);
             }
         }
 
         if (StringUtils.isNotBlank(userDto.getEmail())) {
             if (!userDto.getEmail().matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
-                throw new BizException("邮箱地址格式不正确");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailFormatInvalid);
             }
             User user = userDomainService.queryByEmail(userDto.getEmail());
             if (user != null && !user.getId().equals(userDto.getId())) {
-                throw new BizException("邮箱地址已被占用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailAlreadyInUse);
             }
         }
 
         if (StringUtils.isNotBlank(userDto.getNickName())) {
             // 昵称不能为纯数字
             if (userDto.getNickName().matches("^[0-9]+$")) {
-                throw new BizException("昵称不能为纯数字");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemNicknameDigitsOnlyForbidden);
             }
         }
         User user = new User();
@@ -248,7 +250,32 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     public UserDto queryById(Long userId) {
         Assert.notNull(userId, "id must be non-null");
         User user = userDomainService.queryById(userId);
-        return convert(user);
+        if (user == null) {
+            return null;
+        }
+        UserDto userDto = convert(user);
+        if (userDto.getLang() == null) {
+            String lang = null;
+            if (RequestContext.get() != null && RequestContext.get().getClientCookieLang() != null) {
+                lang = RequestContext.get().getClientCookieLang();
+            }
+            if (lang == null) {
+                I18nLangDto aDefault = i18nLangApplicationService.getDefault(userDto.getTenantId());
+                if (aDefault != null) {
+                    lang = aDefault.getLang();
+                }
+            }
+            if (lang == null && RequestContext.get() != null && RequestContext.get().getClientLang() != null) {
+                lang = RequestContext.get().getClientLang();
+            }
+            User update = new User();
+            update.setId(userId);
+            update.setLang(lang);
+            userDomainService.update(update);
+            userDto.setLang(lang);
+        }
+        userDto.setLangMap(i18nApplicationService.querySystemLangMap(userDto.getTenantId(), I18nSideEnum.Backend.getSide(), userDto.getLang()));
+        return userDto;
     }
 
     @Override

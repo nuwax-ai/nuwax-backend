@@ -25,7 +25,7 @@ public class ComposeException extends KindlyException {
      * @return 异常
      */
     public static ComposeException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new ComposeException(codeEnum.getCode(), errorMessage);
     }
 

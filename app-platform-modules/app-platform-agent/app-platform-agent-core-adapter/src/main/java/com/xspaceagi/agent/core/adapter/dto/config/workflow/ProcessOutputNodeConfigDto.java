@@ -13,7 +13,7 @@ import lombok.Setter;
 public class ProcessOutputNodeConfigDto extends NodeConfigDto {
 
     @Schema(description = "返回类型", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "返回类型不能为空")
+    @NotNull(message = "Return type is required")
     private ReturnType  returnType;
 
     @Schema(description = "回答内容，返回类型为文本时，必须输入")

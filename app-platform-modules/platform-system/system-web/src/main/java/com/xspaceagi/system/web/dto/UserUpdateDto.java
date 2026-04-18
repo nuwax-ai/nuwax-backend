@@ -26,4 +26,7 @@ public class UserUpdateDto implements Serializable {
 
     @Schema(description = "手机号码")
     private String phone;
+
+    @Schema(description = "密码")
+    private String password;
 }

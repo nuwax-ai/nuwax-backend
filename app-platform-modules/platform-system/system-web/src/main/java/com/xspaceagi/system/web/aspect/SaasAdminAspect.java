@@ -4,7 +4,9 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.annotation.SaasAdmin;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -36,21 +38,21 @@ public class SaasAdminAspect {
 
         if (RequestContext.get() == null || RequestContext.get().getTenantId() == null) {
             log.warn("上下文或租户ID为空，拒绝访问: {}", joinPoint.getSignature().getName());
-            throw new BizException("无权操作");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
 
         if (!SAAS_ADMIN_TENANT_ID.equals(RequestContext.get().getTenantId())) {
             log.warn("拒绝访问: tenantId={}, method={}", RequestContext.get().getTenantId(), joinPoint.getSignature().getName());
-            throw new BizException("无权操作");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
 
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         if (userDto == null || userDto.getRole() != User.Role.Admin) {
             log.warn("拒绝访问: userId={}, method={}", userDto != null ? userDto.getId() : null, joinPoint.getSignature().getName());
-            throw new BizException("无权操作");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
 
-        log.debug("SaaS 管理员权限验证通过，用户[{}]访问: {}", userDto.getId(), joinPoint.getSignature().getName());
+        log.debug("SaaS Admin check passed, user [{}] accessing: {}", userDto.getId(), joinPoint.getSignature().getName());
         return joinPoint.proceed();
     }
 

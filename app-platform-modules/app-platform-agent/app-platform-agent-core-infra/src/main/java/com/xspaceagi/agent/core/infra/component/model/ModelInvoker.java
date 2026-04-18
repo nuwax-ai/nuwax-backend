@@ -137,16 +137,19 @@ public class ModelInvoker extends BaseComponent {
     }
 
     public Flux<CallMessage> invoke(ModelContext modelContext) {
+        if (modelContext.getModelConfig() == null) {
+            return Flux.error(new IllegalArgumentException("The model is not configured or has been deleted."));
+        }
         log.info("invoke id {}, model: {}, call config: {}", modelContext.getModelConfig().getId(), modelContext.getModelConfig().getName(), modelContext.getModelCallConfig());
-        // 重置工具块
+        // Reset tool block
         try {
             String systemPrompt = resetToolBlock(modelContext.getModelCallConfig().getComponentConfigs(), modelContext.getModelCallConfig().getSystemPrompt());
             String userPrompt = resetToolBlock(modelContext.getModelCallConfig().getComponentConfigs(), modelContext.getModelCallConfig().getUserPrompt());
             modelContext.getModelCallConfig().setSystemPrompt(systemPrompt);
             modelContext.getModelCallConfig().setUserPrompt(userPrompt);
         } catch (Exception e) {
-            // 忽略
-            log.error("重置工具块异常", e);
+            // ignore
+            log.error("Reset tool block error", e);
         }
         if (modelContext.getAgentContext().isInterrupted()) {
             return Flux.empty();
@@ -160,7 +163,7 @@ public class ModelInvoker extends BaseComponent {
                 return Flux.error(e);
             }
         } else {
-            // 未使用
+            // Not used
             submit(() -> nonStreamCall(modelContext, sink));
         }
         AtomicReference<Disposable> disposableAtomicReference = atomicReference;
@@ -181,9 +184,9 @@ public class ModelInvoker extends BaseComponent {
             tempMessages = new ArrayList<>();
             modelContext.getAgentContext().setContextMessages(tempMessages);
         }
-        //用户消息
+        // User message
         tempMessages.add(buildUserMessage(modelContext));
-        //追加工具自动调用上下文
+        // Append tool auto-call context
         if (modelContext.getAgentContext().getAutoToolCallMessages() != null) {
             tempMessages.addAll(modelContext.getAgentContext().getAutoToolCallMessages());
         }
@@ -191,7 +194,7 @@ public class ModelInvoker extends BaseComponent {
         StringBuilder finalMsgSb = new StringBuilder();
         List<ToolCallback> functionCallbacks = buildFunctionCallbacks(modelContext);
         ChatClient.ChatClientRequestSpec chatClientRequestSpec;
-        //模型不支持流式函数调用，自定义函数调用执行
+        // Model does not support streaming function calls, use custom function call execution
         if (!functionCallbacks.isEmpty() && modelContext.getModelConfig().getFunctionCall() != ModelFunctionCallEnum.StreamCallSupported) {
             String systemPrompt = Prompts.buildToolUsePrompt(functionCallbacks.stream().map(functionToolCallback -> {
                 Prompts.ToolUse toolUse = new Prompts.ToolUse();
@@ -206,7 +209,7 @@ public class ModelInvoker extends BaseComponent {
             return atomicReference;
         }
         tempMessages.add(0, buildSystemMessage(modelContext));
-        //模型支持流式函数调用
+        // Model supports streaming function calls
         chatClientRequestSpec = createChatClientRequestSpec(modelContext, functionCallbacks, new Prompt(tempMessages));
         String messageId = modelContext.getRequestId();
         AtomicBoolean thinking = new AtomicBoolean(false);
@@ -214,7 +217,7 @@ public class ModelInvoker extends BaseComponent {
         AtomicBoolean finished = new AtomicBoolean(false);
         Disposable disposable = chatClientRequestSpec.stream().chatResponse().onErrorResume(throwable -> {
             if (throwable instanceof TimeoutException) {
-                return Mono.error(new TimeoutException("大模型执行等待超时"));
+                return Mono.error(new TimeoutException("Model execution timeout"));
             }
             if (!(throwable instanceof AgentInterruptException)) {
                 log.warn("customStream call error", throwable);
@@ -250,7 +253,7 @@ public class ModelInvoker extends BaseComponent {
                 log.warn("customStream call error", throwable);
             }
             if (throwable instanceof TimeoutException) {
-                return Mono.error(new TimeoutException("大模型执行等待超时"));
+                return Mono.error(new TimeoutException("Model execution timeout"));
             }
             return Mono.error(throwable);
         }).doOnComplete(() -> {
@@ -276,7 +279,7 @@ public class ModelInvoker extends BaseComponent {
                     }
                     return;
                 } else if (thinking.get() && text.contains("</think>")) {
-                    //不含reasoning_content的模型思考结束，但是状态还没有更新，避免工具调用丢失
+                    // Model thinking ends without reasoning_content, but status not yet updated, avoid missing tool calls
                     String[] split = text.split("</think>");
                     text = "</think>";
                     if (split.length > 0) {
@@ -286,7 +289,7 @@ public class ModelInvoker extends BaseComponent {
                         tempMessageSb.append(split[1]);
                     }
                 } else if (modelContext.isHasReasoningContent() && StringUtils.isNotBlank(text) && thinking.get()) {
-                    //含reasoning_content的模型思考结束，但是状态还没有更新，避免工具调用丢失
+                    // Model thinking ends with reasoning_content, but status not yet updated, avoid missing tool calls
                     tempMessageSb.append(text);
                     text = "";
                 } else if (!thinking.get()) {
@@ -310,7 +313,7 @@ public class ModelInvoker extends BaseComponent {
 
             doMessage(modelContext, sink, messageId, assistantMessage, text, finalMsgSb, thinking, addThinkTag, finished, waitingForToolCallInfo);
         }, throwable -> doOnError(modelContext, sink, messageId, throwable));
-        //react过程中可以动态更换
+        // Can be dynamically replaced during react process
         atomicReference.set(disposable);
     }
 
@@ -320,8 +323,8 @@ public class ModelInvoker extends BaseComponent {
                                  AtomicReference<Disposable> atomicReference) {
         String toolMsg = tempMessageSb.toString();
         if (toolMsg.matches("[\\s\\S]*?<tool_.*>[\\s\\S]*?</tool_.*>[\\s\\S]*?")) {
-            // 解析tool，并调用
-            log.info("调用tool信息 {}", toolMsg);
+            // Parse tool and execute
+            log.info("Tool call info: {}", toolMsg);
             finished.set(true);
             addModelExecuteLog(modelContext, msgSb + toolMsg);
             List<Object> list = ToolInfoExtractor.extractToolInfo(toolMsg);
@@ -363,9 +366,9 @@ public class ModelInvoker extends BaseComponent {
                                 return;
                             }
                         }
-                        toolCallResult.append("以下是工具 `").append(toolUse.getName()).append("`调用结果:\n").append(call).append("\n");
+                        toolCallResult.append("Below is the result of calling tool `").append(toolUse.getName()).append("`:\n").append(call).append("\n");
                     } else {
-                        toolCallResult.append("模型返回的工具不存在，请注意不要编造工具");
+                        toolCallResult.append("The tool returned by the model does not exist, please do not fabricate tools");
                     }
                 }
             }
@@ -390,19 +393,22 @@ public class ModelInvoker extends BaseComponent {
             }
             modelContext.getAgentContext().getAgentExecuteResult().setOutputText(msgSb.toString());
             modelContext.getModelCallResult().setResponseText(msgSb.toString());
-            AgentInterruptException agentInterruptException = new AgentInterruptException("中断输出（该异常可以忽略）");
+            AgentInterruptException agentInterruptException = new AgentInterruptException("Interrupted output (this exception can be ignored)");
             sink.tryEmitError(agentInterruptException);
             throw agentInterruptException;
         }
 
         String textContent = null;
         Object reasoningContent = assistantMessage.getMetadata().get("reasoningContent");
-        //思考
+        if (reasoningContent == null || StringUtils.isBlank(reasoningContent.toString())) {
+            reasoningContent = assistantMessage.getMetadata().get("reasoning");
+        }
+        // Thinking
         boolean isReasoning = reasoningContent != null && StringUtils.isNotBlank(reasoningContent.toString());
         if (modelContext.getModelCallResult().getFirstResponseTime() == null) {
             modelContext.getModelCallResult().setFirstResponseTime(System.currentTimeMillis());
             if (StringUtils.isBlank(text) && !isReasoning && assistantMessage.getMetadata() != null) {
-                //deepseek函数调用异常 finishReason=TOOL_CALLS
+                // deepseek function call exception finishReason=TOOL_CALLS
                 Object finishReason = assistantMessage.getMetadata().get("finishReason");
                 if (finishReason != null && finishReason.toString().equals("TOOL_CALLS")
                         && CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
@@ -412,7 +418,7 @@ public class ModelInvoker extends BaseComponent {
                     callMessage.setRole(ChatMessageDto.Role.ASSISTANT);
                     callMessage.setId(messageId);
                     callMessage.setFinished(false);
-                    callMessage.setText("模型开小差啦😒请重新发送你的消息～");
+                    callMessage.setText("The model is not working properly😒 please resend your message～");
                     sink.tryEmitNext(callMessage);
                     modelContext.getAgentContext().getAgentExecuteResult().setSuccess(false);
                     modelContext.getAgentContext().getAgentExecuteResult().setError(callMessage.getText());
@@ -422,9 +428,9 @@ public class ModelInvoker extends BaseComponent {
         }
 
         modelContext.setHasReasoningContent(isReasoning);
-        //配置仅用于不支持reasoning_content字段的模型
+        // Configuration only for models that do not support the reasoning_content field
         boolean isReasoningModel = modelContext.getModelConfig().getIsReasonModel() != null && modelContext.getModelConfig().getIsReasonModel() == 1;
-        //正常支持reasoning_content字段的模型
+        // Models that normally support the reasoning_content field
         if (modelContext.isHasReasoningContent()) {
             if (isReasoning && !thinking.get()) {
                 thinking.set(true);
@@ -439,27 +445,27 @@ public class ModelInvoker extends BaseComponent {
                 text = reasoningContent.toString();
             }
         } else if (isReasoningModel) {
-            //没有reasoning_content字段的模型，但有<think>标签
-            //兼容推理模型没有reasoning_content也没有<think>开始标签
+            // Models without reasoning_content field but with think tags
+            // Compatible with reasoning models that have neither reasoning_content nor think start tags
             if (!addThinkTag.get() && StringUtils.isNotBlank(text) && !text.contains("<think>")) {
                 text = "<think>" + text;
                 addThinkTag.set(true);
             }
 
-            //开始和结束标签在一起的情况暂不处理
+            // Do not handle the case where start and end tags are together for now
             if (text != null && text.contains("<think>") && !thinking.get()) {
-                //开始标签处理
-                //没有reasoning_content字段的模型，但有<think>标签
+                // Start tag processing
+                // Models without reasoning_content field but with think tags
                 thinking.set(true);
                 textContent = text.substring(0, text.indexOf("<think>"));
                 reasoningContent = text.substring(text.indexOf("<think>") + 7);
             } else if (text != null && text.contains("</think>")) {
-                //结束标签处理
+                // End tag processing
                 thinking.set(false);
                 textContent = text.substring(text.indexOf("</think>") + 8);
                 reasoningContent = text.substring(0, text.indexOf("</think>"));
             } else if (thinking.get()) {
-                //没有reasoning_content字段的模型，输出思考内容
+                // Models without reasoning_content field, output thinking content
                 reasoningContent = text;
             } else {
                 textContent = text;
@@ -468,7 +474,7 @@ public class ModelInvoker extends BaseComponent {
             textContent = text;
         }
 
-        // 记录所有消息内容
+        // Record all message content
         msgSb.append(text == null ? "" : text);
         log.debug("textContent: {}, reasoningContent: {}", textContent, reasoningContent);
 
@@ -522,7 +528,7 @@ public class ModelInvoker extends BaseComponent {
             String text0 = getJSONText(text == null ? "" : text);
             if (!JSON.isValid(text0) && modelContext.getRetryCount() < 3) {
                 modelContext.setRetryCount(modelContext.getRetryCount() + 1);
-                log.warn("模型返回的JSON格式不正确，请检查提示词,返回内容：{}", text);
+                log.warn("The JSON format returned by the model is incorrect, please check the prompt. Returned content: {}", text);
                 streamCall(modelContext, sink);
                 return;
             }
@@ -537,7 +543,7 @@ public class ModelInvoker extends BaseComponent {
         callMessage.setFinishReason(finishReason);
         sink.tryEmitNext(callMessage);
 
-        // 添加模型执行日志
+        // Add model execution log
         addModelExecuteLog(modelContext, text);
         sink.tryEmitComplete();
     }
@@ -560,7 +566,7 @@ public class ModelInvoker extends BaseComponent {
         nonStreamCall(modelContext, sink, 0);
     }
 
-    // 未使用
+    // Not used
     private void nonStreamCall(ModelContext modelContext, Sinks.Many<CallMessage> sink, int retryCount) {
         log.debug("non stream call");
         List<ToolCallback> functionCallbacks = buildFunctionCallbacks(modelContext);
@@ -598,7 +604,7 @@ public class ModelInvoker extends BaseComponent {
         sink.tryEmitNext(callMessage);
         sink.tryEmitComplete();
 
-        // 添加模型执行结果日志
+        // Add model execution result log
         addModelExecuteLog(modelContext, text);
     }
 
@@ -648,7 +654,7 @@ public class ModelInvoker extends BaseComponent {
         }
         ChatClient.ChatClientRequestSpec chatClientRequestSpec = client.prompt(prompt);
         try {
-            //判断是否为智能体执行日志
+            // Check if it is an agent execution log
             Object agentId = SimpleJvmHashCache.getHash(modelContext.getRequestId(), "agentId");
             if (agentId != null) {
                 Map<String, Map<String, Object>> modelExecuteInfos = (Map<String, Map<String, Object>>) SimpleJvmHashCache.getHash(modelContext.getRequestId(), "modelExecuteInfos");
@@ -683,7 +689,7 @@ public class ModelInvoker extends BaseComponent {
             }
         }
         try {
-            //查询中间追加的上下文
+            // Query intermediate appended context
             List<Message> messages = modelContext.getAgentContext().getContextMessages();
             messages.forEach(message -> sb.append(message.getText()));
         } catch (Exception e) {
@@ -739,7 +745,7 @@ public class ModelInvoker extends BaseComponent {
         if (modelContext.getModelCallConfig().getComponentConfigs() == null) {
             return new ArrayList<>();
         }
-        //去重
+        // Remove duplicates
         Set<String> functionNames = new HashSet<>();
         return modelContext.getModelCallConfig().getComponentConfigs().stream().map(componentConfig -> {
             if (componentConfig.getType() == null) {
@@ -757,7 +763,7 @@ public class ModelInvoker extends BaseComponent {
                 case Plugin, Workflow, Page -> inputSchema = buildFunctionParams(componentConfig.getInputArgs());
                 case Mcp -> {
                     McpDto mcpDto = (McpDto) componentConfig.getTargetConfig();
-                    //获取MCP的配置
+                    // Get MCP configuration
                     McpToolDto mcpToolDto = mcpDto.getDeployedConfig().getTools().stream().filter(tool -> tool.getName().equals(componentConfig.getFunctionName())).findFirst().orElse(null);
                     if (mcpToolDto != null) {
                         inputSchema = mcpToolDto.getJsonSchema();
@@ -766,20 +772,20 @@ public class ModelInvoker extends BaseComponent {
                 case Knowledge -> {
                     List<String> required = new ArrayList<>();
                     Map<String, Object> properties = new HashMap<>();
-                    properties.put("query", Map.of("type", "string", "description", "知识库搜索关键词"));
+                    properties.put("query", Map.of("type", "string", "description", "Knowledge base search keywords"));
                     required.add("query");
                     inputSchema = Map.of("type", "object", "properties", properties, "required", required);
                 }
                 case Agent -> {
                     List<String> required = new ArrayList<>();
                     Map<String, Object> properties = new HashMap<>();
-                    properties.put("message", Map.of("type", "string", "description", "作为深度思考的消息内容，比如其他工具的执行结果"));
+                    properties.put("message", Map.of("type", "string", "description", "Message content for deep thinking, such as execution results from other tools"));
                     required.add("message");
                     inputSchema = Map.of("type", "object", "properties", properties, "required", required);
                 }
                 case Table -> {
                     if (componentConfig.getSubType() == ComponentSubTypeEnum.TABLE_DATA_INSERT) {
-                        //去掉系统变量
+                        // Remove system variables
                         componentConfig.getInputArgs().removeIf(Arg::isSystemVariable);
                         inputSchema = buildFunctionParams(componentConfig.getInputArgs());
                     } else {
@@ -787,10 +793,10 @@ public class ModelInvoker extends BaseComponent {
                         String tableStruct = ArgConverter.convertArgsToSimpleTableStructure(dorisTableDefinitionVo.getFieldList());
                         List<String> required = new ArrayList<>();
                         Map<String, Object> properties = new HashMap<>();
-                        properties.put("sql", Map.of("type", "string", "description", "可以直接执行且符合业务诉求的SQL语句，符合MySQL语法规范。表结构：" + tableStruct));
+                        properties.put("sql", Map.of("type", "string", "description", "SQL statement that can be executed directly and meets business requirements, following MySQL syntax. Table structure: " + tableStruct));
                         required.add("sql");
                         inputSchema = Map.of("type", "object", "properties", properties, "required", required);
-                        //后续取默认条件使用
+                        // For subsequent use of default conditions
                         componentConfig.setBindArgs(new ArrayList<>(componentConfig.getInputArgs()));
                         componentConfig.getInputArgs().clear();
                         componentConfig.getInputArgs().add(Arg.builder().name("sql").dataType(DataTypeEnum.String).require(true).build());
@@ -820,7 +826,7 @@ public class ModelInvoker extends BaseComponent {
 
     private Object componentExecute(ModelContext modelContext, ComponentConfig componentConfig, Object input) {
         if (modelContext.getAgentContext().isInterrupted()) {
-            throw new AgentInterruptException("中断执行，由于spring-ai暂时没有中断执行接口，当前方式会打错误日志，可以忽略");
+            throw new AgentInterruptException("Execution interrupted, since spring-ai does not currently have an interrupt execution interface, the current method will log error messages, which can be ignored");
         }
         if (input == null) {
             input = new HashMap<>();
@@ -875,11 +881,11 @@ public class ModelInvoker extends BaseComponent {
                 modelContext.getComponentExecutingConsumer().accept(componentExecutingDto);
             }
             if (modelContext.getAgentContext().isInterrupted()) {
-                throw new AgentInterruptException("中断执行，由于spring-ai暂时没有中断执行接口，当前方式会打错误日志，可以忽略");
+                throw new AgentInterruptException("Execution interrupted, since spring-ai does not currently have an interrupt execution interface, the current method will log error messages, which can be ignored");
             }
             return res;
         } catch (Throwable e) {
-            //内部逻辑要求中断
+            // Internal logic requires interruption
             if (e instanceof AgentInterruptException) {
                 modelContext.getAgentContext().setInterrupted(true);
                 throw e;
@@ -909,7 +915,7 @@ public class ModelInvoker extends BaseComponent {
                 return modelPageRequest.getPageRequestResult(requestId.toString(), dataType == null ? "html" : dataType.toString());
             }
         }
-        return "已打开页面";
+        return "Page opened";
     }
 
     private static String beforeCallPage(ComponentConfig componentConfig, Object input, ComponentExecutingDto componentExecutingDto) {
@@ -977,12 +983,12 @@ public class ModelInvoker extends BaseComponent {
             tableExecutorContext.setArgs(args);
             tableExecutorContext.setExtArgs(new HashMap<>());
         } else {
-            //SQL执行
+            // SQL execution
             Object sql = ((Map<?, ?>) input).get("sql");
             if (sql == null || StringUtils.isBlank(sql.toString())) {
                 return "require argument 'sql' is null";
             }
-            //系统变量引用的场景保留默认值，其余的都移除
+            // Keep default values for system variable reference scenarios, remove the rest
             List<Arg> collect = componentConfig.getBindArgs().stream().filter(arg -> arg.getBindValueType() == Arg.BindValueType.Reference && arg.isSystemVariable()).collect(Collectors.toList());
             ArgExtractUtil.setArgDefaultValue(modelContext.getAgentContext(), collect, extArgs, null, new ArrayList<>());
             tableExecutorContext.setSql(sql.toString());
@@ -1010,7 +1016,7 @@ public class ModelInvoker extends BaseComponent {
                 StringUtils.isNotBlank(knowledgeSearchConfigDto.getNoneRecallReply())) {
             return knowledgeSearchConfigDto.getNoneRecallReply();
         }
-        return "未检索到相关信息";
+        return "No relevant information found";
     }
 
     private Object executeWorkflow(ModelContext modelContext, ComponentConfig componentConfig, Object input, ComponentExecutingDto componentExecutingDto) {
@@ -1039,7 +1045,7 @@ public class ModelInvoker extends BaseComponent {
             res = workflowContext1.getEndNodeContent();
         }
         if (workflowContext1.getAgentContext().getAgentConfig() != null && workflowContext1.getWorkflowConfig().getSpaceId().equals(workflowContext1.getAgentContext().getAgentConfig().getSpaceId())) {
-            //工作流与智能体同属一个空间时才记录内部执行日志
+            // Record internal execution logs only when the workflow and agent belong to the same space
             componentExecutingDto.getResult().setInnerExecuteInfo(workflowContext1.getNodeExecuteResultMap().values());
         }
         return res;
@@ -1085,7 +1091,7 @@ public class ModelInvoker extends BaseComponent {
             if (message == null) {
                 message = modelContext.getAgentContext().getMessage();
             }
-            //增加agent:前缀用于过滤重复存储消息，消息存取实现在ConversationApplicationServiceImpl中
+            // Add agent: prefix to filter duplicate message storage, message storage implementation is in ConversationApplicationServiceImpl
             agentContext.setConversationId("agent:" + modelContext.getAgentContext().getConversationId());
             agentContext.setRequestId(modelContext.getAgentContext().getRequestId());
             agentContext.setUserId(modelContext.getAgentContext().getUserId());
@@ -1140,6 +1146,44 @@ public class ModelInvoker extends BaseComponent {
                 }
             });
         }
+        if (modelContext.getModelConfig().getType() == ModelTypeEnum.Audio && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
+            modelContext.getAgentContext().getAttachments().forEach(attachment -> {
+                try {
+                    String[] split = attachment.getMimeType().split("/");
+                    if (split.length != 2 || !split[0].equals("audio")) {
+                        return;
+                    }
+                    Media media = Media.builder()
+                            .mimeType(new MimeType(split[0], split[1]))
+                            .data(UrlFile.urlToBytes(attachment.getFileUrl()))
+                            .id(attachment.getFileKey())
+                            .name(attachment.getFileName())
+                            .build();
+                    mediaList.add(media);
+                } catch (Exception e) {
+                    log.warn("Invalid URL: {}", attachment.getFileUrl(), e);
+                }
+            });
+        }
+        if (modelContext.getModelConfig().getType() == ModelTypeEnum.Video && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
+            modelContext.getAgentContext().getAttachments().forEach(attachment -> {
+                try {
+                    String[] split = attachment.getMimeType().split("/");
+                    if (split.length != 2 || !split[0].equals("video")) {
+                        return;
+                    }
+                    Media media = Media.builder()
+                            .mimeType(new MimeType(split[0], split[1]))
+                            .data(UrlFile.urlToBytes(attachment.getFileUrl()))
+                            .id(attachment.getFileKey())
+                            .name(attachment.getFileName())
+                            .build();
+                    mediaList.add(media);
+                } catch (Exception e) {
+                    log.warn("Invalid URL: {}", attachment.getFileUrl(), e);
+                }
+            });
+        }
         String userPrompt = modelContext.getModelCallConfig().getUserPrompt();
         userPrompt = userPrompt == null ? "" : userPrompt;
         if (modelContext.getModelCallConfig().getOutputType() == OutputTypeEnum.JSON) {
@@ -1177,23 +1221,23 @@ public class ModelInvoker extends BaseComponent {
         if (componentConfigs.isEmpty() || StringUtils.isBlank(prompt)) {
             return prompt;
         }
-        //id+类型为key转map
+        // Convert id+type to key map
         Map<String, ComponentConfig> componentConfigMap = componentConfigs.stream().collect(Collectors.toMap((c) -> {
             if (c.getType() == ComponentTypeEnum.Mcp) {
                 return c.getType().name().toLowerCase() + "_" + c.getTargetId() + "_" + c.getFunctionName();
             }
             return c.getType().name().toLowerCase() + "_" + c.getTargetId() + "_" + c.getName();
         }, c -> c, (c1, c2) -> c1));
-        // 正则表达式匹配ToolBlock标签
+        // Regular expression to match ToolBlock tags
         String regex = "\\{#ToolBlock\\s+id=\"(\\d+)\"\\s+type=\"([^\"]+)\"[^#]*#\\}([^#]*)\\{#/ToolBlock#\\}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(prompt);
         List<ToolBlockInfo> results = new ArrayList<>();
         while (matcher.find()) {
-            String fullMatch = matcher.group(0);      // 完整匹配内容
-            String id = matcher.group(1);             // id值
-            String type = matcher.group(2);           // type值
-            String content = matcher.group(3);        // 标签内的内容
+            String fullMatch = matcher.group(0);      // Full match content
+            String id = matcher.group(1);             // id value
+            String type = matcher.group(2);           // type value
+            String content = matcher.group(3);        // Content within tags
             if ("Skill".equals(type) || "SubAgent".equals(type)) {
                 results.add(new ToolBlockInfo(fullMatch, id, type, content, content));
                 continue;

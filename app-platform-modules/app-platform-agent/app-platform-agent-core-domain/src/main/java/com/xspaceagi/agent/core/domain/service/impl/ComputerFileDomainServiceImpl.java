@@ -7,6 +7,7 @@ import com.xspaceagi.system.spec.common.UserContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -38,6 +39,13 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
                 .doOnError(Throwable.class, e -> {
                     handleGenericError(logId, targetPrefix, relativePath, e);
                 });
+    }
+
+    @Override
+    public ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader) {
+        log.info("[Domain] logId={}, 获取静态文件完整响应, targetPrefix={}, relativePath={}, range={}",
+                logId, targetPrefix, relativePath, rangeHeader);
+        return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId, rangeHeader);
     }
 
     /**

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 /**
  * 用户信息,从拦截器里获取到的用户信息
  */
@@ -54,11 +56,14 @@ public class UserContext {
     @Schema(description = "角色类型，1:管理员角色;2:普通角色")
     private Integer roleType;
 
-
     @Schema(description = "所属租户ID")
     private Long tenantId;
 
     @Schema(description = "所属租户名称")
     private String tenantName;
 
+    private Object tenantConfig;
+
+    @Schema(description = "语言环境")
+    private Map<String, String> langMap;
 }

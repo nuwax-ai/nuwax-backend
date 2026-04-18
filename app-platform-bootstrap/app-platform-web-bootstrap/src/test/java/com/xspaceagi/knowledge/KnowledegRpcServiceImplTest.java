@@ -51,7 +51,7 @@ public class KnowledegRpcServiceImplTest {
             // Act
             Long result = knowledgeConfigRpcService.createKnowledgeConfig(requestVo);
 
-            log.info("创建数据库结果,result={}", result);
+            log.info("Create database result, result={}", result);
             // Assert
             assertNotNull(result);
         } finally {
@@ -64,7 +64,7 @@ public class KnowledegRpcServiceImplTest {
         try {
             RequestContext.setThreadTenantId(1L);
             KnowledgeConfigVo knowledgeConfigVo = knowledgeConfigRpcService.queryKnowledgeConfigById(153L);
-            log.info("查询知识库配置结果,knowledgeConfigVo={}", JSON.toJSONString(knowledgeConfigVo));
+            log.info("Knowledge config query result, knowledgeConfigVo={}", JSON.toJSONString(knowledgeConfigVo));
             assertNotNull(knowledgeConfigVo);
         } finally {
             RequestContext.remove();
@@ -86,12 +86,12 @@ public class KnowledegRpcServiceImplTest {
             // Act
             KnowledgeDocumentResponseVo responseVo = knowledgeDocumentSearchRpcService.documentSearch(requestVo);
             
-            log.info("知识库文档搜索结果,responseVo={}", JSON.toJSONString(responseVo));
+            log.info("Knowledge doc search result, responseVo={}", JSON.toJSONString(responseVo));
             
             // Assert
             assertNotNull(responseVo);
             assertNotNull(responseVo.getDocumentVoList());
-            log.info("文档数量: {}", responseVo.getDocumentVoList().size());
+            log.info("Document count: {}", responseVo.getDocumentVoList().size());
             
         } finally {
             RequestContext.remove();
@@ -113,12 +113,12 @@ public class KnowledegRpcServiceImplTest {
             // Act
             KnowledgeDocumentResponseVo responseVo = knowledgeDocumentSearchRpcService.documentSearch(requestVo);
             
-            log.info("知识库文档搜索结果(空结果),responseVo={}", JSON.toJSONString(responseVo));
+            log.info("Knowledge doc search (empty), responseVo={}", JSON.toJSONString(responseVo));
             
             // Assert
             assertNotNull(responseVo);
             assertNotNull(responseVo.getDocumentVoList());
-            log.info("文档数量: {}", responseVo.getDocumentVoList().size());
+            log.info("Document count: {}", responseVo.getDocumentVoList().size());
             
         } finally {
             RequestContext.remove();
@@ -145,17 +145,17 @@ public class KnowledegRpcServiceImplTest {
             // Act - 执行问答搜索
             KnowledgeQaResponseVo responseVo = knowledgeQaSearchRpcService.search(requestVo);
             
-            log.info("知识库问答搜索结果,responseVo={}", JSON.toJSONString(responseVo));
+            log.info("Knowledge Q&A search result, responseVo={}", JSON.toJSONString(responseVo));
             
             // Assert - 验证结果
             assertNotNull(responseVo);
             assertNotNull(responseVo.getQaVoList());
-            log.info("问答结果数量: {}", responseVo.getQaVoList().size());
+            log.info("Q&A result count: {}", responseVo.getQaVoList().size());
             
             // 打印详细结果，特别是验证docId字段
             if (responseVo.getQaVoList() != null && !responseVo.getQaVoList().isEmpty()) {
                 responseVo.getQaVoList().forEach(qaVo -> {
-                    log.info("问答详情 - qaId: {}, kbId: {}, docId: {}, question: {}, answer: {}, score: {}", 
+                    log.info("Q&A detail - qaId: {}, kbId: {}, docId: {}, question: {}, answer: {}, score: {}", 
                         qaVo.getQaId(), qaVo.getKbId(), qaVo.getDocId(), 
                         qaVo.getQuestion(), qaVo.getAnswer(), qaVo.getScore());
                 });
@@ -185,12 +185,12 @@ public class KnowledegRpcServiceImplTest {
             // Act - 执行问答搜索
             KnowledgeQaResponseVo responseVo = knowledgeQaSearchRpcService.search(requestVo);
             
-            log.info("知识库问答搜索结果(空结果),responseVo={}", JSON.toJSONString(responseVo));
+            log.info("Knowledge Q&A search (empty), responseVo={}", JSON.toJSONString(responseVo));
             
             // Assert - 验证结果
             assertNotNull(responseVo);
             assertNotNull(responseVo.getQaVoList());
-            log.info("问答结果数量: {}", responseVo.getQaVoList().size());
+            log.info("Q&A result count: {}", responseVo.getQaVoList().size());
             
         } finally {
             RequestContext.remove();

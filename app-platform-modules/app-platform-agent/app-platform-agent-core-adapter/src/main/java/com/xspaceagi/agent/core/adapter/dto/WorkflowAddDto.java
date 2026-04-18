@@ -8,11 +8,11 @@ import lombok.Data;
 public class WorkflowAddDto {
 
     @Schema(description = "空间ID")
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId;
 
     @Schema(description = "工作流名称")
-    @NotNull(message = "工作流名称不能为空")
+    @NotNull(message = "Workflow name is required")
     private String name;
 
     @Schema(description = "工作流描述")

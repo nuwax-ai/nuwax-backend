@@ -18,11 +18,11 @@ public class KnowledgeQaSegmentUpdateRequest implements Serializable {
     private Long id;
 
     @Schema(description = "问题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "答案不能为空")
+    @NotNull(message = "Answer is required")
     private String question;
 
     @Schema(description = "答案", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "答案不能为空")
+    @NotNull(message = "Answer is required")
     private String answer;
 
 

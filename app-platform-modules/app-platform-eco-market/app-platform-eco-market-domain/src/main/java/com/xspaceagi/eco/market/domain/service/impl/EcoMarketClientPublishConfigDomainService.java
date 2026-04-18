@@ -136,12 +136,12 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
     @Override
     public Long saveOrUpdateByUid(EcoMarketClientPublishConfigModel model, UserContext userContext) {
         if (model == null || model.getUid() == null) {
-            log.error("保存发布配置记录时参数错误: model={}", model);
-            throw new IllegalArgumentException("配置模型或UID不能为空");
+            log.error("Save publish config param error: model={}", model);
+            throw new IllegalArgumentException("Configuration model or UID cannot be empty");
         }
 
         String uid = model.getUid();
-        log.info("保存或更新发布配置记录: uid={}", uid);
+        log.info("Save or update publish config: uid={}", uid);
 
         var existObj = this.ecoMarketClientPublishConfigRepository.queryOneByUid(uid);
         if (existObj != null) {
@@ -165,15 +165,15 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public EcoMarketClientPublishConfigModel enableConfig(String uid, UserContext userContext) {
-        log.info("启用配置: uid={}", uid);
+        log.info("Enable config: uid={}", uid);
 
         // 直接查询本地配置
         EcoMarketClientPublishConfigModel config = this.ecoMarketClientPublishConfigRepository.queryOneByUid(uid);
 
         // 如果本地没有记录，抛出异常
         if (config == null) {
-            log.info("本地未找到已发布配置记录, uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            log.info("No published config locally, uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 更新状态为启用
@@ -196,7 +196,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
             existLocalConfig.setUseStatus(EcoMarketUseStatusEnum.ENABLED.getCode());
             this.ecoMarketClientConfigDomainService.updateInfo(existLocalConfig, userContext);
         } else {
-            log.warn("本地未找到配置记录, uid={}, 创建本地配置", uid);
+            log.warn("No local config, uid={}, creating local config", uid);
             // 根据 publish 转换本地配置
             EcoMarketClientConfigModel localConfig = EcoMarketClientPublishConfigModel
                     .toClientConfigModel(config);
@@ -223,14 +223,14 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
         var uid = request.getUid();
         var configParamJson = request.getConfigParamJson();
         var configJson = request.getConfigJson();
-        log.info("更新并启用配置: uid={}", uid);
+        log.info("Update and enable config: uid={}", uid);
 
         // 获取客户端密钥
         Long tenantId = userContext.getTenantId();
         ClientSecretDTO clientSecret = this.ecoMarkerSecretWrapper.obtainClientSecretOrRegister(tenantId);
         if (clientSecret == null) {
-            log.error("获取客户端密钥失败: uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8011);
+            log.error("Get client secret failed: uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketClientSecretFetchFailed);
         }
 
         // 从远程服务器获取最新配置数据
@@ -241,16 +241,16 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                     clientSecret.getClientId(),
                     clientSecret.getClientSecret());
 
-            log.info("从服务器获取配置详情成功: uid={}", uid);
+            log.info("Server config detail OK: uid={}", uid);
         } catch (Exception e) {
-            log.error("从服务器获取配置详情失败: uid={}, error={}", uid, e.getMessage(), e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8019,
+            log.error("Server config detail failed: uid={}, error={}", uid, e.getMessage(), e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketUnsupportedDataType,
                     "从服务器获取配置详情失败: " + e.getMessage());
         }
 
         // 如果服务器返回为空，抛出异常
         if (serverConfig == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "服务器未找到配置记录");
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "服务器未找到配置记录");
         }
 
         // 删除本地的配置,然后重新创建
@@ -268,7 +268,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
         // 检查转换结果
         if (clientConfig == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "配置转换失败");
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "配置转换失败");
         }
 
         // 将客户端配置转换为发布配置
@@ -321,11 +321,11 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                 this.ecoMarketClientConfigDomainService.addInfo(localConfig, userContext);
 
             } else {
-                log.warn("启用配置失败: uid={}, targetId创建返回为空", uid);
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8023, "targetId创建返回为空");
+                log.warn("Enable config failed: uid={}, targetId empty from create response", uid);
+                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketEnableConfigFailed, "targetId empty from create response");
             }
         } catch (Exception e) {
-            log.error("启用配置失败: uid={}", uid, e);
+            log.error("Enable config failed: uid={}", uid, e);
             throw e;
         }
 
@@ -343,15 +343,15 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public EcoMarketClientPublishConfigModel disableConfig(String uid, UserContext userContext) {
-        log.info("禁用配置: uid={}", uid);
+        log.info("Disable config: uid={}", uid);
 
         // 查询本地配置
         EcoMarketClientPublishConfigModel config = this.ecoMarketClientPublishConfigRepository.queryOneByUid(uid);
 
         // 如果本地没有记录，抛出异常
         if (config == null) {
-            log.error("未找到要禁用的配置: uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            log.error("Config to disable not found: uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 设置状态为禁用
@@ -361,8 +361,8 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
             // 调用禁用接口
             disableTargetByType(config);
         } catch (Exception e) {
-            log.error("禁用接口调用失败: uid={}, error={}", uid, e.getMessage(), e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8019, "禁用接口调用失败: " + e.getMessage());
+            log.error("Disable API call failed: uid={}, error={}", uid, e.getMessage(), e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketUnsupportedDataType, "禁用接口调用失败: " + e.getMessage());
         }
 
         // 更新配置记录
@@ -388,7 +388,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
      */
     private Long enableTargetByType(EcoMarketClientPublishConfigModel config, UserContext userContext) {
         if (config == null) {
-            throw new IllegalArgumentException("配置模型不能为空");
+            throw new IllegalArgumentException("Configuration model cannot be empty");
         }
 
         // 判断数据类型
@@ -396,7 +396,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
         EcoMarketDataTypeEnum dataTypeEnum = EcoMarketDataTypeEnum.getByCode(dataType);
 
         if (dataTypeEnum == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8017, "无效的数据类型: " + dataType);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishedConfigNotFound, "无效的数据类型: " + dataType);
         }
 
         // 根据数据类型调用不同的启用接口
@@ -418,8 +418,8 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
                     // check configJson 不能为空
                     if (pluginDto.getConfig() == null) {
-                        log.warn("配置JSON不能为空: uid={}", config.getUid());
-                        throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8024);
+                        log.warn("Config JSON cannot be empty: uid={}", config.getUid());
+                        throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置JSON");
                     }
 
                     resultId = ecoMarketAdaptor.pluginEnableOrUpdate(pluginDto);
@@ -443,36 +443,36 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                         try {
                             templateDto.setTargetType(TargetTypeEnum.valueOf(config.getTargetType()));
                         } catch (IllegalArgumentException e) {
-                            log.error("无效的目标类型: uid={}, targetType={}", config.getUid(), config.getTargetType(), e);
-                            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8017,
+                            log.error("Invalid target type: uid={}, targetType={}", config.getUid(), config.getTargetType(), e);
+                            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishedConfigNotFound,
                                     "无效的目标类型: " + config.getTargetType());
                         }
 
                         // check configJson 不能为空
                         if (templateDto.getConfig() == null) {
-                            log.warn("配置JSON不能为空: uid={}", config.getUid());
-                            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8024);
+                            log.warn("Config JSON cannot be empty: uid={}", config.getUid());
+                            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置JSON");
                         }
                         resultId = ecoMarketAdaptor.templateEnableOrUpdate(templateDto);
                     } else {
                         //应用页面
                         String pageZipUrl = config.getPageZipUrl();
                         if (StringUtils.isBlank(pageZipUrl)) {
-                            log.warn("页面压缩包URL不能为空: uid={}", config.getUid());
-                            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8041);
+                            log.warn("Page zip URL required: uid={}", config.getUid());
+                            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "页面压缩包URL");
                         }
                         
                         try {
                             // 下载页面压缩包
-                            log.info("开始下载页面压缩包: uid={}, url={}", config.getUid(), pageZipUrl);
+                            log.info("Downloading page zip: uid={}, url={}", config.getUid(), pageZipUrl);
                             byte[] zipBytes = UrlFile.downLoad(pageZipUrl);
                             if (zipBytes == null || zipBytes.length == 0) {
-                                log.error("下载页面压缩包失败或文件为空: uid={}", config.getUid());
-                                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8042);
+                                log.error("Page zip download failed or empty: uid={}", config.getUid());
+                                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageArchiveDownloadFailed);
                             }
                             
                             // 创建页面项目
-                            log.info("开始创建页面项目: uid={}, spaceId={}, name={}", config.getUid(), -1L, config.getName());
+                            log.info("Creating page project: uid={}, spaceId={}, name={}", config.getUid(), -1L, config.getName());
                             CustomPageConfigModel pageModel = new CustomPageConfigModel();
                             pageModel.setName(config.getName());
                             pageModel.setDescription(config.getDescription());
@@ -483,51 +483,51 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                             
                             com.xspaceagi.system.spec.dto.ReqResult<CustomPageConfigModel> createResult = customPageConfigApplicationService.create(pageModel, userContext);
                             if (!createResult.isSuccess()) {
-                                log.error("创建页面项目失败: uid={}, error={}", config.getUid(), createResult.getMessage());
-                                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8043);
+                                log.error("Create page project failed: uid={}, error={}", config.getUid(), createResult.getMessage());
+                                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageProjectCreateFailed);
                             }
                             CustomPageConfigModel createdPageModel = createResult.getData();
                             Long projectId = createdPageModel.getId();
-                            log.info("创建页面项目成功: uid={}, projectId={}", config.getUid(), projectId);
+                            log.info("Create page project OK: uid={}, projectId={}", config.getUid(), projectId);
                             
                             // 上传压缩包
-                            log.info("开始上传页面压缩包: uid={}, projectId={}", config.getUid(), projectId);
+                            log.info("Uploading page zip: uid={}, projectId={}", config.getUid(), projectId);
                             MultipartFile multipartFile = new ByteArrayMultipartFile(zipBytes, "project_" + projectId + ".zip", "application/zip");
 
                             try {
                                 com.xspaceagi.system.spec.dto.ReqResult<Map<String, Object>> uploadResult = customPageConfigApplicationService.uploadProject(
                                         createdPageModel, multipartFile, true, userContext);
                                 if (!uploadResult.isSuccess()) {
-                                    log.error("上传页面压缩包失败: uid={}, projectId={}, error={}", config.getUid(), projectId, uploadResult.getMessage());
-                                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8044);
+                                    log.error("Page zip upload failed: uid={}, projectId={}, error={}", config.getUid(), projectId, uploadResult.getMessage());
+                                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageArchiveUploadFailed);
                                 }
-                                log.info("上传页面压缩包成功: uid={}, projectId={}", config.getUid(), projectId);
+                                log.info("Page zip upload OK: uid={}, projectId={}", config.getUid(), projectId);
                             } catch (Exception e) {
-                                log.error("上传页面压缩包失败: uid={}, projectId={}", config.getUid(), projectId, e);
+                                log.error("Page zip upload failed: uid={}, projectId={}", config.getUid(), projectId, e);
                                 try {
                                     customPageConfigApplicationService.deleteProject(projectId, userContext);
                                 } catch (Exception e1) {
-                                    log.error("清理页面项目失败: uid={}, projectId={}", config.getUid(), projectId, e1);
+                                    log.error("Cleanup page project failed: uid={}, projectId={}", config.getUid(), projectId, e1);
                                 }
-                                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8044);
+                                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageArchiveUploadFailed);
                             }
                             // 发布页面
-                            log.info("开始发布页面: uid={}, projectId={}", config.getUid(), projectId);
+                            log.info("Publishing page: uid={}, projectId={}", config.getUid(), projectId);
                             com.xspaceagi.system.spec.dto.ReqResult<java.util.Map<String, Object>> buildResult = customPageBuildApplicationService.build(
                                     projectId, PublishTypeEnum.AGENT.name(), userContext);
                             if (!buildResult.isSuccess()) {
-                                log.error("发布页面失败: uid={}, projectId={}, error={}", config.getUid(), projectId, buildResult.getMessage());
-                                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8045);
+                                log.error("Publish page failed: uid={}, projectId={}, error={}", config.getUid(), projectId, buildResult.getMessage());
+                                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPagePublishFailed);
                             }
-                            log.info("发布页面成功: uid={}, projectId={}", config.getUid(), projectId);
+                            log.info("Publish page OK: uid={}, projectId={}", config.getUid(), projectId);
 
                             Long agentId = createdPageModel.getDevAgentId();
                             
                             // 获取智能体配置作为 targetConfig
                             AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
                             if (agentConfigDto == null) {
-                                log.error("获取智能体配置失败: uid={}, agentId={}", config.getUid(), agentId);
-                                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8046);
+                                log.error("Get agent config failed: uid={}, agentId={}", config.getUid(), agentId);
+                                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketAppPageEnableFailed);
                             }
                             
                             UserDto userDto = new  UserDto();
@@ -556,14 +556,14 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
                             // 获取生产环境地址
                             String prodProxyPath = customPageProxyPathService.getProdProxyPath(projectId);
-                            log.info("获取生产环境地址成功: uid={}, projectId={}, prodProxyPath={}", config.getUid(), projectId, prodProxyPath);
+                            log.info("Prod URL OK: uid={}, projectId={}, prodProxyPath={}", config.getUid(), projectId, prodProxyPath);
 
                             resultId = agentId;
                         } catch (EcoMarketException e) {
                             throw e;
                         } catch (Exception e) {
-                            log.error("处理页面项目失败: uid={}", config.getUid(), e);
-                            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8046);
+                            log.error("Handle page project failed: uid={}", config.getUid(), e);
+                            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketAppPageEnableFailed);
                         }
 
                     }
@@ -573,14 +573,14 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
                     var configJson = config.getConfigJson();
                     if (StringUtils.isBlank(configJson)) {
-                        log.error("MCP配置内容不能为空: uid={}", config.getUid());
-                        throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8029);
+                        log.error("MCP config content required: uid={}", config.getUid());
+                        throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "MCP配置");
                     }
 
                     McpDto mcpDtoFromJson = JSONObject.parseObject(configJson, McpDto.class);
                     if (mcpDtoFromJson == null) {
-                        log.error("MCP配置内容解析失败: uid={}", config.getUid());
-                        throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8032);
+                        log.error("MCP config parse failed: uid={}", config.getUid());
+                        throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketMcpConfigParseFailed);
                     }
                     mcpDtoFromJson.setId(null);
                     mcpDtoFromJson.setSpaceId(null);
@@ -604,19 +604,19 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
                 }
                 default -> {
-                    log.error("不支持的数据类型: {}", dataType);
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8017, "不支持的数据类型");
+                    log.error("Unsupported data type: {}", dataType);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishedConfigNotFound, "不支持的数据类型");
                 }
             }
 
-            log.info("调用启用接口成功: uid={}, resultId={}", config.getUid(), resultId);
+            log.info("Enable API OK: uid={}, resultId={}", config.getUid(), resultId);
             return resultId;
         } catch (EcoMarketException e) {
             // 业务异常直接抛出
             throw e;
         } catch (Exception e) {
-            log.error("启用配置失败: uid={}", config.getUid(), e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8023);
+            log.error("Enable config failed: uid={}", config.getUid(), e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketEnableConfigFailed);
         }
     }
 
@@ -631,7 +631,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
             }
         } catch (Exception e) {
             //  忽略
-            log.warn("插件图标下载失败 {}", iconUrl);
+            log.warn("Plugin icon download failed {}", iconUrl);
         }
         return null;
     }
@@ -643,7 +643,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
      */
     private void disableTargetByType(EcoMarketClientPublishConfigModel config) {
         if (config == null) {
-            throw new IllegalArgumentException("配置模型不能为空");
+            throw new IllegalArgumentException("Configuration model cannot be empty");
         }
 
         // 判断数据类型
@@ -651,12 +651,12 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
         EcoMarketDataTypeEnum dataTypeEnum = EcoMarketDataTypeEnum.getByCode(dataType);
 
         if (dataTypeEnum == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8017, "无效的数据类型: " + dataType);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishedConfigNotFound, "无效的数据类型: " + dataType);
         }
 
         // 检查targetId是否存在
         if (config.getTargetId() == null) {
-            log.warn("禁用配置时targetId为空: uid={}", config.getUid());
+            log.warn("Disable config: targetId empty, uid={}", config.getUid());
             return; // 没有targetId无法禁用，但不抛异常
         }
 
@@ -677,14 +677,14 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
 
                 }
                 default -> {
-                    log.error("不支持的数据类型: {}", dataType);
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8017, "不支持的数据类型");
+                    log.error("Unsupported data type: {}", dataType);
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishedConfigNotFound, "不支持的数据类型");
                 }
             }
-            log.info("调用禁用接口成功: uid={}, targetId={}", config.getUid(), config.getTargetId());
+            log.info("Disable API OK: uid={}, targetId={}", config.getUid(), config.getTargetId());
         } catch (Exception e) {
-            log.error("禁用配置失败: uid={},", config.getUid(), e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8033);
+            log.error("Disable config failed: uid={},", config.getUid(), e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketDisableConfigFailed);
         }
     }
 

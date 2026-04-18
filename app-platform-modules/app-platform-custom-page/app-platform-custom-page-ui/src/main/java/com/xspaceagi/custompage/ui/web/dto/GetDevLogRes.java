@@ -7,28 +7,28 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "查询开发服务器日志响应体")
+@Schema(description = "Dev server log query response body")
 public class GetDevLogRes {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "日志内容列表")
+    @Schema(description = "Log line entries")
     private List<Map<String, Object>> logs;
 
-    @Schema(description = "总行数")
+    @Schema(description = "Total line count")
     private Integer totalLines;
 
-    @Schema(description = "当前起始行号")
+    @Schema(description = "Current start line index")
     private Integer startIndex;
 
-    @Schema(description = "是否命中缓存")
+    @Schema(description = "Whether result was served from cache")
     private Boolean cacheHit;
 
-    @Schema(description = "文件是否过大")
+    @Schema(description = "Whether log file exceeded size limit")
     private Boolean fileTooLarge;
 
-    @Schema(description = "日志文件名")
+    @Schema(description = "Log file name")
     private String logFileName;
 
 }

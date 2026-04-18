@@ -27,7 +27,7 @@ public class UserPermissionCacheClearAspect {
         try {
             sysUserPermissionCacheService.clearCacheAll();
         } catch (Exception e) {
-            log.warn("清除所有用户权限缓存失败", e);
+            log.warn("Failed to clear all user permission caches", e);
         }
     }
 }

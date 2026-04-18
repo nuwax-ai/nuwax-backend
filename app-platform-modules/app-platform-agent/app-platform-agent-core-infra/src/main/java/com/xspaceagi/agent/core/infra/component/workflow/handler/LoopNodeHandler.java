@@ -9,7 +9,9 @@ import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowExecutor;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.LoopNodeExecutingDto;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecuteResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LoopNodeHandler extends AbstractNodeHandler {
 
-    //避免永久死循环
+    // Avoid permanent infinite loop
     private int maxLoopTimes = 1000;
 
     private final List<Map<String, NodeExecuteResult>> nodeExecuteInfoList = new ArrayList<>();
@@ -41,23 +43,23 @@ public class LoopNodeHandler extends AbstractNodeHandler {
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         AtomicReference<Set<Disposable>> disposableAtomicReferences = new AtomicReference<>(new ConcurrentHashSet<>());
         return Mono.create(emitter0 -> {
-            //ode.getInnerNodes() 转Map innerNodeMap
+            // node.getInnerNodes() convert to Map innerNodeMap
             Map<Long, WorkflowNodeDto> innerNodeMap = node.getInnerNodes().stream().collect(Collectors.toMap(WorkflowNodeDto::getId, n -> n));
             WorkflowNodeDto startNode = innerNodeMap.get(node.getInnerStartNodeId());
             WorkflowNodeDto endNode = innerNodeMap.get(node.getInnerEndNodeId());
             if (startNode == null || endNode == null) {
-                emitter0.error(new BizException("循环节点未完整连接"));
+                emitter0.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowLoopNotFullyConnected));
                 return;
             }
             endNode.setInnerEndNode(true);
             LoopNodeConfigDto loopNodeConfigDto = (LoopNodeConfigDto) node.getNodeConfig();
-            //初始化中间变量值
+            // Initialize intermediate variable values
             if (!CollectionUtils.isEmpty(loopNodeConfigDto.getVariableArgs())) {
                 createVariableValueMap(workflowContext, loopNodeConfigDto.getVariableArgs());
                 workflowContext.getNodeVariableValueMap().put(node.getId().toString(), variableValueMap);
             }
             Map<String, Object> logValueMap = new HashMap<>();
-            //初始化入参值
+            // Initialize input parameter values
             if (!CollectionUtils.isEmpty(loopNodeConfigDto.getInputArgs())) {
                 loopNodeConfigDto.getInputArgs().forEach(inputArg -> {
                     Object value = extraBindValue(workflowContext, node, inputArg);
@@ -69,13 +71,13 @@ public class LoopNodeHandler extends AbstractNodeHandler {
             }
             workflowContext.getNodeExecuteInputMap().computeIfAbsent(node.getId().toString(), k -> new ArrayList<>()).add(logValueMap);
 
-            //无限循环，暂时最多循环1000次
+            // Infinite loop, temporarily maximum 1000 iterations
             maxLoopTimes = 1000;
-            //次数循环
+            // Count loop
             if (loopNodeConfigDto.getLoopType() == LoopNodeConfigDto.LoopTypeEnum.SPECIFY_TIMES_LOOP) {
                 maxLoopTimes = loopNodeConfigDto.getLoopTimes();
             } else if (loopNodeConfigDto.getLoopType() == LoopNodeConfigDto.LoopTypeEnum.ARRAY_LOOP) {
-                //数组循环，计算数组最大循环次数
+                // Array loop, calculate maximum loop times for array
                 final AtomicInteger maxLoopTimes = new AtomicInteger(0);
                 inputValueMap.forEach((key, value) -> {
                     if (value.size() > maxLoopTimes.get()) {
@@ -85,7 +87,7 @@ public class LoopNodeHandler extends AbstractNodeHandler {
                 this.maxLoopTimes = maxLoopTimes.get();
             }
             if (maxLoopTimes <= 0) {
-                emitter0.error(new BizException("循环节点最大循环次数不能小于等于0"));
+                emitter0.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowLoopMaxCountInvalid));
                 return;
             }
             loopExecute(workflowContext, startNode, node, emitter0, disposableAtomicReferences);
@@ -114,7 +116,7 @@ public class LoopNodeHandler extends AbstractNodeHandler {
                         variableValueMap.put(variableArg.getName(), value);
                     }
                 } catch (NumberFormatException e) {
-                    log.error("变量绑定值格式错误", e);
+                    log.error("Variable binding value format error", e);
                     //ignore
                 }
             }
@@ -138,7 +140,7 @@ public class LoopNodeHandler extends AbstractNodeHandler {
         workflowContext.getExecutingLoopNodeMap().put(node.getId().toString(), loopNodeDto);
         long startTime = System.currentTimeMillis();
         Disposable disposable = Mono.create(emitter -> WorkflowExecutor.executeNode(workflowContext, startNode, loopNodeDto, emitter, disposableAtomicReferences)).subscribe(o -> {
-            log.info("循环节点第{}次执行完成，nodeId: {}, nodeName: {}，loopNodeDto: {}, 耗时: {}", loopNodeDto.getIndex(), node.getId(),
+            log.info("Loop node {}th execution completed, nodeId: {}, nodeName: {}, loopNodeDto: {}, duration: {}", loopNodeDto.getIndex(), node.getId(),
                     node.getName(), loopNodeDto, System.currentTimeMillis() - startTime);
             nodeExecuteInfoList.add(loopNodeDto.getNodeExecuteResultMap());
             if (workflowContext.getAgentContext().isInterrupted()) {
@@ -154,7 +156,7 @@ public class LoopNodeHandler extends AbstractNodeHandler {
                 }
                 Map<String, Object> result = new HashMap<>();
                 outputArgs.forEach(outputArg -> {
-                    //变量参数、循环前置节点等
+                    // Variable parameters, loop preceding nodes, etc.
                     Object value = extraBindValue(workflowContext, node, outputArg);
                     if (value != null) {
                         result.put(outputArg.getName(), value);
@@ -166,7 +168,7 @@ public class LoopNodeHandler extends AbstractNodeHandler {
                         return;
                     }
 
-                    //循环内部节点
+                    // Loop internal nodes
                     List<Object> values = new ArrayList<>();
                     nodeExecuteInfoList.forEach(nodeExecuteInfoMap -> {
                         AtomicBoolean virtualExecuteStatus = new AtomicBoolean(false);
@@ -179,11 +181,11 @@ public class LoopNodeHandler extends AbstractNodeHandler {
                 });
                 emitter0.success(result);
             } else {
-                //继续循环执行
+                // Continue loop execution
                 loopExecute(workflowContext, startNode, node, emitter0, disposableAtomicReferences);
             }
         }, e -> {
-            log.error("循环节点执行失败", e);
+            log.error("Loop node execution failed", e);
             emitter0.error(e);
         });
         disposableAtomicReferences.get().add(disposable);

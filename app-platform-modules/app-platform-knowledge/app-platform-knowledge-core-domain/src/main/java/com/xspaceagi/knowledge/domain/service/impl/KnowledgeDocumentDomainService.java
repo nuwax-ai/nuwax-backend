@@ -111,7 +111,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
         var existObj = this.knowledgeDocumentRepository.queryOneInfoById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 删除文档后，需要删除文档对应的qa和raw
@@ -128,11 +128,11 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         // 删除全文检索数据（在事务内，保证一致性）
         try {
             fullTextSearchDomainService.deleteByDocId(id, kbId, userContext.getTenantId());
-            log.info("删除文档全文检索数据成功: docId={}, kbId={}", id, kbId);
+            log.info("Delete doc full-text OK: docId={}, kbId={}", id, kbId);
         } catch (Exception e) {
-            log.error("删除文档全文检索数据失败: docId={}, kbId={}", id, kbId, e);
+            log.error("Delete doc full-text failed: docId={}, kbId={}", id, kbId, e);
             // 抛出异常，触发事务回滚
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5024, e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDeleteDocFulltextFailed, e);
         }
 
         // 更新知识库最后操作时间
@@ -152,7 +152,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         var docId = model.getId();
         var existObj = this.knowledgeDocumentRepository.queryOneInfoById(docId);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         this.knowledgeQaSegmentRepository.deleteByDocumentId(docId);
         this.knowledgeRawSegmentRepository.deleteByConfigDocumentId(docId);
@@ -176,7 +176,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
             threadTenantUtil.obtainRawExecutor().execute(tenantRunnable);
         } catch (Exception e) {
-            log.error("线程池提交生成向量数据库的任务失败,原因:", e);
+            log.error("Failed to submit vector DB generation task to executor, reason:", e);
         }
         // 更新知识库最后操作时间
         this.knowledgeConfigRepository.updateLatestModifyTime(model.getKbId(), userContext);
@@ -214,7 +214,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 .taskId(taskId)
                 .build();
         if (log.isDebugEnabled()) {
-            log.debug("添加文档,返回结果:{}", JSON.toJSONString(result));
+            log.debug("Add doc, result:{}", JSON.toJSONString(result));
         }
         return result;
     }
@@ -232,7 +232,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
             TenantRunnable tenantRunnable = new TenantRunnable(runnable);
             threadTenantUtil.obtainRawExecutor().execute(tenantRunnable);
         } catch (Exception e) {
-            log.error("线程池提交生成向量数据库的任务失败,原因:", e);
+            log.error("Failed to submit vector DB generation task to executor, reason:", e);
         }
 
         // 更新知识库最后操作时间
@@ -270,15 +270,15 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
      */
     @Override
     public void workRunTaskForDocument(KnowledgeDocumentModel model, UserContext userContext, Long docId) {
-        log.debug("线程池提交生成向量数据库的任务开始,文档id={}", docId);
+        log.debug("Vector task submit start, docId={}", docId);
 
         // 1. 执行文档分段
         this.self.workRunTaskForRawSegment(model, userContext, docId);
-        log.info("分段任务完成: kbId={}, docId={}", model.getKbId(), docId);
+        log.info("Segment task done: kbId={}, docId={}", model.getKbId(), docId);
 
         // 2. 同步执行全文检索同步
         this.self.workRunTaskForFullTextSync(model, userContext, docId);
-        log.info("全文检索同步完成，开始异步生成问答和向量化: kbId={}, docId={}", model.getKbId(), docId);
+        log.info("FTS sync done, async QA+embedding: kbId={}, docId={}", model.getKbId(), docId);
 
         // 3. 异步执行 QA 和 Embedding
         TenantRunnable tenantRunnable = new TenantRunnable(() -> {
@@ -305,7 +305,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         // 开始分段
         this.knowledgeTaskDomainService.changeTaskStatus(autoRecordTask, KnowledgeTaskRunTypeEnum.SEGMENT, userContext);
         this.docParserService.parse(model, userContext);
-        log.info("文档分段完成: kbId={}, docId={}", model.getKbId(), docId);
+        log.info("Doc segmented: kbId={}, docId={}", model.getKbId(), docId);
 
     }
 
@@ -314,7 +314,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         // 开始生成QA,生成每个问答后,会开始向量化
         this.self.generateForQa(docId, userContext);
 
-        log.info("问答和向量化任务完成,文档id={}", docId);
+        log.info("QA+embedding done, docId={}", docId);
 
         // 判断任务是否完毕,以及有无待向量化的问答
         this.self.updateDocumentEmbeddingStatus(docId, userContext);
@@ -345,14 +345,14 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
             case EMBEDDING -> {
                 // 开始生成QA的向量化
                 this.self.generateEmbeddings(docId, userContext);
-                log.info("线程池提交生成向量数据库的任务成功,文档id={}", docId);
+                log.info("Vector task submit OK, docId={}", docId);
 
                 // 判断任务是否完毕,还是有向量化的问答
                 this.self.updateDocumentEmbeddingStatus(docId, userContext);
 
             }
             default -> {
-                log.info("无需重试,文档id={}", docId);
+                log.info("No retry needed, docId={}", docId);
             }
         }
 
@@ -363,8 +363,8 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         var docModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
 
         if (Objects.isNull(docModel)) {
-            log.warn("文档不存在,文档id={}", docId);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            log.warn("Document not found, docId={}", docId);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         List<KnowledgeRawSegmentModel> segments = this.knowledgeRawSegmentRepository
                 .queryListForPendingQaByDocId(docId);
@@ -384,8 +384,8 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
             var docModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
             if (Objects.isNull(docModel)) {
-                log.warn("文档不存在,文档id={}", docId);
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+                log.warn("Document not found, docId={}", docId);
+                throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
             }
             // 问答全部生成完毕,现在修改重试任务状态为:向量化
             var autoRecordTask = AutoRecordTask.builder()
@@ -404,8 +404,8 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         var docModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
 
         if (Objects.isNull(docModel)) {
-            log.info("文档不存在,文档id={}", docId);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            log.info("Document not found, docId={}", docId);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // only return the segments that do not have embeddings
@@ -417,7 +417,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
         if (CollectionUtils.isEmpty(rawIds)) {
             // 没有需要向量化的数据
-            log.info("没有需要向量化的数据,文档id={}", docId);
+            log.info("Nothing to embed, docId={}", docId);
             // 更新文档的嵌入状态
             this.self.updateDocumentEmbeddingStatus(docId, userContext);
             return;
@@ -445,8 +445,8 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
             var docModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
 
             if (Objects.isNull(docModel)) {
-                log.warn("文档不存在,文档id={}", docId);
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+                log.warn("Document not found, docId={}", docId);
+                throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
             }
             EmbeddingStatusDto embeddingStatusDto = this.knowledgeQaSegmentRepository.queryEmbeddingStatus(docId);
             var successFlag = false;
@@ -455,7 +455,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 successFlag = true;
             } else if (Objects.isNull(embeddingStatusDto)) {
                 // embeddingStatusDto 为空,表示没有任何问答的情况,但分段生成的问答已经全部完毕,那就是没有抽取出问答,此时也是任务成功
-                log.info("文档id={},分段的问答全部生成完毕,但可能没有抽取出问答", docId);
+                log.info("docId={}, QA pass done, maybe no QAs extracted", docId);
                 var noEmbeddingCount = this.knowledgeQaSegmentRepository.queryCountByDocIdAndNoEmbedding(docId);
                 if (noEmbeddingCount == 0) {
                     successFlag = true;
@@ -508,7 +508,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 });
 
         if (Objects.isNull(qaListVo) || CollectionUtils.isEmpty(qaListVo.getQaList())) {
-            log.info("大模型尝试生成问答为空,可能是文本内容太少,无法抽取问答,docID={},rawId={}", docID, rawId);
+            log.info("LLM QA empty (text too short?), docID={}, rawId={}", docID, rawId);
             return;
         }
         List<KnowledgeQaSegmentModel> qaSegments = new ArrayList<>();
@@ -519,13 +519,13 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
             qaSegment.setSpaceId(spaceId);
             qaSegment.setRawId(rawId);
             if (StringUtils.isBlank(qa.getQuestion())) {
-                log.error("大模型尝试生成问答为空,docID={},rawId={}", docID, rawId);
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5017, rawId);
+                log.error("LLM Q&A generation empty, docID={}, rawId={}", docID, rawId);
+                throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeLlmQuestionEmpty, rawId);
             }
             qaSegment.setQuestion(qa.getQuestion());
             if (StringUtils.isBlank(qa.getAnswer())) {
-                log.error("大模型尝试生成问答为空,docID={},rawId={}", docID, rawId);
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001, rawId);
+                log.error("LLM Q&A generation empty, docID={}, rawId={}", docID, rawId);
+                throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound, rawId);
             }
             qaSegment.setAnswer(qa.getAnswer());
             qaSegments.add(qaSegment);
@@ -547,7 +547,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
             var document = this.knowledgeDocumentRepository.queryOneInfoById(docId);
 
             if (Objects.isNull(document)) {
-                log.info("文档不存在,跳过,docId={}", docId);
+                log.info("Document not found, skip, docId={}", docId);
                 continue;
             }
 
@@ -557,7 +557,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 var rawId = segment.getId();
                 var rawText = segment.getRawTxt();
                 if (StringUtils.isBlank(rawText)) {
-                    log.info("分段内容为空,跳过,分段id={}", rawId);
+                    log.info("Empty segment, skip, rawId={}", rawId);
                     segment.setQaStatus(QaStatusEnum.GENERATED.getCode());
                     // 更新每个分段的问答生成状态
                     var updateStatueSegmentList = Lists.newArrayList(segment);
@@ -568,7 +568,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 var existRawSegment = this.knowledgeRawSegmentRepository.queryOneInfoById(rawId);
                 if (Objects.nonNull(existRawSegment)
                         && QaStatusEnum.GENERATED.getCode().equals(existRawSegment.getQaStatus())) {
-                    log.info("库里分段已经生成问答QA,跳过,分段id={},docId={}", rawId, docId);
+                    log.info("Segment already has QA, skip, rawId={}, docId={}", rawId, docId);
                     continue;
                 }
 
@@ -582,7 +582,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                     flag = true;
 
                 } catch (Exception e) {
-                    log.error("生成QA失败,分段id={},原因:", rawId, e);
+                    log.error("QA gen failed, rawId={}, reason:", rawId, e);
                     segment.setQaStatus(QaStatusEnum.PENDING.getCode());
                 }
                 // 更新每个分段的问答生成状态
@@ -594,7 +594,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                     var rawList = Lists.newArrayList(segment);
                     this.self.generateQaEmbeddingsByRawSegment(rawList, userContext);
                 } else {
-                    log.info("生成QA失败,分段id={},无法对分段的问答生成向量化", rawId);
+                    log.info("QA gen failed, rawId={}, cannot embed QA", rawId);
                 }
 
             }
@@ -657,11 +657,11 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                     .findFirst().map(kbId2EmbeddingModelIdMap::get).orElse(null);
             var document = this.knowledgeDocumentRepository.queryOneInfoById(docId);
             if (Objects.isNull(document)) {
-                log.info("文档不存在,跳过,docId={}", docId);
+                log.info("Document not found, skip, docId={}", docId);
                 continue;
             }
             if (log.isDebugEnabled()) {
-                log.debug("开始处理文档,docId={},分段数量={}", docId, entry.getValue().size());
+                log.debug("Process doc, docId={}, segmentCount={}", docId, entry.getValue().size());
             }
             var batches = Lists.partition(entry.getValue(), Constants.BATCH_SIZE);
 
@@ -772,20 +772,20 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                     // 只更新成功推送的分段状态为已同步（status = 1）
                     knowledgeRawSegmentRepository.batchUpdateSyncStatus(successRawIds, RawTextFulltextSyncStatusEnum.SYNCED.getCode());
 
-                    log.info("更新分段全文检索同步状态成功: docId={}, kbId={}, totalSegments={}, successCount={}",
+                    log.info("FTS sync status updated: docId={}, kbId={}, totalSegments={}, successCount={}",
                         docId, kbId, rawSegments.size(), successRawIds.size());
                 } else {
-                    log.warn("推送结果为空或没有成功的分段: docId={}, kbId={}", docId, kbId);
+                    log.warn("Push empty or no success: docId={}, kbId={}", docId, kbId);
                 }
 
-                log.info("文档全文检索数据同步完成: docId={}, kbId={}, segmentCount={}, indexedCount={}",
+                log.info("Doc FTS sync done: docId={}, kbId={}, segmentCount={}, indexedCount={}",
                     docId, kbId, rawSegments.size(),
                     pushResult != null ? pushResult.getIndexedCount() : 0);
             } else {
-                log.warn("文档没有分段数据，跳过全文检索同步: docId={}", docId);
+                log.warn("No segments, skip FTS sync: docId={}", docId);
             }
         } catch (Exception e) {
-            log.error("全文检索同步失败: docId={}, kbId={}", docId, model.getKbId(), e);
+            log.error("FTS sync failed: docId={}, kbId={}", docId, model.getKbId(), e);
             // 不抛出异常，继续后续流程（QA生成）
             // 可以通过重试任务机制重新同步
         }
@@ -793,7 +793,7 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
         // 3. 改为QA状态
         this.knowledgeTaskDomainService.changeTaskStatus(autoRecordTask,
             KnowledgeTaskRunTypeEnum.QA, userContext);
-        log.info("任务状态已更新为QA: kbId={}, docId={}", model.getKbId(), docId);
+        log.info("Task status set to QA: kbId={}, docId={}", model.getKbId(), docId);
     }
 
     // 注意：全文检索的同步和删除已迁移到 Application 层

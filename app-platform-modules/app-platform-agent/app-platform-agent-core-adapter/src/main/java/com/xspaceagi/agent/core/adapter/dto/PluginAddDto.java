@@ -12,14 +12,14 @@ import java.io.Serializable;
 public class PluginAddDto implements Serializable {
 
     @Schema(description =  "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId;
 
     @Schema(description =  "创建人ID")
     private Long creatorId;
 
     @Schema(description =  "插件名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "插件名称不能为空")
+    @NotNull(message = "Plugin name is required")
     private String name;
 
     @Schema(description =  "插件描述")

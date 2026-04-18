@@ -5,6 +5,7 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.utils.FileAkUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -74,17 +75,18 @@ public class TenantController {
             }
         }
         if (StringUtils.isBlank(tenantConfigDto.getHomeSlogan())) {
-            tenantConfigDto.setHomeSlogan("嗨 {{USER_NAME}}，有什么我可以帮忙的吗？");
+            tenantConfigDto.setHomeSlogan("Hi {{USER_NAME}}, how can I help you today?");
         }
         if (StringUtils.isNotBlank(tenantConfigDto.getHomeSlogan())) {
             tenantConfigDto.setHomeSlogan(tenantConfigDto.getHomeSlogan().replace("{{USER_NAME}}", userName));
         }
         if (StringUtils.isBlank(tenantConfigDto.getLoginPageText())) {
-            tenantConfigDto.setLoginPageText("轻松构建部署您<br>私有的 Agentic AI 解决方案");
+            tenantConfigDto.setLoginPageText("Easily build and deploy your<br>private Agentic AI solution");
         }
         if (StringUtils.isBlank(tenantConfigDto.getLoginPageSubText())) {
-            tenantConfigDto.setLoginPageSubText("提供完善的工作流、插件开发能力，RAG 知识库与数据表存储能力，MCP接入以及开放能力");
+            tenantConfigDto.setLoginPageSubText("Comprehensive workflow and plugin development, RAG knowledge base and data table storage, MCP integration and open capabilities");
         }
+        I18nUtil.replaceSystemMessage(tenantConfigDto);
         return ReqResult.success(tenantConfigDto);
     }
 }

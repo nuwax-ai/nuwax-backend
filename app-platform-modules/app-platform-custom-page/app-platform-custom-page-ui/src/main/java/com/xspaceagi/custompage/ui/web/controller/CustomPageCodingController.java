@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
 
-@Tag(name = "网页应用", description = "网页应用相关接口")
+@Tag(name = "Web app", description = "Custom page web app APIs")
 @RestController
 @RequestMapping("/api/custom-page")
 @Slf4j
@@ -36,115 +36,115 @@ public class CustomPageCodingController extends BaseController {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @RequireResource(PAGE_APP_MODIFY_FILE)
-    @Operation(summary = "指定文件修改", description = "指定文件修改")
+    @Operation(summary = "Update specified files", description = "Update specified project files")
     @PostMapping(value = "/specified-files-update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> specifiedFilesUpdate(@RequestBody PageFilesUpdateReq req) {
-        log.info("[Web] 接收到指定文件修改请求，projectId={}", req.getProjectId());
+        log.info("[Web] specifiedfileupdaterequest, project Id={}", req.getProjectId());
         try {
             String filesJson = objectMapper.writeValueAsString(req.getFiles());
-            log.info("[Web] 文件信息 JSON: {}", filesJson);
+            log.info("[Web] File info JSON: {}", filesJson);
 
             UserContext userContext = getUser();
             return customPageCodingApplicationService.specifiedFilesUpdate(req.getProjectId(), req.getFiles(),
                     userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 指定文件修改失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] specifiedfileupdatefailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 指定文件修改失败，projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "指定文件修改失败: " + e.getMessage());
+            log.error("[Web] specifiedfileupdatefailed, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Update specified files failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_MODIFY_FILE)
-    @Operation(summary = "全量文件修改", description = "全量文件修改")
+    @Operation(summary = "Full file update", description = "Submit full project file update")
     @PostMapping(value = "/submit-files-update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> submitFilesUpdate(@RequestBody PageFilesUpdateReq req) {
-        log.info("[Web] 接收到全量文件修改请求，projectId={}", req.getProjectId());
+        log.info("[Web] fullfileupdaterequest, project Id={}", req.getProjectId());
         try {
             String filesJson = objectMapper.writeValueAsString(req.getFiles());
-            log.info("[Web] 文件信息 JSON: {}", filesJson);
+            log.info("[Web] File info JSON: {}", filesJson);
 
             UserContext userContext = getUser();
             return customPageCodingApplicationService.allFilesUpdate(req.getProjectId(), req.getFiles(),
                     userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 全量文件修改失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] fullfileupdatefailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 全量文件修改失败，projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "全量文件修改失败: " + e.getMessage());
+            log.error("[Web] fullfileupdatefailed, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Full file update failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_UPLOAD_FILE)
-    @Operation(summary = "上传单个文件", description = "上传单个文件到指定项目路径")
+    @Operation(summary = "Upload single file", description = "Upload a single file to a path in the project")
     @PostMapping(value = "/upload-single-file", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> uploadSingleFile(
             @RequestParam("projectId") Long projectId,
             @RequestParam("file") MultipartFile file,
             @RequestParam("filePath") String filePath) {
-        log.info("[Web] 接收到上传单个文件请求，projectId={}, filePath={}", projectId, filePath);
+        log.info("[Web] upload single filerequest, project Id={}, file Path={}", projectId, filePath);
         try {
             if (file == null || file.isEmpty()) {
-                return ReqResult.error("0001", "文件不能为空");
+                return ReqResult.error("0001", "File is required");
             }
             if (filePath == null || filePath.trim().isEmpty()) {
-                return ReqResult.error("0001", "文件路径不能为空");
+                return ReqResult.error("0001", "File path is required");
             }
 
             UserContext userContext = getUser();
             return customPageCodingApplicationService.uploadSingleFile(projectId, file, filePath, userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 上传单个文件失败，projectId={}, filePath={}, {}", projectId, filePath, e.getMessage());
+            log.error("[Web] upload single filefailed, project Id={}, file Path={}, {}", projectId, filePath, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 上传单个文件失败，projectId={}, filePath={}", projectId, filePath, e);
-            return ReqResult.error("0001", "上传单个文件失败: " + e.getMessage());
+            log.error("[Web] upload single filefailed, project Id={}, file Path={}", projectId, filePath, e);
+            return ReqResult.error("0001", "Upload single file failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "获取文件代理地址", description = "获取单个文件的反向代理地址")
+    @Operation(summary = "Get file proxy URL", description = "Get reverse-proxy URL for a single file")
     @GetMapping(value = "/file-proxy-url", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<String> getFileProxyUrl(
             @RequestParam("projectId") Long projectId,
             @RequestParam("filePath") String filePath) {
-        log.info("[Web] 接收到获取文件代理地址请求，projectId={}, filePath={}", projectId, filePath);
+        log.info("[Web] getfileproxy URLrequest, project Id={}, file Path={}", projectId, filePath);
         try {
             if (projectId == null || projectId <= 0) {
-                return ReqResult.error("0001", "projectId不能为空或无效");
+                return ReqResult.error("0001", "projectId is required or invalid");
             }
             if (filePath == null || filePath.trim().isEmpty()) {
-                return ReqResult.error("0001", "filePath不能为空");
+                return ReqResult.error("0001", "filePath is required");
             }
 
             UserContext userContext = getUser();
             return customPageCodingApplicationService.getFileProxyUrl(projectId, filePath, userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 获取文件代理地址失败，projectId={}, filePath={}, {}", projectId, filePath, e.getMessage());
+            log.error("[Web] getfileproxy URLfailed, project Id={}, file Path={}, {}", projectId, filePath, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 获取文件代理地址失败，projectId={}, filePath={}", projectId, filePath, e);
-            return ReqResult.error("0001", "获取文件代理地址失败: " + e.getMessage());
+            log.error("[Web] getfileproxy URLfailed, project Id={}, file Path={}", projectId, filePath, e);
+            return ReqResult.error("0001", "Failed to get file proxy URL: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_ROLLBACK_VERSION)
-    @Operation(summary = "回滚版本", description = "回滚到指定版本")
+    @Operation(summary = "Rollback version", description = "Rollback project to a specified version")
     @PostMapping(value = "/rollback-version", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> rollbackVersion(@RequestBody RollbackVersionReq req) {
-        log.info("[Web] 接收到回滚版本请求，projectId={}, rollbackTo={}", req.getProjectId(), req.getRollbackTo());
+        log.info("[Web] rollback versionrequest, project Id={}, rollback To={}", req.getProjectId(), req.getRollbackTo());
         try {
             UserContext userContext = getUser();
             return customPageCodingApplicationService.rollbackVersion(req.getProjectId(), req.getRollbackTo(),
                     userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 回滚版本失败，projectId={}, rollbackTo={}, {}", req.getProjectId(), req.getRollbackTo(), e.getMessage());
+            log.error("[Web] rollback versionfailed, project Id={}, rollback To={}, {}", req.getProjectId(), req.getRollbackTo(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 回滚版本失败，projectId={}, rollbackTo={}", req.getProjectId(), req.getRollbackTo(), e);
-            return ReqResult.error("0001", "回滚版本失败: " + e.getMessage());
+            log.error("[Web] rollback versionfailed, project Id={}, rollback To={}", req.getProjectId(), req.getRollbackTo(), e);
+            return ReqResult.error("0001", "Rollback version failed: " + e.getMessage());
         }
     }
 

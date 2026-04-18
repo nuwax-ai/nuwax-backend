@@ -14,7 +14,10 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -83,7 +86,7 @@ public class SpaceController {
     public ReqResult<Void> delete(@PathVariable Long spaceId) {
         SpaceDto spaceDto = spaceApplicationService.queryById(spaceId);
         if (spaceDto != null && spaceDto.getType() == Space.Type.Personal) {
-            throw new BizException("个人空间不允许删除");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemPersonalSpaceDeleteForbidden);
         }
         spacePermissionService.checkSpaceOwnerPermission(spaceId);
         spaceApplicationService.delete(spaceId);
@@ -104,6 +107,7 @@ public class SpaceController {
         if (userDto != null) {
             spaceDto.setCreatorName(userDto.getUserName());
         }
+        I18nUtil.replaceSystemMessage(spaceDto);
         return ReqResult.success(spaceDto);
     }
 
@@ -131,6 +135,7 @@ public class SpaceController {
                 spaceDto.setCurrentUserRole(spaceUserDto.getRole());
             }
         });
+        I18nUtil.replaceSystemMessage(spaceDtoList);
         return ReqResult.success(spaceDtoList);
     }
 
@@ -139,11 +144,11 @@ public class SpaceController {
     @RequestMapping(path = "/user/add", method = RequestMethod.POST)
     public ReqResult<Void> addSpaceUser(@RequestBody @Valid List<SpaceUserAddDto> spaceUserAddDtos) {
         if (CollectionUtils.isEmpty(spaceUserAddDtos)) {
-            throw new BizException("参数不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemParamRequired);
         }
         spaceUserAddDtos.forEach(spaceUserAddDto -> {
             if (spaceUserAddDto.getRole() == SpaceUser.Role.Owner) {
-                throw new BizException("不能添加Owner");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemCannotAddOwner);
             }
             spacePermissionService.checkSpaceAdminPermission(spaceUserAddDto.getSpaceId());
         });
@@ -165,7 +170,7 @@ public class SpaceController {
     @RequestMapping(path = "/user/role/update", method = RequestMethod.POST)
     public ReqResult<Void> updateSpaceUserRole(@RequestBody @Valid SpaceUserRoleUpdateDto spaceUserRoleUpdateDto) {
         if (spaceUserRoleUpdateDto.getRole() == SpaceUser.Role.Owner) {
-            throw new BizException("不能更新为Owner");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemCannotUpdateToOwner);
         }
         spacePermissionService.checkSpaceAdminPermission(spaceUserRoleUpdateDto.getSpaceId());
         spaceApplicationService.updateSpaceUserRole(spaceUserRoleUpdateDto.getSpaceId(), spaceUserRoleUpdateDto.getUserId(), spaceUserRoleUpdateDto.getRole());
@@ -178,14 +183,14 @@ public class SpaceController {
     public ReqResult<Void> deleteUser(@RequestBody @Valid SpaceUserDeleteDto spaceUserDeleteDto) {
         spacePermissionService.checkSpaceAdminPermission(spaceUserDeleteDto.getSpaceId());
         if (spaceUserDeleteDto.getUserId().equals(RequestContext.get().getUserId())) {
-            throw new BizException("不能删除自己");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemCannotDeleteSelf);
         }
         SpaceDto spaceDto = spaceApplicationService.queryById(spaceUserDeleteDto.getSpaceId());
         if (spaceDto == null) {
-            throw new BizException("空间不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSpaceNotFound);
         }
         if (spaceDto.getCreatorId().equals(spaceUserDeleteDto.getUserId())) {
-            throw new BizException("不能删除创建者");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemCannotDeleteSpaceCreator);
         }
         spaceApplicationService.deleteSpaceUser(spaceUserDeleteDto.getSpaceId(), spaceUserDeleteDto.getUserId());
         return ReqResult.success();

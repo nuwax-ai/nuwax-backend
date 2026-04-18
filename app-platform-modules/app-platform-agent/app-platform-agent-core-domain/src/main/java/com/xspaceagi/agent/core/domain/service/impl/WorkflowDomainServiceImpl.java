@@ -20,6 +20,8 @@ import com.xspaceagi.agent.core.domain.service.PublishDomainService;
 import com.xspaceagi.agent.core.domain.service.WorkflowDomainService;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,7 +59,7 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
         workflowConfigRepository.save(workflowConfig);
         NodeConfigDto startNodeConfigDto = new NodeConfigDto();
         startNodeConfigDto.setExtension(Map.of("x", 30, "y", 70));
-        Arg arg = Arg.builder().name("input").dataType(DataTypeEnum.String).enable(true).description("输入信息").build();
+        Arg arg = Arg.builder().name("input").dataType(DataTypeEnum.String).enable(true).description("input message").build();
         startNodeConfigDto.setInputArgs(List.of(arg));
 
         EndNodeConfigDto endNodeConfigDto = new EndNodeConfigDto();
@@ -65,8 +67,8 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
         endNodeConfigDto.setReturnType(EndNodeConfigDto.ReturnType.VARIABLE);
         WorkflowNodeConfig endNode = WorkflowNodeConfig.builder()
                 .workflowId(workflowConfig.getId())
-                .name(WorkflowNodeConfig.NodeType.End.getName())
-                .description(WorkflowNodeConfig.NodeType.End.getDescription())
+                .name(I18nUtil.systemMessage("Backend.WorkflowNode.End.name"))
+                .description(I18nUtil.systemMessage("Backend.WorkflowNode.End.description"))
                 .type(WorkflowNodeConfig.NodeType.End)
                 .config(JSON.toJSONString(endNodeConfigDto))
                 .build();
@@ -75,8 +77,8 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
         //创建开始和结束节点
         WorkflowNodeConfig startNode = WorkflowNodeConfig.builder()
                 .workflowId(workflowConfig.getId())
-                .name(WorkflowNodeConfig.NodeType.Start.getName())
-                .description(WorkflowNodeConfig.NodeType.Start.getDescription())
+                .name(I18nUtil.systemMessage("Backend.WorkflowNode.Start.name"))
+                .description(I18nUtil.systemMessage("Backend.WorkflowNode.Start.description"))
                 .type(WorkflowNodeConfig.NodeType.Start)
                 .config(JSON.toJSONString(startNodeConfigDto))
                 .nextNodeIds(Lists.newArrayList(endNode.getId()))
@@ -150,7 +152,7 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
     public Long copy(Long userId, Long workflowId) {
         WorkflowConfig workflowConfig = workflowConfigRepository.getById(workflowId);
         if (workflowConfig == null) {
-            throw new BizException("agentId错误");
+            throw BizException.of(BizExceptionCodeEnum.agentIdInvalid);
         }
 
         List<WorkflowNodeConfig> workflowNodeConfigs = queryNodeConfigListByWorkflowId(workflowId);

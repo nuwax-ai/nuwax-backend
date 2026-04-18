@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.web.ui.controller.base;
 
+import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.application.dto.SpaceDto;
@@ -25,6 +26,7 @@ public abstract class BaseController {
      */
     public UserContext getUser() {
         var userDto = (UserDto) RequestContext.get().getUser();
+        var tenantConfigDto = RequestContext.get().getTenantConfig();
         return UserContext.builder()
                 .userId(userDto.getId())
                 .userName(userDto.getUserName())
@@ -34,6 +36,7 @@ public abstract class BaseController {
                 .status(userDto.getStatus() == User.Status.Enabled ? 1 : -1)
                 .tenantId(userDto.getTenantId())
                 .tenantName(null)
+                .tenantConfig(tenantConfigDto)
                 .orgId(null)
                 .orgName(null)
                 .roleType(null)

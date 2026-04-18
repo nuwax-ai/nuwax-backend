@@ -140,7 +140,7 @@ public class OperateLogAspect {
 
             //文件下载流 ,resp 是void,为空
             if (Objects.isNull(resp) || "0000".equals(resp.getCode())) {
-                vo.setStatus(LogConstant.STATUS_SUCCESS);
+                vo.setStatus(LogConstant.STATUS_success);
             } else {
                 vo.setStatus(LogConstant.STATUS_FAIL);
             }
@@ -158,7 +158,7 @@ public class OperateLogAspect {
 
             OperationLogContextHandler.remove();
         } catch (Exception e) {
-            log.error("日志上报异常：", e);
+            log.error("Log report error: ", e);
         }
     }
 
@@ -218,7 +218,7 @@ public class OperateLogAspect {
 
             OperationLogContextHandler.remove();
         } catch (Exception e) {
-            log.error("日志上报异常：", e);
+            log.error("Log report error: ", e);
         }
     }
 

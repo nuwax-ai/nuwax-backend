@@ -45,7 +45,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
 
     @Override
     public void autoRunTask(Integer days) {
-        log.info("开始自动重试任务,重试最近[{}]天的数据", days);
+        log.info("Auto retry start, last [{}] days", days);
 
         var data = this.knowledgeTaskRepository.queryListForRetryByDays(days);
         // 生成默认用户信息
@@ -70,7 +70,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
                 var docModel = this.knowledgeDocumentDomainService.queryOneInfoById(docId);
 
                 if (Objects.isNull(docModel)) {
-                    log.error("无法重试,文档不存在,文档id[{}]", docId);
+                    log.error("Cannot retry, doc missing, docId [{}]", docId);
                     continue;
                 }
                 //工作流调用时需要设置用户信息
@@ -87,10 +87,10 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
                 this.knowledgeDocumentDomainService.workRetryRunTaskForDocument(runTypeEnum, docModel, userContext,
                         docId);
 
-                log.info("重试成功,文档id[{}]", docId);
+                log.info("Retry OK, docId [{}]", docId);
 
             } catch (Exception e) {
-                log.error("自动重试任务失败,docId={}", docId, e);
+                log.error("Auto retry failed, docId={}", docId, e);
             } finally {
                 // 重试次数+1
                 this.knowledgeTaskRepository.incrementRetryCount(item.getId(), userContext);
@@ -101,14 +101,14 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
 
         }
 
-        log.info("全部重试完毕,重试最近[{}]天的数据", days);
+        log.info("Retry all done, last [{}] days", days);
 
     }
 
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public void archiveTask(Integer days) {
-        log.info("开始自动归档任务,归档[{}]天之前的数据", days);
+        log.info("Auto archive start, older than [{}] days", days);
         var data = this.knowledgeTaskRepository.queryListForArchiveByDaysAndSuccess(days);
 
         // 根据租户id(tenantId)进行分组,不然租户隔离会报错
@@ -137,7 +137,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
                 this.knowledgeTaskHistoryRepository.batchArchiveInfo(data, userContext);
 
             } catch (Exception e) {
-                log.error("归档失败,文档id[{}]", ids);
+                log.error("Archive failed, docId [{}]", ids);
             } finally {
                 RequestContext.remove();
                 MDC.clear();
@@ -148,7 +148,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
 
     @Override
     public void autoQaRunTask(Integer days) {
-        log.info("开始自动QA分页向量化任务,查询[{}]天之前的数据", days);
+        log.info("Auto QA paging embed, older than [{}] days", days);
 
         // 定义页大小,分页查询待向量化的问答,进行重试
         Integer pageSize = 300;
@@ -170,7 +170,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
             });
                 // 如果数据为空,则退出
             if (data.isEmpty()) {
-                log.info("自动QA分页任务结束,没有数据");
+                log.info("Auto QA paging done, no data");
                 break;
             }
             pageNum++;
@@ -188,7 +188,7 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
                         .map(KnowledgeQaSegmentModel::getId)
                         .toList();
 
-                log.info("自动QA分页任务开始,文档id[{}]", ids);
+                log.info("Auto QA paging start, docId [{}]", ids);
                 try {
                     Integer reqId = ThreadLocalRandom.current().nextInt(100, 999999);
                     MDC.put("tid", reqId + "" + Instant.now().toEpochMilli());
@@ -197,9 +197,9 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
 
                     // 批量向量化
                     this.knowledgeQaSegmentDomainService.batchAddEmbeddingQa(qaList, userContext);
-                    log.info("自动QA分页任务成功,文档id[{}]", ids);
+                    log.info("Auto QA paging OK, docId [{}]", ids);
                 } catch (Exception e) {
-                    log.error("自动QA任务失败,文档id[{}]", ids, e);
+                    log.error("Auto QA failed, docId [{}]", ids, e);
                 } finally {
                     RequestContext.remove();
                     MDC.clear();

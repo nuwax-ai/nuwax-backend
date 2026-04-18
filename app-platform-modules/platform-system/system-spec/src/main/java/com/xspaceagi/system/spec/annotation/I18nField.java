@@ -14,4 +14,6 @@ public @interface I18nField {
     boolean subObj() default false;
 
     boolean id() default false;
+
+    boolean keyPrefix() default false;
 }

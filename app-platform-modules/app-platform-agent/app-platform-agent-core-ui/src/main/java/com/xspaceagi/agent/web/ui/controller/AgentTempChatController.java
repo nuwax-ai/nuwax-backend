@@ -24,6 +24,7 @@ import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.HttpStatusEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -127,7 +128,7 @@ public class AgentTempChatController {
         AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(request, tempConversationQueryDto.getChatKey());
         ConversationDto conversation = conversationApplicationService.getConversationByUid(tempConversationQueryDto.getConversationUid());
         if (conversation.getType() != Conversation.ConversationType.TempChat || !conversation.getAgentId().equals(agentTempChatDto.getAgentId())) {
-            throw new BizException("会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
         }
         int size = tempConversationQueryDto.getSize() == null || tempConversationQueryDto.getSize() < 0 ? 20 : tempConversationQueryDto.getSize();
         conversation.setMessageList(conversationApplicationService.queryConversationMessageList(RequestContext.get().getUserId(), conversation.getId(), tempConversationQueryDto.getIndex(), size));
@@ -148,10 +149,10 @@ public class AgentTempChatController {
         AgentTempChatDto agentTempChatDto = queryAndCheckTempChatByChatKey(request, chatMessage.getChatKey());
         ConversationDto conversation = conversationApplicationService.getConversationByUid(chatMessage.getConversationUid());
         if (conversation == null || conversation.getType() != Conversation.ConversationType.TempChat) {
-            throw new BizException("会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
         }
         if (!agentTempChatDto.getAgentId().equals(conversation.getAgentId())) {
-            throw new BizException("会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
         }
         Map<String, String> headersFromRequest = getHeadersFromRequest(request);
         TryReqDto tryReqDto = new TryReqDto();
@@ -170,19 +171,21 @@ public class AgentTempChatController {
         Assert.isTrue(StringUtils.isNotBlank(chatKey), "chatKey must be non-null");
         AgentTempChatDto agentTempChatDto = agentTempChatApplicationService.queryTempChatByChatKey(chatKey);
         if (agentTempChatDto == null) {
-            throw new BizException("临时会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTempConversationNotFound);
         }
         if (agentTempChatDto.getExpire() != null && agentTempChatDto.getExpire().getTime() < System.currentTimeMillis()) {
-            throw new BizException("临时会话已过期");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTempConversationExpired);
         }
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         if (agentTempChatDto.getRequireLogin() == 1) {
             String referer = request.getHeader("Referer");
             if (userDto == null) {
                 if (StringUtils.isNotBlank(referer)) {
-                    throw new BizException("4011", "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
+                    throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl,
+                            "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
                 }else{
-                    throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+                    throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
+                            BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
                 }
             }
         }
@@ -207,7 +210,7 @@ public class AgentTempChatController {
     private void checkAgentPermission(Long agentId) {
         AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
         if (agentDto == null) {
-            throw new BizException("Agent不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
         spacePermissionService.checkSpaceUserPermission(agentDto.getSpaceId());
     }

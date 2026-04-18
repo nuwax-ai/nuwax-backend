@@ -75,7 +75,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     @Override
     public void createUniqueIndex(String database, String table, String fieldName) {
         String sql = tableDbWrapperUtil.buildCreateUniqueIndexSql(database, table, fieldName);
-        log.info("创建唯一索引,sql={}", sql);
+        log.info("Create unique index, sql={}", sql);
         jdbcTemplate.execute(sql);
 
     }
@@ -105,12 +105,12 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     @Override
     public void executeAlterTable(String database, String table, String alterSql) {
         try {
-            log.debug("执行Doris ALTER SQL: {}", alterSql);
+            log.debug("Execute Doris ALTER SQL: {}", alterSql);
             jdbcTemplate.execute(alterSql);
         } catch (Exception e) {
-            log.error("执行Doris表结构变更异常, database: {}, table: {}, sql: {}", database, table, alterSql, e);
+            log.error("Doris schema change error, database: {}, table: {}, sql: {}", database, table, alterSql, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -120,8 +120,8 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             String sql = "DELETE FROM `" + database + "`.`" + table + "` WHERE id = ?";
             return jdbcTemplate.update(sql, id);
         } catch (Exception e) {
-            log.error("删除Doris表数据异常, database: {}, table: {}, id: {}", database, table, id, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "删除数据失败");
+            log.error("Doris delete row error, database: {}, table: {}, id: {}", database, table, id, e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "删除数据失败");
         }
     }
 
@@ -130,7 +130,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         try {
             // 1. 获取表的建表 DDL
             String createTableDdl = getCreateTableDdl(database, table);
-            log.info("获取到表 DDL: database={}, table={}, ddl={}", database, table, createTableDdl);
+            log.info("Table DDL: database={}, table={}, ddl={}", database, table, createTableDdl);
 
             // 2. 获取表的字段信息
             String descTableSql = "DESC `" + database + "`.`" + table + "`";
@@ -195,8 +195,8 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return definition;
         } catch (Exception e) {
-            log.error("获取Doris表定义异常, database: {}, table: {}", database, table, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "获取表定义失败");
+            log.error("Get Doris table definition error, database: {}, table: {}", database, table, e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "获取表定义失败");
         }
     }
 
@@ -204,7 +204,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     public int insertRow(String database, String table, Map<String, Object> data) {
         try {
             if (data == null || data.isEmpty()) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "插入数据不能为空");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "插入数据不能为空");
             }
 
             StringBuilder sql = new StringBuilder("INSERT INTO `").append(database).append("`.`")
@@ -225,8 +225,8 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("插入Doris数据异常, database: {}, table: {}, data: {}", database, table, data, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "插入数据失败");
+            log.error("Doris insert error, database: {}, table: {}, data: {}", database, table, data, e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "插入数据失败");
         }
     }
 
@@ -268,9 +268,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("批量插入Doris数据异常, database: {}, table: {}, dataSize: {}",
+            log.error("Doris batch insert error, database: {}, table: {}, dataSize: {}",
                     database, table, dataList.size(), e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "批量插入数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "批量插入数据失败");
         }
     }
 
@@ -278,7 +278,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     public int updateRow(String database, String table, Long id, Map<String, Object> data) {
         try {
             if (data == null || data.isEmpty()) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "更新数据不能为空");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "更新数据不能为空");
             }
 
             StringBuilder sql = new StringBuilder("UPDATE `").append(database).append("`.`")
@@ -296,9 +296,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("更新Doris数据异常, database: {}, table: {}, id: {}, data: {}",
+            log.error("Doris update error, database: {}, table: {}, id: {}, data: {}",
                     database, table, id, data, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "更新数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "更新数据失败");
         }
     }
 
@@ -352,9 +352,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("批量更新Doris数据异常, database: {}, table: {}, dataSize: {}",
+            log.error("Doris batch update error, database: {}, table: {}, dataSize: {}",
                     database, table, dataList.size(), e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "批量更新数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "批量更新数据失败");
         }
     }
 
@@ -394,9 +394,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.queryForList(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("查询Doris数据异常, database: {}, table: {}, conditions: {}",
+            log.error("Doris query error, database: {}, table: {}, conditions: {}",
                     database, table, conditions, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "查询数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "查询数据失败");
         }
     }
 
@@ -423,9 +423,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
         } catch (Exception e) {
-            log.error("统计Doris数据异常, database: {}, table: {}, conditions: {}",
+            log.error("Doris count error, database: {}, table: {}, conditions: {}",
                     database, table, conditions, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "统计数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "统计数据失败");
         }
     }
 
@@ -433,7 +433,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     public int deleteByConditions(String database, String table, Map<String, Object> conditions) {
         try {
             if (conditions == null || conditions.isEmpty()) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "删除条件不能为空");
+                throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "删除条件不能为空");
             }
 
             StringBuilder sql = new StringBuilder("DELETE FROM `").append(database).append("`.`")
@@ -452,9 +452,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            log.error("删除Doris数据异常, database: {}, table: {}, conditions: {}",
+            log.error("Doris delete error, database: {}, table: {}, conditions: {}",
                     database, table, conditions, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "删除数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "删除数据失败");
         }
     }
 
@@ -470,9 +470,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
 
             return jdbcTemplate.update(sql, ids.toArray());
         } catch (Exception e) {
-            log.error("批量删除Doris数据异常, database: {}, table: {}, ids: {}",
+            log.error("Doris batch delete error, database: {}, table: {}, ids: {}",
                     database, table, ids, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "批量删除数据失败");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "批量删除数据失败");
         }
     }
 
@@ -488,9 +488,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         } catch (Exception e) {
             // 异常处理和日志记录已在 queryByConditions 中完成，这里可以不再重复记录
             // 但仍然需要向上抛出或包装异常
-            log.error("查询Doris全部数据异常(limit={}), database: {}, table: {}, conditions: {}",
+            log.error("Doris query all error (limit={}), database: {}, table: {}, conditions: {}",
                     limit, database, table, conditions, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6017);
+            throw ComposeException.build(BizExceptionCodeEnum.composeQueryAllDataFailed);
         }
     }
 
@@ -498,21 +498,21 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     public ExecuteRawResultVo executeRawQuery(String sql, Object... params) {
         try {
             if (!StringUtils.hasText(sql)) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6005);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlEmpty);
             }
 
             SqlType sqlType;
             try {
                 sqlType = SqlParserUtil.getSqlType(sql);
             } catch (JSQLParserException e) {
-                log.error("SQL解析失败: {}", sql, e);
+                log.error("SQL parse failed: {}", sql, e);
                 var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
             }
 
             switch (sqlType) {
                 case SELECT: {
-                    log.debug("执行原始Doris查询SQL: {}, 参数: {}", sql, params);
+                    log.debug("Raw Doris query SQL: {}, params: {}", sql, params);
                     var result = jdbcTemplate.queryForList(sql, params);
                     return ExecuteRawResultVo.builder()
                             .data(result)
@@ -520,14 +520,14 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                             .build();
                 }
                 case UPDATE: {
-                    log.debug("执行原始Doris更新SQL: {}, 参数: {}", sql, params);
+                    log.debug("Raw Doris update SQL: {}, params: {}", sql, params);
                     int affectedRows = jdbcTemplate.update(sql, params);
                     return ExecuteRawResultVo.builder()
                             .rowNum((long) affectedRows)
                             .build();
                 }
                 case INSERT: {
-                    log.debug("执行原始Doris插入SQL: {}, 参数: {}", sql, params);
+                    log.debug("Raw Doris insert SQL: {}, params: {}", sql, params);
                     KeyHolder keyHolder = new GeneratedKeyHolder();
                     try {
                         int affectedRows = jdbcTemplate.update(connection -> {
@@ -542,7 +542,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                         List<Map<String, Object>> keyList = keyHolder.getKeyList();
                         if (keyList != null && keyList.size() > 1) {
                             // 批量插入情况，获取所有生成的主键ID
-                            log.info("批量插入数据，影响行数: {}, 生成的主键数量: {}", affectedRows, keyList.size());
+                            log.info("Batch insert, affected: {}, generated keys: {}", affectedRows, keyList.size());
 
                             // 提取所有生成的主键ID
                             List<Long> generatedIds = new ArrayList<>();
@@ -556,7 +556,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                                         try {
                                             generatedIds.add(Long.parseLong(keyObj.toString()));
                                         } catch (NumberFormatException e) {
-                                            log.warn("无法解析生成的主键值: {}", keyObj);
+                                            log.warn("Cannot parse generated PK: {}", keyObj);
                                         }
                                     }
                                 }
@@ -576,7 +576,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                             // 单条插入情况，获取生成的主键
                             Number key = keyHolder.getKey();
                             if (key == null) {
-                                log.warn("插入后未能获取到自增主键，SQL: {}", sql);
+                                log.warn("Auto-increment PK not returned after insert, SQL: {}", sql);
                             }
                             var rowId = key != null ? key.longValue() : null;
                             return ExecuteRawResultVo.builder()
@@ -586,7 +586,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                         }
                     } catch (DuplicateKeyException e) {
                         // 因为唯一key重复,不抛异常,避免阻塞工作流任务;返回主键id是-1;
-                        log.error("插入数据时发生唯一键冲突, SQL: {}", sql, e);
+                        log.error("Unique key conflict on insert, SQL: {}", sql, e);
                         return ExecuteRawResultVo.builder()
                                 .data(List.of())
                                 .rowNum(0L)
@@ -595,7 +595,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                     }
                 }
                 case DELETE: {
-                    log.debug("执行原始Doris删除SQL: {}, 参数: {}", sql, params);
+                    log.debug("Raw Doris delete SQL: {}, params: {}", sql, params);
                     int affectedRows = jdbcTemplate.update(sql, params);
                     return ExecuteRawResultVo.builder()
                             .rowNum((long) affectedRows)
@@ -603,20 +603,20 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                 }
                 case DDL:
                 default:
-                    log.error("不允许执行DDL类型的原始 SQL: {}", sql);
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6004);
+                    log.error("DDL raw SQL not allowed: {}", sql);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlOnlyDmlAllowed);
             }
         } catch (BadSqlGrammarException e) {
-            log.error("执行DML的SQL异常, SQL: {}", sql, e);
+            log.error("DML SQL execution error, SQL: {}", sql, e);
             var errorMessage = ComposeExceptionUtils.getUserFriendlyErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         } catch (ComposeException ce) {
-            log.error("执行DML的SQL异常, SQL: {}", sql, ce);
+            log.error("DML SQL execution error, SQL: {}", sql, ce);
             throw ce;
         } catch (Exception e) {
-            log.error("执行原始Doris查询SQL异常, SQL: {}", sql, e);
+            log.error("Raw Doris query SQL execution error, SQL: {}", sql, e);
             var errorMessage = ComposeExceptionUtils.getUserFriendlyErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -628,8 +628,8 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         // 检查表是否存在
         var existFlag = tableExists(database, table);
         if (!existFlag) {
-            log.error("表不存在, database: {}, table: {}", database, table);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6025);
+            log.error("Table not found, database: {}, table: {}", database, table);
+            throw ComposeException.build(BizExceptionCodeEnum.composeTableDefinitionNotFound);
         }
 
         // 1. 获取表的基本信息
@@ -641,7 +641,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             createTableDdl = (String) createTableResult.get("Create_table"); // Doris格式
         }
         if (createTableDdl == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6002);
+            throw ComposeException.build(BizExceptionCodeEnum.composeCannotGetCreateTableDdl);
         }
         return createTableDdl;
     }
@@ -650,26 +650,26 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
     public int executeRawAdminSql(String sql) {
         try {
             if (!StringUtils.hasText(sql)) {
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6005); // SQL不能为空
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlEmpty); // SQL不能为空
             }
             // 不再检查是否为 SELECT
-            log.warn("准备执行原始管理/DML/DDL SQL (高风险): {}", sql);
+            log.warn("About to run raw admin/DML/DDL SQL (high risk): {}", sql);
             int affectedRows = jdbcTemplate.update(sql);
-            log.info("成功执行原始管理/DML/DDL SQL: {}, 影响行数: {}", sql, affectedRows);
+            log.info("Raw admin/DML/DDL SQL OK: {}, affected: {}", sql, affectedRows);
             return affectedRows;
         } catch (BadSqlGrammarException e) {
-            log.error("执行执行原始管理/DML/DDL的SQL异常, SQL: {}", sql, e);
+            log.error("Raw admin/DML/DDL SQL error, SQL: {}", sql, e);
             var errorMessage = ComposeExceptionUtils.getUserFriendlyErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         } catch (ComposeException ce) {
             // 直接抛出业务异常
-            log.error("执行原始管理/DML/DDL SQL异常, SQL: {}", sql, ce);
+            log.error("Raw admin/DML/DDL SQL execution error, SQL: {}", sql, ce);
             throw ce;
         } catch (Exception e) {
-            log.error("执行原始管理/DML/DDL SQL异常, SQL: {}", sql, e);
+            log.error("Raw admin/DML/DDL SQL execution error, SQL: {}", sql, e);
             // 使用用户友好的错误信息，将数据库技术错误转换为易于理解的提示
             var errorMessage = ComposeExceptionUtils.getUserFriendlyErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6047, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeGenericMessage, errorMessage);
         }
     }
 
@@ -696,7 +696,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         // 检查表是否存在
         var existFlag = tableExists(database, table);
         if (!existFlag) {
-            log.error("表不存在, database: {}, table: {}", database, table);
+            log.error("Table not found, database: {}, table: {}", database, table);
             return false;
         }
 
@@ -711,16 +711,16 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             // 只允许 DDL 类型
             SqlType sqlType = SqlParserUtil.getSqlType(sql);
             if (sqlType != SqlType.DDL) {
-                log.error("只允许DDL语句,sql={}", sql);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6016, sql);
+                log.error("DDL only, sql={}", sql);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlOnlyDdl, sql);
             }
             jdbcTemplate.execute(sql);
         } catch (ComposeException e) {
             throw e;
         } catch (JSQLParserException e) {
-            log.error("执行DDL语句异常,sql={}", sql, e);
+            log.error("DDL execution error, sql={}", sql, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6015, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlParseFailed, errorMessage);
         }
     }
 
@@ -729,9 +729,9 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         try {
             return jdbcTemplate.queryForObject(sql, Long.class);
         } catch (Exception e) {
-            log.error("执行原始Doris查询SQL异常, SQL: {}", sql, e);
+            log.error("Raw Doris query SQL execution error, SQL: {}", sql, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -762,7 +762,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             return;
         }
 
-        log.info("开始批量执行{}条SQL，策略: {}", sqls.size(), strategy);
+        log.info("Batch run {} SQL statements, strategy: {}", sqls.size(), strategy);
 
         switch (strategy) {
             case FAIL_FAST:
@@ -775,7 +775,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                 this.self.executeAtomicBatch(sqls);
                 break;
             default:
-                throw new IllegalArgumentException("不支持的执行策略: " + strategy);
+                throw new IllegalArgumentException("Unsupported execution strategy: " + strategy);
         }
     }
 
@@ -788,7 +788,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
         String batchSql = String.join(";", sqls);
         batchSql = batchSql + ";";
         this.self.executeRawAdminSql(batchSql);
-        log.info("批量SQL执行完成（FAIL_FAST模式）");
+        log.info("Batch SQL done (FAIL_FAST)");
     }
 
     /**
@@ -805,7 +805,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             try {
                 jdbcTemplate.update(sql);
                 successCount++;
-                log.debug("SQL[{}]执行成功: {}", i + 1, sql);
+                log.debug("SQL[{}] OK: {}", i + 1, sql);
             } catch (Exception e) {
                 String errorMsg = String.format("SQL[%d]执行失败: %s, 错误: %s",
                         i + 1, sql, e.getMessage());
@@ -815,7 +815,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             }
         }
 
-        log.info("批量SQL执行完成（CONTINUE_ON_ERROR模式）: 成功{}条，失败{}条",
+        log.info("Batch SQL done (CONTINUE_ON_ERROR): ok {}, failed {}",
                 successCount, errorSqls.size());
 
         // 如果有失败的SQL，抛出汇总异常
@@ -823,7 +823,7 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
             String summaryError = String.format("批量执行SQL部分失败: 成功%d条，失败%d条。失败详情: %s",
                     successCount, errorSqls.size(),
                     String.join("; ", errorMessages));
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, summaryError);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, summaryError);
         }
     }
 
@@ -837,18 +837,18 @@ public class CustomDorisTableRepository implements ICustomDorisTableRepository {
                 String sql = sqls.get(i);
                 try {
                     int affectedRows = jdbcTemplate.update(sql);
-                    log.debug("SQL[{}]执行成功，影响{}行: {}", i + 1, affectedRows, sql);
+                    log.debug("SQL[{}] OK, affected {}: {}", i + 1, affectedRows, sql);
                 } catch (Exception e) {
                     String errorMsg = String.format("SQL[%d]执行失败: %s", i + 1, sql);
                     log.error(errorMsg, e);
                     // 在事务中抛出异常，会导致整个事务回滚
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006,
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed,
                             errorMsg + "，错误: " + e.getMessage());
                 }
             }
-            log.info("批量SQL执行完成（ATOMIC_BATCH模式）: 成功执行{}条", sqls.size());
+            log.info("Batch SQL done (ATOMIC_BATCH): {} statements", sqls.size());
         } catch (Exception e) {
-            log.error("批量SQL执行失败，所有操作将回滚", e);
+            log.error("Batch SQL failed, rolling back all", e);
             throw e;
         }
     }

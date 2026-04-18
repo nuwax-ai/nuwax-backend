@@ -44,8 +44,8 @@ public class PDFParser implements DocParser {
 
             this.fileParseService.parseRawTxt(fileParseRequest, userContext);
         } catch (Exception e) {
-            log.error("解析文档失败", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014);
+            log.error("Failed to parse document", e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);
         }
     }
 

@@ -6,21 +6,21 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "保存会话记录请求")
+@Schema(description = "Save conversation request")
 public class SaveConversationReq {
 
-    @Schema(description = "项目ID", required = true)
-    @NotNull(message = "项目ID不能为空")
+    @Schema(description = "Project ID", required = true)
+    @NotNull(message = "Project ID is required")
     private Long projectId;
 
-    @Schema(description = "会话主题")
-    @NotBlank(message = "会话内容不能为空")
+    @Schema(description = "Conversation topic")
+    @NotBlank(message = "Conversation content is required")
     private String topic;
 
-    @Schema(description = "会话内容", required = true)
-    @NotBlank(message = "会话内容不能为空")
+    @Schema(description = "Conversation content", required = true)
+    @NotBlank(message = "Conversation content is required")
     private String content;
 
-    @Schema(description = "会话摘要")
+    @Schema(description = "Conversation summary")
     private String summary;
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -104,15 +105,15 @@ public class Published {
         PageApp
     }
 
-    //根据targetType返回名称
+    // Return name based on targetType
     public static String getTargetTypeName(TargetType targetType) {
         return switch (targetType) {
-            case Agent -> "智能体";
-            case Plugin -> "插件";
-            case Workflow -> "工作流";
-            case Knowledge -> "知识库";
-            case Table -> "数据表";
-            case Skill -> "技能";
+            case Agent -> I18nUtil.systemMessage("Backend.Published.TargetType.Agent");
+            case Plugin -> I18nUtil.systemMessage("Backend.Published.TargetType.Plugin");
+            case Workflow -> I18nUtil.systemMessage("Backend.Published.TargetType.Workflow");
+            case Knowledge -> I18nUtil.systemMessage("Backend.Published.TargetType.Knowledge");
+            case Table -> I18nUtil.systemMessage("Backend.Published.TargetType.Table");
+            case Skill -> I18nUtil.systemMessage("Backend.Published.TargetType.Skill");
             default -> "Unknown";
         };
     }

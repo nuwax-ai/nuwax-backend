@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -50,6 +51,12 @@ public class ImFileUploadService {
     @Value("${storage.type:file}")
     private String storageType;
 
+    @Value("${cos.regionName:ap-chengdu}")
+    private String regionName;
+
+    @Value("${cos.bucketName:agent-1251073634}")
+    private String bucketName;
+
     @Resource
     private FileAkUtil fileAkUtil;
 
@@ -69,7 +76,7 @@ public class ImFileUploadService {
             return uploadBytes(file.getBytes(), file.getOriginalFilename(), file.getContentType(),
                     type, null, tenantConfig, file.getInputStream());
         } catch (IOException e) {
-            log.error("文件上传失败", e);
+            log.error("File upload failed", e);
             return null;
         }
     }
@@ -108,6 +115,10 @@ public class ImFileUploadService {
     private ImUploadResultDto uploadBytes(byte[] bytes, String originalFilename, String contentType,
                                           String type, String subPath, TenantConfigDto tenantConfig, InputStream inputStream) {
         try {
+            String resolvedStorageType = StringUtils.trimToEmpty(storageType).toLowerCase(Locale.ROOT);
+            if (StringUtils.isBlank(resolvedStorageType)) {
+                resolvedStorageType = "file";
+            }
             String fileExtension = "";
             int i = originalFilename != null ? originalFilename.lastIndexOf('.') : -1;
             if (i > 0 && i < originalFilename.length() - 1) {
@@ -123,11 +134,12 @@ public class ImFileUploadService {
             String safeContentType = StringUtils.isNotBlank(contentType) ? contentType : "application/octet-stream";
 
             String url;
-            if ("file".equals(storageType)) {
-                String path0 = uploadFolder.endsWith("/") ? uploadFolder + type : uploadFolder + "/" + type;
-                Path dirPath = Paths.get(path0);
-                if (!Files.exists(dirPath)) {
-                    Files.createDirectories(dirPath);
+            boolean useLocalFileStorage = "file".equals(resolvedStorageType);
+            if (useLocalFileStorage) {
+                Path path = Paths.get(uploadFolder.endsWith("/") ? uploadFolder + newFileName : uploadFolder + "/" + newFileName);
+                Path parentDir = path.getParent();
+                if (parentDir != null && !Files.exists(parentDir)) {
+                    Files.createDirectories(parentDir);
                 }
                 String base = fileBaseUrl;
                 if (tenantConfig != null && StringUtils.isNotBlank(tenantConfig.getSiteUrl())) {
@@ -137,20 +149,22 @@ public class ImFileUploadService {
                     base = "/api/file/";
                 }
                 url = base.endsWith("/") ? base + newFileName : base + "/" + newFileName;
-                Path path = Paths.get(uploadFolder.endsWith("/") ? uploadFolder + newFileName : uploadFolder + "/" + newFileName);
                 Files.write(path, bytes);
             } else {
                 url = cosBaseUrl + newFileName;
                 COSCredentials cred = new BasicCOSCredentials(cosSecretId, cosSecretKey);
-                Region region = new Region("ap-chengdu");
+                Region region = new Region(regionName);
                 ClientConfig clientConfig = new ClientConfig(region);
                 clientConfig.setHttpProtocol(HttpProtocol.https);
                 COSClient cosClient = new COSClient(cred, clientConfig);
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(bytes.length);
                 metadata.setContentType(safeContentType);
-                cosClient.putObject("agent-1251073634", newFileName, inputStream, metadata);
+                cosClient.putObject(bucketName, newFileName, inputStream, metadata);
             }
+            log.info("IM upload routing: storageTypeRaw={}, storageTypeResolved={}, local={}, type={}, subPath={}, tenantSiteUrl={}, fileKey={}, finalUrl={}",
+                    storageType, resolvedStorageType, useLocalFileStorage, type, subPath,
+                    tenantConfig != null ? tenantConfig.getSiteUrl() : null, newFileName, url);
             ImUploadResultDto dto = new ImUploadResultDto();
             dto.setFileName(originalFilename);
             dto.setKey(newFileName);
@@ -159,7 +173,7 @@ public class ImFileUploadService {
             dto.setSize(bytes.length);
             return dto;
         } catch (IOException e) {
-            log.error("文件上传失败", e);
+            log.error("File upload failed", e);
             return null;
         }
     }

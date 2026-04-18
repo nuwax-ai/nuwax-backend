@@ -3,7 +3,9 @@ package com.xspaceagi.system.application.converter;
 import com.xspaceagi.system.domain.model.MenuNode;
 import com.xspaceagi.system.domain.model.ResourceNode;
 import com.xspaceagi.system.spec.enums.BindTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.application.dto.permission.MenuNodeDto;
 import com.xspaceagi.system.application.dto.permission.ResourceNodeDto;
 import com.xspaceagi.system.application.dto.permission.SysMenuBindResourceDto;
@@ -19,7 +21,7 @@ public class MenuBindResourceModelConverter {
 
     public static MenuNode convertToMenuNode(SysMenuBindResourceDto dto) {
         if (dto == null) {
-            throw new BizException("参数不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemParamRequired);
         }
         MenuNodeDto menuNodeDto = new MenuNodeDto();
         menuNodeDto.setId(dto.getMenuId());

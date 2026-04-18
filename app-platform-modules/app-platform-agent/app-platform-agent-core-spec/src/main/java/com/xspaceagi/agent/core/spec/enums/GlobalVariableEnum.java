@@ -12,6 +12,7 @@ public enum GlobalVariableEnum {
     SYS_USER_ID,
     USER_UID,
     USER_NAME,
+    USER_LANG,
     CHAT_CONTEXT;
 
     public static boolean isSystemVariable(String name) {

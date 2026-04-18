@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.adapter.dto.config.workflow;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.OutputArg;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -15,7 +16,7 @@ public class TextProcessingNodeConfigDto extends NodeConfigDto {
 
     //处理类型
     @Schema(description = "处理类型", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "处理类型不能为空")
+    @NotNull(message = "Processing type is required")
     private TextHandleTypeEnum textHandleType;
 
     //字符串拼接内容
@@ -72,7 +73,7 @@ public class TextProcessingNodeConfigDto extends NodeConfigDto {
         if (textHandleType == TextProcessingNodeConfigDto.TextHandleTypeEnum.CONCAT) {
             Arg outArg = new OutputArg();
             outArg.setName("output");
-            outArg.setDescription("处理后的字符串输出结果");
+            outArg.setDescription(I18nUtil.systemMessage("Backend.WorkflowTextArgs.output.description"));
             outArg.setDataType(DataTypeEnum.String);
             outArg.setSystemVariable(true);
             outArg.setRequire(true);
@@ -81,7 +82,7 @@ public class TextProcessingNodeConfigDto extends NodeConfigDto {
             Arg outArg = new OutputArg();
 
             outArg.setName("output");
-            outArg.setDescription("处理后的字符串输出结果");
+            outArg.setDescription(I18nUtil.systemMessage("Backend.WorkflowTextArgs.output.description"));
             outArg.setDataType(DataTypeEnum.Array_String);
             outArg.setSystemVariable(true);
             outArg.setRequire(true);

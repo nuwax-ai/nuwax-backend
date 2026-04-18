@@ -9,11 +9,11 @@ import lombok.Data;
 public class CodeOptimizeDto {
 
     @Schema(description = "请求ID，必须传，效果不理想时用于多论对话")
-    @NotNull(message = "requestId不能为空")
+    @NotNull(message = "requestId is required")
     private String requestId;
 
     @Schema(description = "提示词")
-    @NotNull(message = "提示词不能为空")
+    @NotNull(message = "Prompt is required")
     private String prompt;
 
     @Schema(description = "语言")

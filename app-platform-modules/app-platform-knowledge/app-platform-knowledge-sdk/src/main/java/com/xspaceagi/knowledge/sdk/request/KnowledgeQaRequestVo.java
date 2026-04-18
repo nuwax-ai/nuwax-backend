@@ -13,19 +13,19 @@ import java.io.Serializable;
 public class KnowledgeQaRequestVo implements Serializable {
 
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     @Schema(description = "问题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "问题不能为空")
+    @NotNull(message = "Question is required")
     private String question;
 
     @Schema(description = "top-K值", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "top-K值不能为空")
+    @NotNull(message = "top-K is required")
     private int topK;
 
     @Schema(description = "是否忽略文档状态", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "是否忽略文档状态不能为空")
+    @NotNull(message = "ignoreDocStatus flag is required")
     private boolean ignoreDocStatus;
 
     private boolean ignoreTenantId;

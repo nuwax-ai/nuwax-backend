@@ -42,9 +42,9 @@ public class ArgExtractUtil {
         return currentValue;
     }
 
-    //提取和设置参数
+    // Extract and set parameters
     public static Object extraParams(Arg arg, Map<String, Object> params) {
-        // 如果参数未开启，直接返回默认值
+        // If parameter is not enabled, directly return default value
         if (!arg.getEnable() && StringUtils.isNotBlank(arg.getBindValue())) {
             return getTypeValue(arg.getDataType(), arg.getBindValue());
         }
@@ -85,9 +85,9 @@ public class ArgExtractUtil {
             if (!(paramValue instanceof List<?>) || CollectionUtils.isEmpty((List<?>) paramValue)) {
                 return subParams;
             }
-            // 数组类型参数，如果参数值是数组，递归处理
+            // Array type parameter, if parameter value is array, process recursively
             for (Object param : (List<?>) paramValue) {
-                // 校验必要参数
+                // Validate required parameters
                 List<Arg> requireSubArgs = arg.getSubArgs().stream().filter(Arg::isRequire).collect(Collectors.toList());
                 if (param instanceof Map<?, ?>) {
                     Map<String, Object> subParamsMap = new HashMap<>();
@@ -131,7 +131,7 @@ public class ArgExtractUtil {
                 try {
                     return Integer.parseInt(subParamValue.toString());
                 } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("数据[" + subParamValue + "]与配置的数据类型错误");
+                    throw new IllegalArgumentException("Data [" + subParamValue + "] does not match configured type");
                 }
             case Array_Integer:
                 if (subParamValue instanceof List<?>) {
@@ -143,7 +143,7 @@ public class ArgExtractUtil {
                 try {
                     return Double.parseDouble(subParamValue.toString());
                 } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("数据[" + subParamValue + "]与配置的数据类型错误");
+                    throw new IllegalArgumentException("Data [" + subParamValue + "] does not match configured type");
                 }
             case Array_Number:
                 if (subParamValue instanceof List<?>) {
@@ -211,7 +211,7 @@ public class ArgExtractUtil {
                         if (bindVariableValue != null) {
                             argBindConfigDto.setBindValueType(Arg.BindValueType.Input);
                             inputMap.put(argBindConfigDto.getName(), bindVariableValue);
-                            //bindVariableValue判断是否为基础类型，否则转json
+                            // Determine if bindVariableValue is a basic type, otherwise convert to JSON
                             if (bindVariableValue instanceof String) {
                                 argBindConfigDto.setBindValue((String) bindVariableValue);
                             } else if (bindVariableValue instanceof Number) {
@@ -237,9 +237,9 @@ public class ArgExtractUtil {
 
     public static String requireArgMsg(Arg arg) {
         if (StringUtils.isBlank(arg.getDescription())) {
-            return "必要参数[" + arg.getName() + "]缺失";
+            return "Required parameter[" + arg.getName() + "] is missing";
         }
-        return "必要参数[" + arg.getName() + "(" + arg.getDescription() + ")" + "]缺失";
+        return "Required parameter[" + arg.getName() + "(" + arg.getDescription() + ")" + "] is missing";
     }
 
     public static boolean isArgBlankValue(Arg arg, Map<?, ?> params) {

@@ -9,7 +9,9 @@ import com.xspaceagi.mcp.sdk.dto.McpToolDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -41,13 +43,13 @@ public class McpRpcService {
 
     public void checkMcpPermission(McpDto deployedMcp, String toolName) {
         if (deployedMcp == null || StringUtils.isBlank(toolName) || deployedMcp.getDeployedConfig() == null) {
-            throw new BizException("选择的MCP服务不存在或没有权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentMcpServiceNotFoundOrDenied);
         }
         McpToolDto mcpToolDto = deployedMcp.getDeployedConfig().getTools().stream()
                 .filter(tool -> tool.getName().equals(toolName))
                 .findFirst().orElse(null);
         if (mcpToolDto == null) {
-            throw new BizException("选择的工具不存在或没有权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentMcpToolNotFoundOrDenied);
         }
     }
 

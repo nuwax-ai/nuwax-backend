@@ -16,10 +16,15 @@ import com.xspaceagi.system.infra.dao.entity.SysDataPermission;
 import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.annotation.RequireResource;
+import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.*;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.controller.base.BaseController;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -29,10 +34,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
-import com.xspaceagi.system.spec.dto.PageQueryVo;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -119,11 +120,12 @@ public class SysGroupController extends BaseController {
         SysGroupDto groupDto = new SysGroupDto();
         BeanUtils.copyProperties(group, groupDto);
 
-        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.GROUP, group.getId());
-        if (dataPermission != null) {
-            groupDto.setModelIds(dataPermission.getModelIds());
-            groupDto.setTokenLimit(dataPermission.getTokenLimit());
-        }
+//        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.GROUP, group.getId());
+//        if (dataPermission != null) {
+//            groupDto.setModelIds(dataPermission.getModelIds());
+//            groupDto.setTokenLimit(dataPermission.getTokenLimit());
+//        }
+        I18nUtil.replaceSystemMessage(groupDto);
         return ReqResult.success(groupDto);
     }
 
@@ -142,11 +144,12 @@ public class SysGroupController extends BaseController {
         SysGroupDto groupDto = new SysGroupDto();
         BeanUtils.copyProperties(group, groupDto);
 
-        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.GROUP, group.getId());
-        if (dataPermission != null) {
-            groupDto.setModelIds(dataPermission.getModelIds());
-            groupDto.setTokenLimit(dataPermission.getTokenLimit());
-        }
+//        SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.GROUP, group.getId());
+//        if (dataPermission != null) {
+//            groupDto.setModelIds(dataPermission.getModelIds());
+//            groupDto.setTokenLimit(dataPermission.getTokenLimit());
+//        }
+        I18nUtil.replaceSystemMessage(groupDto);
         return ReqResult.success(groupDto);
     }
 
@@ -183,21 +186,22 @@ public class SysGroupController extends BaseController {
         if (CollectionUtils.isEmpty(groupList)) {
             return ReqResult.success();
         }
-        List<Long> groupIds = groupList.stream().map(SysGroup::getId).toList();
-        List<SysDataPermission> dataPermissionList = sysDataPermissionApplicationService.getByTargetList(PermissionTargetTypeEnum.GROUP, groupIds);
-        Map<Long, SysDataPermission> permissionMap = dataPermissionList.stream()
-                .collect(Collectors.toMap(SysDataPermission::getTargetId, p -> p, (a, b) -> a));
+//        List<Long> groupIds = groupList.stream().map(SysGroup::getId).toList();
+//        List<SysDataPermission> dataPermissionList = sysDataPermissionApplicationService.getByTargetList(PermissionTargetTypeEnum.GROUP, groupIds);
+//        Map<Long, SysDataPermission> permissionMap = dataPermissionList.stream()
+//                .collect(Collectors.toMap(SysDataPermission::getTargetId, p -> p, (a, b) -> a));
 
         List<SysGroupDto> dtoList = groupList.stream().map(r -> {
             SysGroupDto groupDto = new SysGroupDto();
             BeanUtils.copyProperties(r, groupDto);
-            SysDataPermission dataPermission = permissionMap.get(r.getId());
-            if (dataPermission != null) {
-                groupDto.setModelIds(dataPermission.getModelIds());
-                groupDto.setTokenLimit(dataPermission.getTokenLimit());
-            }
+//            SysDataPermission dataPermission = permissionMap.get(r.getId());
+//            if (dataPermission != null) {
+//                groupDto.setModelIds(dataPermission.getModelIds());
+//                groupDto.setTokenLimit(dataPermission.getTokenLimit());
+//            }
             return groupDto;
         }).collect(Collectors.toList());
+        I18nUtil.replaceSystemMessage(dtoList);
         return ReqResult.success(dtoList);
     }
 
@@ -236,14 +240,38 @@ public class SysGroupController extends BaseController {
         }
         SysDataPermission dataPermission = sysDataPermissionApplicationService.getByTarget(PermissionTargetTypeEnum.GROUP, groupId);
         SysDataPermissionBindDto result = SysDataPermissionConverter.toDto(dataPermission);
-        if (result != null) {
-            result.setModelIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.MODEL));
-            result.setAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.AGENT));
-            result.setPageAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
-                    PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.PAGE));
-        }
+        result = result == null ? new SysDataPermissionBindDto() : result;
+
+        result.setModelIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.MODEL));
+        result.setAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.AGENT));
+        result.setPageAgentIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.PAGE));
+        Map<String, String> openApiConfigMap = sysSubjectPermissionApplicationService.listSubjectKeyConfigByTarget(
+                PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.OPEN_API);
+        List<SysDataPermissionBindDto.OpenApiConfig> openApiConfigs = openApiConfigMap.entrySet().stream()
+                .map(entry -> {
+                    SysDataPermissionBindDto.OpenApiConfig config = new SysDataPermissionBindDto.OpenApiConfig();
+                    config.setKey(entry.getKey());
+                    if (StringUtils.isNotBlank(entry.getValue())) {
+                        try {
+                            Map<String, Integer> valueMap = JsonSerializeUtil.parseObject(entry.getValue(), new TypeReference<Map<String, Integer>>() {});
+                            config.setRpm(valueMap == null ? null : valueMap.get("rpm"));
+                            config.setRpd(valueMap == null ? null : valueMap.get("rpd"));
+                        } catch (Exception ignore) {
+                            config.setRpm(null);
+                            config.setRpd(null);
+                        }
+                    }
+                    return config;
+                })
+                .toList();
+        result.setOpenApiConfigs(openApiConfigs);
+
+        result.setKnowledgeIds(sysSubjectPermissionApplicationService.listSubjectIdsByTarget(
+                PermissionTargetTypeEnum.GROUP, groupId, PermissionSubjectTypeEnum.KNOWLEDGE));
+
         return ReqResult.success(result);
     }
 
@@ -321,6 +349,7 @@ public class SysGroupController extends BaseController {
         // 转换为DTO
         List<MenuNodeDto> menuDtoList = MenuNodeConverter.convertMenuTreeToDtoTree(menuNodeList);
 
+        I18nUtil.replaceSystemMessage(menuDtoList);
         return ReqResult.success(menuDtoList);
     }
 
@@ -328,14 +357,15 @@ public class SysGroupController extends BaseController {
         if (CollectionUtils.isEmpty(nodes)) {
             return;
         }
-        List<String> codes = new ArrayList<>();
         for (MenuNodeDto node : nodes) {
             if (StringUtils.isNotBlank(node.getCode())) {
                 if (node.getCode().equals(MenuEnum.ECO_MARKET.getCode()) && node.getMenuBindType() > 0) {
-                    throw new BizException("用户组不能绑定「" + MenuEnum.ECO_MARKET.getName() + "」菜单");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupCannotBindForbiddenMenu,
+                            MenuEnum.ECO_MARKET.getName());
                 }
                 if (node.getCode().equals(MenuEnum.SYSTEM_MANAGE.getCode()) && node.getMenuBindType() > 0) {
-                    throw new BizException("用户组不能绑定「" + MenuEnum.SYSTEM_MANAGE.getName() + "」菜单");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupCannotBindForbiddenMenu,
+                            MenuEnum.SYSTEM_MANAGE.getName());
                 }
             }
             if (CollectionUtils.isNotEmpty(node.getChildren())) {

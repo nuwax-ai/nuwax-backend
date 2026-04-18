@@ -12,6 +12,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据权限
@@ -55,6 +56,18 @@ public class SysDataPermission {
      */
     @TableField(exist = false)
     private List<Long> pageAgentIds;
+
+    /**
+     * 开放API配置（不落库，仅用于绑定入参透传）
+     */
+    @TableField(exist = false)
+    private Map<String, String> openApiConfigMap;
+
+    /**
+     * 可访问的知识库id列表（不落库，仅用于绑定入参透传）
+     */
+    @TableField(exist = false)
+    private List<Long> knowledgeIds;
 
     // ========== 配额限制配置 ==========
 

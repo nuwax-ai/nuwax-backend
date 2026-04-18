@@ -78,7 +78,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
     public void createTable(CustomTableDefinitionModel tableModel) {
         List<CustomFieldDefinitionModel> fields = tableModel.getFieldList();
         String createTableSql = tableDbWrapperUtil.buildCreateTableSql(tableModel, fields);
-        log.info("创建业务表,sql={}", createTableSql);
+        log.info("Create business table, sql={}", createTableSql);
         try {
             // 创建表
             customDorisTableRepository.executeCreateTable(createTableSql);
@@ -97,13 +97,13 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
                 try {
                     customDorisTableRepository.executeRawAdminSql(sql);
                 } catch (Exception e) {
-                    log.warn("创建索引 {} 失败，可能已存在或字段不存在: {}", idxName, e.getMessage());
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6026);
+                    log.warn("Create index {} failed (exists or missing column): {}", idxName, e.getMessage());
+                    throw ComposeException.build(BizExceptionCodeEnum.composeCreateIndexFailed);
                 }
             }
         } catch (Exception e) {
-            log.error("创建Doris表异常", e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6008);
+            log.error("Create Doris table error", e);
+            throw ComposeException.build(BizExceptionCodeEnum.composeCreateTableFailed);
         }
     }
 
@@ -113,12 +113,12 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
         var tableExistFlag = customDorisTableRepository.tableExists(database, table);
 
         if (!tableExistFlag) {
-            log.warn("表不存在: {}", database + "." + table);
+            log.warn("Table not found: {}", database + "." + table);
             return;
         }
 
         String dropTableSql = tableDbWrapperUtil.buildDropTableSql(database, table);
-        log.info("删除业务表数据,sql={}", dropTableSql);
+        log.info("Delete business data, sql={}", dropTableSql);
         customDorisTableRepository.executeRawAdminSql(dropTableSql);
     }
 
@@ -139,24 +139,24 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
     @Override
     public void deleteDorisTableRowDataById(String database, String table, Long id) {
         if (id == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "删除数据时ID不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "删除数据时ID不能为空");
         }
 
         int affectedRows = customDorisTableRepository.deleteTableDataById(database, table, id);
         if (affectedRows == 0) {
-            log.warn("未找到要删除的数据, database: {}, table: {}, id: {}", database, table, id);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "未找到要删除的数据");
+            log.warn("Row not found for delete, database: {}, table: {}, id: {}", database, table, id);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "未找到要删除的数据");
         }
 
-        log.info("成功删除Doris表数据, database: {}, table: {}, id: {}", database, table, id);
+        log.info("Doris row deleted, database: {}, table: {}, id: {}", database, table, id);
     }
 
     @Override
     @DSTransactional(rollbackFor = Exception.class, propagation = DsPropagation.NOT_SUPPORTED)
     public void alterTable(String database, String table, List<String> alterSqlStatements) {
-        log.info("开始执行Doris表结构变更, database: {}, table: {}", database, table);
+        log.info("Doris schema change start, database: {}, table: {}", database, table);
         if (CollectionUtils.isEmpty(alterSqlStatements)) {
-            log.warn("没有需要执行的Doris表结构变更SQL语句");
+            log.warn("No Doris schema change SQL to run");
             return;
         }
 
@@ -164,20 +164,20 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             for (String sql : alterSqlStatements) {
                 customDorisTableRepository.executeAlterTable(database, table, sql);
             }
-            log.info("完成执行Doris表结构变更, database: {}, table: {}", database, table);
+            log.info("Doris schema change done, database: {}, table: {}", database, table);
         } catch (Exception e) {
-            log.error("执行Doris表结构变更异常", e);
+            log.error("Doris schema change error", e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
     @Override
     public DorisDataPage<List<Object>> queryPageDorisTableData(DorisTableDataRequest request,
             ColumnDefinitionResult columnDefResult) {
-        log.debug("分页查询Doris数据开始, request: {}", request);
+        log.debug("Paged Doris query start, request: {}", request);
         if (request == null || request.getTableId() == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "请求参数或表ID不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "请求参数或表ID不能为空");
         }
 
         // 1. 获取表定义和字段定义
@@ -232,15 +232,15 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             result.setRecords(data);
             result.setColumnDefines(columnDefResult.getColumnDefines());
 
-            log.debug("分页查询Doris数据完成, data size: {}", data.size());
+            log.debug("Paged Doris query done, data size: {}", data.size());
             return result;
 
         } catch (ComposeException ce) {
-            log.error("执行DML的SQL异常, SQL: {}", finalSql, ce);
+            log.error("DML SQL execution error, SQL: {}", finalSql, ce);
             throw ce;
         } catch (Exception e) {
-            log.error("执行Doris查询异常, sql: {}, params: {}", finalSql, params, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "执行查询失败: " + e.getMessage());
+            log.error("Doris query error, sql: {}, params: {}", finalSql, params, e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "执行查询失败: " + e.getMessage());
         }
     }
 
@@ -316,14 +316,14 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
     public List<Map<String, Object>> queryAllTableData(String database, String table,
             Map<String, Object> conditions, String orderBy, Integer limit) {
 
-        log.debug("查询Doris全部数据开始, database: {}, table: {}, limit: {}, conditions: {}",
+        log.debug("Doris query all start, database: {}, table: {}, limit: {}, conditions: {}",
                 database, table, limit, conditions);
 
         // 直接调用 Repository 层的方法，由其处理默认 limit
         List<Map<String, Object>> result = customDorisTableRepository.queryAllData(database, table, conditions, orderBy,
                 limit);
 
-        log.debug("查询Doris全部数据完成, data size: {}", result.size());
+        log.debug("Doris query all done, data size: {}", result.size());
 
         return result;
     }
@@ -340,64 +340,64 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
 
     @Override
     public ExecuteRawResultVo executeRawQuery(String database, String sql) {
-        log.info("开始执行原生SQL查询，数据库: {}, SQL: {}", database, sql);
+        log.info("Native SQL query start, db: {}, SQL: {}", database, sql);
         try {
             ExecuteRawResultVo result = customDorisTableRepository.executeRawQuery(sql);
-            log.info("原生SQL查询执行完成，返回 {} 条记录", result.getRowNum());
+            log.info("Native SQL done, {} rows", result.getRowNum());
             return result;
         } catch (ComposeException ce) {
-            log.error("执行DML的SQL异常", ce);
+            log.error("DML SQL execution error", ce);
             throw ce;
         } catch (Exception e) {
-            log.error("执行原生SQL查询失败，数据库: {}, SQL: {}", database, sql, e);
+            log.error("Native SQL failed, db: {}, SQL: {}", database, sql, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
     @Override
     public boolean tableExists(String database, String table) {
-        log.info("检查表是否存在，数据库: {}, 表: {}", database, table);
+        log.info("Check table exists, database: {}, table: {}", database, table);
         try {
             return customDorisTableRepository.tableExists(database, table);
         } catch (Exception e) {
-            log.error("检查表是否存在时发生错误，数据库: {}, 表: {}", database, table, e);
+            log.error("Check table exists error, database: {}, table: {}", database, table, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6031, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeCheckTableExistsFailed, errorMessage);
         }
     }
 
     @Override
     public void truncateTable(String database, String table) {
-        log.info("开始清空表数据，数据库: {}, 表: {}", database, table);
+        log.info("Truncate table start, database: {}, table: {}", database, table);
         try {
             customDorisTableRepository.truncateTable(database, table);
-            log.info("表数据清空完成，数据库: {}, 表: {}", database, table);
+            log.info("Truncate done, database: {}, table: {}", database, table);
         } catch (Exception e) {
-            log.error("清空表数据时发生错误，数据库: {}, 表: {}", database, table, e);
+            log.error("Truncate error, database: {}, table: {}", database, table, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6032, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeTruncateTableFailed, errorMessage);
         }
     }
 
     @Override
     public DorisTableDefinitionVo getTableDefinition(String database, String table) {
-        log.info("开始获取表定义信息，数据库: {}, 表: {}", database, table);
+        log.info("Get table definition start, database: {}, table: {}", database, table);
         try {
             // 检查表是否存在
             if (!tableExists(database, table)) {
-                log.error("表不存在, database: {}, table: {}", database, table);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6013);
+                log.error("Table not found, database: {}, table: {}", database, table);
+                throw ComposeException.build(BizExceptionCodeEnum.tableNotFound);
             }
 
             // 获取表定义信息
             DorisTableDefinitionVo definition = customDorisTableRepository.getTableDefinition(database, table);
-            log.info("获取表定义信息完成，数据库: {}, 表: {}", database, table);
+            log.info("Get table definition done, database: {}, table: {}", database, table);
             return definition;
         } catch (Exception e) {
-            log.error("获取表定义信息时发生错误，数据库: {}, 表: {}", database, table, e);
+            log.error("Get table definition error, database: {}, table: {}", database, table, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6033, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeGetTableDefinitionFailed, errorMessage);
         }
     }
 
@@ -405,12 +405,12 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
     @DSTransactional(rollbackFor = Exception.class)
     public void updateTableStructure(Long tableId, List<CustomFieldDefinitionModel> newFields,
             CustomTableDefinitionModel tableModel) {
-        log.info("开始更新表结构, tableId: {}", tableId);
+        log.info("Update table schema start, tableId: {}", tableId);
         if (tableId == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "更新表结构时 tableId 不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "更新表结构时 tableId 不能为空");
         }
         if (newFields == null) {
-            log.warn("更新表结构时 newFields 为 null，视为无变更, tableId: {}", tableId);
+            log.warn("newFields null, no schema change, tableId: {}", tableId);
             return;
         }
 
@@ -418,7 +418,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
         String database = tableModel.getDorisDatabase();
         String table = tableModel.getDorisTable();
         if (!StringUtils.hasText(database) || !StringUtils.hasText(table)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义缺少数据库名或表名, tableId: " + tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义缺少数据库名或表名, tableId: " + tableId);
         }
 
         // 2. 获取当前字段列表
@@ -430,16 +430,16 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
         // 4. 检查表是否有数据，并根据规则过滤 SQL 语句
         List<String> finalAlterSqls = new ArrayList<>();
         boolean tableHasData = this.self.hasData(database, table);
-        log.info("检查表 {}.{} 是否有数据: {}", database, table, tableHasData);
+        log.info("Check table {}.{} has data: {}", database, table, tableHasData);
 
         if (!CollectionUtils.isEmpty(potentialAlterSqls)) {
             for (String sql : potentialAlterSqls) {
                 boolean isDropColumn = sql.toUpperCase().contains(" DROP COLUMN ");
 
                 if (isDropColumn && tableHasData) {
-                    log.warn("检测到删除列操作，但表 {}.{} 存在数据，不允许删除列: [{}]", database, table, sql);
+                    log.warn("Drop column blocked: table {}.{} has data, columns: [{}]", database, table, sql);
                     throw ComposeException.build(
-                            BizExceptionCodeEnum.COMPOSE_ERROR_6001,
+                            BizExceptionCodeEnum.resourceDataNotFound,
                             String.format("表 %s.%s 中存在数据，不允许删除列。如需删除列，请先清空表数据", database, table));
                 } else {
                     finalAlterSqls.add(sql);
@@ -449,33 +449,33 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
 
         // 5. 执行最终确认的 ALTER SQL 语句
         if (!CollectionUtils.isEmpty(finalAlterSqls)) {
-            log.info("准备执行 {} 条最终确认的表结构变更语句 for {}.{}", finalAlterSqls.size(), database, table);
+            log.info("Apply {} confirmed schema changes for {}.{}", finalAlterSqls.size(), database, table);
             this.self.alterTable(database, table, finalAlterSqls);
-            log.info("成功执行表结构变更 for {}.{}", database, table);
+            log.info("Schema change applied for {}.{}", database, table);
         } else {
             if (!CollectionUtils.isEmpty(potentialAlterSqls)) {
-                log.warn("所有检测到的表结构变更都被阻止执行 (可能因为表存在数据且包含删除列操作) for {}.{}", database, table);
+                log.warn("All schema changes blocked (table has data / drop column) for {}.{}", database, table);
             } else {
-                log.info("表结构无需变更 for {}.{}", database, table);
+                log.info("No schema change needed for {}.{}", database, table);
             }
         }
 
-        log.warn("TODO: 需要实现更新 custom_field_definition 表中字段定义的逻辑, tableId: {}", tableId);
+        log.warn("TODO: update custom_field_definition fields, tableId: {}", tableId);
     }
 
     @Override
     public DorisDataPage<Map<String, Object>> queryPageDorisTableDataForWeb(CustomDorisDataRequest request,
             CustomTableDefinitionModel tableModel) {
-        log.debug("开始执行Web端分页查询Doris数据, request: {}", request);
+        log.debug("Web paged Doris query start, request: {}", request);
         if (request == null || request.getTableId() == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "请求参数或表ID不能为空");
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "请求参数或表ID不能为空");
         }
 
         // 1. 获取表定义和字段定义
         List<CustomFieldDefinitionModel> fields = tableModel.getFieldList();
         if (CollectionUtils.isEmpty(fields)) {
-            log.error("表定义缺少字段定义, tableId: {}", request.getTableId());
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6043);
+            log.error("Table definition has no fields, tableId: {}", request.getTableId());
+            throw ComposeException.build(BizExceptionCodeEnum.composeTableDefMissingFields);
         }
 
         // 2. 构建SQL和参数
@@ -509,12 +509,12 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             // 执行查询
             // 查询总数
             var executedCountSql = countSql.toString();
-            log.debug("执行查询总数SQL: {}", executedCountSql);
+            log.debug("Run count SQL: {}", executedCountSql);
             Long total = customDorisTableRepository.countRawQuery(executedCountSql);
 
             // 查询数据
             var executedSql = sql.toString();
-            log.debug("执行查询数据SQL: {}", executedSql);
+            log.debug("Run data SQL: {}", executedSql);
             ExecuteRawResultVo executeRawResultVo = customDorisTableRepository.executeRawQuery(executedSql,
                     params.toArray());
             List<Map<String, Object>> rawData = executeRawResultVo.getData();
@@ -547,14 +547,14 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
                         
                         // 如果字段类型未找到，记录警告但不影响处理
                         if (fieldType == null) {
-                            log.debug("字段[{}]在字段类型映射中未找到，跳过Web端数值转换处理", fieldName);
+                            log.debug("Field [{}] not in type map, skip web numeric conversion", fieldName);
                             continue;
                         }
                         
                         // 判断是否需要转换为字符串
                         if (shouldConvertToStringForWeb(fieldValue, fieldType)) {
                             row.put(fieldName, String.valueOf(fieldValue));
-                            log.debug("字段[{}]的数值[{}]已转换为字符串以避免前端精度丢失", fieldName, fieldValue);
+                            log.debug("Field [{}] value [{}] stringified to avoid precision loss", fieldName, fieldValue);
                         }
                     }
                 }
@@ -598,27 +598,27 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             result.setColumnDefines(columnDefines);
             var dataSize = Optional.ofNullable(rawData).map(List::size).orElse(0);
 
-            log.debug("Web端分页查询Doris数据完成, total: {}, data size: {}", total, dataSize);
+            log.debug("Web paged Doris query done, total: {}, data size: {}", total, dataSize);
             return result;
 
         } catch (ComposeException ce) {
-            log.error("执行DML的SQL异常", ce);
+            log.error("DML SQL execution error", ce);
             throw ce;
         } catch (Exception e) {
-            log.error("Web端分页查询Doris数据异常, sql: {}, params: {}", sql, params, e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "执行查询失败: " + e.getMessage());
+            log.error("Web paged Doris query error, sql: {}, params: {}", sql, params, e);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "执行查询失败: " + e.getMessage());
         }
     }
 
     @Override
     public String generateExecuteSql(DorisTableDataRequest request, CustomTableDefinitionModel tableModel) {
         if (request == null || request.getTableId() == null) {
-            throw new IllegalArgumentException("请求参数或表ID不能为空");
+            throw new IllegalArgumentException("Request parameters or table ID cannot be empty");
         }
 
         String sql = request.getSql();
         if (!StringUtils.hasText(sql)) {
-            throw new IllegalArgumentException("SQL语句不能为空");
+            throw new IllegalArgumentException("SQL statement cannot be empty");
         }
 
         try {
@@ -651,16 +651,16 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
                     request.getExtArgs() // 额外的限制条件
             );
 
-            log.debug("生成的最终SQL: {}", finalSql);
+            log.debug("Final SQL: {}", finalSql);
             return finalSql;
 
         } catch (JSQLParserException e) {
-            log.error("SQL解析失败: sql={}, error={}", sql, e.getMessage(), e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6015, e.getMessage());
+            log.error("SQL parse failed: sql={}, error={}", sql, e.getMessage(), e);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlParseFailed, e.getMessage());
         } catch (Exception e) {
-            log.error("生成SQL失败: sql={}, error={}", sql, e.getMessage(), e);
+            log.error("Build SQL failed: sql={}, error={}", sql, e.getMessage(), e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -742,9 +742,9 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
 
         // 1. 检查表是否存在
         if (!tableExists(tableModel.getDorisDatabase(), tableModel.getDorisTable())) {
-            log.warn("表不存在, 无法清空业务数据, tableId: {}, database: {}, table: {}", tableId, tableModel.getDorisDatabase(),
+            log.warn("Table missing, cannot truncate, tableId: {}, database: {}, table: {}", tableId, tableModel.getDorisDatabase(),
                     tableModel.getDorisTable());
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6013);
+            throw ComposeException.build(BizExceptionCodeEnum.tableNotFound);
         }
 
         // 2. 清空业务数据
@@ -764,35 +764,35 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
         var table = tableDefinitionModel.getDorisTable();
 
         if (!tableExists(database, table)) {
-            log.warn("表不存在, 无法导入业务数据, tableId: {}, database: {}, table: {}", tableId, database, table);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6013);
+            log.warn("Table missing, cannot import, tableId: {}, database: {}, table: {}", tableId, database, table);
+            throw ComposeException.build(BizExceptionCodeEnum.tableNotFound);
         }
 
         Long tableTotal = this.self.getTableTotal(database, table);
         int dataSize = excelData.size();
 
         if (tableTotal + dataSize > DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS) {
-            log.warn("导入后表总行数将超过限制, tableId: {}, currentTotal: {}, importSize: {}",
+            log.warn("Import would exceed row limit, tableId: {}, currentTotal: {}, importSize: {}",
                     tableId, tableTotal, dataSize);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6042, DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS);
+            throw ComposeException.build(BizExceptionCodeEnum.composeTableRowCountExceeded, DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS);
         }
         if (dataSize > DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS_CHECK) {
-            log.warn("Excel数据行数超过单次导入限制, tableId: {}, size: {}", tableId, dataSize);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6041, DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS_CHECK);
+            log.warn("Excel rows exceed import limit, tableId: {}, size: {}", tableId, dataSize);
+            throw ComposeException.build(BizExceptionCodeEnum.composeExcelRowCountExceeded, DorisConfigContants.IMPORT_EXCEL_DATA_MAX_ROWS_CHECK);
         }
 
         if (dataSize == 0) {
-            log.warn("Excel数据为空, tableId: {}", tableId);
+            log.warn("Excel empty, tableId: {}", tableId);
             return;
         }
 
         // Excel数据校验：在插入前进行类型和格式验证
-        log.info("开始Excel数据校验，tableId: {}, 总行数: {}", tableId, dataSize);
+        log.info("Excel validation start, tableId: {}, totalRows: {}", tableId, dataSize);
         try {
             ExcelDataValidatorUtil.validateExcelData(tableDefinitionModel, excelData);
-            log.info("Excel数据校验通过，tableId: {}", tableId);
+            log.info("Excel validation passed, tableId: {}", tableId);
         } catch (ComposeException e) {
-            log.error("Excel数据校验失败，tableId: {}, 错误: {}", tableId, e.getMessage());
+            log.error("Excel validation failed, tableId: {}, error: {}", tableId, e.getMessage());
             throw e;
         }
 
@@ -807,7 +807,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
 
             for (Map<String, Object> originRowData : batchData) {
                 if(originRowData.isEmpty()){
-                    log.debug("当前行数据为空,跳过");
+                    log.debug("Empty row, skip");
                     continue;
                 }
                 String insertSql = tableDbWrapperUtil.buildInsertSql(tableDefinitionModel, originRowData);
@@ -815,13 +815,13 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("批量插入的sql: {}", JSON.toJSONString(insertSqls));
+                log.debug("Batch insert SQL: {}", JSON.toJSONString(insertSqls));
             }
             customDorisTableRepository.executeRawAdminSqls(insertSqls);
 
             int startIndex = i * DorisConfigContants.IMPORT_EXCEL_DATA_BATCH_SIZE + 1;
             int endIndex = Math.min((i + 1) * DorisConfigContants.IMPORT_EXCEL_DATA_BATCH_SIZE, dataSize);
-            log.info("成功导入第 {} 到 {} 条数据，共 {} 条", startIndex, endIndex, endIndex - startIndex + 1);
+            log.info("Imported rows {} to {}, total {}", startIndex, endIndex, endIndex - startIndex + 1);
         }
     }
 
@@ -841,7 +841,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
         
         // 字段类型检查：如果字段类型为null，则不进行转换
         if (fieldType == null) {
-            log.debug("字段类型为null，跳过Web端数值转换处理");
+            log.debug("Field type null, skip web numeric conversion");
             return false;
         }
         
@@ -874,7 +874,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             
         } catch (Exception e) {
             // 如果在处理过程中发生任何异常，记录错误但不影响整体流程
-            log.error("判断Web端数值转换时发生异常，fieldValue: {}, fieldType: {}", fieldValue, fieldType, e);
+            log.error("Web numeric conversion error, fieldValue: {}, fieldType: {}", fieldValue, fieldType, e);
             return false;
         }
     }
@@ -934,7 +934,7 @@ public class CustomDorisTableDomainServiceImpl implements CustomDorisTableDomain
             
             return false;
         } catch (Exception e) {
-            log.error("检查JavaScript数值安全性时发生异常，fieldValue: {}", fieldValue, e);
+            log.error("JS number safety check error, fieldValue: {}", fieldValue, e);
             // 发生异常时，为了安全起见，建议转换为字符串
             return true;
         }

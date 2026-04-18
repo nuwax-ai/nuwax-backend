@@ -26,7 +26,9 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.CodeTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -95,7 +97,7 @@ public class ApiController {
         if (!isDevMode) {
             PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Agent, agentId);
             if (publishedDto == null) {
-                return ReqResult.error("4000", "智能体不存在或已下架");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOfflineOrNotFound);
             }
         }
         ConversationDto conversation = conversationApplicationService.createConversation(RequestContext.get().getUserId(), agentId, isDevMode, isDevMode, conversationCreateDto.getVariables());
@@ -157,6 +159,11 @@ public class ApiController {
     @Operation(summary = "智能体会话停止接口")
     @RequestMapping(path = "/chat/stop/{conversationId}", method = RequestMethod.POST)
     public ReqResult<Void> chatStop(@PathVariable String conversationId) {
+        try {
+            conversation(Long.parseLong(conversationId));
+        } catch (NumberFormatException e) {
+            // ignore
+        }
         redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
         return ReqResult.success();
     }
@@ -172,14 +179,14 @@ public class ApiController {
             agentConfigDto = agentApplicationService.queryPublishedConfigForExecute(conversationDto.getAgentId());
         }
         if (agentConfigDto == null) {
-            throw new BizException("智能体不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOfflineOrNotFound);
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (tenantConfigDto.getDefaultSuggestModelId() != null) {
             ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(tenantConfigDto.getDefaultSuggestModelId());
             if (modelConfigDto != null) {
                 if (CollectionUtils.isEmpty(modelConfigDto.getApiInfoList())) {
-                    log.warn("模型配置API列表为空，无法进行问题建议");
+                    log.warn("Model config API list empty; question suggestions disabled");
                     return Mono.just(ReqResult.success(Collections.emptyList()));
                 }
             }
@@ -255,16 +262,16 @@ public class ApiController {
     private ConversationDto checkConversation(Long conversationId) {
         ConversationDto conversationDto = conversationApplicationService.getConversation(null, conversationId);
         if (conversationDto == null) {
-            throw new BizException("4000", "会话不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
         }
         if (conversationDto.getAgent() == null) {
-            throw new BizException("4000", "相关智能体不存在或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentRelatedOfflineOrNotFound);
         }
         //判断会话是否为agent的会话
         AgentDetailDto agentDetailDto = (AgentDetailDto) RequestContext.get().getAkTarget();
         Long agentId = agentDetailDto.getAgentId();
         if (!conversationDto.getAgentId().equals(agentId)) {
-            throw new BizException("4000", "错误的conversationId");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationIdInvalid);
         }
         return conversationDto;
     }

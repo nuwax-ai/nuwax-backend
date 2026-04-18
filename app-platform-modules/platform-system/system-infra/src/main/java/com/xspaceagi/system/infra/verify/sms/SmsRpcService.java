@@ -4,7 +4,9 @@ import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
 import com.aliyun.teaopenapi.models.Config;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -41,12 +43,13 @@ public class SmsRpcService {
             sendSmsResponse = createClient(smsConfig).sendSms(sendSmsRequest);
         } catch (Exception e) {
             if (StringUtils.isBlank(smsConfig.getSmsAccessKeyId())) {
-                throw new BizException("请在系统管理中配置短信服务");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemSmsServiceNotConfigured);
             }
             throw new RuntimeException(e);
         }
         if (!"OK".equals(sendSmsResponse.getBody().code)) {
-            throw new BizException(sendSmsResponse.getBody().message);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    sendSmsResponse.getBody().message);
         }
     }
 }

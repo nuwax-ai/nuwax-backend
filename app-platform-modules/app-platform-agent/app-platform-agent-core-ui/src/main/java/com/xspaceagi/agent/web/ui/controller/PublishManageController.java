@@ -11,7 +11,9 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +46,7 @@ public class PublishManageController {
     public ReqResult<Void> publish(@PathVariable @Schema(description = "申请ID") Long applyId) {
         PublishApplyDto agentPublishApplyDto = publishApplicationService.queryPublishApplyById(applyId);
         if (agentPublishApplyDto == null) {
-            throw new BizException("applyId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentApplyIdInvalid);
         }
         publishApplicationService.publish(applyId);
         return ReqResult.success();
@@ -56,7 +58,7 @@ public class PublishManageController {
     public ReqResult<Void> reject(@PathVariable @Schema(description = "申请ID") Long applyId, @RequestBody PublishRejectDto publishRejectDto) {
         PublishApplyDto agentPublishApplyDto = publishApplicationService.queryPublishApplyById(applyId);
         if (agentPublishApplyDto == null) {
-            throw new BizException("applyId错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentApplyIdInvalid);
         }
         publishRejectDto.setApplyId(applyId);
         publishApplicationService.rejectPublish(publishRejectDto);

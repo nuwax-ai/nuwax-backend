@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.adapter.dto.ComputerFileInfo;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -41,7 +42,8 @@ public class ComputerFileClient {
         try {
             sandboxServer = sandboxServerConfigService.selectServer(cId);
         } catch (Exception e) {
-            throw new BizException(e.getMessage());
+            log.warn("[ComputerFileClient] selectServer failed cId={}", cId, e);
+            throw BizException.of(BizExceptionCodeEnum.agentDependencyServiceError);
         }
         if (sandboxServer == null) {
             return null;
@@ -52,7 +54,7 @@ public class ComputerFileClient {
     private String getBaseUrl(Long cId) {
         String serverUrl = getVncFileServerUrl(cId);
         if (serverUrl == null) {
-            throw new BizException("未找到文件服务器");
+            throw BizException.of(BizExceptionCodeEnum.agentFileServerNotFound);
         }
         return serverUrl + "/api";
     }
@@ -104,6 +106,43 @@ public class ComputerFileClient {
         }).doOnDiscard(DataBuffer.class, DataBufferUtils::release).doOnComplete(() -> {
             log.info("[computer-client] logId={} 调用获取静态文件接口, 流式传输完成", logId);
         });
+    }
+
+    /**
+     * 获取静态文件（流式返回，保留状态码与响应头，支持断点续传）
+     */
+    public ResponseEntity<Flux<DataBuffer>> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader) {
+        String[] prefixSegments = Arrays.stream(targetPrefix.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
+        String[] relativeSegments = Arrays.stream(relativePath.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
+
+        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId)).pathSegment(prefixSegments).pathSegment(relativeSegments).toUriString();
+        log.info("[computer-client] logId={} 调用获取静态文件接口(含响应头), url={}, targetPrefix={}, relativePath={}, range={}", logId, url, targetPrefix, relativePath, rangeHeader);
+
+        try {
+            ResponseEntity<Flux<DataBuffer>> response = webClient.get()
+                    .uri(url)
+                    .accept(MediaType.ALL)
+                    .headers(headers -> {
+                        if (rangeHeader != null && !rangeHeader.isBlank()) {
+                            headers.set(HttpHeaders.RANGE, rangeHeader);
+                        }
+                    })
+                    .retrieve()
+                    .toEntityFlux(DataBuffer.class)
+                    .block();
+            if (response == null || response.getBody() == null) {
+                throw new IllegalStateException("Empty downstream response");
+            }
+            return ResponseEntity.status(response.getStatusCode())
+                    .headers(response.getHeaders())
+                    .body(response.getBody().doOnDiscard(DataBuffer.class, DataBufferUtils::release));
+        } catch (WebClientResponseException e) {
+            log.warn("[computer-client] logId={} 调用获取静态文件接口(含响应头)失败, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
+            throw e;
+        } catch (Exception e) {
+            log.error("[computer-client] logId={} 调用获取静态文件接口(含响应头)异常", logId, e);
+            throw e;
+        }
     }
 
     /**

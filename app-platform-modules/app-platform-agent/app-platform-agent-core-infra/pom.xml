@@ -50,5 +50,9 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-model-proxy-sdk</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-memory-sdk</artifactId>
+        </dependency>
     </dependencies>
 </project>

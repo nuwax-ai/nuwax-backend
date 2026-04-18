@@ -14,13 +14,13 @@ import java.io.Serializable;
 public class KnowledgeQaCsvImportRequest implements Serializable {
 
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     @Schema(description = "所属空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long spaceId;
 
     @Schema(description = "CSV文件", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "CSV文件不能为空")
+    @NotNull(message = "CSV file is required")
     private MultipartFile file;
 } 

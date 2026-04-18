@@ -38,7 +38,7 @@ public class AdminPermissionAspect {
     public Object checkAdminPermission(ProceedingJoinPoint joinPoint, RequireAdmin requireAdmin) throws Throwable {
         // 如果允许跳过权限检查，直接执行方法
         if (requireAdmin.skipCheck()) {
-            log.debug("跳过管理员权限检查: {}", joinPoint.getSignature().getName());
+            log.debug("Skip admin permission check: {}", joinPoint.getSignature().getName());
             return joinPoint.proceed();
         }
         
@@ -46,26 +46,26 @@ public class AdminPermissionAspect {
             // 获取当前用户信息
             UserDto currentUser = (UserDto) RequestContext.get().getUser();
             if (currentUser == null) {
-                log.warn("用户未登录，拒绝访问: {}", joinPoint.getSignature().getName());
+                log.warn("User not logged in, access denied: {}", joinPoint.getSignature().getName());
                 throw new AdminPermissionException("用户未登录");
             }
             
             // 获取用户详细信息并检查是否为管理员
             UserDto userDetail = userApplicationService.queryById(currentUser.getId());
 //            if (userDetail == null || !User.Role.Admin.equals(userDetail.getRole())) {
-//                log.warn("用户[{}]没有管理员权限，拒绝访问: {}",
+//                log.warn("User [{}] is not admin, access denied: {}",
 //                    currentUser.getId(), joinPoint.getSignature().getName());
 //                throw new AdminPermissionException(requireAdmin.value());
 //            }
             
-            log.debug("管理员权限验证通过，用户[{}]访问: {}", 
+            log.debug("Admin check passed, user [{}] accessing: {}", 
                 currentUser.getId(), joinPoint.getSignature().getName());
             
             // 权限验证通过，执行目标方法
             return joinPoint.proceed();
             
         } catch (AdminPermissionException e) {
-            log.warn("管理员权限验证失败", e);
+            log.warn("Admin permission verification failed", e);
             // 重新抛出权限异常
             throw e;
         }

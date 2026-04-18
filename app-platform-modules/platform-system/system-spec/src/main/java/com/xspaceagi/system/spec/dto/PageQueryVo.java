@@ -16,11 +16,11 @@ public class PageQueryVo<T> {
      @Schema(description =  "分页查询过滤条件")
     private T queryFilter;
 
-    @NotNull(message = "分页pageNo不能为空")
+    @NotNull(message = "pageNo is required")
      @Schema(description =  "分页pageNo", required = true, example = "1")
     private Long pageNo;
 
-    @NotNull(message = "分页pageSize不能为空")
+    @NotNull(message = "pageSize is required")
      @Schema(description =  "分页pageSize", required = true, example = "10")
     private Long pageSize;
 

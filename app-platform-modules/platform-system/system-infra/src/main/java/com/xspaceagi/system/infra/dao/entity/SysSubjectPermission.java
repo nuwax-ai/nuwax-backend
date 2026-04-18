@@ -32,6 +32,11 @@ public class SysSubjectPermission {
     private Long subjectId;
 
     /**
+     * 主体Key
+     */
+    private String subjectKey;
+
+    /**
      * 目标类型
      * @see PermissionTargetTypeEnum
      */
@@ -41,6 +46,11 @@ public class SysSubjectPermission {
      * 目标ID列表
      */
     private Long targetId;
+
+    /**
+     * 配置
+     */
+    private String config;
 
     /**
      * 租户ID

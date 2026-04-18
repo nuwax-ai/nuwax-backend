@@ -15,11 +15,11 @@ import java.util.List;
 @Schema(name = "带嵌入的问答查询")
 public class QAQueryEmbeddingDto implements Serializable {
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     @Schema(description = "嵌入", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "嵌入不能为空")
+    @NotNull(message = "Embedding is required")
     private List<BigDecimal> embedding;
 
     @Schema(description = "top-K值")

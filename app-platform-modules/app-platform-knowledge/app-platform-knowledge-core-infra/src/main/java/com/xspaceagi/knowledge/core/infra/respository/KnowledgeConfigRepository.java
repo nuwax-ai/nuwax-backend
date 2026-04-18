@@ -86,7 +86,7 @@ public class KnowledgeConfigRepository implements IKnowledgeConfigRepository {
 
         var existObj = this.knowledgeConfigService.getById(id);
         if (existObj == null) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         this.knowledgeConfigService.removeById(id);
@@ -103,7 +103,7 @@ public class KnowledgeConfigRepository implements IKnowledgeConfigRepository {
     public Long updateInfo(KnowledgeConfigModel model, UserContext userContext) {
         var existObj = this.knowledgeConfigService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         model.setCreatorId(null);

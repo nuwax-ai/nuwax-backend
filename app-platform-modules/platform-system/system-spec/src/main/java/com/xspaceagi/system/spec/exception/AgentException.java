@@ -24,7 +24,7 @@ public class AgentException extends KindlyException {
      * @return 异常
      */
     public static AgentException build(BizExceptionCodeEnum codeEnum, Object... params) {
-        String errorMessage = String.format(codeEnum.getMessage(), params);
+        String errorMessage = codeEnum.formatMessage(params);
         return new AgentException(codeEnum.getCode(), errorMessage);
     }
 

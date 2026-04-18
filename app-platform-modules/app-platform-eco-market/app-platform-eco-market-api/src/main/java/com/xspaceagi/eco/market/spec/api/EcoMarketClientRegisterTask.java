@@ -40,12 +40,12 @@ public class EcoMarketClientRegisterTask {
      */
     @Scheduled(fixedDelayString = "${eco.market.client.retry.interval:300}", timeUnit = TimeUnit.SECONDS)
     public void scheduledRetryFailedTasks() {
-        log.debug("开始重试生态市场客户端密钥");
+        log.debug("Start eco-market client secret retry");
 
         // 查询所有的租户
         List<Tenant> tenants = userDomainService.queryTenantsByStatus(TenantStatus.Enabled);
         for (Tenant tenant : tenants) {
-            log.debug("检查租户[{}]的客户端密钥", tenant.getName());
+            log.debug("Check client secret for tenant [{}]", tenant.getName());
             processTenant(tenant);
         }
     }
@@ -73,7 +73,7 @@ public class EcoMarketClientRegisterTask {
 
             var tenantId = tenant.getId();
             if (Objects.isNull(tenantId)) {
-                log.error("租户[{}]的ID为空，无法进行客户端密钥注册", tenant.getName());
+                log.error("Tenant [{}] id empty; cannot register client secret", tenant.getName());
                 return;
             }
 
@@ -81,7 +81,7 @@ public class EcoMarketClientRegisterTask {
             boolean exists = ecoMarketClientSecretDomainService.existsClientSecret(tenantId);
 
             if (!exists) {
-                log.info("租户[{}]客户端密钥不存在，开始注册", tenant.getName());
+                log.info("Tenant [{}] has no client secret; registering", tenant.getName());
                 try {
 
                     var clientSecret = ecoMarketClientSecretDomainService.getOrRegisterClientSecret(
@@ -91,17 +91,17 @@ public class EcoMarketClientRegisterTask {
                     // 使用应用层服务保存客户端密钥到本地数据库
                     if (clientSecret != null) {
                         clientSecretApplicationService.saveClientSecretDTO(clientSecret, userContext);
-                        log.info("租户[{}]客户端密钥注册并保存成功", tenant.getName());
+                        log.info("Tenant [{}] client secret registered and saved", tenant.getName());
                     }
                 } catch (Exception e) {
                     // 注册异常
-                    log.error("租户[{}]客户端密钥注册异常，已加入重试队列", tenant.getName(), e);
+                    log.error("Tenant [{}] client secret register error; queued for retry", tenant.getName(), e);
                 }
             } else {
-                log.debug("租户[{}]客户端密钥已存在，无需注册", tenant.getName());
+                log.debug("Tenant [{}] client secret already exists", tenant.getName());
             }
         } catch (Exception e) {
-            log.error("处理租户[{}]客户端密钥异常", tenant.getName(), e);
+            log.error("Client secret handling error for tenant [{}]", tenant.getName(), e);
         } finally {
             // 清除上下文
             RequestContext.remove();

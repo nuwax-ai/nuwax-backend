@@ -12,7 +12,7 @@ public class LoopNodeConfigDto extends NodeConfigDto {
 
     //循环类型
     @Schema(description = "循环类型，数组循环时，循环数组使用inputArgs", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "循环类型不能为空")
+    @NotNull(message = "Loop type is required")
     private LoopTypeEnum loopType;
 
     @Schema(description = "中间变量")

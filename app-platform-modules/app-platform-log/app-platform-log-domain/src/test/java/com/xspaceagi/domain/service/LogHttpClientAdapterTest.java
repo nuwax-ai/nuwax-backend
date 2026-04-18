@@ -176,9 +176,9 @@ public class LogHttpClientAdapterTest {
         try {
             new LogHttpClientAdapter(emptyConfig);
             // 如果没有抛出异常，测试失败
-            log.error("期望抛出异常但没有抛出");
+            log.error("Expected exception but none was thrown");
         } catch (IllegalArgumentException e) {
-            log.info("正确捕获到配置异常: {}", e.getMessage());
+            log.info("Caught expected config exception: {}", e.getMessage());
         }
         
         // 测试配置验证 - null URL
@@ -188,9 +188,9 @@ public class LogHttpClientAdapterTest {
         try {
             new LogHttpClientAdapter(nullConfig);
             // 如果没有抛出异常，测试失败
-            log.error("期望抛出异常但没有抛出");
+            log.error("Expected exception but none was thrown");
         } catch (IllegalArgumentException e) {
-            log.info("正确捕获到配置异常: {}", e.getMessage());
+            log.info("Caught expected config exception: {}", e.getMessage());
         }
     }
 

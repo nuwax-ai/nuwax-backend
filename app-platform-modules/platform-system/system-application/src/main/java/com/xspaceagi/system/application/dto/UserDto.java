@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.Objects;
 
 @Schema(description = "用户信息")
@@ -51,12 +52,17 @@ public class UserDto {
     @Schema(description = "最后登录时间")
     private Date lastLoginTime;
 
+    @Schema(description = "最近的语言环境")
+    private String lang;
+
     @Schema(description = "创建时间")
     private Date created;
 
     @Schema(description = "更新时间")
     private Date modified;
 
+    @Schema(description = "语言环境对应的值，仅类型为System")
+    private Map<String, String> langMap;
 
     /**
      * 转换为对象 UserContext,用于上下文
@@ -66,10 +72,8 @@ public class UserDto {
             return null;
         }
 
-        Integer status = 1;
-        if (userDto.getStatus() == User.Status.Enabled) {
-            status = 1;
-        } else {
+        int status = 1;
+        if (userDto.getStatus() != User.Status.Enabled) {
             status = -1;
         }
 
@@ -85,6 +89,7 @@ public class UserDto {
                 .orgId(userDto.getTenantId())
                 .orgName(null)
                 .roleType(null)
+                .langMap(userDto.getLangMap())
                 .build();
 
     }

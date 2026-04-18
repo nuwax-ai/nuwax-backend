@@ -14,7 +14,9 @@ import com.xspaceagi.mcp.spec.utils.UrlExtractUtil;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import com.xspaceagi.system.spec.utils.MD5;
 import io.modelcontextprotocol.spec.McpError;
@@ -69,11 +71,12 @@ public class McpDeployRpcService {
         ReqResult result = JSON.parseObject(content, ReqResult.class);
         if (!result.isSuccess()) {
             log.warn("Mcp deploy failed: {}", result.getMessage());
-            throw new BizException(result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.remoteServiceMessage,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
         McpDeployStatusResponse mcpDeployStatusResponse = ((JSONObject) result.getData()).toJavaObject(McpDeployStatusResponse.class);
         if (mcpDeployStatusResponse == null) {
-            throw new BizException("McpDeployStatusResponse is null");
+            throw BizException.of(ErrorCodeEnum.SYS_ERROR, BizExceptionCodeEnum.mcpDeployResponseNull);
         }
         return mcpDeployStatusResponse;
     }

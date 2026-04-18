@@ -56,7 +56,7 @@ public class DbTableRpcService {
                 throw (BizException) e;
             }
             // ignore
-            log.warn("查询表结构定义信息失败", e);
+            log.warn("Failed to query table schema info", e);
         }
         return null;
     }
@@ -101,7 +101,7 @@ public class DbTableRpcService {
         try {
             return iComposeDbTableRpcService.queryCreateTableInfo(new DorisTableDefineRequest(tableId));
         } catch (Exception e) {
-            log.warn("查询表结构定义信息失败", e);
+            log.warn("Failed to query table schema info", e);
             return null;
         }
     }

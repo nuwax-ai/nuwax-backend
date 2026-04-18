@@ -120,7 +120,7 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
                 .subscribeOn(Schedulers.boundedElastic())
                 .doFinally(st -> RequestContext.remove())
                 .onErrorResume(e -> {
-                    log.error("微信 iLink 智能体执行异常: fromUserId={}", fromUserId, e);
+                    log.error("WeChat iLink agent error: fromUserId={}", fromUserId, e);
                     String errorText = "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
                     return Mono.just(new WeworkAgentApplicationService.AgentExecuteResultWithConv(errorText, null, agentId));
                 });

@@ -26,7 +26,7 @@ public class ClientConfigQueryRequest {
      * 市场类型,1:插件;2:模板;3:MCP
      */
     @Schema(description = "市场类型,1:插件;2:模板;3:MCP")
-    @NotNull(message = "市场类型不能为空")
+    @NotNull(message = "Market type is required")
     private Integer dataType;
 
     /**

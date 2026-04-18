@@ -15,7 +15,9 @@ import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.sdk.service.AbstractTaskExecuteService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.PostConstruct;
@@ -45,7 +47,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
 
 
     static {
-        // disable keep alive，暂不使用连接池
+        // Disable keep alive, temporarily do not use connection pool
         System.setProperty("jdk.httpclient.keepalive.timeout", "0");
     }
 
@@ -82,12 +84,12 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
     }
 
 
-    //根据 cId 获取沙箱服务器（自动从会话获取 tenantId）
+    // Get sandbox server based on cId (automatically get tenantId from session)
     public SandboxServerConfig.SandboxServer selectServer(Long cid) {
         return TenantFunctions.callWithIgnoreCheck(() -> {
             ConversationDto conversation = conversationApplicationService.getConversationByCid(cid);
             if (conversation == null) {
-                throw new BizException("会话不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentConversationNotFound);
             }
             TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(conversation.getTenantId());
             String sandboxServerId = conversation.getSandboxServerId();
@@ -106,23 +108,23 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         if (!serverStatusMap.containsKey(tenantConfig.getTenantId())) {
             serverStatusMap.put(tenantConfig.getTenantId(), new ConcurrentHashMap<>());
         }
-        if (serverId != null && !serverId.equals("-1")) {// -1 代表 global sandboxes
+        if (serverId != null && !serverId.equals("-1")) {// -1 represents global sandboxes
             try {
                 SandboxConfigRpcDto sandboxConfigRpcDto = iSandboxConfigRpcService.queryById(Long.parseLong(serverId));
                 if (sandboxConfigRpcDto != null) {
                     if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.getIsActive()) {
-                        throw new BizException("智能体客户端已停用");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientDisabled);
                     } else if (!sandboxConfigRpcDto.getIsActive()) {
-                        throw new BizException("会话所在智能体电脑服务端已停用");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentComputerServerDisabled);
                     }
                     if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.isOnline()) {
-                        throw new BizException("智能体客户端已离线");
+                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientOffline);
                     }
                     SandboxGlobalConfigDto globalConfig = iSandboxConfigRpcService.getGlobalConfig(tenantConfig.getTenantId());
                     return convertToSandboxServer(sandboxConfigRpcDto, globalConfig);
                 }
             } catch (NumberFormatException e) {
-                log.warn("无法将serverId转换为Long类型，跳过该记录: {}", serverId);
+                log.warn("Unable to convert serverId to Long type, skip this record: {}", serverId);
                 // 忽略
             }
         }
@@ -151,7 +153,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
 
     private SandboxServerConfig.SandboxServer selectServer(TenantConfigDto tenantConfig, List<SandboxServerConfig.SandboxServer> sandboxServers) {
         if (sandboxServers.isEmpty()) {
-            throw new BizException("当前过于火爆，请稍后再试");//当前智能体沙箱资源已达上限
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSandboxCapacityExceeded);// Current agent sandbox resources have reached the upper limit
         }
         SandboxServerConfig.SandboxServer sandboxServer = sandboxServers.get(index.getAndIncrement() % sandboxServers.size());
         Map<String, ServerStatus> statusMap = serverStatusMap.get(tenantConfig.getTenantId());
@@ -170,7 +172,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         SandboxServerConfig sandboxServerConfig;
         List<SandboxConfigRpcDto> sandboxConfigRpcDtos = iSandboxConfigRpcService.queryGlobalConfigs(tenantConfig.getTenantId());
         if (CollectionUtils.isEmpty(sandboxConfigRpcDtos) && tenantConfig.getTenantId() != 1L) {
-            //全局没有配置时读1的配置
+            // Read configuration of 1 when global is not configured
             sandboxConfigRpcDtos = iSandboxConfigRpcService.queryGlobalConfigs(1L);
         }
         sandboxServerConfig = new SandboxServerConfig();
@@ -184,17 +186,17 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         }
         sandboxServerConfig.setSandboxServers(sandboxConfigRpcDtos.stream().map(sandboxConfigRpcDto -> convertToSandboxServer(sandboxConfigRpcDto, globalConfig)).collect(Collectors.toList()));
 
-        Assert.notEmpty(sandboxServerConfig.getSandboxServers(), "未配置智能体电脑");
+        Assert.notEmpty(sandboxServerConfig.getSandboxServers(), "Agent computer not configured");
         sandboxServerConfig.getSandboxServers().forEach(sandboxServer -> {
             if (sandboxServer.getPerUserCpuCores() == 0) {
                 sandboxServer.setPerUserCpuCores(sandboxServerConfig.getPerUserCpuCores());
             }
-            // CPU核数适当限制
-            Assert.isTrue(sandboxServer.getPerUserCpuCores() > 0 && sandboxServer.getPerUserCpuCores() < 32, "用户沙箱环境CPU配置错误");
+            // Appropriate limit on number of CPU cores
+            Assert.isTrue(sandboxServer.getPerUserCpuCores() > 0 && sandboxServer.getPerUserCpuCores() < 32, "User sandbox environment CPU configuration error");
             if (sandboxServer.getPerUserMemoryGB() == 0) {
                 sandboxServer.setPerUserMemoryGB(sandboxServerConfig.getPerUserMemoryGB());
             }
-            Assert.isTrue(sandboxServer.getPerUserMemoryGB() > 0 && sandboxServer.getPerUserMemoryGB() < 64, "用户沙箱环境内存配置错误");
+            Assert.isTrue(sandboxServer.getPerUserMemoryGB() > 0 && sandboxServer.getPerUserMemoryGB() < 64, "User sandbox environment memory configuration error");
         });
         return sandboxServerConfig;
     }
@@ -205,7 +207,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         sandboxServer.setServerName(sandboxConfigRpcDto.getName());
         String hostWithScheme = sandboxConfigRpcDto.getConfigValue().getHostWithScheme();
         if (StringUtils.isBlank(hostWithScheme)) {
-            throw new IllegalArgumentException("智能体电脑配置错误");
+            throw new IllegalArgumentException("Invalid agent computer configuration");
         }
         sandboxServer.setScope(sandboxConfigRpcDto.getScope());
         if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.GLOBAL) {
@@ -220,7 +222,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         } else {
             SandboxServerInfo sandboxServerInfo = sandboxConfigRpcDto.getSandboxServerInfo();
             if (sandboxServerInfo == null) {
-                throw new IllegalArgumentException("智能体电脑配置错误");
+                throw new IllegalArgumentException("Invalid agent computer configuration");
             }
             sandboxServer.setServerAgentUrl(sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getAgentPort());
             sandboxServer.setServerVncUrl(sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getVncPort());
@@ -248,7 +250,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         try {
             this.checkServerStatus();
         } catch (Exception e) {
-            log.error("定时任务执行失败", e);
+            log.error("Scheduled task failed", e);
         }
         return false;
     }

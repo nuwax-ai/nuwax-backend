@@ -1,6 +1,8 @@
 package com.xspaceagi.system.spec.mail;
 
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.mail.*;
@@ -12,7 +14,7 @@ public class MailSender {
 
     public static void sendEmail(String host, String port, String username, String password, String toAddress, String subject, String message) {
         if (StringUtils.isBlank(host)) {
-            throw new BizException("请在系统管理中配置邮件服务");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMailServiceNotConfigured);
         }
         // 设置邮件服务器属性
         Properties properties = new Properties();
@@ -40,7 +42,7 @@ public class MailSender {
             // 发送邮件
             Transport.send(msg);
         } catch (MessagingException e) {
-            throw new BizException("邮件发送异常，请检查邮件服务配置");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMailSendFailed);
         }
     }
 }

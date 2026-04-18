@@ -15,6 +15,7 @@ import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.CodeTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.web.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -124,10 +125,10 @@ public class UserController {
         }
         log.info("发送验证码:{},手机号:{},邮箱:{}", code, codeSendDto.getPhone(), codeSendDto.getEmail());
         if (tenantConfigDto.getAuthType() == TenantConfigDto.AuthTypeEnum.PHONE.getCode() && StringUtils.isBlank(tenantConfigDto.getSmsAccessKeyId())) {
-            throw new BizException("系统未配置短信服务，请直接输出本次验证码：" + code);
+            throw new BizException(I18nUtil.systemMessage("Backend.User.SendCode.SmsServiceNotConfigured", code));
         }
         if (tenantConfigDto.getAuthType() == TenantConfigDto.AuthTypeEnum.EMAIL.getCode() && StringUtils.isBlank(tenantConfigDto.getSmtpUsername())) {
-            throw new BizException("系统未配置邮件服务，请直接输出本次验证码：" + code);
+            throw new BizException(I18nUtil.systemMessage("Backend.User.SendCode.EmailServiceNotConfigured", code));
         }
         return ReqResult.success();
     }
@@ -137,7 +138,7 @@ public class UserController {
     public ReqResult<Boolean> checkEmail(@PathVariable String email) {
         //验证邮箱格式，邮箱用户名支持 .
         if (!email.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
-            throw new BizException("邮箱格式不正确");
+            throw new BizException(I18nUtil.systemMessage("Backend.User.Email.InvalidFormat"));
         }
         boolean isUsed = null != userApplicationService.queryUserByEmail(email);
         return ReqResult.success(isUsed);
@@ -149,18 +150,18 @@ public class UserController {
         if (StringUtils.isNotBlank(bindEmailDto.getEmail())) {
             //验证邮箱格式
             if (!bindEmailDto.getEmail().matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
-                throw new BizException("邮箱格式不正确");
+                throw new BizException(I18nUtil.systemMessage("Backend.User.Email.InvalidFormat"));
             }
             verifyCodeSendAndCheckService.checkEmailCode(CodeTypeEnum.BIND_EMAIL, bindEmailDto.getEmail(), bindEmailDto.getCode());
             boolean isUsed = null != userApplicationService.queryUserByEmail(bindEmailDto.getEmail());
             if (isUsed) {
-                throw new BizException("邮箱已被占用");
+                throw new BizException(I18nUtil.systemMessage("Backend.User.Email.Occupied"));
             }
         } else if (StringUtils.isNotBlank(bindEmailDto.getPhone())) {
             verifyCodeSendAndCheckService.checkPhoneCode(CodeTypeEnum.BIND_EMAIL, bindEmailDto.getPhone(), bindEmailDto.getCode());
             boolean isUsed = null != userApplicationService.queryUserByPhone(bindEmailDto.getPhone());
             if (isUsed) {
-                throw new BizException("手机号已被占用");
+                throw new BizException(I18nUtil.systemMessage("Backend.User.Phone.Occupied"));
             }
         }
         UserDto userDto = (UserDto) RequestContext.get().getUser();
@@ -171,7 +172,6 @@ public class UserController {
         userApplicationService.update(userUpdate);
         return ReqResult.success();
     }
-
 
     @Operation(summary = "重置密码")
     @RequestMapping(path = "/password/reset", method = RequestMethod.POST)
@@ -223,7 +223,9 @@ public class UserController {
     @Operation(summary = "查询当前登录用户信息")
     @RequestMapping(path = "/getLoginInfo", method = RequestMethod.GET)
     public ReqResult<UserDto> getLoginUserInfo() {
-        return ReqResult.success((UserDto) RequestContext.get().getUser());
+        UserDto user = (UserDto) RequestContext.get().getUser();
+        user.setLangMap(null);
+        return ReqResult.success(user);
     }
 
 
@@ -301,11 +303,22 @@ public class UserController {
             return ReqResult.error("用户未登录");
         }
         List<MenuNodeDto> menuTree = sysUserAuthCacheService.getUserMenuTree(userId);
+        I18nUtil.replaceSystemMessage(menuTree);
         return ReqResult.success(menuTree);
     }
 
     @GetMapping("/refresh-permission")
     public ReqResult<Void> refreshPermission() {
+        Long userId = ((UserDto) RequestContext.get().getUser()).getId();
+        if (userId == null) {
+            return ReqResult.error("用户未登录");
+        }
+        sysUserPermissionCacheService.clearCacheByUserIds(List.of(userId));
+        return ReqResult.success();
+    }
+
+    @GetMapping("/lang")
+    public ReqResult<Void> lang(HttpServletRequest request) {
         Long userId = ((UserDto) RequestContext.get().getUser()).getId();
         if (userId == null) {
             return ReqResult.error("用户未登录");

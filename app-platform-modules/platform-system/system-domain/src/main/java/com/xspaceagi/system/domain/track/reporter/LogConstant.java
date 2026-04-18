@@ -12,7 +12,7 @@ public class LogConstant {
     public static final String MODULE = "系统管理";
 
 
-    public static final String STATUS_SUCCESS = "成功";
+    public static final String STATUS_success = "成功";
 
     public static final String STATUS_FAIL = "失败";
 

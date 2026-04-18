@@ -65,7 +65,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
      * @param tenantId 租户ID
      */
     public void validateSyncResult(Long tenantId) {
-        log.info("开始验证同步结果: tenantId={}", tenantId);
+        log.info("Starting sync result verification: tenantId={}", tenantId);
 
         // 1. 获取所有知识库
         List<Long> kbIds = knowledgeConfigRepository.queryAllKbIds();
@@ -93,7 +93,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                     quickwitStats.put(kbId, stats.getTotalSegments());
                 }
             } catch (Exception e) {
-                log.error("获取知识库 {} 的 Quickwit 统计信息失败", kbId, e);
+                log.error("Quickwit stats failed for KB {}", kbId, e);
             }
         }
 
@@ -105,18 +105,18 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
             Long quickwitCount = quickwitStats.get(kbId);
 
             if (quickwitCount == null || !mysqlCount.equals(quickwitCount)) {
-                log.warn("数据不一致: kbId={}, MySQL={}, Quickwit={}", 
+                log.warn("Data mismatch: kbId={}, MySQL={}, Quickwit={}", 
                     kbId, mysqlCount, quickwitCount);
                 allMatch = false;
             } else {
-                log.info("数据一致: kbId={}, count={}", kbId, mysqlCount);
+                log.info("Data match: kbId={}, count={}", kbId, mysqlCount);
             }
         }
 
         if (allMatch) {
-            log.info("✅ 同步验证通过：所有知识库数据一致");
+            log.info("Sync verify OK: all KBs consistent");
         } else {
-            log.error("❌ 同步验证失败：存在数据不一致的知识库");
+            log.error("Sync verify failed: inconsistent KBs");
         }
     }
 
@@ -127,11 +127,11 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
      */
     @Override
     public void syncAllUnsyncedKnowledgeBasesToQuickwit(Long tenantId) {
-        log.debug("开始同步所有未同步的知识库: tenantId={}", tenantId);
+        log.debug("Sync all unsynced KBs: tenantId={}", tenantId);
         
         // 1. 查询未同步的知识库
         List<KnowledgeConfigModel> unsyncedKbs = knowledgeConfigRepository.queryUnsyncedKnowledgeBases(tenantId);
-        log.info("找到 {} 个未同步的知识库", unsyncedKbs.size());
+        log.info("Found {} unsynced KBs", unsyncedKbs.size());
         
         int successCount = 0;
         int failCount = 0;
@@ -141,10 +141,10 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
         for (KnowledgeConfigModel kb : unsyncedKbs) {
             try {
                 long syncedCount = batchSyncKnowledgeBaseForMigration(kb.getId(), tenantId);
-                log.info("知识库同步成功: kbId={}, syncedCount={}", kb.getId(), syncedCount);
+                log.info("Knowledge base sync succeeded: kbId={}, syncedCount={}", kb.getId(), syncedCount);
                 successCount++;
             } catch (Exception e) {
-                log.error("知识库同步失败: kbId={}, name={}", kb.getId(), kb.getName(), e);
+                log.error("Knowledge base sync failed: kbId={}, name={}", kb.getId(), kb.getName(), e);
                 // 标记为同步失败
                 knowledgeConfigRepository.updateFulltextSyncStatus(kb.getId(), FulltextSyncStatusEnum.SYNC_FAILED.getCode(), 0L);
                 failCount++;
@@ -158,7 +158,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
             }
         }
         
-        log.debug("所有知识库同步完成: 总数={}, 成功={}, 失败={}",
+        log.debug("All KB sync done: total={}, ok={}, failed={}",
             unsyncedKbs.size(), successCount, failCount);
         
         // 如果有失败，抛出异常
@@ -179,12 +179,12 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
      */
     @Override
     public long batchSyncKnowledgeBaseForMigration(Long kbId, Long tenantId) {
-        log.info("开始同步知识库: kbId={}, tenantId={}", kbId, tenantId);
+        log.info("Starting knowledge base sync: kbId={}, tenantId={}", kbId, tenantId);
         
         // 1. 检查知识库是否存在
         KnowledgeConfigModel config = knowledgeConfigRepository.queryOneInfoById(kbId);
         if (config == null) {
-            throw new IllegalArgumentException("知识库不存在: kbId=" + kbId);
+            throw new IllegalArgumentException("Knowledge base does not exist: kbId=" + kbId);
         }
         
 
@@ -205,7 +205,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                     break;
                 }
                 
-                log.info("处理批次: kbId={}, offset={}, size={}", kbId, offset, segments.size());
+                log.info("Batch: kbId={}, offset={}, size={}", kbId, offset, segments.size());
                 
                 // 5. 分离空文本和非空文本的分段
                 List<Long> emptyTextSegmentIds = segments.stream()
@@ -221,7 +221,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                 // 6. 处理空文本分段：直接标记为已同步
                 if (!emptyTextSegmentIds.isEmpty()) {
                     rawSegmentRepository.batchUpdateSyncStatus(emptyTextSegmentIds, RawTextFulltextSyncStatusEnum.SYNCED.getCode());
-                    log.info("空文本分段已标记为已同步: kbId={}, count={}", kbId, emptyTextSegmentIds.size());
+                    log.info("Empty segments marked synced: kbId={}, count={}", kbId, emptyTextSegmentIds.size());
                 }
                 
                 // 7. 处理非空文本分段：推送到 Quickwit
@@ -237,16 +237,16 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                         
                         totalSynced += pushResult.getIndexedCount();
                         
-                        log.info("批次同步状态更新: kbId={}, 推送={}, 成功={}", 
+                        log.info("Batch sync status: kbId={}, pushed={}, ok={}", 
                             kbId, fullTextModels.size(), successRawIds.size());
                     } else {
-                        log.warn("批次推送结果为空: kbId={}, segmentCount={}", kbId, fullTextModels.size());
+                        log.warn("Batch push empty: kbId={}, segmentCount={}", kbId, fullTextModels.size());
                     }
                 }
                 
                 offset += batchSize;
                 
-                log.info("批次同步完成: kbId={}, batchSize={}, totalSynced={}", 
+                log.info("Batch sync done: kbId={}, batchSize={}, totalSynced={}", 
                     kbId, segments.size(), totalSynced);
             }
             
@@ -254,22 +254,22 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
             Long unsyncedCount = rawSegmentRepository.countUnsyncedByKbId(kbId);
             if (unsyncedCount != null && unsyncedCount > 0) {
                 // 仍有未同步的分段，更新为部分同步状态（可选：使用状态码1表示同步中，或保持原状态）
-                log.warn("知识库仍有未同步分段: kbId={}, unsyncedCount={}, totalSynced={}", 
+                log.warn("KB still has unsynced: kbId={}, unsyncedCount={}, totalSynced={}", 
                     kbId, unsyncedCount, totalSynced);
                 knowledgeConfigRepository.updateFulltextSyncStatus(kbId, FulltextSyncStatusEnum.SYNCHRONIZING.getCode(), totalSynced);
             } else {
                 // 所有分段都已同步完成，更新知识库状态为"已同步"
                 knowledgeConfigRepository.updateFulltextSyncStatus(kbId, FulltextSyncStatusEnum.SYNCED.getCode(), totalSynced);
-                log.info("知识库所有分段同步完成: kbId={}, totalSynced={}", kbId, totalSynced);
+                log.info("KB all segments synced: kbId={}, totalSynced={}", kbId, totalSynced);
             }
             
-            log.info("知识库同步流程完成: kbId={}, totalSynced={}", kbId, totalSynced);
+            log.info("KB sync flow done: kbId={}, totalSynced={}", kbId, totalSynced);
             return totalSynced;
             
         } catch (Exception e) {
             // 同步失败，更新状态
             knowledgeConfigRepository.updateFulltextSyncStatus(kbId, FulltextSyncStatusEnum.SYNC_FAILED.getCode(), 0L);
-            log.error("知识库同步失败: kbId={}", kbId, e);
+            log.error("Knowledge base sync failed: kbId={}", kbId, e);
             throw e;
         }
     }
@@ -283,23 +283,23 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
      */
     @Override
     public long repairKnowledgeBaseConsistency(Long kbId, Long tenantId) {
-        log.info("开始修复数据一致性: kbId={}, tenantId={}", kbId, tenantId);
+        log.info("Repair consistency start: kbId={}, tenantId={}", kbId, tenantId);
         
         // 0. 获取知识库配置
         KnowledgeConfigModel config = knowledgeConfigRepository.queryOneInfoById(kbId);
         if (config == null) {
-            throw new IllegalArgumentException("知识库不存在: kbId=" + kbId);
+            throw new IllegalArgumentException("Knowledge base does not exist: kbId=" + kbId);
         }
         
         // 1. 查询 MySQL 中的所有分段ID
         List<Long> mysqlSegmentIds = rawSegmentRepository.queryAllSegmentIds(kbId);
-        log.info("MySQL 分段数量: kbId={}, count={}", kbId, mysqlSegmentIds.size());
+        log.info("MySQL segment count: kbId={}, count={}", kbId, mysqlSegmentIds.size());
         
         // 2. 查询 Quickwit 中的所有分段ID
         List<Long> quickwitSegmentIds = fullTextSearchDomainService.queryAllSegmentIds(
             kbId, tenantId, config.getSpaceId()
         );
-        log.info("Quickwit 分段数量: kbId={}, count={}", kbId, quickwitSegmentIds.size());
+        log.info("Quickwit segment count: kbId={}, count={}", kbId, quickwitSegmentIds.size());
         
         // 3. 找出 MySQL 有但 Quickwit 没有的（需要补推）
         java.util.Set<Long> quickwitSet = new java.util.HashSet<>(quickwitSegmentIds);
@@ -317,7 +317,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
         
         // 5. 补推缺失的分段
         if (!missingInQuickwit.isEmpty()) {
-            log.info("发现 {} 个缺失的分段，开始补推", missingInQuickwit.size());
+            log.info("Found {} missing segments, backfilling", missingInQuickwit.size());
             
             // 分批处理，避免一次性加载太多数据
             int batchSize = 1000;
@@ -343,7 +343,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                 // 处理空文本分段：直接标记为已同步
                 if (!emptyTextSegmentIds.isEmpty()) {
                     rawSegmentRepository.batchUpdateSyncStatus(emptyTextSegmentIds, RawTextFulltextSyncStatusEnum.SYNCED.getCode());
-                    log.info("补推批次-空文本分段已标记: batch={}/{}, count={}", 
+                    log.info("Backfill batch empty-text marked: batch={}/{}, count={}", 
                         (i / batchSize + 1), (missingInQuickwit.size() + batchSize - 1) / batchSize,
                         emptyTextSegmentIds.size());
                 }
@@ -361,7 +361,7 @@ public class KnowledgeFullTextBatchSyncService implements com.xspaceagi.knowledg
                         
                         repairedCount += pushResult.getIndexedCount();
                         
-                        log.info("补推批次完成: batch={}/{}, indexed={}, success={}", 
+                        log.info("Backfill batch done: batch={}/{}, indexed={}, success={}", 
                             (i / batchSize + 1), (missingInQuickwit.size() + batchSize - 1) / batchSize, 
                             pushResult.getIndexedCount(), successRawIds.size());
                     }

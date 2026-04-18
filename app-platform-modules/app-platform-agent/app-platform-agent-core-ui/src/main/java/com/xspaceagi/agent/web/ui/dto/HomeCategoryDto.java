@@ -23,24 +23,14 @@ public class HomeCategoryDto {
 
     public enum HomeCategoryTypeEnum {
 
-        //智能体收藏
-        AGENT_COLLECT("我的收藏"),
-        //智能体推荐
-        AGENT_RECOMMEND("官方推荐"),
+        // Agent collection
+        AGENT_COLLECT,
+        // Agent recommendation
+        AGENT_RECOMMEND,
 
-        PERSONAL_SPACE("个人空间"),
+        PERSONAL_SPACE,
 
-        TEAM_SPACE("团队空间");
-
-        private String name;
-
-        HomeCategoryTypeEnum(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
+        TEAM_SPACE;
     }
 
     public static String getSpaceTypeName(Long id) {

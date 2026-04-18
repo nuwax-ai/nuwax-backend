@@ -19,6 +19,7 @@ import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.HttpStatusEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.FileAkUtil;
 import com.xspaceagi.system.web.dto.UploadResultDto;
 import com.xspaceagi.system.web.emoj.IconGenerator;
@@ -85,6 +86,12 @@ public class FileUploadController {
     @Value("${storage.type}")
     private String storageType;
 
+    @Value("${cos.regionName:ap-chengdu}")
+    private String regionName;
+
+    @Value("${cos.bucketName:agent-1251073634}")
+    private String bucketName;
+
     @Resource
     private FileAkUtil fileUrl;
 
@@ -147,14 +154,14 @@ public class FileUploadController {
             } else {
                 url = baseUrl + newFileName;
                 COSCredentials cred = new BasicCOSCredentials(secretId, secretKey);
-                Region region = new Region("ap-chengdu");
+                Region region = new Region(regionName);
                 ClientConfig clientConfig = new ClientConfig(region);
                 clientConfig.setHttpProtocol(HttpProtocol.https);
                 COSClient cosClient = new COSClient(cred, clientConfig);
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(bytes.length);
                 metadata.setContentType(file.getContentType());
-                cosClient.putObject("agent-1251073634", newFileName, file.getInputStream(), metadata);
+                cosClient.putObject(bucketName, newFileName, file.getInputStream(), metadata);
             }
             if (!RequestContext.get().isLogin()) {
                 url = fileUrl.getFileUrlWithAk(url);
@@ -167,7 +174,7 @@ public class FileUploadController {
             uploadResultDto.setSize(bytes.length);
             return ReqResult.success(uploadResultDto);
         } catch (IOException e) {
-            log.error("文件上传失败", e);
+            log.error("File upload failed", e);
         }
         return ReqResult.error("File upload failed");
     }
@@ -178,7 +185,8 @@ public class FileUploadController {
             try {
                 fileUrl.checkFileUrlAk(request.getRequestURI(), request.getParameter("ak"));
             } catch (Exception e) {
-                throw new BizException(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED);
+                throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
+                        BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
             }
         }
         try {

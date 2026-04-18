@@ -20,8 +20,10 @@ import com.xspaceagi.system.sdk.server.IUserRpcService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -151,7 +153,7 @@ public class AgentManageController extends BaseManageController {
     @GetMapping("/restriction-targets/{agentId}")
     public ReqResult<SubjectTargetsDto> getRestrictionTargets(@PathVariable Long agentId) {
         if (agentApplicationService.queryById(agentId) == null) {
-            throw new BizException("智能体不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
         }
         return ReqResult.success(sysSubjectPermissionApplicationService.listTargetsBySubject(
                 PermissionSubjectTypeEnum.AGENT, agentId));
@@ -162,7 +164,7 @@ public class AgentManageController extends BaseManageController {
     @PostMapping("/bind-restriction-targets")
     public ReqResult<Void> bindRestrictionTargets(@RequestBody @Valid BindRestrictionTargetsDto bindDto) {
         if (agentApplicationService.queryById(bindDto.getSubjectId()) == null) {
-            throw new BizException("智能体不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
         }
         sysSubjectPermissionApplicationService.bindRestrictionTargets(
                 PermissionSubjectTypeEnum.AGENT, bindDto.getSubjectId(), bindDto, getUser());

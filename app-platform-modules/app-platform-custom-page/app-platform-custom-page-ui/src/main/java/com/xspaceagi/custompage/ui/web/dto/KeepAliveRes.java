@@ -4,16 +4,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "保活响应体")
+@Schema(description = "Keep-alive response body")
 public class KeepAliveRes {
 
-    @Schema(description = "项目ID")
+    @Schema(description = "Project ID")
     private Long projectId;
 
-    @Schema(description = "项目ID字符串")
+    @Schema(description = "Project ID as string")
     private String projectIdStr;
 
-    @Schema(description = "开发服务器URL")
+    @Schema(description = "Dev server URL")
     private String devServerUrl;
 
 }

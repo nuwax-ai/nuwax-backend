@@ -59,10 +59,13 @@ import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.IPUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +89,7 @@ import static com.xspaceagi.agent.core.spec.constant.Prompts.PERSONAL_COMPUTER_A
 @Service
 public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrImportService {
 
-    // 常见认证字段名称关键词
+    // Common authentication field name keywords
     private static final List<String> AUTH_FIELD_KEYWORDS = Arrays.asList(
             "password", "passwd", "pwd", "token", "secret", "auth", "key", "credential", "session", "ak", "sk", "access"
     );
@@ -168,7 +171,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<AgentInfoDto> queryPublishedAgentInfo(Long agentId) {
         AgentDetailDto agentDetailDto = agentApplicationService.queryAgentDetail(agentId, true);
         if (agentDetailDto == null) {
-            return ReqResult.error("Agent不存在或未发布");
+            return ReqResult.error("Agent not found or not published");
         }
         AgentInfoDto agentInfoDto = new AgentInfoDto();
         if (agentDetailDto.getVariables() != null) {
@@ -194,7 +197,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<String> queryPluginConfig(Long pluginId, String paramJson) {
         PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(pluginId, null);
         if (pluginDto == null) {
-            return ReqResult.error("插件不存在");
+            return ReqResult.error("Plugin not found");
         }
         PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginDto.getConfig();
         Map<String, Arg> argMap = new HashMap<>();
@@ -213,8 +216,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     @DSTransactional
     public ReqResult<Long> pluginEnableOrUpdate(PluginEnableOrUpdateDto pluginStartOrUpdateDto) {
         PluginDto pluginDto = JSONObject.parseObject(pluginStartOrUpdateDto.getConfig(), PluginDto.class);
-        Assert.notNull(pluginDto, "插件配置不能为空");
-        Assert.notNull(pluginDto.getType(), "插件类型异常");
+        Assert.notNull(pluginDto, "Plugin configuration cannot be null");
+        Assert.notNull(pluginDto.getType(), "Plugin type exception");
         if (StringUtils.isNotBlank(pluginStartOrUpdateDto.getIcon())) {
             pluginDto.setIcon(pluginStartOrUpdateDto.getIcon());
         }
@@ -306,7 +309,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (publishedDto != null) {
             OffShelfDto offShelfDto = new OffShelfDto();
             offShelfDto.setPublishId(publishedDto.getId());
-            offShelfDto.setReason("生态市场停用");
+            offShelfDto.setReason("Ecosystem market disable");
             publishApplicationService.offShelf(offShelfDto);
         }
         return ReqResult.success();
@@ -317,7 +320,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == TargetTypeEnum.Workflow) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(targetId, null, true);
             if (workflowConfigDto == null) {
-                return ReqResult.error("未找到对应的工作流");
+                return ReqResult.error("Workflow not found");
             }
             resetNodesConfig(workflowConfigDto.getNodes());
             return ReqResult.success(JSONObject.toJSONString(workflowConfigDto));
@@ -353,8 +356,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                     resetMcpServerConfig(mcpDto.getDeployedConfig());
                 }
             }
-            //知识库不需要读取配置
-            //数据表读取表结构
+            //Knowledge base configuration does not need to be read
+            //Data table reads table structure
             if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Table) {
                 Long targetId1 = agentComponentConfigDto.getTargetId();
                 if (targetId1 != null) {
@@ -373,7 +376,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         }
         if (mcpConfig.getServerConfig() != null && JSON.isValid(mcpConfig.getServerConfig())) {
             JSONObject jsonObject = JSON.parseObject(mcpConfig.getServerConfig());
-            //检查env字段中包含的环境变量
+            //Check env field for environment variables
             checkAndRemoveEnvKeys("", jsonObject);
             mcpConfig.setServerConfig(jsonObject.toJSONString());
         }
@@ -386,7 +389,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                     boolean isNameSuspicious = AUTH_FIELD_KEYWORDS.stream()
                             .anyMatch(keyword -> key.toLowerCase().contains(keyword));
                     if (isNameSuspicious) {
-                        jsonObject.put(key, "<请填写对应的认证信息>");
+                        jsonObject.put(key, "<Authentication information>");
                     }
                 }
                 return;
@@ -400,20 +403,20 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<Long> templateEnableOrUpdate(TemplateEnableOrUpdateDto templateEnableOrUpdateDto) {
         UserDto userDto = userApplicationService.queryById(templateEnableOrUpdateDto.getUserId());
         if (userDto == null) {
-            return ReqResult.error("用户不存在");
+            return ReqResult.error("User not found");
         }
         if (templateEnableOrUpdateDto.getTargetType() == TargetTypeEnum.Workflow) {
             if (templateEnableOrUpdateDto.getTargetId() != null && templateEnableOrUpdateDto.getTargetId() > 0) {
                 WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(templateEnableOrUpdateDto.getTargetId());
                 if (workflowConfigDto == null) {
-                    return ReqResult.error("工作流id错误");
+                    return ReqResult.error("Workflow ID error");
                 }
                 workflowApplicationService.delete(workflowConfigDto.getId());
             }
 
             WorkflowConfigDto workflowConfigDto = WorkflowConfigDto.convertToWorkflowConfigDto(templateEnableOrUpdateDto.getConfig());
             if (workflowConfigDto == null) {
-                return ReqResult.error("该模版配置异常，暂时不可用");
+                return ReqResult.error("Template configuration exception, temporarily unavailable");
             }
             if (StringUtils.isNotBlank(templateEnableOrUpdateDto.getName())) {
                 workflowConfigDto.setName(templateEnableOrUpdateDto.getName());
@@ -429,13 +432,13 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             if (templateEnableOrUpdateDto.getTargetId() != null && templateEnableOrUpdateDto.getTargetId() > 0) {
                 AgentConfigDto agentConfigDto = agentApplicationService.queryById(templateEnableOrUpdateDto.getTargetId());
                 if (agentConfigDto == null) {
-                    return ReqResult.error("智能体id错误");
+                    return ReqResult.error("Agent ID error");
                 }
                 agentApplicationService.delete(agentConfigDto.getId());
             }
             AgentConfigDto agentConfigDto = JSON.parseObject(templateEnableOrUpdateDto.getConfig(), AgentConfigDto.class);
             if (agentConfigDto == null) {
-                return ReqResult.error("该模版配置异常，暂时不可用");
+                return ReqResult.error("Template configuration exception, temporarily unavailable");
             }
             if (StringUtils.isNotBlank(templateEnableOrUpdateDto.getName())) {
                 agentConfigDto.setName(templateEnableOrUpdateDto.getName());
@@ -541,7 +544,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 }
             }
         });
-        // agentConfigDto.getAgentComponentConfigList()过滤掉Agent类型的配置
+        //Filter out Agent type configurations in agentConfigDto.getAgentComponentConfigList()
         agentConfigDto.getAgentComponentConfigList().removeIf(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Agent);
         agentConfigDto.setTenantId(null);
         agentConfigDto.setSpaceId(spaceId);
@@ -557,7 +560,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Plugin) {
             PluginDto pluginDto = pluginApplicationService.queryById(targetId);
             if (pluginDto == null) {
-                throw new BizException("插件不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFound);
             }
             exportTemplateDto.setTemplateConfig(pluginDto);
             exportTemplateDto.setName(pluginDto.getName());
@@ -566,7 +569,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Workflow) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(targetId);
             if (workflowConfigDto == null) {
-                throw new BizException("工作流不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFoundSimple);
             }
             List<WorkflowNodeDto> workflowNodeDtos = workflowApplicationService.queryWorkflowNodeListForTestExecute(targetId);
             resetNodesConfig(workflowNodeDtos);
@@ -578,7 +581,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Agent) {
             AgentConfigDto agentConfigDto = agentApplicationService.queryConfigForTestExecute(targetId);
             if (agentConfigDto == null) {
-                throw new BizException("智能体不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
             }
             resetAgentComponents(agentConfigDto);
             exportTemplateDto.setTemplateConfig(agentConfigDto);
@@ -592,9 +595,9 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             try {
                 dorisTableDefinitionVo = iComposeDbTableRpcService.queryTableDefinition(request);
             } catch (Exception e) {
-                //  忽略
-                log.warn("查询表结构定义失败 {}", targetId);
-                throw new BizException("查询表结构定义失败");
+                //Ignore
+                log.warn("Failed to query table schema definition {}", targetId);
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTableSchemaQueryFailed);
             }
             exportTemplateDto.setTemplateConfig(dorisTableDefinitionVo);
             exportTemplateDto.setName(dorisTableDefinitionVo.getTableName());
@@ -607,34 +610,34 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<String> queryApiSchema(TargetTypeEnum targetType, Long targetId, Long projectId) {
         PageDto pageDto = customPageRpcService.queryPageDto(projectId, false);
         if (pageDto == null) {
-            return ReqResult.error("页面不存在");
+            return ReqResult.error("Page not found");
         }
         List<DataSourceDto> dataSources = pageDto.getDataSources();
         if (dataSources == null || dataSources.isEmpty()) {
-            return ReqResult.error("页面数据源不存在");
+            return ReqResult.error("Page data source not found");
         }
         Optional<DataSourceDto> first = dataSources.stream().filter(dataSourceDto -> dataSourceDto.getId() != null && dataSourceDto.getId().equals(targetId)).findFirst();
         if (!first.isPresent()) {
-            return ReqResult.error("数据源不存在");
+            return ReqResult.error("Data source not found");
         }
         String key = first.get().getKey();
         Map<String, Object> apiSchema = new HashMap<>();
-        apiSchema.put("servers", List.of(Map.of("url", "", "description", "直接使用 paths 中给到的接口地址，禁止再在地址前面追加类似`/api`的前缀")));
+        apiSchema.put("servers", List.of(Map.of("url", "", "description", "Directly use the interface address given in paths, do not append prefixes like `/api` in front of the address")));
         if (targetType == TargetTypeEnum.Plugin) {
             PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(targetId, null);
             if (pluginDto == null) {
-                return ReqResult.error("插件不存在");
+                return ReqResult.error("Plugin not found");
             }
             PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginDto.getConfig();
             if (pluginConfigDto == null) {
-                return ReqResult.error("插件配置不存在");
+                return ReqResult.error("Plugin configuration not found");
             }
 
             List<Arg> inputArgs = pluginConfigDto.getInputArgs();
             List<Arg> outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("接口调用状态，success为true仅代表接口调用成功，业务执行逻辑请关注data中的数据定义").dataType(DataTypeEnum.Boolean).build(),
-                    Arg.builder().require(true).name("message").description("接口调用失败时的错误信息，比如服务器内部错误").dataType(DataTypeEnum.String).build(),
-                    Arg.builder().require(true).name("data").description("返回的具体业务数据").dataType(DataTypeEnum.Object).subArgs(pluginConfigDto.getOutputArgs()).build()
+                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
+                    Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
+                    Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(pluginConfigDto.getOutputArgs()).build()
             );
             Map<String, Object> outputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
             Map<String, Object> inputSchema = ArgConverter.convertArgsToJsonSchema(inputArgs);
@@ -646,23 +649,23 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == TargetTypeEnum.Workflow) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(targetId, null, false);
             if (workflowConfigDto == null) {
-                return ReqResult.error("工作流不存在");
+                return ReqResult.error("Workflow not found");
             }
-            String description = workflowConfigDto.getDescription() == null ? "" : workflowConfigDto.getDescription() + "（注意该接口为 text/event-stream 流式接口,出现complete=true时结束，数据处理时请注意SSE数据是以 data: 开始，默认不使用SSE流式接口，除非用户明确提示使用流式接口）";
+            String description = workflowConfigDto.getDescription() == null ? "" : workflowConfigDto.getDescription() + "(Note that this interface is a text/event-stream streaming interface, it ends when complete=true appears. When processing data, please note that SSE data starts with data:, and SSE streaming interface is not used by default unless the user explicitly requests to use streaming interface)";
             List<Arg> inputArgs = workflowConfigDto.getInputArgs();
             Map<String, Object> inputSchema = ArgConverter.convertArgsToJsonSchema(inputArgs, true);
             List<Arg> outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("接口调用状态，success为true仅代表接口调用成功，业务执行逻辑请关注data中的数据定义").dataType(DataTypeEnum.Boolean).build(),
-                    Arg.builder().require(true).name("message").description("接口调用失败时的错误信息，比如服务器内部错误").dataType(DataTypeEnum.String).build(),
-                    Arg.builder().require(true).name("data").description("返回的具体业务数据").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build(),
-                    Arg.builder().require(true).name("complete").description("工作流是否执行完成，没有特殊要求时只需要关注complete=true时的结果").dataType(DataTypeEnum.Boolean).build()
+                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
+                    Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
+                    Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build(),
+                    Arg.builder().require(true).name("complete").description("Whether workflow execution is completed, just need to pay attention to results when complete=true if no special requirements").dataType(DataTypeEnum.Boolean).build()
             );
             Map<String, Object> streamOutputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
 
             outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("接口调用状态，success为true仅代表接口调用成功，业务执行逻辑请关注data中的数据定义").dataType(DataTypeEnum.Boolean).build(),
-                    Arg.builder().require(true).name("message").description("接口调用失败时的错误信息，比如服务器内部错误").dataType(DataTypeEnum.String).build(),
-                    Arg.builder().require(true).name("data").description("返回的具体业务数据").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build()
+                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
+                    Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
+                    Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build()
             );
             Map<String, Object> outputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
 
@@ -681,7 +684,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         return Map.of(
                 "post",
                 Map.of(
-                        "summary", name + "接口",
+                        "summary", name + " interface",
                         "description", description,
                         "requestBody", Map.of(
                                 "required", true,
@@ -695,7 +698,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                         "responses", Map.of(
                                 "200",
                                 Map.of(
-                                        "description", "成功",
+                                        "description", "Success",
                                         "content", Map.of(
                                                 produces,
                                                 Map.of(
@@ -713,8 +716,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Plugin) {
             PluginConfigDto pluginConfigDto;
             PluginDto pluginDto = JSONObject.parseObject(templateConfig, PluginDto.class);
-            Assert.notNull(pluginDto, "插件配置不能为空");
-            Assert.notNull(pluginDto.getType(), "插件类型异常");
+            Assert.notNull(pluginDto, "Plugin configuration cannot be null");
+            Assert.notNull(pluginDto.getType(), "Plugin type exception");
             if (pluginDto.getType() == PluginTypeEnum.HTTP) {
                 pluginConfigDto = ((JSONObject) pluginDto.getConfig()).toJavaObject(HttpPluginConfigDto.class);
             } else {
@@ -739,7 +742,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Workflow) {
             WorkflowConfigDto workflowConfigDto = WorkflowConfigDto.convertToWorkflowConfigDto(templateConfig);
             if (workflowConfigDto == null) {
-                throw new BizException("该模版配置异常，暂时不可用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTemplateConfigInvalid);
             }
             return newWorkflow(user, workflowConfigDto, spaceId);
         }
@@ -749,7 +752,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (targetType == Published.TargetType.Agent) {
             AgentConfigDto agentConfigDto = JSON.parseObject(templateConfig, AgentConfigDto.class);
             if (agentConfigDto == null) {
-                throw new BizException("该模版配置异常，暂时不可用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTemplateConfigInvalid);
             }
             return newAgent(user, agentConfigDto, spaceId);
         }
@@ -760,7 +763,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         WorkflowConfig workflowConfig = new WorkflowConfig();
         BeanUtils.copyProperties(workflowConfigDto, workflowConfig);
         workflowConfig.setCreatorId(user.getId());
-        //完善工作流各个节点的配置信息
+        //Complete workflow node configuration information
         completeWorkflowNodesConfig(user, workflowConfigDto, spaceId);
         List<WorkflowNodeConfig> workflowNodeConfigs = new ArrayList<>();
         workflowConfigDto.getNodes().forEach(workflowNodeDto -> {
@@ -940,7 +943,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         if (publishedDto != null) {
             OffShelfDto offShelfDto = new OffShelfDto();
             offShelfDto.setPublishId(publishedDto.getId());
-            offShelfDto.setReason("生态市场停用");
+            offShelfDto.setReason("Ecosystem market disable");
             publishApplicationService.offShelf(offShelfDto);
         }
         return ReqResult.success();
@@ -964,13 +967,13 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 intentRecognitionNodeConfigDto.setModelConfig(null);
             }
             if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Plugin) {
-                //入参如果是认证字段，则清空bindValue默认值
+                //If input parameter is authentication field, clear bindValue default value
                 PluginNodeConfigDto pluginNodeConfigDto = (PluginNodeConfigDto) workflowNodeDto.getNodeConfig();
                 PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginNodeConfigDto.getPluginConfig().getConfig();
                 resetPluginArgs(pluginConfigDto.getInputArgs());
             }
-            //知识库配置保持不变
-            //数据表读取表结构配置
+            //Knowledge base configuration remains unchanged
+            //Data table reads table structure configuration
             if (workflowNodeDto.getType().name().startsWith("Table")) {
                 TableNodeConfigDto tableNodeConfigDto = (TableNodeConfigDto) workflowNodeDto.getNodeConfig();
                 CreateTableDefineVo createTableDefineVo = dbTableRpcService.queryCreateTableInfo(tableNodeConfigDto.getTableId());
@@ -1001,7 +1004,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                     boolean isNameSuspicious = AUTH_FIELD_KEYWORDS.stream()
                             .anyMatch(keyword -> arg.getName().toLowerCase().contains(keyword));
                     if (isNameSuspicious) {
-                        arg.setBindValue("<请填写认证信息>");
+                        arg.setBindValue("<Authentication information>");
                         arg.setEnable(true);
                     }
                 }
@@ -1010,17 +1013,17 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     }
 
     private String generateIcon(String iconUrl) {
-        // 检查pluginAddDto.getIcon()是否可网络上访问
+        //Check whether pluginAddDto.getIcon() is accessible on network
         try {
             if (StringUtils.isNotBlank(iconUrl)) {
-                //检查是否为内网URL
+                //Check whether it is internal network URL
                 if (!IPUtil.isInternalAddress(iconUrl)) {
                     return iconUrl;
                 }
             }
         } catch (Exception e) {
-            //  忽略
-            log.warn("插件图标下载失败 {}", iconUrl);
+            //Ignore
+            log.warn("Plugin icon download failed {}", iconUrl);
         }
         return null;
     }
@@ -1090,7 +1093,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                     return workflowBindConfigDto.getArgBindConfigs().stream().map(this::convertToArgDto).collect(Collectors.toList());
                 }
             } catch (Exception e) {
-                // 忽略
+                //Ignore
             }
         }
         return List.of();
@@ -1105,7 +1108,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                     return pluginBindConfigDto.getInputArgBindConfigs().stream().map(this::convertToArgDto).collect(Collectors.toList());
                 }
             } catch (Exception e) {
-                // 忽略
+                //Ignore
             }
         }
         return List.of();
@@ -1127,7 +1130,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public Mono<Object> executePlugin(PluginExecuteRequestDto pluginExecuteRequest) {
         PluginDto pluginDto = (PluginDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getConfig());
         if (pluginDto == null) {
-            return Mono.error(new IllegalArgumentException("插件配置错误"));
+            return Mono.error(new IllegalArgumentException("Invalid plugin configuration"));
         }
         UserDto userDto = (UserDto) pluginExecuteRequest.getUser();
         AgentContext agentContext = new AgentContext();
@@ -1139,7 +1142,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             agentContext.setUserName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName());
         }
 
-        // 针对通用智能体中用户使用工作流、插件时对参数有引用设置（暂时只支持系统变量，用户在智能体中自定义的变量无法传递）
+        //For common agent, when user uses workflow, plugin, set parameter reference (temporarily only support system variables, user custom variables in agent cannot be passed)
         if (pluginExecuteRequest.getBindConfig() != null) {
             PluginBindConfigDto pluginBindConfigDto = (PluginBindConfigDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getBindConfig());
             if (pluginBindConfigDto != null) {
@@ -1159,7 +1162,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             if (result.isSuccess()) {
                 emitter.success(result.getResult());
             } else {
-                emitter.error(new BizException(result.getError()));
+                emitter.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                        result.getError()));
             }
         }).doOnError(emitter::error).subscribe());
     }
@@ -1199,7 +1203,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         Flux<WorkflowExecuteResultDto> flux = Flux.create(emitter -> {
             WorkflowConfigDto workflowConfigDto = (WorkflowConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getConfig());
             if (workflowConfigDto == null) {
-                emitter.error(new BizException("工作流不存在"));
+                emitter.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFoundSimple));
                 return;
             }
             UserDto userDto = ((UserDto) workflowExecuteRequest.getUser());
@@ -1219,7 +1223,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 emitter.next(workflowExecutingDto);
             });
 
-            // 针对通用智能体中用户使用工作流、插件时对参数有引用设置（暂时只支持系统变量，用户在智能体中自定义的变量无法传递）
+            //For common agent, when user uses workflow, plugin, set parameter reference (temporarily only support system variables, user custom variables in agent cannot be passed)
             if (workflowExecuteRequest.getBindConfig() != null) {
                 WorkflowBindConfigDto workflowBindConfigDto = (WorkflowBindConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getBindConfig());
                 if (workflowBindConfigDto != null) {
@@ -1233,7 +1237,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             workflowContext1.setWorkflowConfig(workflowConfigDto);
             workflowContext1.setParams(workflowExecuteRequest.getParams());
             workflowContext1.setNodeExecutingConsumer(nodeExecutingDto -> {
-                log.info("节点执行信息: {}", nodeExecutingDto);
+                log.info("Node execution info: {}", nodeExecutingDto);
                 if (nodeExecutingDto.getStatus() == NodeExecuteStatus.FINISHED) {
                     WfNodeExecuteResultDto wfNodeExecuteResultDto = new WfNodeExecuteResultDto();
                     wfNodeExecuteResultDto.setSuccess(nodeExecutingDto.getStatus() != NodeExecuteStatus.FAILED);
@@ -1254,7 +1258,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 }
             });
             disposable.set(workflowExecutor.execute(workflowContext1).doOnError(emitter::error).subscribe((result) -> {
-                log.info("工作流执行成功 {}", workflowConfigDto.getName());
+                log.info("Workflow succeeded {}", workflowConfigDto.getName());
                 WorkflowExecuteResultDto workflowExecutingDto = new WorkflowExecuteResultDto();
                 workflowExecutingDto.setData(result);
                 workflowExecutingDto.setOutputContent(workflowContext1.getEndNodeContent());
@@ -1272,9 +1276,9 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
     @Override
     public Flux<AgentOutputDto> executeAgent(AgentExecuteRequestDto agentExecuteRequestDto) {
-        Assert.notNull(agentExecuteRequestDto.getSessionId(), "会话ID不能为空");
-        Assert.notNull(agentExecuteRequestDto.getAgentId(), "会话ID不能为空");
-        Assert.notNull(agentExecuteRequestDto.getUser(), "用户信息不能为空");
+        Assert.notNull(agentExecuteRequestDto.getSessionId(), "Session ID cannot be null");
+        Assert.notNull(agentExecuteRequestDto.getAgentId(), "Session ID cannot be null");
+        Assert.notNull(agentExecuteRequestDto.getUser(), "User information cannot be null");
         UserDto userDto = (UserDto) agentExecuteRequestDto.getUser();
         TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(userDto.getTenantId());
         try {
@@ -1321,10 +1325,10 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
     @Override
     public ReqResult<Long> createPageAppAgent(PageAppAgentCreateDto pageAppAgentCreateDto) {
-        Assert.notNull(pageAppAgentCreateDto.getCreatorId(), "创建者ID不能为空");
-        Assert.notNull(pageAppAgentCreateDto.getSpaceId(), "空间ID不能为空");
-        Assert.hasText(pageAppAgentCreateDto.getName(), "名称不能为空");
-        Assert.notNull(pageAppAgentCreateDto.getProjectId(), "projectId不能为空");
+        Assert.notNull(pageAppAgentCreateDto.getCreatorId(), "Creator ID cannot be null");
+        Assert.notNull(pageAppAgentCreateDto.getSpaceId(), "Space ID cannot be null");
+        Assert.hasText(pageAppAgentCreateDto.getName(), "Name cannot be empty");
+        Assert.notNull(pageAppAgentCreateDto.getProjectId(), "projectId cannot be null");
         AgentConfigDto agentConfigDto = new AgentConfigDto();
         agentConfigDto.setCreatorId(pageAppAgentCreateDto.getCreatorId());
         agentConfigDto.setSpaceId(pageAppAgentCreateDto.getSpaceId());
@@ -1337,7 +1341,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         agentComponentConfigDto.setAgentId(agentId);
         agentComponentConfigDto.setType(AgentComponentConfig.Type.Page);
         agentComponentConfigDto.setTargetId(pageAppAgentCreateDto.getProjectId());
-        agentComponentConfigDto.setName("应用页面");
+        agentComponentConfigDto.setName("Web App");
         agentApplicationService.addComponentConfig(agentComponentConfigDto);
         AgentConfigDto agentConfigUpdate = new AgentConfigDto();
         agentConfigUpdate.setId(agentId);
@@ -1350,10 +1354,10 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     @Override
     public ReqResult<Long> createUserSandboxAgent(Long userId, Long sandboxId, String name) {
         List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
-        // 获取个人空间
+        //Get personal space
         SpaceDto spaceDto = spaceDtos.stream().filter(spaceDto1 -> spaceDto1.getType().equals(Space.Type.Personal)).findFirst().orElse(null);
         if (spaceDto == null) {
-            return ReqResult.error("用户没有个人空间");
+            return ReqResult.error("User does not have personal space");
         }
         AgentConfigDto agentConfigDto = buildPrivateAgentConfigDto(userId, sandboxId, spaceDto, name);
         agentConfigDto.setHideDesktop(StringUtils.isNotBlank(name) ? YesOrNoEnum.N.getKey() : YesOrNoEnum.Y.getKey());
@@ -1400,7 +1404,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         Long applyId = publishApplicationService.publishApply(publishApply);
         publishApplicationService.publish(applyId);
 
-        // 添加最近使用
+        //Add recent use
         agentApplicationService.addOrUpdateRecentUsed(userId, agentId);
         return ReqResult.success(agentId);
     }
@@ -1408,7 +1412,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     @Override
     public ReqResult<Void> updateUserSandboxAgentName(Long agentId, String oldName, String newName) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
-        // 用户如果改过智能体名称就不在修改
+        //If user has changed agent name, do not modify again
         if (agentConfigDto != null && agentConfigDto.getName().contains(oldName)) {
             newName = "Agent@" + newName;
             AgentConfigDto agentConfigUpdate = new AgentConfigDto();
@@ -1425,20 +1429,21 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         agentConfigDto.setSystemPrompt(PERSONAL_COMPUTER_ASSISTANT_PROMPT);
         agentConfigDto.setCreatorId(userId);
         agentConfigDto.setSpaceId(spaceDto.getId());
-        agentConfigDto.setName(StringUtils.isNotBlank(name) ? "Agent@" + name : "Agent@我的电脑" + sandboxId);
-        agentConfigDto.setDescription("个人电脑专用Agent，可以到个人空间进行增加技能、工具、知识库等智能体编排");
+        agentConfigDto.setName(StringUtils.isNotBlank(name) ? "Agent@" + name : I18nUtil.systemMessage("Backend.Agent.PrivateAgent.DefaultName", sandboxId.toString()));
+        agentConfigDto.setDescription(I18nUtil.systemMessage("Backend.Agent.PrivateAgent.Description"));
         agentConfigDto.setType("TaskAgent");
         agentConfigDto.setOpenLongMemory(AgentConfig.OpenStatus.Open);
+        agentConfigDto.setAllowOtherModel(YesOrNoEnum.Y.getKey());
         Map<String, Object> extra = new HashMap<>();
         extra.put("sandboxId", sandboxId);
-        extra.put("private", true);//私人电脑Agent
+        extra.put("private", true);//Personal computer Agent
         agentConfigDto.setExtra(extra);
         return agentConfigDto;
     }
 
     @Override
     public ReqResult<Void> updatePageAppAgent(PageAppAgentUpdateDto pageAppAgentUpdateDto) {
-        Assert.notNull(pageAppAgentUpdateDto.getAgentId(), "agentId不能为空");
+        Assert.notNull(pageAppAgentUpdateDto.getAgentId(), "agentId cannot be null");
         AgentConfigDto agentConfigDto = new AgentConfigDto();
         BeanUtils.copyProperties(pageAppAgentUpdateDto, agentConfigDto);
         agentConfigDto.setId(pageAppAgentUpdateDto.getAgentId());
@@ -1450,10 +1455,10 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<Void> deletePageAppAgent(Long pageAppAgentId) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(pageAppAgentId);
         if (agentConfigDto == null) {
-            return ReqResult.error("网页应用智能体不存在");
+            return ReqResult.error("Web application agent not found");
         }
         if (!agentConfigDto.getType().equals("PageApp")) {
-            return ReqResult.error("不是网页应用智能体");
+            return ReqResult.error("Not a web application agent");
         }
         agentApplicationService.delete(pageAppAgentId);
         return ReqResult.success();
@@ -1463,11 +1468,11 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public ReqResult<Void> deleteUserSandboxAgent(Long agentId, Long sandboxId) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
         if (agentConfigDto == null) {
-            return ReqResult.error("网页应用智能体不存在");
+            return ReqResult.error("Web application agent not found");
         }
         Map<String, Object> extra = agentConfigDto.getExtra();
         if (extra == null || extra.get("sandboxId") == null || !sandboxId.toString().equals(extra.get("sandboxId").toString())) {
-            return ReqResult.error("智能体电脑关联智能体信息错误");
+            return ReqResult.error("Agent computer associated agent information error");
         }
         agentApplicationService.delete(agentId);
         return ReqResult.success();

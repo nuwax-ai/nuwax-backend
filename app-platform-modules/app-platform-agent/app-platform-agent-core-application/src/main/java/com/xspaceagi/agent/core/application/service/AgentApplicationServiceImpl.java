@@ -52,20 +52,24 @@ import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationS
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
+import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
+import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -77,7 +81,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AgentApplicationServiceImpl implements AgentApplicationService {
 
-    private static final Long DEFAULT_MODEL_ID = 1L;
     private static final Integer MAX_QUERY_SIZE = 1000;
     @Resource
     private AgentDomainService agentDomainService;
@@ -144,8 +147,12 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
 
     @Resource
     private PluginExecutor pluginExecutor;
-    @Autowired
+
+    @Resource
     private ConversationApplicationServiceImpl conversationApplicationService;
+
+    @Resource
+    private RedisUtil redisUtil;
 
     @Override
     @DSTransactional
@@ -181,7 +188,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         } else {
             modelConfigDto = modelApplicationService.queryDefaultModelConfig();
         }
-        Assert.notNull(modelConfigDto, "请在系统模型配置中设置默认模型");
+        Assert.notNull(modelConfigDto, "Please set the default model in system model configuration");
         ModelBindConfigDto modelBindConfigDto = ModelBindConfigDto.builder()
                 .mode(ModelBindConfigDto.Mode.Balanced)
                 .contextRounds(3)
@@ -196,7 +203,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDomainService.addAgentComponentConfig(agentComponentConfig);
 
         // 添加智能体新增历史记录
-        addConfigHistory(agentConfig.getId(), ConfigHistory.Type.Add, "智能体创建");
+        addConfigHistory(agentConfig.getId(), ConfigHistory.Type.Add, I18nUtil.systemMessage("Agent.ConfigHistory.Add"));
 
         return agentConfig.getId();
     }
@@ -238,7 +245,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         }
         agentDomainService.update(agentConfig);
         if (agentConfigDto.getSpaceId() != null && agentConfigDto.getSpaceId() != -1) {
-            addConfigHistory(agentConfig.getId(), ConfigHistory.Type.Edit, "编辑基础配置");
+            addConfigHistory(agentConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Agent.ConfigHistory.EditBasicConfig"));
         }
     }
 
@@ -255,7 +262,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     public Long copyAgent(Long userId, Long agentId) {
         // 拷贝agent配置
         Long id = agentDomainService.copyAgent(userId, agentId);
-        addConfigHistory(id, ConfigHistory.Type.Add, "智能体复制创建");
+        addConfigHistory(id, ConfigHistory.Type.Add, I18nUtil.systemMessage("Agent.ConfigHistory.CopyToAdd"));
         return id;
     }
 
@@ -280,9 +287,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentConfigDto.getOpeningGuidQuestions() != null) {
             newAgentConfig.setOpeningGuidQuestion(JSON.toJSONString(agentConfigDto.getOpeningGuidQuestions()));
         }
-        // 目标空间ID和当前空间ID相同，则名称不能重复
-        if (!importAgent && !agentConfigDto.getSpaceId().equals(-1L) && agentConfigDto.getSpaceId().equals(targetSpaceId) && newAgentConfig.getName() != null && !newAgentConfig.getName().contains("（副本）")) {
-            newAgentConfig.setName(newAgentConfig.getName() + "（副本）");
+        // If target space ID is the same as current space ID, name cannot be duplicated
+        if (!importAgent && !agentConfigDto.getSpaceId().equals(-1L) && agentConfigDto.getSpaceId().equals(targetSpaceId) && newAgentConfig.getName() != null && !newAgentConfig.getName().contains(" (Copy)")) {
+            newAgentConfig.setName(newAgentConfig.getName() + " (Copy)");
         } else {
             if (agentConfigDto.getSpaceId().equals(-1L) || importAgent) {
                 newAgentConfig.setName(newAgentConfig.getName());
@@ -408,13 +415,13 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @DSTransactional
     public void transfer(Long userId, Long agentId, Long targetSpaceId) {
         AgentConfigDto agentConfigDto = queryById(agentId);
-        Assert.notNull(agentConfigDto, "agentId错误");
+        Assert.notNull(agentConfigDto, "Invalid agentId");
         if (agentConfigDto.getSpaceId().equals(targetSpaceId)) {
             return;
         }
         Long tempAgentId = copyAgent(userId, agentConfigDto, targetSpaceId);
         agentDomainService.transferUpdate(agentId, tempAgentId);
-        addConfigHistory(agentId, ConfigHistory.Type.Edit, "智能体空间转移");
+        addConfigHistory(agentId, ConfigHistory.Type.Edit, I18nUtil.systemMessage("Agent.ConfigHistory.SpaceTransfer"));
     }
 
     @Override
@@ -520,6 +527,15 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     @Override
+    public AgentConfigDto queryByUid(String agentUid) {
+        AgentConfig agentConfig = agentDomainService.queryByUid(agentUid);
+        if (agentConfig != null) {
+            return convertToDto(agentConfig);
+        }
+        return null;
+    }
+
+    @Override
     public AgentConfigDto queryAgentByIdWithStatics(Long agentId) {
         AgentConfigDto agentConfigDto = queryById(agentId, false);
         if (agentConfigDto != null) {
@@ -560,12 +576,12 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         BeanUtils.copyProperties(agentComponentConfigDto, agentComponentConfig);
         //补充数据
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Model) {
-            throw new BizException("模型组件配置不能手动添加");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelComponentCannotAddManually);
         }
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Plugin) {
             PublishedDto published = publishApplicationService.queryPublished(Published.TargetType.Plugin, agentComponentConfigDto.getTargetId());
             if (published == null) {
-                throw new BizException("插件不存在或未发布");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFoundOrUnpublished);
             }
             agentComponentConfig.setName(published.getName());
             agentComponentConfig.setDescription(published.getDescription());
@@ -580,7 +596,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow) {
             PublishedDto published = publishApplicationService.queryPublished(Published.TargetType.Workflow, agentComponentConfigDto.getTargetId());
             if (published == null) {
-                throw new BizException("工作流不存在或未发布");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFoundOrUnpublished);
             }
             agentComponentConfig.setName(published.getName());
             agentComponentConfig.setDescription(published.getDescription());
@@ -595,7 +611,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Knowledge) {
             KnowledgeConfigVo knowledgeConfigModel = KnowledgeRpcService.queryKnowledgeConfigById(agentComponentConfigDto.getTargetId());
             if (knowledgeConfigModel == null) {
-                throw new BizException("知识库不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeNotFoundSimple);
             }
             agentComponentConfig.setName(knowledgeConfigModel.getName());
             agentComponentConfig.setDescription(knowledgeConfigModel.getDescription());
@@ -624,7 +640,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Mcp) {
             McpBindConfigDto mcpBindConfigDto = (McpBindConfigDto) agentComponentConfig.getBindConfig();
             if (mcpBindConfigDto == null) {
-                throw new BizException("MCP缺少必要配置参数");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentMcpConfigIncomplete);
             }
             mcpBindConfigDto.setInputArgBindConfigs(new ArrayList<>());
             mcpBindConfigDto.setOutputArgBindConfigs(new ArrayList<>());
@@ -643,7 +659,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Skill) {
             PublishedDto published = publishApplicationService.queryPublished(Published.TargetType.Skill, agentComponentConfigDto.getTargetId());
             if (published == null) {
-                throw new BizException("技能不存在或未发布");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillNotFoundOrUnpublished);
             }
             agentComponentConfig.setName(published.getName());
             agentComponentConfig.setDescription(published.getDescription());
@@ -661,7 +677,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDomainService.update(agentConfig);
         if (StringUtils.isNotBlank(agentComponentConfig.getName())) {
             addConfigHistory(agentComponentConfigDto.getAgentId(), ConfigHistory.Type.AddComponent,
-                    "添加配置-" + agentComponentConfig.getName());
+                    I18nUtil.systemMessage("Agent.ConfigHistory.AddComponent", agentComponentConfig.getName()));
         }
         agentComponentConfigDto.setId(agentComponentConfig.getId());
     }
@@ -680,17 +696,17 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentConfig.setModified(new Date());
         agentDomainService.update(agentConfig);
         addConfigHistory(agentConfig.getId(), ConfigHistory.Type.EditComponent,
-                "编辑配置-" + agentComponentConfig.getName());
+                I18nUtil.systemMessage("Agent.ConfigHistory.EditComponent", agentComponentConfig.getName()));
     }
 
     @Override
     public void deleteComponentConfig(Long id) {
         AgentComponentConfig agentComponentConfig = agentDomainService.queryComponentConfig(id);
         if (agentComponentConfig == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
         if (agentComponentConfig.getType() == AgentComponentConfig.Type.Model) {
-            throw new BizException("模型组件配置不能删除");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelComponentCannotDelete);
         }
         agentDomainService.deleteAgentComponentConfigById(id);
         AgentConfig agentConfig = new AgentConfig();
@@ -698,7 +714,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentConfig.setModified(new Date());
         agentDomainService.update(agentConfig);
         addConfigHistory(agentComponentConfig.getAgentId(), ConfigHistory.Type.DeleteComponent,
-                "删除配置-" + agentComponentConfig.getName());
+                I18nUtil.systemMessage("Agent.ConfigHistory.DeleteComponent", agentComponentConfig.getName()));
     }
 
     @Override
@@ -713,7 +729,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentConfig != null) {
             agentComponentConfigDto.setSpaceId(agentConfig.getSpaceId());
         }
-        List<AgentComponentConfigDto> agentComponentConfigDtos = completeAgentComponentConfig(List.of(agentComponentConfigDto), false);
+        List<AgentComponentConfigDto> agentComponentConfigDtos = completeAgentComponentConfig(agentConfig, List.of(agentComponentConfigDto), false);
         if (CollectionUtils.isEmpty(agentComponentConfigDtos)) {
             return null;
         }
@@ -730,7 +746,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         AgentComponentConfig varConfig = agentComponentConfigList.stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Variable).findFirst().orElse(null);
         if (varConfig == null) {
             varConfig = AgentComponentConfig.builder().agentId(agentId)
-                    .type(AgentComponentConfig.Type.Variable).targetId(0L).name("变量").description("智能体变量")
+                    .type(AgentComponentConfig.Type.Variable).targetId(0L).name("Variable").description("Agent Variable")
                     .build();
             VariableConfigDto variableBindConfigDto = new VariableConfigDto();
             variableBindConfigDto.setVariables(new ArrayList<>());
@@ -747,7 +763,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             AgentComponentConfig eventComponentConfig = AgentComponentConfig.builder().agentId(agentId)
                     .type(AgentComponentConfig.Type.Event)
                     .targetId(-1L)
-                    .name("事件绑定").description("事件绑定")
+                    .name("Event Binding").description("Event Binding")
                     .bindConfig(eventBindConfigDto).build();
             agentDomainService.addAgentComponentConfig(eventComponentConfig);
         }
@@ -774,7 +790,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
             return agentComponentConfigDto;
         }).collect(Collectors.toList());
-        agentComponentConfigDtoList = completeAgentComponentConfig(agentComponentConfigDtoList, forExecute);
+        agentComponentConfigDtoList = completeAgentComponentConfig(agentConfig, agentComponentConfigDtoList, forExecute);
         return agentComponentConfigDtoList;
     }
 
@@ -789,15 +805,17 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             return null;
         }
         AgentConfigDto agentConfigDto = JSON.parseObject(agentPublished.getConfig(), AgentConfigDto.class);
+        AgentConfig agentConfig = new AgentConfig();
+        BeanUtils.copyProperties(agentConfigDto, agentConfig);
         convertComponentConfig(agentConfigDto.getModelComponentConfig());
         agentConfigDto.getAgentComponentConfigList().forEach(componentConfigDto -> componentConfigDto.setSpaceId(agentConfigDto.getSpaceId()));
-        agentConfigDto.setAgentComponentConfigList(completeAgentComponentConfig(agentConfigDto.getAgentComponentConfigList(), execute));
+        agentConfigDto.setAgentComponentConfigList(completeAgentComponentConfig(agentConfig, agentConfigDto.getAgentComponentConfigList(), execute));
         AgentComponentConfigDto modelComponentConfig = agentConfigDto.getAgentComponentConfigList()
                 .stream()
                 .filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Model)
                 .findFirst().orElse(null);
         if (modelComponentConfig == null) {
-            throw new BizException("智能体关联大模型已下线，请重新配置");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentBoundModelOffline);
         }
         agentConfigDto.setModelComponentConfig(modelComponentConfig);
         TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(RequestContext.get().getTenantId());
@@ -940,6 +958,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 agentDetailDto.setCollect(true);
             }
         }
+
+        agentDetailDto.setUid(agentConfigDto.getUid());
         agentDetailDto.setCreatorId(agentConfigDto.getCreatorId());
         agentDetailDto.setAgentId(agentId);
         agentDetailDto.setName(agentConfigDto.getName());
@@ -950,9 +970,6 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDetailDto.setExpandPageArea(agentConfigDto.getExpandPageArea());
         agentDetailDto.setHideChatArea(agentConfigDto.getHideChatArea());
         agentDetailDto.setHideDesktop(agentConfigDto.getHideDesktop() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getHideDesktop());
-        agentDetailDto.setAllowAtSkill(agentConfigDto.getAllowAtSkill() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowAtSkill());
-        agentDetailDto.setAllowOtherModel(agentConfigDto.getAllowOtherModel() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowOtherModel());
-        agentDetailDto.setAllowPrivateSandbox(agentConfigDto.getAllowPrivateSandbox() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowPrivateSandbox());
         if ("PageApp".equals(agentConfigDto.getType())) {
             agentDetailDto.setExpandPageArea(1);
             agentDetailDto.setHideChatArea(1);
@@ -1060,6 +1077,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         }
         agentDetailDto.setSandboxId(sandboxId);
 
+        agentDetailDto.setAllowAtSkill(agentConfigDto.getAllowAtSkill() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowAtSkill());
+        agentDetailDto.setAllowOtherModel(agentConfigDto.getAllowOtherModel() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowOtherModel());
+        agentDetailDto.setAllowPrivateSandbox(agentConfigDto.getAllowPrivateSandbox() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowPrivateSandbox());
+
         // 是否有权限
         agentDetailDto.setHasPermission(true);
         if (agentConfigDto.getAccessControl() != null && agentConfigDto.getAccessControl().equals(YesOrNoEnum.Y.getKey())
@@ -1070,12 +1091,12 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
         }
 
-        //补充变量下拉选项数据绑定值
+        //Supplement variable dropdown option data binding value
         try {
             completeSelectConfig(variables, agentDetailDto.getSpaceId());
         } catch (Exception e) {
-            log.warn("补充变量下拉选项数据绑定值失败", e);
-            //忽略
+            log.warn("Failed to supplement variable dropdown option data binding value", e);
+            //ignore
         }
         TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (tenantConfig != null && tenantConfig.getSiteUrl() != null) {
@@ -1185,7 +1206,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     // 补全智能体组件详细配置信息
-    private List<AgentComponentConfigDto> completeAgentComponentConfig(List<AgentComponentConfigDto> agentComponentConfigList, boolean forExecute) {
+    private List<AgentComponentConfigDto> completeAgentComponentConfig(AgentConfig agentConfig, List<AgentComponentConfigDto> agentComponentConfigList, boolean forExecute) {
         if (agentComponentConfigList == null || agentComponentConfigList.isEmpty()) {
             return new ArrayList<>();
         }
@@ -1262,7 +1283,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     }
                     if (pluginBindConfigDto.getAsync() == null) {
                         pluginBindConfigDto.setAsync(0);
-                        pluginBindConfigDto.setAsyncReplyContent("已经开始为您处理，请耐心等待运行结果");
+                        pluginBindConfigDto.setAsyncReplyContent("Processing has started, please wait for the results");
                     }
                 }
             }
@@ -1430,7 +1451,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     dorisTableDefinitionVo = iComposeDbTableRpcService.queryTableDefinition(request);
                 } catch (Exception e) {
                     //  忽略
-                    log.warn("查询表结构定义失败 {}", agentComponentConfigDto.getTargetId());
+                    log.warn("Failed to query table schema definition {}", agentComponentConfigDto.getTargetId());
                 }
                 agentComponentConfigDto.setDeleted(dorisTableDefinitionVo == null);
                 if (dorisTableDefinitionVo != null) {
@@ -1456,8 +1477,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     List<Arg> argBindConfigs = Arg.updateBindConfigArgs(null, tableBindConfigDto.getInputArgBindConfigs(), inputArgs);
                     tableBindConfigDto.setInputArgBindConfigs(argBindConfigs);
                     List<Arg> outputArgBindConfigs = new ArrayList<>();
-                    outputArgBindConfigs.add(Arg.builder().name("outputList").description("数据列表").dataType(DataTypeEnum.Array_Object).enable(true).subArgs(args).build());
-                    outputArgBindConfigs.add(Arg.builder().name("rowNum").description("数据行数").dataType(DataTypeEnum.Integer).enable(true).build());
+                    outputArgBindConfigs.add(Arg.builder().name("outputList").description("Data List").dataType(DataTypeEnum.Array_Object).enable(true).subArgs(args).build());
+                    outputArgBindConfigs.add(Arg.builder().name("rowNum").description("Row Count").dataType(DataTypeEnum.Integer).enable(true).build());
                     Arg.generateKey(null, outputArgBindConfigs, new HashMap<>());
                     tableBindConfigDto.setOutputArgBindConfigs(outputArgBindConfigs);
                 }
@@ -1465,6 +1486,13 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Knowledge) {
                 KnowledgeConfigVo knowledgeConfigModel = KnowledgeRpcService.queryKnowledgeConfigById(agentComponentConfigDto.getTargetId());
                 agentComponentConfigDto.setDeleted(knowledgeConfigModel == null);
+                // 相同空间下的默认有权限；不同空间下的需要校验
+                if (knowledgeConfigModel != null && !knowledgeConfigModel.getSpaceId().equals(agentConfig.getSpaceId())) {
+                    UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(agentConfig.getCreatorId());
+                    if (userDataPermission.getKnowledgeIds() == null || !userDataPermission.getKnowledgeIds().contains(agentComponentConfigDto.getTargetId())) {
+                        agentComponentConfigDto.setDeleted(true);
+                    }
+                }
                 if (knowledgeConfigModel != null) {
                     agentComponentConfigDto.setName(knowledgeConfigModel.getName());
                     agentComponentConfigDto.setDescription(knowledgeConfigModel.getDescription());
@@ -1748,7 +1776,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @Override
     public void collect(Long userId, Long agentId) {
         if (publishApplicationService.queryPublishedList(Published.TargetType.Agent, List.of(agentId)).isEmpty()) {
-            throw new BizException("该智能体未发布或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotPublishedOrOffline);
         }
         boolean res = userTargetRelationDomainService.record(userId, Published.TargetType.Agent,
                 UserTargetRelation.OpType.Collect, agentId);
@@ -1783,7 +1811,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @Override
     public void like(Long userId, Long agentId) {
         if (publishApplicationService.queryPublishedList(Published.TargetType.Agent, List.of(agentId)).isEmpty()) {
-            throw new BizException("该智能体未发布或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotPublishedOrOffline);
         }
         userTargetRelationDomainService.like(userId, Published.TargetType.Agent, agentId);
     }
@@ -1818,7 +1846,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         McpDto proxyMcp = new McpDto();
         proxyMcp.setName("proxy");
         proxyMcp.setServerName("proxy");
-        proxyMcp.setDescription("智能体绑定的所有插件工作流等组件统一代理MCP");
+        proxyMcp.setDescription("Proxy MCP for all plugins, workflows, and other components bound to the agent");
         proxyMcp.setCategory("Proxy");
         proxyMcp.setInstallType(InstallTypeEnum.COMPONENT);
         proxyMcp.setCreatorId(agentConfigDto.getCreatorId());
@@ -1834,7 +1862,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 McpComponentDto mcpComponentDto = mcpDto.getDeployedConfig().getComponents().stream().filter(component0 -> component0.getToolName().equals(mcpBindConfigDto.getToolName())).findFirst().orElse(null);
                 components.add(mcpComponentDto);
             } catch (Exception e) {
-                log.error("解析MCP配置错误", e);
+                log.error("Failed to parse MCP configuration", e);
             }
         });
 
@@ -1863,7 +1891,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
         }
         if (components.isEmpty()) {
-            log.info("没有需要代理的组件, agentName {}", agentConfigDto.getName());
+            log.info("No components need to be proxied, agentName {}", agentConfigDto.getName());
             return;
         }
 
@@ -1912,7 +1940,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         // 先查询原始状态，用于判断是否从「受限」变为「不受限」
         AgentConfig originConfig = agentDomainService.queryById(agentId);
         if (originConfig == null) {
-            throw new BizException("数据不存在,id=" + agentId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentDataNotFoundWithId, agentId);
         }
 
         int oldStatus = originConfig.getAccessControl() != null ? originConfig.getAccessControl() : 0;
@@ -1954,6 +1982,72 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @Override
     public Long countUserCreatedPageApp(Long userId) {
         return agentDomainService.countUserCreatedPageApp(userId);
+    }
+
+    @Override
+    public List<ModelConfigDto> queryUserCanSelectModelListForAgent(Long userId, Long agentId) {
+        PublishedDto agentPublished = publishApplicationService.queryPublished(Published.TargetType.Agent, agentId);
+        if (agentPublished == null) {
+            return List.of();
+        }
+
+        AgentConfigDto agentConfigDto = JSON.parseObject(agentPublished.getConfig(), AgentConfigDto.class);
+        if (agentConfigDto == null || agentConfigDto.getAllowOtherModel() == null || !agentConfigDto.getAllowOtherModel().equals(YesOrNoEnum.Y.getKey())) {
+            return List.of();
+        }
+
+        List<SpaceDto> spaces = spaceApplicationService.queryListByUserId(userId);
+        SpaceDto space = spaces.stream().filter(spaceDto -> spaceDto.getType() == Space.Type.Personal).findFirst().orElse(null);
+        if (space == null) {
+            return List.of();
+        }
+        List<ModelConfigDto> modelConfigDtos = new ArrayList<>();
+        UsageScenarioEnum usageScenarioEnum = UsageScenarioEnum.fromString(agentConfigDto.getType());
+        if (usageScenarioEnum != null) {
+            ModelQueryDto modelQueryDto = new ModelQueryDto();
+            modelQueryDto.setModelType(ModelTypeEnum.Chat);
+            modelQueryDto.setSpaceId(space.getId());
+            modelQueryDto.setEnabled(YesOrNoEnum.Y.getKey());
+            modelConfigDtos.addAll(modelApplicationService.queryModelConfigList(modelQueryDto));
+            modelConfigDtos.removeIf(modelConfigDto -> !modelConfigDto.getUsageScenarios().contains(UsageScenarioEnum.fromString(agentConfigDto.getType())));
+            modelConfigDtos.forEach(modelConfigDto -> {
+                modelConfigDto.setApiInfoList(null);
+                modelConfigDto.setCreatorId(null);
+                modelConfigDto.setCreator(null);
+            });
+        }
+        Long firstModelId = null;
+        AgentComponentConfigDto componentConfigDto = agentConfigDto.getAgentComponentConfigList().stream().filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Model).findFirst().orElse(null);
+        if (componentConfigDto != null) {
+            firstModelId = componentConfigDto.getTargetId();
+            //判断modelConfigDtos中是否包含componentConfigDto.getTargetId()
+            if (modelConfigDtos.stream().noneMatch(modelConfigDto -> modelConfigDto.getId().equals(componentConfigDto.getTargetId()))) {
+                ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(componentConfigDto.getTargetId());
+                if (modelConfigDto != null) {
+                    modelConfigDto.setApiInfoList(null);
+                    modelConfigDto.setCreatorId(null);
+                    modelConfigDto.setCreator(null);
+                    modelConfigDtos.add(0, modelConfigDto);
+                }
+            }
+        }
+        Object val = redisUtil.get("agent.model.selected:" + agentConfigDto.getId());
+        if (val != null) {
+            try {
+                firstModelId = Long.parseLong(val.toString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        if (firstModelId != null) {
+            //将modelConfigDtos中id匹配的modelConfigDto放到第一个
+            Long finalFirstModelId = firstModelId;
+            ModelConfigDto modelConfigDto1 = modelConfigDtos.stream().filter(modelConfigDto -> modelConfigDto.getId().equals(finalFirstModelId)).findFirst().orElse(null);
+            if (modelConfigDto1 != null) {
+                modelConfigDtos.removeIf(modelConfigDto -> modelConfigDto.getId().equals(finalFirstModelId));
+                modelConfigDtos.add(0, modelConfigDto1);
+            }
+        }
+        return modelConfigDtos;
     }
 
     private Map<Long, StatisticsDto> getAgentStatisticsMapByAgentIds(List<Long> agentIds) {

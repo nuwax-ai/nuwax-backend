@@ -42,7 +42,7 @@ public class KnowledgeAutoGenerateQaEmbeddingsTask extends AbstractTaskExecuteSe
             this.autoGenerateQaEmbeddings();
             log.info("knowledgeAutoGenerateQaEmbeddingsTask 自动运行任务执行结束");
         } catch (Exception e) {
-            log.error("自动运行任务失败", e);
+            log.error("Auto-run task failed", e);
         }
         return false;//false会一直循环执行
     }

@@ -11,11 +11,16 @@ import com.xspaceagi.system.domain.model.ResourceNode;
 import com.xspaceagi.system.domain.model.SortIndex;
 import com.xspaceagi.system.domain.service.*;
 import com.xspaceagi.system.infra.dao.entity.*;
-import com.xspaceagi.system.infra.dao.service.*;
+import com.xspaceagi.system.infra.dao.service.SysGroupMenuService;
+import com.xspaceagi.system.infra.dao.service.SysGroupService;
+import com.xspaceagi.system.infra.dao.service.SysUserGroupService;
+import com.xspaceagi.system.infra.dao.service.UserService;
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.enums.*;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.CodeGeneratorUtil;
 import jakarta.annotation.Resource;
@@ -42,10 +47,6 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Resource
     private SysGroupMenuService sysGroupMenuService;
     @Resource
-    private SysMenuService sysMenuService;
-    @Resource
-    private SysResourceService sysResourceService;
-    @Resource
     private SysMenuDomainService sysMenuDomainService;
     @Resource
     private SysResourceDomainService sysResourceDomainService;
@@ -62,26 +63,26 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
         group.setDescription(StringUtils.trim(group.getDescription()));
 
         if (StringUtils.isNotBlank(group.getCode()) && !group.getCode().matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-            throw new BizException("编码只能包含字母、数字和下划线，且必须以字母开头");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacCodeFormatInvalid);
         }
         if (StringUtils.length(group.getCode()) > 100) {
-            throw new BizException("编码长度不能超过100");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacCodeLengthExceeded);
         }
         if (StringUtils.length(group.getName()) > 50) {
-            throw new BizException("名称长度不能超过50");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacNameLengthExceeded);
         }
         if (StringUtils.length(group.getDescription()) > 500) {
-            throw new BizException("描述长度不能超过500");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacDescLengthExceeded);
         }
     }
 
     @Override
     public void addGroup(SysGroup group, UserContext userContext) {
         if (StringUtils.isBlank(group.getName())) {
-            throw new BizException("名称不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "名称");
         }
-        if (group.getMaxUserCount() == null || group.getMaxUserCount() <= 0) {
-            throw new BizException("最大用户数必须大于0");
+        if (group.getMaxUserCount() == null) {
+            group.setMaxUserCount(-1);
         }
 
         // 如果编码为空，根据名称自动生成编码
@@ -98,7 +99,7 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
 
         SysGroup exist = queryGroupByCode(group.getCode());
         if (exist != null) {
-            throw new BizException("已存在此用户组编码");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupCodeDuplicate);
         }
 
         if (group.getSource() == null) {
@@ -117,43 +118,46 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
         sysGroupService.save(group);
 
         if (group.getId() == null) {
-            throw new BizException("保存失败");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacSaveFailed);
         }
     }
 
     @Override
     public boolean updateGroup(SysGroup group, UserContext userContext) {
         if (group.getId() == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
-        if (group.getMaxUserCount() == null || group.getMaxUserCount() <= 0) {
-            throw new BizException("最大用户数必须大于0");
+        if (group.getMaxUserCount() == null) {
+            group.setMaxUserCount(-1);
         }
         normalizeGroup(group);
 
         SysGroup exist = queryGroupById(group.getId());
         if (exist == null) {
-            throw new BizException("用户组不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFound);
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
             if (group.getCode() != null && !group.getCode().equals(exist.getCode())) {
-                throw new BizException("系统内置用户组编码不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinGroupCodeImmutable);
             }
             if (group.getName() != null && !group.getName().equals(exist.getName())) {
-                throw new BizException("系统内置用户组名称不能修改");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinGroupNameImmutable);
             }
             if (group.getStatus() != null && !group.getStatus().equals(StatusEnum.ENABLED.getCode())) {
-                throw new BizException("系统内置用户组不能禁用");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemBuiltinGroupCannotDisable);
             }
         }
 
-        // 校验最大用户数不能小于当前已绑定用户数
-        long boundUserCount = sysUserGroupService.count(
-                Wrappers.<SysUserGroup>lambdaQuery()
-                        .eq(SysUserGroup::getGroupId, group.getId())
-                        .eq(SysUserGroup::getYn, YnEnum.Y.getKey()));
-        if (group.getMaxUserCount() < boundUserCount) {
-            throw new BizException("最大用户数不能小于已绑定用户数，当前已绑定" + boundUserCount + "人");
+        if (group.getMaxUserCount() != null && group.getMaxUserCount() > -1) {
+            // 校验最大用户数不能小于当前已绑定用户数
+            long boundUserCount = sysUserGroupService.count(
+                    Wrappers.<SysUserGroup>lambdaQuery()
+                            .eq(SysUserGroup::getGroupId, group.getId())
+                            .eq(SysUserGroup::getYn, YnEnum.Y.getKey()));
+            if (group.getMaxUserCount() < boundUserCount) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupMaxUsersBelowBound,
+                        String.valueOf(boundUserCount));
+            }
         }
 
         boolean statusChanged = group.getStatus() != null
@@ -168,14 +172,14 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void bindDataPermission(Long groupId, SysDataPermission dataPermission, UserContext userContext) {
         if (groupId == null) {
-            throw new BizException("用户组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户组ID");
         }
         SysGroup exist = queryGroupById(groupId);
         if (exist == null) {
-            throw new BizException("用户组不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFound);
         }
         if (dataPermission == null) {
-            throw new BizException("数据权限配置不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacDataPermissionRequired);
         }
 
         if (CollectionUtils.isNotEmpty(dataPermission.getModelIds())) {
@@ -196,10 +200,26 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
                     .toList();
             dataPermission.setPageAgentIds(pageAgentIds);
         }
+        if (dataPermission.getOpenApiConfigMap() != null && !dataPermission.getOpenApiConfigMap().isEmpty()) {
+            Map<String, String> normalizedConfig = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry : dataPermission.getOpenApiConfigMap().entrySet()) {
+                if (StringUtils.isBlank(entry.getKey())) {
+                    continue;
+                }
+                normalizedConfig.put(entry.getKey(), entry.getValue());
+            }
+            dataPermission.setOpenApiConfigMap(normalizedConfig);
+        }
+        if (CollectionUtils.isNotEmpty(dataPermission.getKnowledgeIds())) {
+            List<Long> knowledgeIds = dataPermission.getKnowledgeIds().stream()
+                    .filter(knowledgeId -> Objects.nonNull(knowledgeId) && knowledgeId >= 1)
+                    .toList();
+            dataPermission.setKnowledgeIds(knowledgeIds);
+        }
 
         if (dataPermission.getTokenLimit() != null) {
             if (dataPermission.getTokenLimit().getLimitPerDay() < -1) {
-                throw new BizException("最大Token不能小于-1");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacTokenLimitMinInvalid);
             }
         } else {
             dataPermission.setTokenLimit(new TokenLimit(-1L));
@@ -215,12 +235,16 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
         }
 
         // 全量覆盖写入
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.GROUP, groupId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.GROUP, groupId,
                 PermissionSubjectTypeEnum.MODEL, dataPermission.getModelIds(), userContext);
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.GROUP, groupId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.GROUP, groupId,
                 PermissionSubjectTypeEnum.AGENT, dataPermission.getAgentIds(), userContext);
-        sysSubjectPermissionDomainService.replaceSubjectsByTarget(PermissionTargetTypeEnum.GROUP, groupId,
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.GROUP, groupId,
                 PermissionSubjectTypeEnum.PAGE, dataPermission.getPageAgentIds(), userContext);
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectKeyConfig(PermissionTargetTypeEnum.GROUP, groupId,
+                PermissionSubjectTypeEnum.OPEN_API, dataPermission.getOpenApiConfigMap(), userContext);
+        sysSubjectPermissionDomainService.replaceSubjectsByTargetAndSubjectIds(PermissionTargetTypeEnum.GROUP, groupId,
+                PermissionSubjectTypeEnum.KNOWLEDGE, dataPermission.getKnowledgeIds(), userContext);
     }
 
     @Override
@@ -230,11 +254,11 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
         }
         for (SortIndex item : sortIndexList) {
             if (item == null || item.getId() == null) {
-                throw new BizException("用户组ID不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户组ID");
             }
             SysGroup exist = queryGroupById(item.getId());
             if (exist == null) {
-                throw new BizException("用户组不存在: id=" + item.getId());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFoundWithRowId, item.getId());
             }
             if (item.getSortIndex() == null) {
                 continue;
@@ -251,11 +275,11 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void deleteGroup(Long groupId, UserContext userContext) {
         if (groupId == null) {
-            throw new BizException("ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "ID");
         }
         SysGroup exist = queryGroupById(groupId);
         if (exist == null) {
-            throw new BizException("用户组不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFound);
         }
         if (SourceEnum.SYSTEM.getCode().equals(exist.getSource())) {
             //throw new BizException("系统内置用户组不能删除");
@@ -394,14 +418,17 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void groupBindUser(Long groupId, List<Long> userIds, UserContext userContext) {
         if (groupId == null) {
-            throw new BizException("组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "组ID");
         }
         SysGroup sysGroup = queryGroupById(groupId);
         if (sysGroup == null) {
-            throw new BizException("组不存在,id=" + groupId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFoundWithGroupId, groupId);
         }
-        if (CollectionUtils.isNotEmpty(userIds) && userIds.size() > sysGroup.getMaxUserCount()) {
-            throw new BizException("组用户数量超出限制");
+        if (CollectionUtils.isNotEmpty(userIds)
+                && sysGroup.getMaxUserCount() != null
+                && sysGroup.getMaxUserCount() > -1
+                && userIds.size() > sysGroup.getMaxUserCount()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupUserLimitExceeded);
         }
         // 校验用户是否存在
         if (CollectionUtils.isNotEmpty(userIds)) {
@@ -411,7 +438,7 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
 
             userIds.forEach(userId -> {
                 if (!existUserIds.contains(userId)) {
-                    throw new BizException("用户不存在,id=" + userId);
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
                 }
             });
         }
@@ -443,18 +470,18 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void groupAddUser(Long groupId, Long userId, UserContext userContext) {
         if (groupId == null) {
-            throw new BizException("组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "组ID");
         }
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         SysGroup sysGroup = queryGroupById(groupId);
         if (sysGroup == null) {
-            throw new BizException("组不存在,id=" + groupId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFoundWithGroupId, groupId);
         }
         User user = userService.getById(userId);
         if (user == null) {
-            throw new BizException("用户不存在,id=" + userId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
         }
         // 检查是否已绑定，避免重复插入
         LambdaQueryWrapper<SysUserGroup> queryWrapper = Wrappers.<SysUserGroup>lambdaQuery()
@@ -465,10 +492,10 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
             return;
         }
         // 校验用户数量限制
-        if (sysGroup.getMaxUserCount() != null && sysGroup.getMaxUserCount() > 0) {
+        if (sysGroup.getMaxUserCount() != null && sysGroup.getMaxUserCount() > -1) {
             long currentCount = countUsersByGroupId(groupId);
             if (currentCount >= sysGroup.getMaxUserCount()) {
-                throw new BizException("组用户数量超出限制");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupUserLimitExceeded);
             }
         }
         SysUserGroup userGroup = new SysUserGroup();
@@ -484,10 +511,10 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void groupRemoveUser(Long groupId, Long userId, UserContext userContext) {
         if (groupId == null) {
-            throw new BizException("组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "组ID");
         }
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         LambdaUpdateWrapper<SysUserGroup> wrapper = Wrappers.<SysUserGroup>lambdaUpdate()
                 .eq(SysUserGroup::getGroupId, groupId)
@@ -498,11 +525,11 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void userBindGroup(Long userId, List<Long> groupIds, UserContext userContext) {
         if (userId == null) {
-            throw new BizException("用户ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户ID");
         }
         User user = userService.getById(userId);
         if (user == null) {
-            throw new BizException("用户不存在,id=" + userId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacUserNotFoundWithId, userId);
         }
 
         // 校验组是否存在
@@ -510,12 +537,12 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
             Set<Long> distinctGroupIds = new HashSet<>(groupIds);
             List<SysGroup> groups = sysGroupService.listByIds(distinctGroupIds);
             if (CollectionUtils.isEmpty(groups)) {
-                throw new BizException("用户组不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFound);
             }
             Set<Long> existGroupIds = groups.stream().map(SysGroup::getId).collect(Collectors.toSet());
             groupIds.forEach(groupId -> {
                 if (!existGroupIds.contains(groupId)) {
-                    throw new BizException("用户组不存在,id=" + groupId);
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupNotFoundWithGroupIdAlt, groupId);
                 }
             });
         }
@@ -547,7 +574,7 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
     @Override
     public void bindMenu(GroupBindMenuModel model, UserContext userContext) {
         if (model == null || model.getGroupId() == null) {
-            throw new BizException("用户组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户组ID");
         }
 
         Long groupId = model.getGroupId();
@@ -572,7 +599,7 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
                 continue;
             }
             if (menuId != 0L && !maps.menuMap.containsKey(menuId)) {
-                throw new BizException("菜单ID[" + menuId + "]不存在");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemRbacMenuIdNotFound, menuId);
             }
             Integer menuBindType = menuBindTypeMap.getOrDefault(menuId, BindTypeEnum.NONE.getCode());
             if (menuBindType == null || BindTypeEnum.NONE.getCode().equals(menuBindType)) {
@@ -599,7 +626,7 @@ public class SysGroupDomainServiceImpl implements SysGroupDomainService {
 
     public List<MenuNode> getMenuTreeByGroupId(Long groupId) {
         if (groupId == null) {
-            throw new BizException("用户组ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "用户组ID");
         }
 
         // 查询用户组绑定的菜单关系

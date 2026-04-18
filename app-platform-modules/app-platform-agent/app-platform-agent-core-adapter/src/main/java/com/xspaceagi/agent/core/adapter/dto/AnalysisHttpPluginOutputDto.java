@@ -11,7 +11,7 @@ import java.util.Map;
 public class AnalysisHttpPluginOutputDto implements Serializable {
 
     @Schema(description = "插件ID")
-    @NotNull(message = "插件ID不能为空")
+    @NotNull(message = "Plugin ID is required")
     private Long pluginId;
 
     private Map<String, Object> params;

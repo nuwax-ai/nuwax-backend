@@ -9,6 +9,6 @@ import lombok.Data;
 public class TriggerConfigAddDto extends TriggerConfigDto {
 
     @Schema(description = "agentId", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "agentId不能为空")
+    @NotNull(message = "agentId is required")
     private Long agentId;
 }

@@ -36,6 +36,7 @@ public class KnowledgeConfigTranslatorImpl
         knowledgeConfigModel.setModifiedId(entity.getModifiedId());
         knowledgeConfigModel.setModifiedName(entity.getModifiedName());
         knowledgeConfigModel.setWorkflowId(entity.getWorkflowId());
+        knowledgeConfigModel.setAccessControl(entity.getAccessControl());
         knowledgeConfigModel.setFulltextSyncStatus(entity.getFulltextSyncStatus());
         knowledgeConfigModel.setFulltextSyncTime(entity.getFulltextSyncTime());
         knowledgeConfigModel.setFulltextSegmentCount(entity.getFulltextSegmentCount());
@@ -66,6 +67,7 @@ public class KnowledgeConfigTranslatorImpl
         knowledgeConfig.setModifiedId(model.getModifiedId());
         knowledgeConfig.setModifiedName(model.getModifiedName());
         knowledgeConfig.setWorkflowId(model.getWorkflowId());
+        knowledgeConfig.setAccessControl(model.getAccessControl());
         knowledgeConfig.setFulltextSyncStatus(model.getFulltextSyncStatus());
         knowledgeConfig.setFulltextSyncTime(model.getFulltextSyncTime());
         knowledgeConfig.setFulltextSegmentCount(model.getFulltextSegmentCount());

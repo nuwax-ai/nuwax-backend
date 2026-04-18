@@ -24,10 +24,10 @@ public final class UpdateTableDMLUtil {
      */
     public static String buildUpdateSql(CustomTableDefinitionModel tableModel, Map<String, Object> rowData, Long id) {
         if (id == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6009);
+            throw ComposeException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "行ID");
         }
         if (rowData == null || rowData.isEmpty()) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6011);
+            throw ComposeException.build(BizExceptionCodeEnum.composeUpdateDataEmpty);
         }
 
         // 构建字段类型Map
@@ -60,10 +60,10 @@ public final class UpdateTableDMLUtil {
                     setClause.append("NULL");
                 } else {
                     // 非空值但无法识别的布尔值，抛出异常
-                    log.error("布尔类型转换失败，fieldName: {}, value: {}", fieldName, value);
+                    log.error("Boolean conversion failed, fieldName: {}, value: {}", fieldName, value);
                     String errorMessage = String.format("布尔类型转换失败，字段名: %s, 字段值: %s, 支持的值: true/false/1/0", 
                                                        fieldName, value);
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                 }
             } else if (fieldType != null && TableFieldTypeEnum.DATE.getCode().equals(fieldType)) {
                 // 新增：处理日期类型，自动转换 ISO 8601 到 MySQL DATETIME（东八区）
@@ -75,10 +75,10 @@ public final class UpdateTableDMLUtil {
                         String mysqlDateStr = ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                         setClause.append("'").append(mysqlDateStr).append("'");
                     } catch (Exception e) {
-                        log.error("日期类型转换失败，fieldName: {}, value: {}", fieldName, value, e);
+                        log.error("Date conversion failed, fieldName: {}, value: {}", fieldName, value, e);
                         String errorMessage = String.format("日期类型转换失败，字段名: %s, 字段值: %s, 错误: %s", 
                                                            fieldName, value, e.getMessage());
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                     }
                 } else if (isValueEmpty) {
                     setClause.append("NULL");
@@ -97,10 +97,10 @@ public final class UpdateTableDMLUtil {
                         Double.parseDouble(value.toString());
                         setClause.append(value);
                     } catch (NumberFormatException e) {
-                        log.error("数值类型转换失败，fieldName: {}, value: {}", fieldName, value, e);
+                        log.error("Numeric conversion failed, fieldName: {}, value: {}", fieldName, value, e);
                         String errorMessage = String.format("数值类型转换失败，字段名: %s, 字段值: %s, 错误: %s", 
                                                            fieldName, value, e.getMessage());
-                        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                        throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                     }
             } else {
                 setClause.append("'").append(BuildSqlUtil.escapeSqlString(value == null ? "" : value.toString())).append("'");

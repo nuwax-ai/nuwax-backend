@@ -81,7 +81,7 @@ public class ExcelUtils {
                             .map(ExcelUtils::cleanWhitespace)
                             .orElse(null);
                     if (StringUtils.isBlank(rawHeader)) {
-                        log.warn("Excel表头在索引 {} 处为空，将跳过该列", i);
+                        log.warn("Excel header empty at index {}, skip column", i);
                         continue;
                     }
                     rawHeader = ExcelUtils.cleanWhitespace(rawHeader);
@@ -124,7 +124,7 @@ public class ExcelUtils {
                         headerIndexToFinalKeyMap.put(i, matchedField.getFieldName());
                     } else {
                         // 未找到匹配字段，将其视为一个要创建的新字段
-                        log.info("无法匹配表头 '{}'，将作为新字段创建。", rawHeader);
+                        log.info("No match for header '{}', create new field.", rawHeader);
                         newFieldsToCreate.add(rawHeader);
                         // 使用原始表头作为临时key，以便在数据行中引用
                         headerIndexToFinalKeyMap.put(i, rawHeader);
@@ -134,7 +134,7 @@ public class ExcelUtils {
 
             @Override
             public void doAfterAllAnalysed(AnalysisContext context) {
-                log.info("Excel读取完成。匹配到 {} 个字段，准备新建 {} 个字段。", matchedHeaderFields.size(),
+                log.info("Excel read done. Matched {} fields, will create {} new.", matchedHeaderFields.size(),
                         newFieldsToCreate.size());
             }
         }).headRowNumber(1).sheet().doRead();

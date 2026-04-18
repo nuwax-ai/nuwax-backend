@@ -36,17 +36,17 @@ public class EcoMarketAdaptor implements IEcoMarketAdaptor {
     @Override
     public List<AgentInfoDto> queryAgentInfoList(List<Long> agentIds) {
         try {
-            log.info("调用Agent RPC服务查询Agent信息列表: agentIds={}", agentIds);
+            log.info("Agent RPC list agents: agentIds={}", agentIds);
             if (agentIds == null || agentIds.isEmpty()) {
                 return Collections.emptyList();
             }
 
             var result = agentRpcService.queryAgentInfoList(agentIds);
             if (result == null || !result.isSuccess()) {
-                log.error("查询Agent信息列表失败: agentIds={}, errorCode={}, errorMsg={}",
+                log.error("List agents failed: agentIds={}, errorCode={}, errorMsg={}",
                         agentIds, result != null ? result.getCode() : "NULL",
                         result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "查询Agent信息列表失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "查询Agent信息列表失败");
             }
 
             return result.getData() != null ? result.getData() : Collections.emptyList();
@@ -54,8 +54,8 @@ public class EcoMarketAdaptor implements IEcoMarketAdaptor {
             // 已经是我们自定义的异常,直接抛出
             throw e;
         } catch (Exception e) {
-            log.error("查询Agent信息列表异常: agentIds={}", agentIds, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001,
+            log.error("List agents error: agentIds={}", agentIds, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound,
                     "查询Agent信息列表异常: " + e.getMessage());
         }
     }
@@ -63,163 +63,163 @@ public class EcoMarketAdaptor implements IEcoMarketAdaptor {
     @Override
     public String queryPluginConfig(Long pluginId, String paramJson) {
         try {
-            log.info("调用Agent RPC服务查询插件配置: pluginId={}, paramJson={}", pluginId, paramJson);
+            log.info("Agent RPC get plugin config: pluginId={}, paramJson={}", pluginId, paramJson);
             if (pluginId == null) {
-                throw new IllegalArgumentException("插件ID不能为空");
+                throw new IllegalArgumentException("Plugin ID cannot be empty");
             }
 
             var result = agentRpcService.queryPluginConfig(pluginId, paramJson);
             if (result == null || !result.isSuccess()) {
-                log.error("查询插件配置失败: pluginId={}, errorCode={}, errorMsg={}",
+                log.error("Get plugin config failed: pluginId={}, errorCode={}, errorMsg={}",
                         pluginId, result != null ? result.getCode() : "NULL",
                         result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "查询插件配置失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "查询插件配置失败");
             }
 
             return result.getData();
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("查询插件配置异常: pluginId={}", pluginId, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "查询插件配置异常: " + e.getMessage());
+            log.error("Get plugin config error: pluginId={}", pluginId, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "查询插件配置异常: " + e.getMessage());
         }
     }
 
     @Override
     public Long pluginEnableOrUpdate(PluginEnableOrUpdateDto pluginEnableOrUpdateDto) {
         try {
-            log.info("调用Agent RPC服务启用或更新插件: pluginEnableOrUpdateDto={}", pluginEnableOrUpdateDto);
+            log.info("Agent RPC enable/update plugin: pluginEnableOrUpdateDto={}", pluginEnableOrUpdateDto);
             if (pluginEnableOrUpdateDto == null) {
-                throw new IllegalArgumentException("插件启用或更新DTO不能为空");
+                throw new IllegalArgumentException("Plugin enable or update DTO cannot be empty");
             }
 
             var result = agentRpcService.pluginEnableOrUpdate(pluginEnableOrUpdateDto);
             if (result == null || !result.isSuccess()) {
-                log.error("启用或更新插件失败: errorCode={}, errorMsg={}",
+                log.error("Enable/update plugin failed: errorCode={}, errorMsg={}",
                         result != null ? result.getCode() : "NULL", result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "启用或更新插件失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "启用或更新插件失败");
             }
 
             return result.getData();
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("启用或更新插件异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "启用或更新插件异常: " + e.getMessage());
+            log.error("Enable/update plugin error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "启用或更新插件异常: " + e.getMessage());
         }
     }
 
     @Override
     public Void disablePlugin(Long pluginId) {
         try {
-            log.info("调用Agent RPC服务禁用插件: pluginId={}", pluginId);
+            log.info("Agent RPC disable plugin: pluginId={}", pluginId);
             if (pluginId == null) {
-                throw new IllegalArgumentException("插件ID不能为空");
+                throw new IllegalArgumentException("Plugin ID cannot be empty");
             }
 
             var result = agentRpcService.disablePlugin(pluginId);
             if (result == null || !result.isSuccess()) {
-                log.error("禁用插件失败: pluginId={}, errorCode={}, errorMsg={}",
+                log.error("Disable plugin failed: pluginId={}, errorCode={}, errorMsg={}",
                         pluginId, result != null ? result.getCode() : "NULL",
                         result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "禁用插件失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "禁用插件失败");
             }
 
             return null;
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("禁用插件异常: pluginId={}", pluginId, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "禁用插件异常: " + e.getMessage());
+            log.error("Disable plugin error: pluginId={}", pluginId, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "禁用插件异常: " + e.getMessage());
         }
     }
 
     @Override
     public String queryTemplateConfig(TargetTypeEnum targetType, Long targetId) {
         try {
-            log.info("调用Agent RPC服务查询模板配置: targetType={}, targetId={}", targetType, targetId);
+            log.info("Agent RPC get template config: targetType={}, targetId={}", targetType, targetId);
             if (targetType == null || targetId == null) {
-                throw new IllegalArgumentException("目标类型或目标ID不能为空");
+                throw new IllegalArgumentException("Target type or target ID cannot be empty");
             }
 
             var result = agentRpcService.queryTemplateConfig(targetType, targetId);
             if (result == null || !result.isSuccess()) {
-                log.error("查询模板配置失败: targetType={}, targetId={}, errorCode={}, errorMsg={}",
+                log.error("Get template config failed: targetType={}, targetId={}, errorCode={}, errorMsg={}",
                         targetType, targetId, result != null ? result.getCode() : "NULL",
                         result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "查询模板配置失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "查询模板配置失败");
             }
 
             return result.getData();
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("查询模板配置异常: targetType={}, targetId={}", targetType, targetId, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "查询模板配置异常: " + e.getMessage());
+            log.error("Get template config error: targetType={}, targetId={}", targetType, targetId, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "查询模板配置异常: " + e.getMessage());
         }
     }
 
     @Override
     public Long templateEnableOrUpdate(TemplateEnableOrUpdateDto templateEnableOrUpdateDto) {
         try {
-            log.info("调用Agent RPC服务启用或更新模板: templateEnableOrUpdateDto={}", templateEnableOrUpdateDto);
+            log.info("Agent RPC enable/update template: templateEnableOrUpdateDto={}", templateEnableOrUpdateDto);
             if (templateEnableOrUpdateDto == null) {
-                throw new IllegalArgumentException("模板启用或更新DTO不能为空");
+                throw new IllegalArgumentException("Template enable or update DTO cannot be empty");
             }
 
             var result = agentRpcService.templateEnableOrUpdate(templateEnableOrUpdateDto);
             if (result == null || !result.isSuccess()) {
-                log.error("启用或更新模板失败: errorCode={}, errorMsg={}",
+                log.error("Enable/update template failed: errorCode={}, errorMsg={}",
                         result != null ? result.getCode() : "NULL", result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "启用或更新模板失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "启用或更新模板失败");
             }
 
             return result.getData();
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("启用或更新模板异常", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "启用或更新模板异常: " + e.getMessage());
+            log.error("Enable/update template error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "启用或更新模板异常: " + e.getMessage());
         }
     }
 
     @Override
     public Void disableTemplate(TargetTypeEnum targetType, Long targetId) {
         try {
-            log.info("调用Agent RPC服务禁用模板: targetType={}, targetId={}", targetType, targetId);
+            log.info("Agent RPC disable template: targetType={}, targetId={}", targetType, targetId);
             if (targetType == null || targetId == null) {
-                throw new IllegalArgumentException("目标类型或目标ID不能为空");
+                throw new IllegalArgumentException("Target type or target ID cannot be empty");
             }
 
             var result = agentRpcService.disableTemplate(targetType, targetId);
             if (result == null || !result.isSuccess()) {
-                log.error("禁用模板失败: targetType={}, targetId={}, errorCode={}, errorMsg={}",
+                log.error("Disable template failed: targetType={}, targetId={}, errorCode={}, errorMsg={}",
                         targetType, targetId, result != null ? result.getCode() : "NULL",
                         result != null ? result.getMessage() : "NULL");
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "禁用模板失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "禁用模板失败");
             }
 
             return null;
         } catch (EcoMarketException e) {
             throw e;
         } catch (Exception e) {
-            log.error("禁用模板异常: targetType={}, targetId={}", targetType, targetId, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "禁用模板异常: " + e.getMessage());
+            log.error("Disable template error: targetType={}, targetId={}", targetType, targetId, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "禁用模板异常: " + e.getMessage());
         }
     }
 
     @Override
     public Long deployOfficialMcp(McpDto mcpDto) {
-        log.info("调用MCP API服务部署MCP: mcpDto={}", mcpDto);
+        log.info("MCP API deploy MCP: mcpDto={}", mcpDto);
         if (mcpDto == null) {
-            log.error("部署MCP失败: MCP配置不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8029);
+            log.error("Deploy MCP failed: MCP config required");
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "MCP配置");
         }
 
         var result = mcpApiService.deployOfficialMcp(mcpDto);
         if (result == null) {
-            log.error("部署MCP失败: mcpDto={}", mcpDto);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8030);
+            log.error("Deploy MCP failed: mcpDto={}", mcpDto);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketDeployMcpFailed);
         }
 
         return result;
@@ -227,10 +227,10 @@ public class EcoMarketAdaptor implements IEcoMarketAdaptor {
 
     @Override
     public Void stopOfficialMcp(Long targetId) {
-        log.info("调用MCP API服务停止MCP: targetId={}", targetId);
+        log.info("MCP API stop MCP: targetId={}", targetId);
         if (targetId == null) {
-            log.error("停止MCP失败: MCP ID不能为空");
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8031);
+            log.error("Stop MCP failed: MCP ID required");
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketStopMcpFailed);
         }
 
         mcpApiService.stopOfficialMcp(targetId);

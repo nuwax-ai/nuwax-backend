@@ -20,7 +20,7 @@ import java.util.Map;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
 
-@Tag(name = "网页应用", description = "网页应用相关接口")
+@Tag(name = "Web app", description = "Custom page web app APIs")
 @RestController
 @RequestMapping("/api/custom-page")
 @Slf4j
@@ -33,16 +33,16 @@ public class CustomPageBuildController extends BaseController {
     private ICustomPageProxyPathService customPageProxyPathApplicationService;
 
     @RequireResource(PAGE_APP_RESTART_SERVER)
-    @Operation(summary = "启动开发服务器", description = "启动前端开发服务器")
+    @Operation(summary = "Start dev server", description = "Start the frontend dev server")
     @PostMapping(value = "/start-dev", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomBuildRes> startDev(@RequestBody CustomBuildReq req) {
-        log.info("[Web] 接收到启动前端服务请求，projectId={}", req.getProjectId());
+        log.info("[Web] startfrontend servicerequest, project Id={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.startDev(req.getProjectId(),
                     userContext);
-            log.info("[Web] 启动前端服务完成，返回码={}", result.getCode());
+            log.info("[Web] startfrontend servicecompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -61,25 +61,25 @@ public class CustomPageBuildController extends BaseController {
             }
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 启动前端服务失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] startfrontend servicefailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 启动前端服务失败， projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "启动前端服务失败: " + e.getMessage());
+            log.error("[Web] startfrontend servicefailed, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Failed to start frontend dev server: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_PUBLISH)
-    @Operation(summary = "构建并发布项目", description = "构建并发布前端项目")
+    @Operation(summary = "Build and publish", description = "Build and publish the frontend project")
     @PostMapping(value = "/build", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomBuildRes> build(@RequestBody CustomBuildReq req) {
-        log.info("[Web] 接收到构建发布请求，projectId={}", req.getProjectId());
+        log.info("[Web] build releaserequest, project Id={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.build(req.getProjectId(),
                     req.getPublishType(), userContext);
-            log.info("[Web] 构建发布完成，返回码={}", result.getCode());
+            log.info("[Web] build releasecompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -92,25 +92,25 @@ public class CustomPageBuildController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 构建发布失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] build releasefailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 构建发布失败，projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "构建发布失败: " + e.getMessage());
+            log.error("[Web] build releasefailed, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Build and publish failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_RESTART_SERVER)
-    @Operation(summary = "停止开发服务器", description = "停止前端开发服务器")
+    @Operation(summary = "Stop dev server", description = "Stop the frontend dev server")
     @PostMapping(value = "/stop-dev", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomBuildRes> stopDev(@RequestBody CustomBuildReq req) {
-        log.info("[Web] 接收到停止开发服务器请求，projectName={}", req.getProjectId());
+        log.info("[Web] stop dev serverrequest, project Name={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.stopDev(req.getProjectId(),
                     userContext);
-            log.info("[Web] 停止开发服务器完成，返回码={}", result.getCode());
+            log.info("[Web] stop dev servercompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -121,25 +121,25 @@ public class CustomPageBuildController extends BaseController {
             res.setProjectIdStr(String.valueOf(req.getProjectId()));
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 停止开发服务器失败，projectName={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] stop dev serverfailed, project Name={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 停止开发服务器失败，projectName={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "停止开发服务器失败: " + e.getMessage());
+            log.error("[Web] stop dev serverfailed, project Name={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Failed to stop dev server: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_RESTART_SERVER)
-    @Operation(summary = "重启开发服务器", description = "重启前端开发服务器")
+    @Operation(summary = "Restart dev server", description = "Restart the frontend dev server")
     @PostMapping(value = "/restart-dev", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomBuildRes> restartDev(@RequestBody CustomBuildReq req) {
-        log.info("[Web] 接收到重启开发服务器请求，projectId={}", req.getProjectId());
+        log.info("[Web] restart dev serverrequest, project Id={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.restartDev(req.getProjectId(),
                     userContext);
-            log.info("[Web] 重启开发服务器完成，返回码={}", result.getCode());
+            log.info("[Web] restart dev servercompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -158,24 +158,24 @@ public class CustomPageBuildController extends BaseController {
             }
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 重启开发服务器失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] restart dev serverfailed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 重启开发服务器失败，projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "重启开发服务器失败: " + e.getMessage());
+            log.error("[Web] restart dev serverfailed, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Failed to restart dev server: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "开发服务器保活", description = "前端定时请求后端保活，超时无请求则自动停止开发服务器")
+    @Operation(summary = "Dev server keep-alive", description = "Periodic keep-alive; dev server stops if no requests within timeout")
     @PostMapping(value = "/keepalive", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<KeepAliveRes> keepAlive(@RequestBody KeepAliveReq req) {
-        log.debug("[Web] projectId={},收到保活请求", req.getProjectId());
+        log.debug("[Web] project Id={},receivedkeep-aliverequest", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.keepAlive(req.getProjectId(), userContext);
-            log.debug("[Web] projectId={},保活处理完成，返回码={}", req.getProjectId(), result.getCode());
+            log.debug("[Web] project Id={},keep-alivehandlecompleted, status Code={}", req.getProjectId(), result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -194,19 +194,19 @@ public class CustomPageBuildController extends BaseController {
             }
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] projectId={},保活处理失败, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] project Id={},keep-alivehandlefailed, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] projectId={},保活处理异常", req.getProjectId(), e);
+            log.error("[Web] project Id={},keep-alivehandleexception", req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询开发服务器日志", description = "查询前端开发服务器日志")
+    @Operation(summary = "Get dev server logs", description = "Query frontend dev server logs")
     @PostMapping(value = "/get-dev-log", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<GetDevLogRes> getDevLog(@RequestBody GetDevLogReq req) {
-        log.debug("[getDevLog] projectId={}, 接收到请求，startIndex={},logType={}", req.getProjectId(), req.getStartIndex(), req.getLogType());
+        log.debug("[get Dev Log] project Id={}, request, start Index={},log Type={}", req.getProjectId(), req.getStartIndex(), req.getLogType());
         try {
             UserContext userContext = getUser();
 
@@ -215,7 +215,7 @@ public class CustomPageBuildController extends BaseController {
             }
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.getDevLog(req.getProjectId(),
                     req.getStartIndex(), req.getLogType(), userContext);
-            log.debug("[getDevLog] 查询完成，返回码={}", result.getCode());
+            log.debug("[get Dev Log] querycompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -249,22 +249,22 @@ public class CustomPageBuildController extends BaseController {
             }
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[getDevLog] projectId={}, 查询日志失败，{}", req.getProjectId(), e.getMessage());
+            log.error("[get Dev Log] project Id={}, query logsfailed, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[getDevLog] projectId={}, 查询日志失败", req.getProjectId(), e);
-            return ReqResult.error("0001", "查询日志失败: " + e.getMessage());
+            log.error("[get Dev Log] project Id={}, query logsfailed", req.getProjectId(), e);
+            return ReqResult.error("0001", "Query logs failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_LIST)
-    @Operation(summary = "获取日志缓存统计", description = "获取所有项目的日志缓存统计信息")
+    @Operation(summary = "Get log cache statistics", description = "Statistics for dev log caches across projects")
     @GetMapping(value = "/get-log-cache-stats", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> getLogCacheStats() {
-        log.info("[Web] 接收到获取日志缓存统计请求");
+        log.info("[Web] getlogcachestatsrequest");
         try {
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.getLogCacheStats();
-            log.info("[Web] 获取日志缓存统计完成，返回码={}", result.getCode());
+            log.info("[Web] getlogcachestatscompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -272,19 +272,19 @@ public class CustomPageBuildController extends BaseController {
 
             return ReqResult.success(result.getData());
         } catch (Exception e) {
-            log.error("[Web] 获取日志缓存统计失败", e);
-            return ReqResult.error("0001", "获取日志缓存统计失败: " + e.getMessage());
+            log.error("[Web] getlogcachestatsfailed", e);
+            return ReqResult.error("0001", "Failed to get log cache statistics: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_LIST)
-    @Operation(summary = "清理日志缓存", description = "清理所有项目的日志缓存")
+    @Operation(summary = "Clear log cache", description = "Clear dev log caches for all projects")
     @GetMapping(value = "/clear-all-log-cache", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> clearAllLogCache() {
-        log.info("[Web] 接收到清理日志缓存请求");
+        log.info("[Web] clearlogcacherequest");
         try {
             ReqResult<Map<String, Object>> result = customPageBuildApplicationService.clearAllLogCache();
-            log.info("[Web] 清理日志缓存完成，返回码={}", result.getCode());
+            log.info("[Web] clearlogcachecompleted, status Code={}", result.getCode());
 
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
@@ -292,8 +292,8 @@ public class CustomPageBuildController extends BaseController {
 
             return ReqResult.success(result.getData());
         } catch (Exception e) {
-            log.error("[Web] 清理日志缓存失败", e);
-            return ReqResult.error("0001", "清理日志缓存失败: " + e.getMessage());
+            log.error("[Web] clearlogcachefailed", e);
+            return ReqResult.error("0001", "Failed to clear log cache: " + e.getMessage());
         }
     }
 

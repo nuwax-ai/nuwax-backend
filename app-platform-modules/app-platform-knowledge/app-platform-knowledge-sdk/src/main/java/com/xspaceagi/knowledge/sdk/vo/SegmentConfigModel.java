@@ -19,8 +19,8 @@ public class SegmentConfigModel implements Serializable {
     private Integer words;
 
     @Schema(description = "分段重叠字符数，建议设置words的10%-25%")
-    @Max(value = 100, message = "重叠字符数不能大于100")
-    @Min(value = 0, message = "重叠字符数不能小于0")
+    @Max(value = 100, message = "Overlap characters cannot exceed 100")
+    @Min(value = 0, message = "Overlap characters cannot be less than 0")
     private Integer overlaps;
 
     @Schema(description = "分隔符，仅在选择delimiter时有效")

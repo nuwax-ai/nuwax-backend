@@ -12,7 +12,9 @@ import com.xspaceagi.system.spec.constants.PermissionSyncConstants;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +63,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
     public void importToTenant(Tenant tenant, String version) {
         try {
             if (tenant == null || tenant.getId() == null) {
-                throw new BizException("菜单权限导入失败,租户ID无效");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuPermissionImportTenantInvalid);
             }
             RequestContext.setThreadTenantId(tenant.getId());
             doImport(tenant, version);
@@ -77,7 +79,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
     public void importDiffToTenant(Tenant tenant, String version) {
         try {
             if (tenant == null || tenant.getId() == null) {
-                throw new BizException("菜单权限差异导入失败,租户ID无效");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemMenuPermissionDiffImportTenantInvalid);
             }
             RequestContext.setThreadTenantId(tenant.getId());
             doImportDiff(tenant, version);

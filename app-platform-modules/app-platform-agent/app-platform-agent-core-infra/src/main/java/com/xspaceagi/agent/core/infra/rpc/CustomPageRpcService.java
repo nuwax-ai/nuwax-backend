@@ -90,7 +90,7 @@ public class CustomPageRpcService {
             pageArgConfig.setBasePath(pageDto.getBasePath());
             pageArgConfig.setPageId(customPageDto.getProjectId());
             pageArgConfig.setPageUri("/");
-            pageArgConfig.setName(pageDto.getName() + " - 首页");
+            pageArgConfig.setName(pageDto.getName());
             pageArgConfig.setDescription(pageDto.getDescription());
             pageArgConfig.setArgs(new ArrayList<>());
             pageDto.getPageArgConfigs().add(pageArgConfig);
@@ -177,7 +177,7 @@ public class CustomPageRpcService {
             pageArgConfig.setBasePath(pageDto.getBasePath());
             pageArgConfig.setPageId(customPageDto.getProjectId());
             pageArgConfig.setPageUri("/");
-            pageArgConfig.setName(pageDto.getName() + " - 首页");
+            pageArgConfig.setName(pageDto.getName());
             pageArgConfig.setDescription(pageDto.getDescription());
             pageArgConfig.setArgs(new ArrayList<>());
             pageDto.getPageArgConfigs().add(pageArgConfig);

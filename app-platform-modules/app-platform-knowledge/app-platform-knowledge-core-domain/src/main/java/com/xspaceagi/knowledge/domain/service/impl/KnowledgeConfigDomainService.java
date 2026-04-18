@@ -61,11 +61,11 @@ public class KnowledgeConfigDomainService implements IKnowledgeConfigDomainServi
         // 删除 Quickwit 中的全文检索数据（在事务内，保证一致性）
         try {
             fullTextSearchDomainService.deleteByKbId(id, userContext.getTenantId());
-            log.info("删除知识库全文检索数据成功: kbId={}", id);
+            log.info("Delete KB full-text data OK: kbId={}", id);
         } catch (Exception e) {
-            log.error("删除知识库全文检索数据失败: kbId={}", id, e);
+            log.error("Delete KB full-text data failed: kbId={}", id, e);
             // 抛出异常，触发事务回滚
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5023, e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDeleteKbFulltextFailed, e);
         }
 
     }

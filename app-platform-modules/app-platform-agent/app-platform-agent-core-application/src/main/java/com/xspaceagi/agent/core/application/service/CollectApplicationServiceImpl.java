@@ -8,7 +8,9 @@ import com.xspaceagi.agent.core.adapter.repository.entity.PublishedStatistics;
 import com.xspaceagi.agent.core.adapter.repository.entity.UserTargetRelation;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
 import com.xspaceagi.agent.core.domain.service.UserTargetRelationDomainService;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,7 @@ public class CollectApplicationServiceImpl implements CollectApplicationService 
     @Override
     public void collect(Long userId, Published.TargetType targetType, Long targetId) {
         if (publishApplicationService.queryPublishedList(targetType, List.of(targetId)).size() == 0) {
-            throw new BizException("未发布或已下架");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotPublishedOrOfflineAlt);
         }
         boolean res = userTargetRelationDomainService.record(userId, targetType, UserTargetRelation.OpType.Collect, targetId);
         if (res) {

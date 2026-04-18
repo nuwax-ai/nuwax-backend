@@ -20,7 +20,7 @@ public class ClientConfigUpdateDraftReqDTO extends ClientConfigSaveReqDTO {
     /**
      * 配置唯一标识
      */
-    @NotBlank(message = "配置UID不能为空")
+    @NotBlank(message = "Configuration UID is required")
     @Schema(description = "配置唯一标识", requiredMode = RequiredMode.REQUIRED)
     private String uid;
 

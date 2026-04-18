@@ -1,44 +1,17 @@
 package com.xspaceagi.system.application.service.impl;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import com.xspaceagi.system.spec.enums.StatusEnum;
-import com.xspaceagi.system.spec.exception.BizException;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.xspaceagi.system.application.converter.MenuTreeUtil;
 import com.xspaceagi.system.application.dto.AuthorizedIds;
 import com.xspaceagi.system.application.dto.permission.MenuNodeDto;
 import com.xspaceagi.system.application.dto.permission.ResourceNodeDto;
-import com.xspaceagi.system.application.service.SysDataPermissionApplicationService;
-import com.xspaceagi.system.application.service.SysGroupApplicationService;
-import com.xspaceagi.system.application.service.SysMenuApplicationService;
-import com.xspaceagi.system.application.service.SysResourceApplicationService;
-import com.xspaceagi.system.application.service.SysRoleApplicationService;
-import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
-import com.xspaceagi.system.application.service.SysUserPermissionService;
+import com.xspaceagi.system.application.service.*;
+import com.xspaceagi.system.domain.model.MenuNode;
+import com.xspaceagi.system.domain.model.ResourceNode;
 import com.xspaceagi.system.domain.service.SysGroupDomainService;
 import com.xspaceagi.system.domain.service.SysRoleDomainService;
 import com.xspaceagi.system.domain.service.UserDomainService;
-import com.xspaceagi.system.domain.model.MenuNode;
-import com.xspaceagi.system.domain.model.ResourceNode;
-import com.xspaceagi.system.infra.dao.entity.SysGroup;
-import com.xspaceagi.system.infra.dao.entity.SysMenu;
-import com.xspaceagi.system.infra.dao.entity.SysResource;
-import com.xspaceagi.system.infra.dao.entity.SysRole;
-import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.infra.dao.entity.*;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -46,12 +19,21 @@ import com.xspaceagi.system.spec.constants.RedisKeyConstants;
 import com.xspaceagi.system.spec.enums.BindTypeEnum;
 import com.xspaceagi.system.spec.enums.GroupEnum;
 import com.xspaceagi.system.spec.enums.RoleEnum;
+import com.xspaceagi.system.spec.enums.StatusEnum;
 import com.xspaceagi.system.spec.exception.ResourcePermissionException;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.PermissionCacheUtil;
-
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 用户权限缓存服务
@@ -115,7 +97,7 @@ public class SysUserPermissionCacheServiceImpl implements SysUserPermissionCache
         // 确保用户有默认绑定后再构建
         User user = userDomainService.queryById(userId);
         if (user == null) {
-            throw new BizException("用户不存在, id=" + userId);
+            throw new IllegalArgumentException("User does not exist, id=" + userId);
         }
         ensureUserDefaultBindings(user);
         
@@ -191,7 +173,7 @@ public class SysUserPermissionCacheServiceImpl implements SysUserPermissionCache
             return;
         }
         if (tenantId == null) {
-            throw new BizException("用户缓存清除失败,tenantId无效");
+            throw new IllegalArgumentException("Failed to clear user cache: invalid tenantId");
         }
         if (userIds.size() > RedisKeyConstants.CLEAR_CACHE_BY_USER_IDS_THRESHOLD) {
             // 用户数量太大，避免定向删除占用资源，直接全部失效
@@ -229,7 +211,7 @@ public class SysUserPermissionCacheServiceImpl implements SysUserPermissionCache
     @Override
     public void clearCacheAllByTenant(Long tenantId) {
         if (tenantId == null) {
-            throw new BizException("清除缓存失败,tenantId无效");
+            throw new IllegalArgumentException("Failed to clear cache: invalid tenantId");
         }
         try {
             // 更新该租户的权限最新生效时间，使该租户下所有缓存失效
@@ -239,7 +221,7 @@ public class SysUserPermissionCacheServiceImpl implements SysUserPermissionCache
             log.info("更新权限最新时间, 租户{}下所有权限缓存将失效, time={}", tenantId, currentTime);
             log.info("清除所有用户权限缓存完成");
         } catch (Exception e) {
-            log.warn("清除所有用户权限缓存失败", e);
+            log.warn("Failed to clear all user permission caches", e);
         }
     }
 

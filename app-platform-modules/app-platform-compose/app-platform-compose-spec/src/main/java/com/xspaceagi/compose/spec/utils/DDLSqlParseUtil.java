@@ -27,7 +27,7 @@ public class DDLSqlParseUtil {
      */
     public static void parseCreateTableDdl(String createTableDdl, DorisTableDefinitionVo definition) {
         if (!StringUtils.hasText(createTableDdl)) {
-            log.warn("输入的 createTableDdl 为空，无法解析。");
+            log.warn("createTableDdl is empty, cannot parse.");
             return;
         }
 
@@ -71,13 +71,13 @@ public class DDLSqlParseUtil {
                         }
                     }
                     if (!commentFound) {
-                        log.debug("JSqlParser 未能从 TableOptions 中解析 COMMENT, 将尝试字符串解析.");
+                        log.debug("JSqlParser: no COMMENT in TableOptions, falling back to string parse.");
                     }
                     if (!engineFound) {
-                        log.debug("JSqlParser 未能从 TableOptions 中解析 ENGINE, 将尝试字符串解析.");
+                        log.debug("JSqlParser: no ENGINE in TableOptions, falling back to string parse.");
                     }
                 } else {
-                    log.debug("JSqlParser 未找到 TableOptions.");
+                    log.debug("JSqlParser: TableOptions not found.");
                 }
 
                 // JSqlParser 提取列定义 (主要用于未来扩展，当前 V_o 不存储详细列信息)
@@ -87,16 +87,16 @@ public class DDLSqlParseUtil {
                 /* ... (注释掉的代码) ... */
 
             } else {
-                log.warn("解析的语句不是 CREATE TABLE 类型: {}", statement.getClass().getName());
+                log.warn("Statement is not CREATE TABLE: {}", statement.getClass().getName());
                 // 如果不是 CreateTable，后续的字符串解析可能也无效
                 // 但仍然尝试字符串解析，以防是其他 CREATE 语句变体
             }
 
         } catch (JSQLParserException e) {
-            log.warn("使用 JSqlParser 解析 DDL 失败: {}, 将完全回退到字符串解析。", e.getMessage());
+            log.warn("JSqlParser DDL parse failed: {}, full string fallback.", e.getMessage());
             // 不再抛出异常，继续尝试字符串解析
         } catch (Exception e) {
-            log.warn("使用 JSqlParser 解析时发生意外错误: {}, 将完全回退到字符串解析。", e.getMessage(), e);
+            log.warn("JSqlParser unexpected error: {}, full string fallback.", e.getMessage(), e);
             // 不再抛出异常，继续尝试字符串解析
         }
 
@@ -132,13 +132,13 @@ public class DDLSqlParseUtil {
                 if (endQuoteIndex > commentIndex + 8) {
                     definition.setComment(createTableDdl.substring(commentIndex + 9, endQuoteIndex));
                 } else if (definition.getComment() == null){ // 只有当 JSqlParser 也没解析到时才告警
-                    log.warn("字符串解析：无法解析表注释。DDL: {}", createTableDdl);
+                    log.warn("String parse: cannot parse table comment. DDL: {}", createTableDdl);
                 }
              } else if (definition.getComment() == null) {
-                 log.warn("字符串解析：未找到 COMMENT 关键字。DDL: {}", createTableDdl);
+                 log.warn("String parse: COMMENT not found. DDL: {}", createTableDdl);
              }
         } catch (Exception e) {
-            log.warn("字符串解析表注释时出错: {}", e.getMessage());
+            log.warn("String parse table comment error: {}", e.getMessage());
         }
 
         // 提取表引擎 (覆盖或补充)
@@ -154,10 +154,10 @@ public class DDLSqlParseUtil {
                      createTableDdl.charAt(engineEndIndex) == ' ' ) {
                      definition.setEngine("OLAP");
                  } else if (definition.getEngine() == null) {
-                      log.warn("字符串解析：找到 ENGINE=OLAP 但后续字符不符合预期。DDL: {}", createTableDdl);
+                      log.warn("String parse: ENGINE=OLAP but unexpected tail. DDL: {}", createTableDdl);
                  }
              } else if (definition.getEngine() == null){
-                log.debug("字符串解析：未找到 'ENGINE=OLAP'，尝试解析 MySQL 引擎。DDL: {}", createTableDdl);
+                log.debug("String parse: no ENGINE=OLAP, trying MySQL engine. DDL: {}", createTableDdl);
                 // 尝试解析 ENGINE = MySQL 引擎
                  int mysqlEngineIndex = createTableDdl.indexOf("ENGINE=");
                  if (mysqlEngineIndex > 0) {
@@ -166,12 +166,12 @@ public class DDLSqlParseUtil {
                     if (engineEndIndex == -1) engineEndIndex = createTableDdl.length();
                     if(engineEndIndex > mysqlEngineIndex + 7) {
                         definition.setEngine(createTableDdl.substring(mysqlEngineIndex + 7, engineEndIndex).trim());
-                        log.info("解析到 MySQL 引擎: {}", definition.getEngine());
+                        log.info("Parsed MySQL engine: {}", definition.getEngine());
                     }
                  }
              }
         } catch (Exception e) {
-             log.warn("字符串解析表引擎时出错: {}", e.getMessage());
+             log.warn("String parse table engine error: {}", e.getMessage());
         }
 
 
@@ -192,14 +192,14 @@ public class DDLSqlParseUtil {
                     try {
                         definition.setBuckets(Integer.parseInt(bucketsStr));
                     } catch (NumberFormatException nfe) {
-                         log.warn("字符串解析：无法解析分桶数：'{}' 不是有效的整数。DDL: {}", bucketsStr, createTableDdl);
+                         log.warn("String parse: invalid bucket count '{}'. DDL: {}", bucketsStr, createTableDdl);
                     }
                 } else {
-                     log.warn("字符串解析：无法解析分桶数：未找到有效的结束位置。DDL: {}", createTableDdl);
+                     log.warn("String parse: bucket count end not found. DDL: {}", createTableDdl);
                 }
             }
         } catch (Exception e) {
-             log.warn("字符串解析分桶数时出错: {}", e.getMessage());
+             log.warn("String parse bucket count error: {}", e.getMessage());
         }
 
         // 提取表属性 (包括副本数)
@@ -225,24 +225,24 @@ public class DDLSqlParseUtil {
                                         try {
                                             definition.setReplicationNum(Integer.parseInt(value));
                                         } catch (NumberFormatException nfe) {
-                                            log.warn("字符串解析：无法解析 PROPERTIES 中的 replication_num：'{}' 不是有效的整数。", value);
+                                            log.warn("String parse: invalid replication_num '{}'.", value);
                                         }
                                     }
                                 }
                              } else {
-                                 log.warn("字符串解析：PROPERTIES 中的属性格式不正确: {}", trimmedProperty);
+                                 log.warn("String parse: invalid PROPERTIES attr format: {}", trimmedProperty);
                              }
                         }
                     }
                 } else {
-                     log.warn("字符串解析：无法解析 PROPERTIES：未找到有效的结束括号或块为空。DDL: {}", createTableDdl);
+                     log.warn("String parse: PROPERTIES block invalid. DDL: {}", createTableDdl);
                 }
             }
             if (!properties.isEmpty()) {
                 definition.setProperties(properties);
             }
          } catch (Exception e) {
-             log.warn("字符串解析 PROPERTIES 时出错: {}", e.getMessage());
+             log.warn("String parse PROPERTIES error: {}", e.getMessage());
          }
 
 
@@ -262,14 +262,14 @@ public class DDLSqlParseUtil {
                     if (!keyList.isEmpty()) {
                        definition.setDistributedKeys(keyList);
                     } else {
-                         log.warn("字符串解析：解析出的分布键为空。Keys String: '{}', DDL: {}", keysStr, createTableDdl);
+                         log.warn("String parse: empty distribution keys. Keys: '{}', DDL: {}", keysStr, createTableDdl);
                     }
                 } else {
-                    log.warn("字符串解析：无法解析分布键：未找到结束括号。DDL: {}", createTableDdl);
+                    log.warn("String parse: distribution keys end not found. DDL: {}", createTableDdl);
                 }
             }
         } catch (Exception e) {
-             log.warn("字符串解析分布键时出错: {}", e.getMessage());
+             log.warn("String parse distribution keys error: {}", e.getMessage());
         }
 
         // 提取重复键/聚合键/唯一键 (Doris 支持多种 Key 类型)
@@ -300,14 +300,14 @@ public class DDLSqlParseUtil {
                         // 统一存到 DuplicateKeys 里，或者需要扩展 V_o 以区分 Key 类型
                         definition.setDuplicateKeys(keyList);
                     } else {
-                         log.warn("字符串解析：解析出的 {} 为空。Keys String: '{}', DDL: {}", keyPattern, keysStr, createTableDdl);
+                         log.warn("String parse: {} is empty. Keys: '{}', DDL: {}", keyPattern, keysStr, createTableDdl);
                     }
                 } else {
-                     log.warn("字符串解析：无法解析 {}：未找到结束括号。DDL: {}", keyPattern, createTableDdl);
+                     log.warn("String parse: cannot parse {}: end paren not found. DDL: {}", keyPattern, createTableDdl);
                 }
             }
         } catch (Exception e) {
-             log.warn("字符串解析表 Key 时出错: {}", e.getMessage());
+             log.warn("String parse table key error: {}", e.getMessage());
         }
 
     }

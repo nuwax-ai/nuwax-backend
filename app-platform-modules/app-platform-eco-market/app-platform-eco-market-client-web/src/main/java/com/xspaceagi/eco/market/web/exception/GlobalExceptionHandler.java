@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AdminPermissionException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ReqResult<Void> handleAdminPermissionException(AdminPermissionException e) {
-        log.warn("管理员权限验证失败", e);
+        log.warn("Admin permission verification failed", e);
         ReqResult<Void> responseData = ReqResult.error(e.getMessage());
 
         return responseData;

@@ -6,6 +6,7 @@ import com.xspaceagi.agent.web.ui.controller.dto.ComputerFileListRes;
 import com.xspaceagi.agent.web.ui.controller.dto.ComputerFilesUpdateReq;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -36,12 +37,12 @@ public class ComputerFileController extends BaseController {
     @GetMapping("/static/file-list")
     public ReqResult<ComputerFileListRes> getFileList(@RequestParam("cId") Long cId) {
         Long userId = getUser().getUserId();
-        log.info("[Web] 接收到查询文件列表请求，userId={}, cId={}", userId, cId);
+        log.info("[Web] File list request, userId={}, cId={}", userId, cId);
 //        UserContext userContext = getUser();
         String proxyPath = String.format("/api/computer/static/%s", cId);
         Map<String, Object> result = computerFileApplicationService.getFileList(userId, cId, proxyPath, null);
         if (result == null) {
-            return ReqResult.error("查询文件列表失败");
+            return ReqResult.error(I18nUtil.systemMessage("File.GetFileList.Error"));
         }
 
         Object successObj = result.get("success");
@@ -56,7 +57,7 @@ public class ComputerFileController extends BaseController {
         }
 
         if (!success) {
-            String message = result.getOrDefault("message", "查询文件列表失败").toString();
+            String message = result.getOrDefault("message", I18nUtil.systemMessage("File.GetFileList.Error")).toString();
             String code = codeObj != null ? codeObj.toString() : "9999";
             return ReqResult.create(code, message, null);
         }
@@ -70,11 +71,11 @@ public class ComputerFileController extends BaseController {
     @PostMapping(value = "/static/files-update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> filesUpdate(@RequestBody ComputerFilesUpdateReq req) {
         Long userId = getUser().getUserId();
-        log.info("[Web] 接收到用户文件列表修改请求，userId={}, cId={}", userId, req.getCId());
+        log.info("[Web] File update request, userId={}, cId={}", userId, req.getCId());
         UserContext userContext = getUser();
         Map<String, Object> result = computerFileApplicationService.filesUpdate(userId, req.getCId(), req.getFiles(), userContext);
         if (result == null) {
-            return ReqResult.error("用户文件列表修改失败");
+            return ReqResult.error("File modification failed.");
         }
 
         Object successObj = result.get("success");
@@ -89,7 +90,7 @@ public class ComputerFileController extends BaseController {
         }
 
         if (!success) {
-            String message = result.getOrDefault("message", "用户文件列表修改失败").toString();
+            String message = result.getOrDefault("message", "File modification failed.").toString();
             String code = codeObj != null ? codeObj.toString() : "9999";
             return ReqResult.create(code, message, null);
         }
@@ -110,18 +111,18 @@ public class ComputerFileController extends BaseController {
         if (finalFilePath == null || finalFilePath.trim().isEmpty()) {
             if (filePaths != null && !filePaths.isEmpty()) {
                 finalFilePath = filePaths.get(0);
-                log.warn("[Web] 单文件上传接收到 filePaths 数组，取第一个元素，userId={}, cId={}, filePath={}", userId, cId, finalFilePath);
+                log.warn("[Web] Single-file upload received filePaths array; using first element, userId={}, cId={}, filePath={}", userId, cId, finalFilePath);
             } else {
-                log.error("[Web] 文件上传参数错误，filePath 和 filePaths 都为空，userId={}, cId={}", userId, cId);
-                return ReqResult.error("filePath 参数不能为空");
+                log.error("[Web] Invalid upload params: both filePath and filePaths are empty, userId={}, cId={}", userId, cId);
+                return ReqResult.error("Param 'filePath' cannot be left blank.");
             }
         }
         
-        log.info("[Web] 接收到用户文件上传请求，userId={}, cId={}, filePath={}", userId, cId, finalFilePath);
+        log.info("[Web] File upload request, userId={}, cId={}, filePath={}", userId, cId, finalFilePath);
         UserContext userContext = getUser();
         Map<String, Object> result = computerFileApplicationService.uploadFile(userId, cId, finalFilePath, file, userContext);
         if (result == null) {
-            return ReqResult.error("用户文件上传失败");
+            return ReqResult.error("File upload failed.");
         }
 
         Object successObj = result.get("success");
@@ -136,7 +137,7 @@ public class ComputerFileController extends BaseController {
         }
 
         if (!success) {
-            String message = result.getOrDefault("message", "用户文件上传失败").toString();
+            String message = result.getOrDefault("message", "File upload failed.").toString();
             String code = codeObj != null ? codeObj.toString() : "9999";
             return ReqResult.create(code, message, null);
         }
@@ -152,18 +153,18 @@ public class ComputerFileController extends BaseController {
         Long userId = getUser().getUserId();
         
         if (filePaths == null || filePaths.isEmpty()) {
-            log.error("[Web] filePaths 为空，userId={}, cId={}", userId, cId);
-            return ReqResult.error("filePaths 参数不能为空");
+            log.error("[Web] filePaths is empty, userId={}, cId={}", userId, cId);
+            return ReqResult.error("Param 'filePaths' cannot be left blank.");
         }
         
-        log.info("[Web] 接收到用户批量文件上传请求，userId={}, cId={}, filePathsSize={}, filesSize={}, filePaths={}", userId, cId,
+        log.info("[Web] Batch file upload request, userId={}, cId={}, filePathsSize={}, filesSize={}, filePaths={}", userId, cId,
                 filePaths.size(),
                 files != null ? files.size() : 0,
                 filePaths);
         UserContext userContext = getUser();
         Map<String, Object> result = computerFileApplicationService.uploadFiles(userId, cId, filePaths, files, userContext);
         if (result == null) {
-            return ReqResult.error("用户批量文件上传失败");
+            return ReqResult.error("Batch file upload failed");
         }
 
         Object successObj = result.get("success");
@@ -178,7 +179,7 @@ public class ComputerFileController extends BaseController {
         }
 
         if (!success) {
-            String message = result.getOrDefault("message", "用户批量文件上传失败").toString();
+            String message = result.getOrDefault("message", "Batch file upload failed").toString();
             String code = codeObj != null ? codeObj.toString() : "9999";
             return ReqResult.create(code, message, null);
         }
@@ -190,7 +191,7 @@ public class ComputerFileController extends BaseController {
     @GetMapping("/static/download-all-files")
     public ResponseEntity<StreamingResponseBody> downloadAllFiles(@RequestParam("cId") Long cId) {
         Long userId = getUser().getUserId();
-        log.info("[Web] 接收到下载全部文件请求，userId={}, cId={}", userId, cId);
+        log.info("[Web] Download all files request, userId={}, cId={}", userId, cId);
         return computerFileApplicationService.downloadAllFiles(userId, cId, getUser());
     }
 
@@ -198,9 +199,9 @@ public class ComputerFileController extends BaseController {
     @CrossOrigin // 确保 OPTIONS 预检请求被正确处理
     @GetMapping(value = "/static/{cId}/**")
     public ResponseEntity<StreamingResponseBody> getUserStaticFile(@PathVariable("cId") Long cId, HttpServletRequest request) {
-        log.info("[Web] 接收到访问静态文件请求，cId={}", cId);
+        log.info("[Web] Static file access request, cId={}", cId);
         if (cId == null) {
-            log.error("[Web] cId 无效, cId={}", cId);
+            log.error("[Web] Invalid cId, cId={}", cId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         return computerFileApplicationService.getStaticFile(cId, request);

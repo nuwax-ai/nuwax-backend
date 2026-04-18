@@ -7,29 +7,29 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "前端项目修改请求体")
+@Schema(description = "Frontend project update request body")
 public class CustomPageUpdateReq {
 
-    @NotNull(message = "projectId 不能为空")
-    @Schema(description = "项目ID", required = true)
+    @NotNull(message = "projectId is required")
+    @Schema(description = "Project ID", required = true)
     private Long projectId;
 
-    @Schema(description = "项目名称", required = true)
+    @Schema(description = "Project name", required = true)
     private String projectName;
 
-    @Schema(description = "项目描述")
+    @Schema(description = "Project description")
     private String projectDesc;
 
-    @Schema(description = "项目图标")
+    @Schema(description = "Project icon URL")
     private String icon;
 
-    @Schema(description = "封面图片")
+    @Schema(description = "Cover image URL")
     private String coverImg;
 
-    @Schema(description = "封面图片来源")
+    @Schema(description = "Cover image source type")
     private SourceTypeEnum coverImgSourceType;
 
-    @Schema(description = "是否需要登录,true:需要,false:不需要")
+    @Schema(description = "Whether login is required (true = required, false = not required)")
     private Boolean needLogin;
 
 }

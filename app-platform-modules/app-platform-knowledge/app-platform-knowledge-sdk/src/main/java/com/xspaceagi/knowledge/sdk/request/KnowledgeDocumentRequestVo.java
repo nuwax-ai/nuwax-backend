@@ -13,7 +13,7 @@ import java.io.Serializable;
 public class KnowledgeDocumentRequestVo implements Serializable {
 
     @Schema(description = "知识库ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
 

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,11 +26,14 @@ public class RequestContext<T> implements Serializable {
     private static ThreadLocal<RequestContext> threadLocal = new ThreadLocal<>();
     private static ThreadLocal<Set<String>> tenantIgnoreTablesLocal = new ThreadLocal<>();
 
-    private String lang;
     private Long userId;
     private Long tenantId;
     private Object tenantConfig;
     private String clientIp;
+    private String clientLang;
+    private String clientCookieLang;
+    private String lang;//最终的语言
+    private Map<String, String> langMap;
     private boolean isLogin;
     private T user;
     private UserContext userContext;

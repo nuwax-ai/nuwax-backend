@@ -6,44 +6,44 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 批量反向代理配置请求DTO
+ * Batch reverse-proxy configuration request DTO
  */
 @Data
-@Schema(description = "批量反向代理配置请求DTO")
+@Schema(description = "Batch reverse-proxy configuration request DTO")
 public class ProxyConfigBatchReq {
 
-    @Schema(description = "项目ID", required = true)
+    @Schema(description = "Project ID", required = true)
     private Long projectId;
 
-    @Schema(description = "反向代理配置列表", required = true)
+    @Schema(description = "Reverse-proxy configuration list", required = true)
     private List<ProxyConfigItem> proxyConfigs;
 
     @Data
-    @Schema(description = "反向代理配置项")
+    @Schema(description = "Reverse-proxy configuration item")
     public static class ProxyConfigItem {
-        @Schema(description = "环境", required = true, example = "dev")
+        @Schema(description = "Environment", required = true, example = "dev")
         private String env;
 
-        @Schema(description = "路径", required = true, example = "/api")
+        @Schema(description = "Path prefix", required = true, example = "/api")
         private String path;
 
-        @Schema(description = "后端地址列表", required = true)
+        @Schema(description = "Backend upstream list", required = true)
         private List<BackendReq> backends;
 
-        @Schema(description = "健康检查路径", example = "/health")
+        @Schema(description = "Health check path", example = "/health")
         private String healthCheckPath;
 
-        @Schema(description = "是否必须登录", example = "true")
+        @Schema(description = "Whether authentication is required", example = "true")
         private Boolean requireAuth;
     }
 
     @Data
-    @Schema(description = "后端地址配置")
+    @Schema(description = "Backend upstream configuration")
     public static class BackendReq {
-        @Schema(description = "后端地址", required = true)
+        @Schema(description = "Backend URL", required = true)
         private String backend;
 
-        @Schema(description = "权重", example = "1")
+        @Schema(description = "Weight", example = "1")
         private Integer weight;
     }
 }

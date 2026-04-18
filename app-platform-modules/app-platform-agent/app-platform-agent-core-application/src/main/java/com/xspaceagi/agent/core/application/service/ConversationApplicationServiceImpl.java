@@ -2,7 +2,6 @@ package com.xspaceagi.agent.core.application.service;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
@@ -16,7 +15,6 @@ import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.agent.AgentExecutor;
 import com.xspaceagi.agent.core.infra.component.agent.SandboxAgentClient;
 import com.xspaceagi.agent.core.infra.component.agent.dto.AgentExecuteResult;
-import com.xspaceagi.agent.core.infra.component.model.dto.CallMessage;
 import com.xspaceagi.agent.core.infra.component.workflow.handler.QANodeHandler;
 import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
 import com.xspaceagi.agent.core.infra.rpc.MetricRpcService;
@@ -25,10 +23,7 @@ import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
 import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.TaskCron;
 import com.xspaceagi.agent.core.spec.utils.TikTokensUtil;
-import com.xspaceagi.log.sdk.reponse.AgentLogModelResponse;
-import com.xspaceagi.log.sdk.request.AgentLogSearchParamsRequest;
 import com.xspaceagi.log.sdk.service.ILogRpcService;
-import com.xspaceagi.log.sdk.service.LogPlatformRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
@@ -52,10 +47,13 @@ import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.*;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.FileAkUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import com.xspaceagi.system.spec.utils.TimeWheel;
 import jakarta.annotation.PostConstruct;
@@ -75,7 +73,6 @@ import reactor.core.publisher.Sinks;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,7 +86,7 @@ import static com.xspaceagi.system.spec.cache.SimpleJvmHashCache.DEFAULT_EXPIRE_
 @Service("conversationApplicationService")
 public class ConversationApplicationServiceImpl extends AbstractTaskExecuteService implements ConversationApplicationService, ChatMemory {
 
-    private static final String DEFAULT_TOPIC = "未命名会话";
+    private static final String DEFAULT_TOPIC = "Unnamed conversation";
     private static final int MAX_USER_AGENT_TASK_SIZE = 10;
 
     //计算上下文token总数，暂时不能超过32k，超过后丢弃
@@ -121,9 +118,6 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
     @Resource
     private SpacePermissionService spacePermissionService;
-
-    @Resource
-    private LogPlatformRpcService logPlatformRpcService;
 
     @Resource
     private ILogRpcService iLogRpcService;
@@ -235,7 +229,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     public ConversationDto createConversation(Long userId, Long agentId, boolean devMode, boolean tempChat, Map<String, Object> variables) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
         if (agentConfigDto == null) {
-            throw new BizException("选择的智能体不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSelectedNotFound);
         }
         if (conversationDomainService.agentUserCount(userId, agentId) == 0 && !devMode) {
             //使用过的用户数量+1
@@ -272,11 +266,12 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     public ConversationDto createTaskConversation(Long userId, TaskConversationAddOrUpdateDto taskConversationAddOrUpdateDto) {
         List<ConversationDto> conversationDtoList = queryTaskConversationList(userId, taskConversationAddOrUpdateDto.getAgentId(), Conversation.ConversationTaskStatus.EXECUTING);
         if (conversationDtoList.size() >= MAX_USER_AGENT_TASK_SIZE) {
-            throw new BizException(String.format("用户在每个智能体进行中的定时任务不能超过%d个", MAX_USER_AGENT_TASK_SIZE));
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentScheduledTaskLimitExceeded,
+                    String.valueOf(MAX_USER_AGENT_TASK_SIZE));
         }
         //检查taskCron是否符合规范
         if (!ScheduleTaskDto.Cron.isValid(taskConversationAddOrUpdateDto.getTaskCron())) {
-            throw new IllegalArgumentException("cron表达式不合法");
+            throw new IllegalArgumentException("Invalid cron expression");
         }
         ConversationDto conversationDto = createConversation(userId, taskConversationAddOrUpdateDto.getAgentId(), taskConversationAddOrUpdateDto.isDevMode());
         scheduleTaskApiService.start(ScheduleTaskDto.builder()
@@ -314,9 +309,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     public void updateTaskConversation(Long userId, TaskConversationAddOrUpdateDto taskConversationAddOrUpdateDto) {
         //检查taskCron是否符合规范
         if (taskConversationAddOrUpdateDto.getTaskCron() != null && !ScheduleTaskDto.Cron.isValid(taskConversationAddOrUpdateDto.getTaskCron())) {
-            throw new IllegalArgumentException("cron表达式不合法");
+            throw new IllegalArgumentException("Invalid cron expression");
         }
-        Assert.notNull(taskConversationAddOrUpdateDto.getId(), "会话ID不能为空");
+        Assert.notNull(taskConversationAddOrUpdateDto.getId(), "Conversation ID cannot be null");
         Conversation conversation = new Conversation();
         conversation.setId(taskConversationAddOrUpdateDto.getId());
         conversation.setTaskCron(taskConversationAddOrUpdateDto.getTaskCron());
@@ -392,19 +387,26 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     @Override
     public void updateConversationTopic(Long userId, ConversationUpdateDto conversationUpdateDto) {
         Long id = conversationUpdateDto.getId();
-        TopicGenDto topicGenDto;
+        TopicGenDto topicGenDto = null;
         if (StringUtils.isBlank(conversationUpdateDto.getTopic())) {
             Conversation conversation1 = conversationDomainService.getConversation(id);
             StringBuilder userPrompt = new StringBuilder();
             if (conversation1 != null && StringUtils.isNotBlank(conversation1.getSummary())) {
-                userPrompt.append("## 历史会话总结内容如下：\n").append(conversation1.getSummary());
+                userPrompt.append("## Historical session summary content is as follows:\n").append(conversation1.getSummary());
             }
-            userPrompt.append("\n## 需要总结的标题内容如下：\n").append(conversationUpdateDto.getFirstMessage()).append("\n");
-            userPrompt.append("---需要总结的内容结束---");
-            topicGenDto = modelApplicationService.call(Prompts.CONVERSATION_TOPIC_PROMPT, userPrompt.toString(), new ParameterizedTypeReference<TopicGenDto>() {
-            });
+            String lang = "Thread title`s language based on the <content> as follows";
+            if (RequestContext.get() != null && RequestContext.get().getLang() != null) {
+                lang = "Thread title`s language " + RequestContext.get().getLang();
+            }
+            userPrompt.append("\n## The content that needs to generate a thread title is as follows. ").append(lang).append(":\n<content>").append(conversationUpdateDto.getFirstMessage()).append("</content>\n");
+            try {
+                topicGenDto = modelApplicationService.call(Prompts.CONVERSATION_TOPIC_PROMPT, userPrompt.toString(), new ParameterizedTypeReference<TopicGenDto>() {
+                });
+            } catch (Exception e) {
+                log.warn("Thread title generate failed", e);
+            }
             if (topicGenDto == null || StringUtils.isBlank(topicGenDto.getTopic()) || topicGenDto.getTopic().contains("JSON格式标题") || topicGenDto.getTopic().contains("JSON响应")) {
-                conversationUpdateDto.setTopic(DEFAULT_TOPIC);
+                conversationUpdateDto.setTopic(conversationUpdateDto.getFirstMessage().length() > 20 ? conversationUpdateDto.getFirstMessage().substring(0, 20) : conversationUpdateDto.getFirstMessage());
             } else {
                 conversationUpdateDto.setTopic(topicGenDto.getTopic());
             }
@@ -487,7 +489,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         if (conversationId == null) {
             return;
         }
-        log.debug("开始总结会话: {}", conversationId);
+        log.debug("Starting session summary: {}", conversationId);
         Conversation conversation = conversationDomainService.getConversation(conversationId);
         if (conversation == null) {
             return;
@@ -536,7 +538,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             }
             JSONArray jsonArray = new JSONArray();
             cachedMessageList.forEach(cachedMessage -> jsonArray.add(cachedMessage.getRole().name() + ":" + removeSystemTagContent(cachedMessage.getText()) + "\n"));
-            log.debug("开始总结会话: {}", cachedMessageList);
+            log.debug("Starting session summary: {}", cachedMessageList);
             iMemoryRpcService.createMemory(MemoryMetaData.builder()
                     .agentId(conversation.getAgentId())
                     .userId(conversation.getUserId())
@@ -728,35 +730,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
     private List<ChatMessageDto> queryMessageList(Long conversationId, Long index, int size) {
         List<ChatMessageDto> chatMessageList = queryMessageList0(conversationId, index, size);
-        if (chatMessageList.isEmpty()) {
-            // TODO 后续某个版本去除该逻辑，当前是为了历史数据转移到数据表中
-            Conversation conversation = TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.getConversation(conversationId));
-            if (conversation.getTopicUpdated() == 1) {
-                chatMessageList = getCachedMessageList(conversationId.toString());
-                if (!chatMessageList.isEmpty()) {
-                    chatMessageList.forEach(chatMessage -> {
-                        chatMessage.setSenderId(String.valueOf(conversation.getUserId()));
-                        chatMessage.setSenderType(chatMessage.getRole() == ChatMessageDto.Role.USER ? ChatMessageDto.SenderType.USER : ChatMessageDto.SenderType.AGENT);
-                        chatMessage.setSenderId(chatMessage.getRole() == ChatMessageDto.Role.USER ? String.valueOf(conversation.getUserId()) : String.valueOf(conversation.getAgentId()));
-                        chatMessage.setTenantId(conversation.getTenantId());
-                        chatMessage.setAgentId(conversation.getAgentId());
-                        chatMessage.setUserId(conversation.getUserId());
-                        ConversationMessage conversationMessage = new ConversationMessage();
-                        conversationMessage.setConversationId(conversationId);
-                        conversationMessage.setTenantId(conversation.getTenantId());
-                        conversationMessage.setUserId(conversation.getUserId());
-                        conversationMessage.setAgentId(conversation.getAgentId());
-                        conversationMessage.setMessageId(chatMessage.getId());
-                        conversationMessage.setContent(JSON.toJSONString(chatMessage));
-                        TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.addConversationMessage(conversationMessage));
-                    });
-                    chatMessageList = queryMessageList0(conversationId, index, size);
-                    Collections.reverse(chatMessageList);
-                }
-            }
-        } else {
-            Collections.reverse(chatMessageList);
-        }
+        Collections.reverse(chatMessageList);
         return chatMessageList;
     }
 
@@ -770,59 +744,10 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         }).collect(Collectors.toList());
     }
 
-    //根据会话ID查询CachedMessageList
-    public List<ChatMessageDto> getCachedMessageList(String conversationId) {
-        if (StringUtils.isBlank(conversationId)) {
-            return new ArrayList<>();
-        }
-        List<ChatMessageDto> cachedMessageList = new ArrayList<>();
-        List<Object> msgStrList = redisUtil.range(generateConversationKey(conversationId), 0, Long.MAX_VALUE);
-        for (Object msgStr : msgStrList) {
-            CallMessage cachedMessage = JSON.parseObject(msgStr.toString(), CallMessage.class);
-            cachedMessage.setFinished(true);
-            cachedMessageList.add(cachedMessage);
-        }
-        if (cachedMessageList.isEmpty()) {
-            try {
-                Conversation conversation = conversationDomainService.getConversation(Long.parseLong(conversationId));
-                if (conversation != null && Objects.equals(conversation.getTopicUpdated(), YesOrNoEnum.Y.getKey())) {
-                    IPage<AgentLogModelResponse> agentLogModelResponseIPage = logPlatformRpcService.searchAgentLogs(AgentLogSearchParamsRequest.builder().conversationId(conversationId).build(), 1L, 10L);
-                    List<AgentLogModelResponse> records = agentLogModelResponseIPage.getRecords();
-                    records.forEach(record -> {
-                        ChatMessageDto chatMessage = new ChatMessageDto();
-                        chatMessage.setRole(ChatMessageDto.Role.ASSISTANT);
-                        chatMessage.setText(record.getOutput());
-                        chatMessage.setTime(Date.from(record.getRequestEndTime().atZone(ZoneId.systemDefault()).toInstant()));
-                        chatMessage.setId(record.getRequestId());
-                        chatMessage.setType(MessageTypeEnum.CHAT);
-                        if (chatMessage.getText().contains("</think>") && !chatMessage.getText().contains("<think>")) {
-                            chatMessage.setText("<think>" + chatMessage.getText());
-                        }
-                        cachedMessageList.add(chatMessage);
-
-                        chatMessage = new ChatMessageDto();
-                        chatMessage.setRole(ChatMessageDto.Role.USER);
-                        chatMessage.setText(record.getUserInput());
-                        chatMessage.setTime(Date.from(record.getRequestEndTime().atZone(ZoneId.systemDefault()).toInstant()));
-                        chatMessage.setId(record.getRequestId());
-                        chatMessage.setType(MessageTypeEnum.CHAT);
-                        cachedMessageList.add(chatMessage);
-                    });
-                    //cachedMessageList倒叙
-                    Collections.reverse(cachedMessageList);
-                }
-            } catch (Exception e) {
-                //ignore
-                log.warn("会话不存在 {}", conversationId);
-            }
-        }
-        return cachedMessageList;
-    }
-
     @Override
     public List<AgentUserDto> queryAgentUserList(Long agentId, Long cursorUserId) {
         List<Long> longs = conversationDomainService.queryAgentUserIdList(agentId, cursorUserId);
-        if (longs.size() == 0) {
+        if (longs.isEmpty()) {
             return new ArrayList<>();
         }
         List<UserDto> userDtos = userApplicationService.queryUserListByIds(longs);
@@ -916,8 +841,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         errorOutput.setData(agentExecuteResult);
         errorOutput.setCompleted(true);
         if (conversationDto == null) {
-            agentExecuteResult.setError("会话不存在");
-            errorOutput.setError("会话不存在");
+            String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.ConversationNotFound");
+            agentExecuteResult.setError(errorMsg);
+            errorOutput.setError(errorMsg);
             return errorOutput(errorOutput, null);
         }
         if (devMode != null) {
@@ -927,8 +853,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         if (Objects.equals(conversationDto.getDevMode(), YesOrNoEnum.Y.getKey())) {
             agentConfigDto = agentApplicationService.queryConfigForTestExecute(conversationDto.getAgentId());
             if (agentConfigDto == null) {
-                errorOutput.setError("智能体不存在");
-                agentExecuteResult.setError("智能体不存在");
+                String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.AgentNotFound");
+                errorOutput.setError(errorMsg);
+                agentExecuteResult.setError(errorMsg);
                 return errorOutput(errorOutput, conversationDto);
             }
             if (!isTempChat) {
@@ -937,36 +864,41 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     spacePermissionService.checkSpaceUserPermission(agentConfigDto.getSpaceId());
                     tryReqDto.setFilterSensitive(false);
                 } catch (Exception e) {
-                    errorOutput.setError("无智能体会话权限");
-                    agentExecuteResult.setError("无智能体会话权限");
+                    String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.NoAgentChatPermission");
+                    errorOutput.setError(errorMsg);
+                    agentExecuteResult.setError(errorMsg);
                     return errorOutput(errorOutput, conversationDto);
                 }
             }
         } else {
             if (!conversationDto.getUserId().equals(RequestContext.get().getUserId())) {
-                errorOutput.setError("无智能体会话权限");
-                agentExecuteResult.setError("无智能体会话权限");
+                String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.NoAgentChatPermission");
+                errorOutput.setError(errorMsg);
+                agentExecuteResult.setError(errorMsg);
                 return errorOutput(errorOutput, conversationDto);
             }
             agentConfigDto = agentApplicationService.queryPublishedConfigForExecute(conversationDto.getAgentId());
             if (agentConfigDto != null) {
                 PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, conversationDto.getAgentId());
                 if (!publishedPermissionDto.isExecute()) {
-                    errorOutput.setError("无智能体会话权限");
-                    agentExecuteResult.setError("无智能体会话权限");
+                    String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.NoAgentChatPermission");
+                    errorOutput.setError(errorMsg);
+                    agentExecuteResult.setError(errorMsg);
                     return errorOutput(errorOutput, conversationDto);
                 }
             }
         }
         if (agentConfigDto == null) {
-            errorOutput.setError("智能体不存在或已下架");
-            agentExecuteResult.setError("智能体不存在或已下架");
+            String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.AgentNotFoundOrOffline");
+            errorOutput.setError(errorMsg);
+            agentExecuteResult.setError(errorMsg);
             return errorOutput(errorOutput, conversationDto);
         }
 
         if (agentConfigDto.getModelComponentConfig().getTargetConfig() == null) {
-            errorOutput.setError("智能体模型未配置或已下架");
-            agentExecuteResult.setError("智能体模型未配置或已下架");
+            String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.AgentModelNotConfiguredOrOffline");
+            errorOutput.setError(errorMsg);
+            agentExecuteResult.setError(errorMsg);
             return errorOutput(errorOutput, conversationDto);
         }
 
@@ -976,20 +908,61 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         //判断agent是否被管控，若被管控需判断有没有权限
         if (agentConfigDto.getAccessControl() != null && agentConfigDto.getAccessControl().equals(YesOrNoEnum.Y.getKey()) && !agentConfigDto.getCreatorId().equals(RequestContext.get().getUserId())) {
             if (userDataPermission.getAgentIds() == null || !userDataPermission.getAgentIds().contains(agentConfigDto.getId())) {
-                errorOutput.setError("无智能体权限");
-                agentExecuteResult.setError("无智能体权限");
+                String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.NoAgentPermission");
+                errorOutput.setError(errorMsg);
+                agentExecuteResult.setError(errorMsg);
                 return errorOutput(errorOutput, conversationDto);
             }
         }
 
-        //token检测
         Object targetConfig = agentConfigDto.getModelComponentConfig().getTargetConfig();
+        // 模型变化后是否需要重启智能体（通用智能体需要重启生效）；全局模型在开启代理的情况下无需重启
+        boolean modelChanged = false;
+        // 用户选择了模型
+        if (tryReqDto.getModelId() != null && YesOrNoEnum.Y.getKey().equals(agentConfigDto.getAllowOtherModel())) {
+            if (targetConfig instanceof ModelConfigDto modelConfigDto && !modelConfigDto.getId().equals(tryReqDto.getModelId())) {
+                modelChanged = true;
+                Object val = redisUtil.get("agent.model.selected:" + agentConfigDto.getId());
+                if (val != null) {
+                    try {
+                        Long mid = Long.parseLong(val.toString());
+                        if (mid.equals(tryReqDto.getModelId())) {
+                            modelChanged = false;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
+                ModelConfigDto modelConfigDto1 = modelApplicationService.queryModelConfigById(tryReqDto.getModelId());
+                if (modelConfigDto1 != null) {
+                    boolean hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Tenant;
+                    if (hasPermission && modelConfigDto1.getAccessControl() != null && modelConfigDto1.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
+                        hasPermission = userDataPermission.getModelIds() != null && userDataPermission.getModelIds().contains(modelConfigDto1.getId());
+                    } else if (!hasPermission) {
+                        hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Space && modelConfigDto1.getCreatorId().equals(RequestContext.get().getUserId());
+                    }
+                    if (hasPermission) {
+                        agentConfigDto.getModelComponentConfig().setTargetConfig(modelConfigDto1);
+                        agentConfigDto.getModelComponentConfig().setTargetId(modelConfigDto1.getId());
+                        targetConfig = modelConfigDto1;
+                        redisUtil.set("agent.model.selected:" + agentConfigDto.getId(), tryReqDto.getModelId().toString());
+                    } else {
+                        modelChanged = false;
+                    }
+                } else {
+                    modelChanged = false;
+                }
+            }
+        }
+
+        //token检测
         if (targetConfig instanceof ModelConfigDto && ((ModelConfigDto) targetConfig).getScope() == ModelConfig.ModelScopeEnum.Tenant) {
             BigDecimal tokenCount = metricRpcService.queryMetricCurrent(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), BizType.TOKEN_USAGE.getCode(), PeriodType.DAY);
             if (userDataPermission.getTokenLimit() != null && userDataPermission.getTokenLimit().getLimitPerDay() != null && userDataPermission.getTokenLimit().getLimitPerDay() >= 0
                     && tokenCount.compareTo(BigDecimal.valueOf(userDataPermission.getTokenLimit().getLimitPerDay())) >= 0) {
-                errorOutput.setError("你已超过今日的token使用数量限制，你当前每日token的上限为" + userDataPermission.getTokenLimit().getLimitPerDay() + "，自有模型不受限制，可在工作空间添加自己的模型API");
-                agentExecuteResult.setError(errorOutput.getError());
+                String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.TokenLimitExceeded", userDataPermission.getTokenLimit().getLimitPerDay().toString());
+                errorOutput.setError(errorMsg);
+                agentExecuteResult.setError(errorMsg);
                 return errorOutput(errorOutput, conversationDto);
             }
 
@@ -998,8 +971,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 BigDecimal promptCount = metricRpcService.queryMetricCurrent(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), BizType.GENERAL_AGENT_CHAT.getCode(), PeriodType.DAY);
                 if (userDataPermission.getAgentDailyPromptLimit() != null && userDataPermission.getAgentDailyPromptLimit() >= 0
                         && promptCount.compareTo(BigDecimal.valueOf(userDataPermission.getAgentDailyPromptLimit())) >= 0) {
-                    errorOutput.setError("你已超过今日的对话次数限制，你当前每日对话的上限次数为" + userDataPermission.getAgentDailyPromptLimit() + "，自有模型不受限制");
-                    agentExecuteResult.setError(errorOutput.getError());
+                    String errorMsg = I18nUtil.systemMessage("Backend.Chat.Error.ChatCountLimitExceeded", userDataPermission.getAgentDailyPromptLimit().toString());
+                    errorOutput.setError(errorMsg);
+                    agentExecuteResult.setError(errorMsg);
                     return errorOutput(errorOutput, conversationDto);
                 }
             }
@@ -1284,7 +1258,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
         if ("TaskAgent".equals(agentConfigDto.getType())) {
             agentContext.setSandboxSessionCreatedConsumer(cv -> {
-                log.info("创建沙箱会话成功：serverId {}, sessionId {}", cv.getSandboxServerId(), cv.getSandboxSessionId());
+                log.info("Sandbox session created successfully: serverId {}, sessionId {}", cv.getSandboxServerId(), cv.getSandboxSessionId());
                 Conversation conversation = new Conversation();
                 conversation.setSandboxServerId(cv.getSandboxServerId());
                 conversation.setSandboxSessionId(cv.getSandboxSessionId());
@@ -1302,6 +1276,8 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             } else if (agentContext.getConversation().getSandboxSessionId() != null && agentConfigDto.getPublishDate().getTime() > agentContext.getConversation().getModified().getTime()) {
                 sandboxAgentClient.agentStop(agentContext.getConversationId());
                 agentStopped = true;
+            } else if (modelChanged) {
+                sandboxAgentClient.agentStop(agentContext.getConversationId());
             }
 
             List<Long> skillIds = agentContext.getAgentConfig().getAgentComponentConfigList().stream().filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Skill).map(AgentComponentConfigDto::getTargetId).collect(Collectors.toList());
@@ -1310,7 +1286,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     agentComponentConfigDto.getType() == AgentComponentConfig.Type.Skill && ((SkillConfigDto) agentComponentConfigDto.getTargetConfig()).getPublishDate().getTime() > conversationDto.getModified().getTime()
             ).toList();
             if (agentContext.getConversation().getSandboxSessionId() == null || !updatedSkills.isEmpty() || agentStopped) {
-                log.info("开始创建workspace推送Skill， agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds);
+                log.info("Start creating workspace and pushing skills, agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds);
                 try {
                     List<SubagentDto> subagents = null;
                     AgentComponentConfigDto componentConfigDto = agentContext.getAgentConfig().getAgentComponentConfigList().stream().filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.SubAgent).findFirst().orElse(null);
@@ -1332,12 +1308,12 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                             .build();
                     agentWorkspaceApplicationService.createWorkspace(createWorkspaceDto);
                 } catch (Exception e) {
-                    log.error("创建workspace推送Skill失败， agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds, e);
+                    log.error("Failed to create workspace and push skills, agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds, e);
                     errorOutput.setError(e.getMessage());
                     agentExecuteResult.setError(e.getMessage());
                     return errorOutput(errorOutput, conversationDto);
                 }
-                log.info("创建workspace推送Skill完成， agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds);
+                log.info("Create workspace and push skills completed, agentId {}, conversationId {}, skillIds {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), skillIds);
             }
             if (CollectionUtils.isNotEmpty(userAtSkillConfigs)) {
                 AddSkillsToWorkspaceDto addSkillsToWorkspaceDto = AddSkillsToWorkspaceDto.builder()
@@ -1386,31 +1362,32 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         AtomicLong lastActiveTime = new AtomicLong(System.currentTimeMillis());
 
         //智能体执行输出
+        Object finalTargetConfig = targetConfig;
         Disposable disposable = flux.onErrorResume(Mono::error)
                 .subscribe(
                         msg -> {
                             lastActiveTime.set(System.currentTimeMillis());
                             Sinks.EmitResult emitResult = sink.tryEmitNext(msg);
                             if (emitResult.isFailure()) {
-                                log.error("智能体输出失败，cid {}, error {}", agentContext.getConversationId(), emitResult);
+                                log.error("Agent output failed, cid {}, error {}", agentContext.getConversationId(), emitResult);
                             }
                         },
                         e -> {
                             isComplete.set(true);
                             updateConversationStatus(agentContext, conversationDto, Conversation.ConversationTaskStatus.FAILED);
                             if (agentContext.isInterrupted()) {
-                                log.info("智能体执行业务中断");
+                                log.info("Agent execution interrupted");
                                 sink.tryEmitComplete();
                                 return;
                             }
-                            log.error("智能体执行异常", e);
+                            log.error("Agent execution exception", e);
                             sink.tryEmitComplete();
                             pushLogQueue(agentContext, tryReqDto.getFrom(), e.getMessage());
                         },
                         () -> {
-                            log.info("智能体执行完成, cid {}", agentContext.getConversationId());
+                            log.info("Agent execution completed, cid {}", agentContext.getConversationId());
                             // 只统计平台级别模型
-                            if ("TaskAgent".equals(agentConfigDto.getType()) && targetConfig instanceof ModelConfigDto && ((ModelConfigDto) targetConfig).getScope() == ModelConfig.ModelScopeEnum.Tenant) {
+                            if ("TaskAgent".equals(agentConfigDto.getType()) && finalTargetConfig instanceof ModelConfigDto && ((ModelConfigDto) finalTargetConfig).getScope() == ModelConfig.ModelScopeEnum.Tenant) {
                                 metricRpcService.incrementMetricAllPeriods(agentContext.getTenantConfig().getTenantId(), agentContext.getUserId(), BizType.GENERAL_AGENT_CHAT.getCode(), BigDecimal.ONE);
                             }
                             isComplete.set(true);
@@ -1421,11 +1398,11 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                                 RequestContext.set(requestContext);
                                 Conversation conversation = conversationDomainService.getConversation(conversationDto.getId());
                                 if (conversation.getTopicUpdated() == -1 && conversationDto.getDevMode() == 0 && conversationDto.getType() == Conversation.ConversationType.Chat) {
-                                    log.info("更新会话主题, cid {}", agentContext.getConversationId());
+                                    log.info("Update conversation topic, cid {}", agentContext.getConversationId());
                                     updateTopic(agentContext, conversationDto);
                                 }
                                 if (sseCanceled.get() && conversationDto.getDevMode() == 0 && conversationDto.getType() == Conversation.ConversationType.Chat) {
-                                    log.info("会话链接断开，任务执行完成发送通知, cid {}, topic {}", agentContext.getConversationId(), conversationDto.getTopic());
+                                    log.info("Conversation connection disconnected, task execution completed send notification, cid {}, topic {}", agentContext.getConversationId(), conversationDto.getTopic());
                                     sendNotification(agentContext, conversation);
                                 }
                             } finally {
@@ -1436,13 +1413,13 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         //心跳
         Disposable disposableHeartbeat = Flux.interval(Duration.ofSeconds(10))
                 .map(tick -> {
-                    log.info("心跳发送，cid {}, tick {}", agentContext.getConversationId(), tick);
+                    log.info("Heartbeat sent, cid {}, tick {}", agentContext.getConversationId(), tick);
                     if (tick >= 360) {// 一个小时如果都还没有结束，打印详细日志，排查问题
-                        log.warn("智能体执行时间过长，cid {}", agentContext.getConversationId());
-                        log.warn("执行日志，cid {}, log {}", agentContext.getConversationId(), JSON.toJSONString(AgentExecutor.buildAgentExecuteResult(agentContext)));
+                        log.warn("Agent execution time too long, cid {}", agentContext.getConversationId());
+                        log.warn("Execution log, cid {}, log {}", agentContext.getConversationId(), JSON.toJSONString(AgentExecutor.buildAgentExecuteResult(agentContext)));
                         if (System.currentTimeMillis() - lastActiveTime.get() > 3600 * 2 * 1000L) {
                             //2个小时没有收到任何智能体消息，主动终止
-                            log.warn("智能体执行等待过长，主动终止，cid {}", agentContext.getConversationId());
+                            log.warn("Agent execution wait too long, actively terminate, cid {}", agentContext.getConversationId());
                             isComplete.set(true);
                             disposable.dispose();
                         }
@@ -1452,7 +1429,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.HEART_BEAT);
                     return agentOutputDto;
                 }).takeWhile(outputDto -> !isComplete.get())
-                .doOnComplete(() -> log.info("心跳结束，cid {}", agentContext.getConversationId()))
+                .doOnComplete(() -> log.info("Heartbeat ended, cid {}", agentContext.getConversationId()))
                 .doOnNext(sink::tryEmitNext)
                 .subscribe();
 
@@ -1460,14 +1437,14 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         checkIfRequestStop(agentContext, sink, disposable, isComplete, userStopped);
         return sink.asFlux()
                 .doOnComplete(() -> {
-                    log.info("智能体执行SSE通道完成, cid {}", agentContext.getConversationId());
+                    log.info("Agent execution SSE channel completed, cid {}", agentContext.getConversationId());
                     redisUtil.expire("chat.stop." + agentContext.getConversationId(), 0);
                     if (conversationDto.getTaskStatus() == null || conversationDto.getTaskStatus() == Conversation.ConversationTaskStatus.EXECUTING) {
                         updateConversationStatus(agentContext, conversationDto, Conversation.ConversationTaskStatus.COMPLETE);
                     }
                 })
                 .doOnCancel(() -> {
-                    log.info("智能体执行SSE通道取消, cid {}", agentContext.getConversationId());
+                    log.info("Agent execution SSE channel cancelled, cid {}", agentContext.getConversationId());
                     disposableHeartbeat.dispose();
                     sseCanceled.set(true);
                 });
@@ -1521,9 +1498,12 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
     private void sendNotification(AgentContext agentContext, Conversation conversation) {
         if (StringUtils.isNotBlank(conversation.getTopic()) && conversation.getTopicUpdated() == 1) {
+            String content = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Chat.Notification.ConversationCompleted",
+                    conversation.getTopic(),
+                    "/home/chat/" + conversation.getId() + "/" + conversation.getAgentId());
             notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                     .scope(NotifyMessage.MessageScope.System)
-                    .content("会话 [" + conversation.getTopic() + "](/home/chat/" + conversation.getId() + "/" + conversation.getAgentId() + ") 输出完成，请到会话记录中查看")
+                    .content(content)
                     .senderId(agentContext.getUserId())
                     .userIds(Collections.singletonList(agentContext.getUserId()))
                     .build());
@@ -1552,7 +1532,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     AgentOutputDto finalOutput = AgentExecutor.buildFinalResultOutput(agentContext);
                     boolean failure = sink.tryEmitNext(finalOutput).isFailure();
                     if (failure) {
-                        log.warn("final_result发送失败");
+                        log.warn("final_result send failed");
                     }
                     sink.tryEmitComplete();
                     disposable.dispose();

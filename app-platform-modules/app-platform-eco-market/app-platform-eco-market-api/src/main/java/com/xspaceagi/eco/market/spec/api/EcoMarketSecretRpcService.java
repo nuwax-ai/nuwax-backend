@@ -22,7 +22,7 @@ public class EcoMarketSecretRpcService implements IEcoMarketSecretRpcService {
     @Override
     public ClientSecretDTO registerClient(Long tenantId, String name, String description) {
         if (Objects.isNull(tenantId)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8028);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
         }
 
         return ecoMarkerSecretWrapper.registerClientSecret(tenantId, name, description);

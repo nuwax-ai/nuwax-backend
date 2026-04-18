@@ -23,14 +23,14 @@ public class ModelConfigAddDto implements Serializable {
     private Long spaceId;
 
     @Schema(description = "模型名称", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "模型名称不能为空")
+    @NotNull(message = "Model name is required")
     private String name; // 模型名称
 
     @Schema(description = "模型描述")
     private String description; // 模型描述
 
     @Schema(description = "模型标识", requiredMode = Schema.RequiredMode.REQUIRED, example = "gpt-3.5-turbo")
-    @NotNull(message = "模型标识不能为空")
+    @NotNull(message = "Model key is required")
     private String model; // 模型标识
 
     @Schema(description = "模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -46,7 +46,7 @@ public class ModelConfigAddDto implements Serializable {
     private ModelApiProtocolEnum apiProtocol; // 模型接口协议，可选值：OpenAI, Ollama
 
     @Schema(description = "API列表", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "API列表不能为空")
+    @NotNull(message = "API list is required")
     private List<ModelConfigDto.ApiInfo> apiInfoList; // API列表 [{"url":"","key":"","weight":1}]
 
     @Schema(description = "接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime", requiredMode = Schema.RequiredMode.REQUIRED)

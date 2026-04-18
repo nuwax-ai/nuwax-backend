@@ -385,6 +385,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
                                         "role", roleMap.getOrDefault(id, ""),
                                         "index", choice.index(),
                                         "reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "",
+                                        "reasoning", choice.message().reasoning() != null ? choice.message().reasoning() : "",
                                         "finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
                                         "refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
 
@@ -717,7 +718,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
                     audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
                 }
-                return List.of(new ChatCompletionMessage(assistantMessage.getText(), null,
+                return List.of(new ChatCompletionMessage(assistantMessage.getText(), null, null,
                         ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
             } else if (message.getMessageType() == MessageType.TOOL) {
                 ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -726,7 +727,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
                         .forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
                 return toolMessage.getResponses()
                         .stream()
-                        .map(tr -> new ChatCompletionMessage(tr.responseData(), null, ChatCompletionMessage.Role.TOOL, tr.name(),
+                        .map(tr -> new ChatCompletionMessage(tr.responseData(), null, null, ChatCompletionMessage.Role.TOOL, tr.name(),
                                 tr.id(), null, null, null))
                         .toList();
             } else {

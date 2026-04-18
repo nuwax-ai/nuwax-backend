@@ -9,7 +9,7 @@ import lombok.Data;
 public class WorkflowSaveDto {
 
     @Schema(description = "工作流整体配置json", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "工作流整体配置json不能为空")
+    @NotNull(message = "Workflow JSON configuration is required")
     private JSONObject workflowConfig;
 
     @Schema(description = "强制提交", requiredMode = Schema.RequiredMode.REQUIRED)

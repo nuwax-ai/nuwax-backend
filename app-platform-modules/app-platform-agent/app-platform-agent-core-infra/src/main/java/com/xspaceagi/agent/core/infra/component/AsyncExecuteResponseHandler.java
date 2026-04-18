@@ -18,6 +18,7 @@ import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
 import com.xspaceagi.system.application.dto.EventDto;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ public class AsyncExecuteResponseHandler {
 
     private NotifyMessageApplicationService notifyMessageApplicationService;
 
-    // 当前上下文记忆
+    // Current context memory
     private ChatMemory chatMemory;
 
     private ModelInvoker modelInvoker;
@@ -69,67 +70,67 @@ public class AsyncExecuteResponseHandler {
         String userPrompt = "<tool_call_result>" + PlaceholderParser.parseString(result) + "</tool_call_result>\n" +
                 "<user_message>" + agentContext.getMessage() + "</user_message>\n";
         String systemPrompt = """
-                # Role：
-                 - 信息整合与优化输出专家
+                # Role:
+                 - Information Integration and Output Optimization Expert
                 
-                ## Background：
-                - 用户需要将工具执行结果转化为可读性高的回答，同时避免输出原始标签和冗余信息
+                ## Background:
+                - Users need to convert tool execution results into highly readable answers while avoiding outputting raw tags and redundant information
                 
-                ## Attention：
-                - 保持回答的专业性和准确性，同时提升信息的可读性和用户体验
+                ## Attention:
+                - Maintain the professionalism and accuracy of the answer while improving readability and user experience
                 
-                ## Profile：
-                - Language: 中文
-                - Description: 专注于将技术性工具结果转化为用户友好的自然语言表达
+                ## Profile:
+                - Language: Based on content itself
+                - Description: Specialized in converting technical tool results into user-friendly natural language expressions
                 
                 ### Skills:
-                - 信息提炼与整合能力
-                - 自然语言表达能力
-                - 关键信息识别能力
-                - 技术术语转化能力
-                - 用户体验优化能力
+                - Information extraction and integration
+                - Natural language expression
+                - Key information identification
+                - Technical terminology conversion
+                - User experience optimization
                 
                 ## Goals:
-                - 准确理解工具执行结果
-                - 识别用户问题的核心需求
-                - 生成简洁清晰的回答
-                - 保留所有关键信息
-                - 提升回答的可读性
+                - Accurately understand tool execution results
+                - Identify the core needs of user questions
+                - Generate concise and clear answers
+                - Preserve all key information
+                - Improve answer readability
                 
-                ## Constrains:
-                - 不得输出<tool_call_result>和<user_message>标签信息
-                - 不得丢失关键信息
-                - 不得编造未提供的信息
-                - 保持回答的专业性
-                - 使用用户友好的语言
+                ## Constraints:
+                - Do not output <tool_call_result> and <user_message> tag information
+                - Do not lose key information
+                - Do not fabricate unprovided information
+                - Maintain professionalism of the answer
+                - Use user-friendly language
                 
                 ## Workflow:
-                1. 解析工具执行结果，提取关键数据
-                2. 分析用户问题，确定回答方向
-                3. 将技术性结果转化为自然语言
-                4. 组织回答结构，确保逻辑清晰
-                5. 检查关键信息是否完整保留
-                6. 优化语言表达，提升可读性
-                7. 输出最终回答
+                1. Parse tool execution results and extract key data
+                2. Analyze user questions and determine answer direction
+                3. Convert technical results into natural language
+                4. Organize answer structure to ensure clear logic
+                5. Check if all key information is preserved
+                6. Optimize language expression to improve readability
+                7. Output the final answer
                 
                 ## OutputFormat:
-                - 使用完整的自然语言句子
-                - 保持段落结构清晰
-                - 使用适当的过渡词
-                - 避免输出<tool_call_result>和<user_message>标签
-                - 若有图片链接请通过markdown的方式直接展示，例如 ![图片描述](https://example.com/image.jpg)
+                - Use complete natural language sentences
+                - Maintain clear paragraph structure
+                - Use appropriate transition words
+                - Avoid outputting <tool_call_result> and <user_message> tags
+                - If there are image links, display them directly via markdown, for example: ![Image Description](https://example.com/image.jpg)
                 
                 ## Suggestions:
-                - 在转化前先完整理解工具结果的所有细节
-                - 识别用户问题中的隐含需求
-                - 使用比喻或举例说明复杂概念
-                - 对重要数据使用强调格式
-                - 保持回答长度适中，既不过于简短也不冗长
+                - Fully understand all details of tool results before conversion
+                - Identify implicit needs in user questions
+                - Use metaphors or examples to explain complex concepts
+                - Use emphasis formatting for important data
+                - Keep answer length appropriate, neither too brief nor too verbose
                 
                 ## Initialization
-                作为信息整合与优化输出专家，你必须遵守所有约束条件，使用中文与用户交流，确保输出的内容既专业又易于理解。
+                As an Information Integration and Output Optimization Expert, you must follow all constraints, communicate with users in language appropriate to their query, and ensure the output is both professional and easy to understand.
                 """;
-        //大模型重写输出
+        // LLM rewrite output
         ModelContext modelContext = buildModelContext(agentContext, systemPrompt, userPrompt);
         modelInvoker.invoke(modelContext).doOnComplete(() -> {
             String responseText = modelContext.getModelCallResult().getResponseText();
@@ -167,9 +168,13 @@ public class AsyncExecuteResponseHandler {
     }
 
     public void handleError(AgentContext agentContext, ComponentTypeEnum type, Throwable throwable) {
-        StringBuilder errorMessage = new StringBuilder();
-        errorMessage.append(type == ComponentTypeEnum.Workflow ? "工作流" : "插件").append("异步执行失败，失败信息如下\n```").append(throwable.getMessage()).append("```");
-        addMessage(agentContext, errorMessage.toString());
+        String componentType = type == ComponentTypeEnum.Workflow ?
+                I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Agent.AsyncExecute.Error.WorkflowType") :
+                I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Agent.AsyncExecute.Error.PluginType");
+        String errorMessage = componentType +
+                I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Agent.AsyncExecute.Error.AsyncExecutionFailed",
+                        throwable.getMessage());
+        addMessage(agentContext, errorMessage);
     }
 
     private static ModelContext buildModelContext(AgentContext agentContext, String systemPrompt, String userPrompt) {

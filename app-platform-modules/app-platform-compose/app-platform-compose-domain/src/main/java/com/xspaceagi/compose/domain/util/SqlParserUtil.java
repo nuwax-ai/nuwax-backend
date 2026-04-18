@@ -66,7 +66,7 @@ public class SqlParserUtil {
      */
     public static void validateSql(String sql, boolean allowDDL) throws JSQLParserException {
         if (StringUtils.isBlank(sql)) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6005);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlEmpty);
         }
 
         try {
@@ -77,12 +77,12 @@ public class SqlParserUtil {
                         || statement instanceof Alter
                         || statement instanceof Drop
                         || statement instanceof Truncate) {
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6016, sql);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlOnlyDdl, sql);
                 }
             }
 
         } catch (JSQLParserException e) {
-            log.error("SQL解析失败: sql={}", sql, e);
+            log.error("SQL parse failed: sql={}", sql, e);
             throw e;
         }
     }
@@ -108,7 +108,7 @@ public class SqlParserUtil {
             return SqlType.DDL;
         }
 
-        throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6035, statement.getClass().getSimpleName());
+        throw ComposeException.build(BizExceptionCodeEnum.composeUnsupportedSqlType, statement.getClass().getSimpleName());
     }
 
     /**
@@ -193,15 +193,15 @@ public class SqlParserUtil {
                     // DDL 语句不需要处理
                     break;
                 default:
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6035, sqlType.name());
+                    throw ComposeException.build(BizExceptionCodeEnum.composeUnsupportedSqlType, sqlType.name());
             }
 
             return statement.toString();
         } catch (JSQLParserException e) {
-            log.error("SQL解析失败: {}", originalSql, e);
+            log.error("SQL parse failed: {}", originalSql, e);
             throw e;
         } catch (Exception e) {
-            log.error("SQL处理发生未知错误: {}, 原因: {}", originalSql, e.getMessage(), e);
+            log.error("SQL processing error: {}, cause: {}", originalSql, e.getMessage(), e);
             throw e;
         }
     }
@@ -304,12 +304,12 @@ public class SqlParserUtil {
                         new net.sf.jsqlparser.schema.Column(columnName),
                         new LongValue(bool ? 1L : 0L));
             }
-            log.warn("不支持的参数类型: column={}, value={}, type={}", columnName, value, value.getClass().getName());
+            log.warn("Unsupported param type: column={}, value={}, type={}", columnName, value, value.getClass().getName());
             return null;
         } catch (Exception e) {
-            log.error("创建条件表达式失败: column={}, value={}", columnName, value, e);
+            log.error("Build condition failed: column={}, value={}", columnName, value, e);
             var errorMessage = ComposeExceptionUtils.getRootErrorMessage(e);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6036, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeBuildConditionFailed, errorMessage);
         }
     }
 
@@ -356,7 +356,7 @@ public class SqlParserUtil {
             replaceTableName(parenthesed.getFromItem(), newTableName);
         } else {
             // 其他类型如 TableFunction、ValuesList 等，通常无需替换表名
-            log.warn("不支持的fromItem类型: {}", fromItem.getClass().getName());
+            log.warn("Unsupported fromItem type: {}", fromItem.getClass().getName());
         }
     }
 }

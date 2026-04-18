@@ -66,6 +66,7 @@ public class LogQueryController extends BaseController {
             pageQueryVo.setQueryFilter(new LogQueryDto());
             filter = pageQueryVo.getQueryFilter();
         }
+        filter.setTargetType("ApiKey");
         filter.setUserId(RequestContext.get().getUserId());
         return search0(pageQueryVo);
     }

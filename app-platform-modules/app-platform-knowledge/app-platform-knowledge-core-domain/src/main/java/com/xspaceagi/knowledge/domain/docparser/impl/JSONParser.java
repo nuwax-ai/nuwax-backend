@@ -42,8 +42,8 @@ public class JSONParser implements DocParser {
                 jsonArray = new JSONArray();
                 jsonArray.add(obj);
             } else {
-                log.error("JSON格式不支持，期望数组或对象，实际类型: {}", parsed != null ? parsed.getClass().getName() : "null");
-                throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5026);
+                log.error("JSON must be array or object, got: {}", parsed != null ? parsed.getClass().getName() : "null");
+                throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeJsonParseUnsupported);
             }
 
             for (int i = 0; i < jsonArray.size(); i++) {
@@ -69,8 +69,8 @@ public class JSONParser implements DocParser {
             // 业务异常直接抛出，避免重复包装
             throw e;
         } catch (Exception e) {
-            log.error("解析文档失败", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5014);
+            log.error("Failed to parse document", e);
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);
         }
     }
 

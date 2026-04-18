@@ -1,7 +1,6 @@
 package com.xspaceagi.agent.web.ui.dto;
 
 import com.xspaceagi.agent.core.adapter.dto.SkillFileDto;
-import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -27,7 +26,4 @@ public class SkillUpdateDto implements Serializable {
 
     @Schema(description = "文件内容")
     private List<SkillFileDto> files;
-
-    @Schema(description = "发布状态")
-    private Published.PublishStatus publishStatus;
 }

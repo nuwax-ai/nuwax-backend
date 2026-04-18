@@ -97,7 +97,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             long size, ClientSecretDTO clientSecret, UserContext userContext) {
         // 获取客户端凭证
         if (clientSecret == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8011);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketClientSecretFetchFailed);
         }
 
         IPage<EcoMarketClientConfigModel> result;
@@ -115,7 +115,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
         switch (subTabType) {
             case ALL -> {
                 // 对于"ALL"类型,通过HTTP请求服务器端list接口获取所有配置
-                log.info("查询所有配置: subTabType={}", subTabType.getCode());
+                log.info("Query all configs: subTabType={}", subTabType.getCode());
 
                 // 创建请求DTO
                 PageQueryVo<ServerConfigQueryRequest> listReqDTO = new PageQueryVo<>();
@@ -134,7 +134,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                         .queryServerConfigList(listReqDTO);
 
                 if (serverPage == null) {
-                    throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8002, "从服务器查询配置列表失败");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, "从服务器查询配置列表失败");
                 }
 
                 // 处理服务器返回的数据
@@ -224,7 +224,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             }
             case ENABLED -> {
                 // 对于"ENABLED"类型,查询本地已启用配置表
-                log.info("查询已启用配置: subTabType={}, dataType={}", subTabType.getCode(), request.getDataType());
+                log.info("Query enabled configs: subTabType={}, dataType={}", subTabType.getCode(), request.getDataType());
 
                 // 直接使用领域服务的分页查询启用状态的配置方法
                 IPage<EcoMarketClientPublishConfigModel> clientPage = ecoMarketClientPublishConfigDomainService
@@ -278,7 +278,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                         }
                     }
                 } catch (Exception e) {
-                    log.error("获取服务器配置详情失败", e);
+                    log.error("Failed to get server config detail", e);
                     // 即使获取服务器配置失败，仍然返回本地数据
                 }
 
@@ -288,7 +288,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             }
             case MY_SHARE -> {
                 // 对于"MY_SHARE"类型,查询本地我分享的配置
-                log.info("查询我的分享: subTabType={}", subTabType.getCode());
+                log.info("Query my shares: subTabType={}", subTabType.getCode());
 
                 // 检查待审批的数据,进行更新我的分享状态
                 updateApproveShareStatus(clientSecret, userContext);
@@ -339,13 +339,13 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                                 // 如果server端的状态,和本地状态不一样,也进行更新,可能server端操作了下架动作
                                 if (!Objects.equals(shareStatus, clientShareStatus)) {
                                     try {
-                                        log.info("更新本地配置分享状态,uid:{},shareStatus:{}",
+                                        log.info("Update local config share status, uid:{}, shareStatus:{}",
                                                 clientConfig.getUid(), shareStatus);
                                         ecoMarketClientConfigDomainService.updateShareStatusByUid(
                                                 clientConfig.getUid(),
                                                 shareStatus, approveMessage, userContext);
                                     } catch (Exception e) {
-                                        log.error("更新本地配置分享状态失败,uid:{},shareStatus:{}",
+                                        log.error("Update local share status failed, uid:{}, shareStatus:{}",
                                                 clientConfig.getUid(), shareStatus, e);
                                     }
                                 }
@@ -356,7 +356,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                         }
                     }
                 } catch (Exception e) {
-                    log.error("获取服务器配置详情失败", e);
+                    log.error("Failed to get server config detail", e);
                     // 即使获取服务器配置失败，仍然返回本地数据
                 }
                 result =  clientLocalConfigs;
@@ -405,7 +405,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
 
         var myShareAndReviewing = ecoMarketClientConfigDomainService.queryMyShareAndReviewing();
         if (!myShareAndReviewing.isEmpty()) {
-            log.info("查询到审批中的配置,开始更新审批状态,数量:{}", myShareAndReviewing.size());
+            log.info("Found pending-approval configs, updating approval status, count:{}", myShareAndReviewing.size());
             try {
 
                 // 获取所有记录的uid列表
@@ -438,13 +438,13 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                             // 如果server端的审批状态不是 审批中 状态,则更新状态
                             if (!EcoMarketShareStatusEnum.REVIEWING.getCode().equals(shareStatus)) {
                                 try {
-                                    log.info("更新本地配置审批状态,uid:{},shareStatus:{}",
+                                    log.info("Update local approval status, uid:{}, shareStatus:{}",
                                             clientConfig.getUid(), shareStatus);
                                     ecoMarketClientConfigDomainService.updateShareStatusByUid(
                                             clientConfig.getUid(),
                                             shareStatus, approveMessage, userContext);
                                 } catch (Exception e) {
-                                    log.error("更新本地配置审批状态失败,uid:{},shareStatus:{}",
+                                    log.error("Update local approval status failed, uid:{}, shareStatus:{}",
                                             clientConfig.getUid(), shareStatus, e);
                                 }
                             }
@@ -452,7 +452,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                     }
                 }
             } catch (Exception e) {
-                log.error("获取服务器配置审批状态失败", e);
+                log.error("Get server config approval status failed", e);
             }
         }
     }
@@ -470,7 +470,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
     @Override
     public EcoMarketClientConfigModel getConfigDetail(String uid, UserContext userContext) {
         Long tenantId = userContext.getTenantId();
-        log.info("获取配置详情: uid={}, tenantId={}", uid, tenantId);
+        log.info("Get config detail: uid={}, tenantId={}", uid, tenantId);
 
         // 先查询本地是否存在该uid的配置
         EcoMarketClientConfigModel clientConfigModel = ecoMarketClientConfigDomainService.queryOneByUid(uid);
@@ -484,8 +484,8 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
 
         // 如果本地和服务器都没有找到配置
         if (publishConfigModel == null && serverConfigModel == null && clientConfigModel == null) {
-            log.warn("配置不存在: uid={}", uid);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            log.warn("Config not found: uid={}", uid);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 首先判断这个uid对应的配置,是否是我的创建分享的配置
@@ -545,7 +545,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
         // 获取客户端密钥
         ClientSecretDTO clientSecret = ecoMarkerSecretWrapper.obtainClientSecretOrRegister(tenantId);
         if (clientSecret == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8011, "获取客户端密钥失败");
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketClientSecretFetchFailed, "获取客户端密钥失败");
         }
 
         // 直接调用ServerApiService的getDetailByUid方法获取数据
@@ -566,10 +566,10 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             String clientSecret, UserContext userContext) {
         // 检查参数
         if (Objects.isNull(model)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8009);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置模型");
         }
 
-        log.info("保存并发布配置: clientId={}, name={}", clientId, model.getName());
+        log.info("Save and publish config: clientId={}, name={}", clientId, model.getName());
 
         // 根据 targetId,targetType,进行重复检查,相同的插件/模板,不允许重复创建分享发布
         var targetId = model.getTargetId();
@@ -589,16 +589,16 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
         var isRepeat = ecoMarketClientConfigDomainService.checkConfigRepeat(targetId, targetType, dataTypeEnum, uid);
         if (isRepeat) {
             var dataType = Optional.ofNullable(dataTypeEnum).map(EcoMarketDataTypeEnum::getCode).orElse(null);
-            log.warn("配置重复: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8025);
+            log.warn("Duplicate config: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketDuplicateShareNotAllowed);
         }
         // 再 ecoMarketClientPublishConfig 表里的,都是从生态市场里获取到的,禁止重复分享
         var isPublishRepeat = ecoMarketClientPublishConfigDomainService.checkConfigRepeat(targetId, targetType,
                 dataTypeEnum);
         if (isPublishRepeat) {
             var dataType = Optional.ofNullable(dataTypeEnum).map(EcoMarketDataTypeEnum::getCode).orElse(null);
-            log.warn("禁止分享生态市场获取的配置: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8038);
+            log.warn("Sharing eco-market fetched config is forbidden: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketCannotShareFromMarket);
         }
 
         // 获取配置json
@@ -633,7 +633,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
         // 重新查询最新数据
         model = ecoMarketClientConfigDomainService.queryOneByUid(uid);
         if (model == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001, "配置保存失败");
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound, "配置保存失败");
         }
 
         // 构建请求DTO并调用服务器端接口
@@ -651,13 +651,13 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             // 更新本地数据库
             ecoMarketClientConfigDomainService.updateInfoByUid(model, userContext);
 
-            log.info("发布配置表更新成功: uid={}", uid);
+            log.info("Publish config row updated: uid={}", uid);
 
             // 返回更新后的配置
             return ecoMarketClientConfigDomainService.queryOneByUid(uid);
         }
 
-        throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8003, "保存并发布配置失败");
+        throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPublishConfigFailed, "保存并发布配置失败");
     }
 
     // 上传页面项目到生态市场server端
@@ -666,17 +666,17 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                 .eq(AgentComponentConfig::getAgentId, agentId)
                 .eq(AgentComponentConfig::getType, AgentComponentConfig.Type.Page));
         if (Objects.isNull(config)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8039);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketAgentPageRequiredForShare);
         }
         Long pageId = config.getTargetId();
         ReqResult<InputStream> result = customPageConfigApplicationService.exportProjectPublished(pageId, userContext);
         if (!result.isSuccess()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed);
         }
         
         InputStream inputStream = result.getData();
         if (inputStream == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed);
         }
         
         try {
@@ -685,19 +685,19 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
             
             String url = ecoMarketServerApiService.uploadPageZip(bytes, fileName, "application/zip", clientId, clientSecret);
             if (url == null) {
-                throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040, "上传文件到服务器端失败");
+                throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed, "上传文件到服务器端失败");
             }
             return url;
         } catch (IOException e) {
-            log.error("上传页面zip文件失败: agentId={}, pageId={}", agentId, pageId, e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8040, "读取文件流失败");
+            log.error("Upload page zip failed: agentId={}, pageId={}", agentId, pageId, e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed, "读取文件流失败");
         } finally {
             try {
                 if (inputStream != null) {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                log.warn("关闭输入流失败", e);
+                log.warn("Failed to close input stream", e);
             }
         }
     }
@@ -705,17 +705,17 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public boolean deleteConfigByUid(String uid, ClientSecretDTO clientSecret, UserContext userContext) {
-        log.info("根据UID删除客户端配置: uid={}", uid);
+        log.info("Delete client config by uid: uid={}", uid);
 
         // 根据uid查询配置详情
         EcoMarketClientConfigModel configModel = queryOneByUid(uid);
         if (configModel == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8015);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
         // 限制是我的分享,是否我的分享,0:否(生态市场获取的);1:是(我的分享)
         if (Objects.equals(configModel.getOwnedFlag(), EcoMarketOwnedFlagEnum.NO.getCode())) {
-            log.warn("禁止删除生态市场获取的配置: uid={}, ownedFlag={}", uid, configModel.getOwnedFlag());
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8047);
+            log.warn("Cannot delete eco-market-fetched config: uid={}, ownedFlag={}", uid, configModel.getOwnedFlag());
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketDeleteOnlyOwnShare);
         }
 
 
@@ -726,8 +726,8 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
 
         // 远程生态市场有上架的对应配置,禁止删除我的分享
         if (Objects.nonNull(serverData) && Objects.equals(serverData.getShareStatus(), EcoMarketShareStatusEnum.PUBLISHED.getCode())) {
-            log.warn("禁止删除远程生态市场已上架的配置: uid={}, useStatus={}", uid, serverData.getUseStatus());
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8010);
+            log.warn("Cannot delete remote published config: uid={}, useStatus={}", uid, serverData.getUseStatus());
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketCannotDeleteRemotePublished);
         }
 
         // 删除配置
@@ -739,11 +739,11 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
     @Override
     public EcoMarketClientConfigModel offlineConfigByUid(String uid, ClientSecretDTO clientSecret,
             UserContext userContext) {
-        log.info("根据UID下线客户端配置: uid={}", uid);
+        log.info("Offline client config by uid: uid={}", uid);
 
         // 获取客户端密钥
         if (clientSecret == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8011);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketClientSecretFetchFailed);
         }
 
         // 调用领域层下线配置
@@ -763,11 +763,11 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public EcoMarketClientConfigModel updateDraft(EcoMarketClientConfigModel model, UserContext userContext) {
-        log.info("更新客户端配置草稿: uid={}, name={}", model.getUid(), model.getName());
+        log.info("Update client config draft: uid={}, name={}", model.getUid(), model.getName());
 
         // 参数校验
         if (model == null || model.getUid() == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8016);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketModelAndUidRequired);
         }
 
         // 获取配置json
@@ -781,19 +781,19 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
         // 根据UID查询配置
         EcoMarketClientConfigModel existingModel = ecoMarketClientConfigDomainService.queryOneByUid(uid);
         if (existingModel == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8015);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         // 检查是否为草稿状态
         if (existingModel.getShareStatus() != EcoMarketShareStatusEnum.DRAFT.getCode() &&
                 existingModel.getShareStatus() != EcoMarketShareStatusEnum.REJECTED.getCode()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8012);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketUpdateOnlyDraftOrRejected);
         }
 
         // 检查是否有权限更新
         if (existingModel.getOwnedFlag() != EcoMarketOwnedFlagEnum.YES.getCode() ||
                 !userContext.getTenantId().equals(existingModel.getTenantId())) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8013);
+            throw EcoMarketException.build(BizExceptionCodeEnum.permissionDenied);
         }
 
         // 保留原有ID和创建信息
@@ -817,7 +817,7 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
     @DSTransactional(rollbackFor = Exception.class)
     public EcoMarketClientConfigModel saveDraft(EcoMarketClientConfigModel model, String clientId,
             UserContext userContext) {
-        log.info("创建客户端配置草稿: name={}", model.getName());
+        log.info("Create client config draft: name={}", model.getName());
 
         var targetId = model.getTargetId();
         var targetType = model.getTargetType();
@@ -828,8 +828,8 @@ public class EcoMarketClientConfigApplicationService implements IEcoMarketClient
                 dataTypeEnum);
         if (isPublishRepeat) {
             var dataType = Optional.ofNullable(dataTypeEnum).map(EcoMarketDataTypeEnum::getCode).orElse(null);
-            log.warn("禁止分享生态市场获取的配置: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8038);
+            log.warn("Sharing eco-market fetched config is forbidden: targetId={}, targetType={}, dataType={}", targetId, targetType, dataType);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketCannotShareFromMarket);
         }
 
         // 获取配置json

@@ -5,18 +5,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 复制项目请求
+ * Copy project request
  */
 @Data
 public class CustomPageCopyReq {
 
-    @Schema(description = "源项目ID", required = true)
+    @Schema(description = "Source project ID", required = true)
     private Long projectId;
 
-    @Schema(description = "目标空间ID", required = true)
+    @Schema(description = "Target space ID", required = true)
     private Long targetSpaceId;
 
-    @Schema(description = "目标空间类型", required = true)
+    @Schema(description = "Target space / copy type", required = true)
     private CopyTypeEnum copyType;
 
 }

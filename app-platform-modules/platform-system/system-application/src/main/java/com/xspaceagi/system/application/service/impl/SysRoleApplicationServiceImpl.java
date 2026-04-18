@@ -165,7 +165,7 @@ public class SysRoleApplicationServiceImpl implements SysRoleApplicationService 
     @Override
     public List<MenuNode> getMenuTreeByRoleId(Long roleId) {
         if (roleId == null) {
-            throw new IllegalArgumentException("角色ID不能为空");
+            throw new IllegalArgumentException("Role ID cannot be empty");
         }
 
         // domain层已经构建好的完整菜单树（包含root节点和资源详情，以及绑定类型打标）

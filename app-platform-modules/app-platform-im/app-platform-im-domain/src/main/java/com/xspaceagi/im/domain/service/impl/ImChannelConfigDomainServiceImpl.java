@@ -58,7 +58,7 @@ public class ImChannelConfigDomainServiceImpl implements ImChannelConfigDomainSe
         );
 
         if (existing != null) {
-            throw new IllegalArgumentException("该渠道配置已存在，不能重复添加");
+            throw new IllegalArgumentException("Channel configuration already exists; duplicate add is not allowed");
         }
 
         imChannelConfigRepository.save(config);

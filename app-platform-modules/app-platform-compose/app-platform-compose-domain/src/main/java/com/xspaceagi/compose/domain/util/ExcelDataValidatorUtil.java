@@ -63,7 +63,7 @@ public final class ExcelDataValidatorUtil {
             validateRowData(tableModel, rowData, fieldDefinitionMap, rowIndex + 1);
         }
 
-        log.info("Excel数据校验完成，共校验 {} 行数据", excelData.size());
+        log.info("Excel validation done, {} rows checked", excelData.size());
     }
 
     /**
@@ -115,7 +115,7 @@ public final class ExcelDataValidatorUtil {
                     && fieldDefinition.getEnabledFlag() != null && fieldDefinition.getEnabledFlag() == 1
                     && fieldDefinition.getNullableFlag() != null && fieldDefinition.getNullableFlag() == -1) {
                 String errorMessage = String.format("第%d行字段'%s'为必填项，不能为空", rowNumber, fieldName);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
             }
             return;
         }
@@ -145,7 +145,7 @@ public final class ExcelDataValidatorUtil {
                 validateDateField(fieldName, value, rowNumber);
             }
         } catch (Exception e) {
-            log.error("字段校验失败，字段名: {}, 字段值: {}, 行号: {}", fieldName, value, rowNumber, e);
+            log.error("Field validation failed, name: {}, value: {}, row: {}", fieldName, value, rowNumber, e);
             throw e;
         }
     }
@@ -160,7 +160,7 @@ public final class ExcelDataValidatorUtil {
                 && !"1".equals(stringValue) && !"0".equals(stringValue)) {
             String errorMessage = String.format("第%d行字段'%s'应填写true/false或1/0",
                     rowNumber, fieldName);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -175,7 +175,7 @@ public final class ExcelDataValidatorUtil {
                 if (longValue < INT_MIN_VALUE || longValue > INT_MAX_VALUE) {
                     String errorMessage = String.format("第%d行字段'%s'数值过大，请填写%d到%d之间的整数",
                             rowNumber, fieldName, INT_MIN_VALUE, INT_MAX_VALUE);
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                 }
             } else {
                 // 如果是字符串类型，尝试转换并检查范围
@@ -184,13 +184,13 @@ public final class ExcelDataValidatorUtil {
                 if (longValue < INT_MIN_VALUE || longValue > INT_MAX_VALUE) {
                     String errorMessage = String.format("第%d行字段'%s'数值过大，请填写%d到%d之间的整数",
                             rowNumber, fieldName, INT_MIN_VALUE, INT_MAX_VALUE);
-                    throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                    throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
                 }
             }
         } catch (NumberFormatException e) {
             String errorMessage = String.format("第%d行字段'%s'请填写有效的整数",
                     rowNumber, fieldName);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -214,19 +214,19 @@ public final class ExcelDataValidatorUtil {
             if (precision > DECIMAL_MAX_PRECISION) {
                 String errorMessage = String.format("第%d行字段'%s'数字太长，请限制在%d位以内",
                         rowNumber, fieldName, DECIMAL_MAX_PRECISION);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
             }
 
             if (scale > DECIMAL_MAX_SCALE) {
                 String errorMessage = String.format("第%d行字段'%s'小数位过多，请限制在%d位以内",
                         rowNumber, fieldName, DECIMAL_MAX_SCALE);
-                throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+                throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
             }
 
         } catch (NumberFormatException e) {
             String errorMessage = String.format("第%d行字段'%s'请填写有效的数字",
                     rowNumber, fieldName);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -239,7 +239,7 @@ public final class ExcelDataValidatorUtil {
         if (stringValue.length() > maxLength) {
             String errorMessage = String.format("第%d行字段'%s'内容过长，请控制在%d个字符以内",
                     rowNumber, fieldName, maxLength);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 
@@ -250,7 +250,7 @@ public final class ExcelDataValidatorUtil {
         if (!(value instanceof String)) {
             String errorMessage = String.format("第%d行字段'%s'请填写正确的日期格式",
                     rowNumber, fieldName);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
 
         try {
@@ -259,7 +259,7 @@ public final class ExcelDataValidatorUtil {
         } catch (Exception e) {
             String errorMessage = String.format("第%d行字段'%s'日期格式错误，请使用标准格式",
                     rowNumber, fieldName);
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6006, errorMessage);
+            throw ComposeException.build(BizExceptionCodeEnum.composeSqlExecuteFailed, errorMessage);
         }
     }
 

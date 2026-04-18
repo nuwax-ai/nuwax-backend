@@ -11,42 +11,42 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 项目配置导出DTO
+ * Project configuration export DTO
  */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "项目配置导出DTO")
+@Schema(description = "Project configuration export DTO")
 public class ProjectConfigExportDto implements Serializable {
 
-    @Schema(description = "项目名称")
+    @Schema(description = "Project name")
     private String name;
 
-    @Schema(description = "项目描述")
+    @Schema(description = "Project description")
     private String description;
 
-    @Schema(description = "项目图标")
+    @Schema(description = "Project icon URL")
     private String icon;
 
-    @Schema(description = "封面图片")
+    @Schema(description = "Cover image URL")
     private String coverImg;
 
-    @Schema(description = "封面图片来源")
+    @Schema(description = "Cover image source type")
     private SourceTypeEnum coverImgSourceType;
 
-    @Schema(description = "是否需要登录,true:需要,false:不需要")
+    @Schema(description = "Whether login is required")
     private Boolean needLogin;
 
-    @Schema(description = "代理配置")
+    @Schema(description = "Reverse-proxy configuration")
     private List<ProxyConfig> proxyConfigs;
 
-    @Schema(description = "页面参数配置")
+    @Schema(description = "Page argument schema list")
     private List<PageArgConfig> pageArgConfigs;
 
-    @Schema(description = "绑定的插件")
+    @Schema(description = "Bound plugin data sources")
     private List<Map<String, Object>> dataSourcePlugins;
 
-    @Schema(description = "绑定的工作流")
+    @Schema(description = "Bound workflow data sources")
     private List<Map<String, Object>> dataSourceWorkflows;
 }

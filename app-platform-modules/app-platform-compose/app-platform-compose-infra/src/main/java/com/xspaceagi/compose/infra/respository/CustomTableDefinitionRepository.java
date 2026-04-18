@@ -209,7 +209,7 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
 
     @Override
     public List<CustomTableDefinitionModel> queryListByCondition(CustomTableDefinitionModel condition) {
-        log.debug("根据条件查询表定义列表, condition: {}", condition);
+        log.debug("Query table definitions by condition: {}", condition);
 
         // 将领域模型转换为实体对象
         CustomTableDefinition queryCondition = customTableDefinitionTranslator.convertToEntity(condition);
@@ -235,10 +235,10 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
         // 1. 查询表定义
         CustomTableDefinitionModel tableModel = this.self.queryOneInfoById(tableId);
         if (tableModel == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义不存在: " + tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义不存在: " + tableId);
         }
         if (tableModel.getDorisDatabase() == null || tableModel.getDorisTable() == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表定义缺少Doris库名或表名: " + tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表定义缺少Doris库名或表名: " + tableId);
         }
 
         // 2. 查询字段定义
@@ -274,7 +274,7 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
         }
 
         if (columnDefines.isEmpty()) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001, "表没有定义任何启用的字段: " + tableId);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound, "表没有定义任何启用的字段: " + tableId);
         }
 
         return new ColumnDefinitionResult(tableModel, columnDefines, orderedFieldNames, fields);
@@ -285,7 +285,7 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
         // 1. 查询表定义
         CustomTableDefinitionModel tableModel = this.self.queryOneInfoById(entity.getId());
         if (tableModel == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 2. 更新表名称
@@ -310,7 +310,7 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
         // 1. 查询表定义
         CustomTableDefinitionModel tableModel = this.self.queryOneInfoById(tableId);
         if (tableModel == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         // 获取字段定义
@@ -352,7 +352,7 @@ public class CustomTableDefinitionRepository implements ICustomTableDefinitionRe
         //根据id查询,看数据是否存在
         var existEntity = this.customTableDefinitionService.queryOneInfoById(tableId);
         if (existEntity == null) {
-            throw ComposeException.build(BizExceptionCodeEnum.COMPOSE_ERROR_6001);
+            throw ComposeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
 
         var updateEntity = new CustomTableDefinition();

@@ -10,7 +10,9 @@ public enum PermissionSubjectTypeEnum {
 
     MODEL(1, "模型"),
     AGENT(2, "通用智能体"),
-    PAGE(3, "应用页面");
+    PAGE(3, "应用页面"),
+    OPEN_API(4, "开放API"),
+    KNOWLEDGE(5, "知识库");
 
     private final Integer code;
     private final String desc;

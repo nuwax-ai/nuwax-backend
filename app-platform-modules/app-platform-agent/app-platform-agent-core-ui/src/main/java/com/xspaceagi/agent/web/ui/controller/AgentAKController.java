@@ -4,14 +4,16 @@ import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.web.ui.controller.dto.AKDeleteDto;
 import com.xspaceagi.agent.web.ui.controller.dto.AKUpdateDto;
+import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
-import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -24,7 +26,7 @@ import java.util.List;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.AGENT_API_KEY;
 
-@Tag(name = "智能体APIKEY管理相关接口")
+@Tag(name = "Agent API KEY Management Related Interface")
 @RestController
 @RequestMapping("/api/agent/ak")
 @Slf4j
@@ -41,7 +43,7 @@ public class AgentAKController {
     private SpacePermissionService spacePermissionService;
 
     @RequireResource(AGENT_API_KEY)
-    @Operation(summary = "新增智能体APIKEY")
+    @Operation(summary = "Add Agent API KEY")
     @RequestMapping(path = "/create/{agentId}", method = RequestMethod.POST)
     public ReqResult<UserAccessKeyDto> addAccessKey(@PathVariable Long agentId) {
         checkAgentPermission(agentId);
@@ -57,7 +59,7 @@ public class AgentAKController {
     }
 
     @RequireResource(AGENT_API_KEY)
-    @Operation(summary = "更新智能体APIKEY是否为开发模式")
+    @Operation(summary = "Update Agent API KEY Whether It Is Development Mode")
     @RequestMapping(path = "/update", method = RequestMethod.POST)
     public ReqResult<Void> updateAccessKey(@RequestBody AKUpdateDto akUpdateDto) {
         AgentConfigDto agentConfigDto = checkAgentPermission(akUpdateDto.getAgentId());
@@ -70,7 +72,7 @@ public class AgentAKController {
     }
 
     @RequireResource(AGENT_API_KEY)
-    @Operation(summary = "查询智能体APIKEY列表")
+    @Operation(summary = "Query Agent API KEY List")
     @RequestMapping(path = "/list/{agentId}", method = RequestMethod.GET)
     public ReqResult<List<UserAccessKeyDto>> list(@PathVariable Long agentId) {
         AgentConfigDto agentConfigDto = checkAgentPermission(agentId);
@@ -83,11 +85,11 @@ public class AgentAKController {
     }
 
     @RequireResource(AGENT_API_KEY)
-    @Operation(summary = "删除智能体APIKEY")
+    @Operation(summary = "Delete Agent API KEY")
     @RequestMapping(path = "/delete", method = RequestMethod.POST)
     public ReqResult<Void> deleteAccessKey(@RequestBody AKDeleteDto akDeleteDto) {
-        Assert.notNull(akDeleteDto.getAgentId(), "agentId不能为空");
-        Assert.notNull(akDeleteDto.getAccessKey(), "accessKey不能为空");
+        Assert.notNull(akDeleteDto.getAgentId(), "agentId cannot be null");
+        Assert.notNull(akDeleteDto.getAccessKey(), "accessKey cannot be null");
         AgentConfigDto agentConfigDto = checkAgentPermission(akDeleteDto.getAgentId());
         Long userId = RequestContext.get().getUserId();
 
@@ -95,8 +97,6 @@ public class AgentAKController {
             userAccessKeyApiService.deleteAccessKeyWithAgentId(akDeleteDto.getAgentId(), akDeleteDto.getAccessKey());
             return ReqResult.success();
         }
-
-        userAccessKeyApiService.deleteAccessKey(userId, agentConfigDto.getUid());
         return ReqResult.success();
     }
 
@@ -113,7 +113,7 @@ public class AgentAKController {
     private AgentConfigDto checkAgentPermission(Long agentId) {
         AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
         if (agentDto == null) {
-            throw new BizException("Agent不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
         spacePermissionService.checkSpaceUserPermission(agentDto.getSpaceId());
         return agentDto;

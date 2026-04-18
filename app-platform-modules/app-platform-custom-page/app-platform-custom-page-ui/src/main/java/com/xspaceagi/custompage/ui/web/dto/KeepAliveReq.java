@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@Schema(description = "保活请求体")
+@Schema(description = "Dev server keep-alive request body")
 public class KeepAliveReq {
 
-    @NotBlank(message = "projectId 不能为空")
-    @Schema(description = "项目ID")
+    @NotBlank(message = "projectId is required")
+    @Schema(description = "Project ID")
     private Long projectId;
 
 }

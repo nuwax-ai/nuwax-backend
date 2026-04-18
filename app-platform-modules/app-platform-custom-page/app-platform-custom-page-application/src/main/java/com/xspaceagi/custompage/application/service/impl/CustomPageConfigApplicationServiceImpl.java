@@ -27,7 +27,9 @@ import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -70,12 +72,12 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     public ReqResult<CustomPageConfigModel> create(CustomPageConfigModel model, UserContext userContext)
             throws JsonProcessingException {
-        log.info("[create] 创建项目,name={}", model.getName());
+        log.info("[create] createproject,name={}", model.getName());
 
         Optional.ofNullable(model.getName()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("projectName不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("projectName is required"));
         if (model.getSpaceId() == null) {
-            throw new IllegalArgumentException("spaceId不能为空");
+            throw new IllegalArgumentException("spaceId is required");
         }
 
         // 校验用户网页应用数量是否超限
@@ -88,8 +90,8 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 List<CustomPageConfigModel> existingPages = customPageConfigDomainService.list(queryModel);
                 int currentCount = existingPages == null ? 0 : existingPages.size();
                 if (currentCount >= maxPageAppCount) {
-                    log.warn("[create] 创建项目失败，用户页面数量已达上限，userId={}, currentCount={}, maxPageAppCount={}", userContext.getUserId(), currentCount, maxPageAppCount);
-                    throw new BizException("你的网页应用数量已经达到上限，无法网页应用上限数为" + maxPageAppCount);
+                    log.warn("[create] create project failed, user page countreached limit, user Id={}, current Count={}, max page app count={}", userContext.getUserId(), currentCount, maxPageAppCount);
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageWebAppCountExceeded, maxPageAppCount);
                 }
             }
         }
@@ -99,9 +101,10 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 userContext);
 
         if (!configResult.isSuccess()) {
-            log.error("[create] 创建项目失败(config表), name={}, basePath={}, error={}",
+            log.error("[create] create project failed(configtable), name={}, base Path={}, error={}",
                     model.getName(), model.getBasePath(), configResult.getMessage());
-            throw new BizException("创建自定义页面(config)失败: " + configResult.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCreateConfigFailed,
+                    configResult.getMessage() != null ? configResult.getMessage() : "");
         }
         CustomPageConfigModel configModel = configResult.getData();
 
@@ -112,9 +115,10 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 userContext);
 
         if (!buildResult.isSuccess()) {
-            log.error("[create] 创建项目失败(build表), name={}, basePath={}, error={}",
+            log.error("[create] create project failed(buildtable), name={}, base Path={}, error={}",
                     model.getName(), model.getBasePath(), buildResult.getMessage());
-            throw new BizException("创建自定义页面(build)失败: " + buildResult.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCreateBuildFailed,
+                    buildResult.getMessage() != null ? buildResult.getMessage() : "");
         }
 
         // 创建智能体
@@ -129,8 +133,9 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 .createPageAppAgent(agentDto);
 
         if (!agentResult.isSuccess()) {
-            log.error("[create] 创建智能体失败, name={}, error={}", model.getName(), agentResult.getMessage());
-            throw new BizException("创建智能体失败: " + agentResult.getMessage());
+            log.error("[create] createagentfailed, name={}, error={}", model.getName(), agentResult.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCreateAgentFailed,
+                    agentResult.getMessage() != null ? agentResult.getMessage() : "");
         }
 
         // 绑定智能体到项目
@@ -141,12 +146,13 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 bindModel,
                 userContext);
         if (!result.isSuccess()) {
-            log.error("[create] projectId={},绑定智能体到项目失败,message={}", projectId,
+            log.error("[create] project Id={},bind agent to project failed,message={}", projectId,
                     result.getMessage());
-            throw new BizException("绑定智能体到项目失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageBindAgentFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[create] 创建项目成功, projectId={}, name={}", projectId, model.getName());
+        log.info("[create] createprojectsucceeded, project Id={}, name={}", projectId, model.getName());
         configResult.getData().setDevAgentId(agentResult.getData());
         return ReqResult.success(configResult.getData());
     }
@@ -156,9 +162,9 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     public ReqResult<Map<String, Object>> uploadProject(CustomPageConfigModel model, MultipartFile file,
                                                         boolean isInitProject,
                                                         UserContext userContext) throws Exception {
-        log.info("[upload-project] projectId={}开始上传", model.getId());
+        log.info("[upload-project] project Id={}startupload", model.getId());
         if (file == null || file.isEmpty()) {
-            return ReqResult.error("0001", "文件不能为空");
+            return ReqResult.error("0001", "File is required");
         }
         Long projectId = model.getId();
 
@@ -170,19 +176,19 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 userContext);
 
         if (!result.isSuccess()) {
-            log.info("[upload-project] 上传失败, projectId={}, code={}, message={}",
+            log.info("[upload-project] uploadfailed, project Id={}, code={}, message={}",
                     projectId,
                     result.getCode(), result.getMessage());
             return ReqResult.error(result.getCode(), result.getMessage());
         }
-        log.info("[upload-project] 上传成功, projectId={}, result={}", projectId, result);
+        log.info("[upload-project] uploadsucceeded, project Id={}, result={}", projectId, result);
 
         // 如果是创建新项目，尝试导入配置文件
         if (isInitProject) {
             try {
                 customPageConfigDomainService.importProjectConfig(model, userContext);
             } catch (Exception e) {
-                log.error("[upload-project] projectId={},配置文件导入失败", projectId, e);
+                log.error("[upload-project] project Id={},config fileimportfailed", projectId, e);
                 // 配置文件导入失败不影响整体上传流程
             }
         }
@@ -194,60 +200,61 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<CustomPageConfigModel> createReverseProxyProject(CustomPageConfigModel model,
                                                                       UserContext userContext) {
-        log.info("[createProxyProject] 创建反向代理项目, name={}", model.getName());
+        log.info("[create Proxy Project] create reverse proxy project, name={}", model.getName());
 
         Optional.ofNullable(model.getName()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("projectName不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("projectName is required"));
         if (model.getSpaceId() == null) {
-            throw new IllegalArgumentException("spaceId不能为空");
+            throw new IllegalArgumentException("spaceId is required");
         }
 
         ReqResult<CustomPageConfigModel> configResult = customPageConfigDomainService.create(model, userContext);
 
         if (!configResult.isSuccess()) {
-            log.error("[createProxyProject] 创建反向代理项目失败, name={}, message={}",
+            log.error("[create Proxy Project] create reverse proxy projectfailed, name={}, message={}",
                     model.getName(), configResult.getMessage());
-            throw new BizException("创建反向代理项目失败: " + configResult.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCreateReverseProxyFailed,
+                    configResult.getMessage() != null ? configResult.getMessage() : "");
         }
 
-        log.info("[createProxyProject] 创建反向代理项目成功, projectId={}, name={}",
+        log.info("[create Proxy Project] create reverse proxy projectsucceeded, project Id={}, name={}",
                 configResult.getData().getId(), model.getName());
         return ReqResult.success(configResult.getData());
     }
 
     @Override
     public ReqResult<Map<String, Object>> queryProjectContent(Long projectId, String proxyPath) {
-        log.info("[queryProjectContent] projectId={},查询项目文件内容", projectId);
+        log.info("[query Project Content] project Id={},query project file content", projectId);
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
 
         ReqResult<Map<String, Object>> result = customPageConfigDomainService.queryProjectContent(projectId,
                 null, proxyPath);
         if (!result.isSuccess()) {
-            log.error("[queryProjectContent] projectId={},查询项目文件内容失败,message={}", projectId,
+            log.error("[query Project Content] project Id={},query project file contentfailed,message={}", projectId,
                     result.getMessage());
             return ReqResult.error(result.getCode(), result.getMessage());
         }
 
-        log.info("[queryProjectContent] projectId={},查询项目文件内容成功", projectId);
+        log.info("[query Project Content] project Id={},query project file contentsucceeded", projectId);
         return result;
     }
 
     @Override
     public ReqResult<Map<String, Object>> queryProjectContentByVersion(Long projectId, Integer codeVersion, String proxyPath) {
-        log.info("[queryProjectContentByVersion] projectId={},codeVersion={},查询项目历史版本文件内容", projectId,
+        log.info("[query Project Content By Version] project Id={},code Version={},query project historical version file content", projectId,
                 codeVersion);
 
         ReqResult<Map<String, Object>> result = customPageConfigDomainService
                 .queryProjectContentByVersion(projectId, codeVersion, proxyPath);
         if (!result.isSuccess()) {
-            log.error("[queryProjectContentByVersion] projectId={},codeVersion={},查询项目历史版本文件内容失败,message={}",
+            log.error("[query Project Content By Version] project Id={},code Version={},query project historical version file contentfailed,message={}",
                     projectId,
                     codeVersion, result.getMessage());
             return ReqResult.error(result.getCode(), result.getMessage());
         }
 
-        log.info("[queryProjectContentByVersion] projectId={},codeVersion={},查询项目历史版本文件内容成功", projectId,
+        log.info("[query Project Content By Version] project Id={},code Version={},query project historical version file contentsucceeded", projectId,
                 codeVersion);
         return result;
     }
@@ -256,28 +263,28 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<List<ProxyConfig>> addProxy(Long projectId, ProxyConfig proxyConfig,
                                                  UserContext userContext) {
-        log.info("[addProxy] projectId={},env={},path={},添加反向代理配置", projectId, proxyConfig.getEnv(),
+        log.info("[add Proxy] project Id={},env={},path={},add reverse proxy config", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(proxyConfig.getEnv())
-                .orElseThrow(() -> new IllegalArgumentException("环境不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("environment is required"));
         Optional.ofNullable(proxyConfig.getPath()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("path is required"));
         Optional.ofNullable(proxyConfig.getBackends()).filter(list -> !list.isEmpty())
-                .orElseThrow(() -> new IllegalArgumentException("后端地址列表不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("backend address list cannot be empty"));
 
         ReqResult<List<ProxyConfig>> result = customPageConfigDomainService.addProxy(projectId,
                 proxyConfig, userContext);
 
         if (!result.isSuccess()) {
-            log.error("[addProxy] projectId={},env={},path={},添加反向代理配置失败,message={}",
+            log.error("[add Proxy] project Id={},env={},path={},add reverse proxy configfailed,message={}",
                     projectId, proxyConfig.getEnv(), proxyConfig.getPath(), result.getMessage());
             return result;
         }
 
-        log.info("[addProxy] projectId={},env={},path={},添加反向代理配置成功",
+        log.info("[add Proxy] project Id={},env={},path={},add reverse proxy configsucceeded",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(result.getData());
     }
@@ -285,28 +292,28 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> editProxyConfig(Long projectId, ProxyConfig proxyConfig, UserContext userContext) {
-        log.info("[editProxyConfig] projectId={},env={},path={},编辑反向代理配置", projectId, proxyConfig.getEnv(),
+        log.info("[edit Proxy Config] project Id={},env={},path={},editreverse proxy config", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(proxyConfig.getEnv())
-                .orElseThrow(() -> new IllegalArgumentException("环境不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("environment is required"));
         Optional.ofNullable(proxyConfig.getPath()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("path is required"));
         Optional.ofNullable(proxyConfig.getBackends()).filter(list -> !list.isEmpty())
-                .orElseThrow(() -> new IllegalArgumentException("后端地址列表不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("backend address list cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.editProxy(projectId, proxyConfig,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[editProxyConfig] projectId={},env={},path={},编辑反向代理配置失败,message={}",
+            log.error("[edit Proxy Config] project Id={},env={},path={},editreverse proxy configfailed,message={}",
                     projectId, proxyConfig.getEnv(), proxyConfig.getPath(), result.getMessage());
             return result;
         }
 
-        log.info("[editProxyConfig] projectId={},env={},path={},编辑反向代理配置成功",
+        log.info("[edit Proxy Config] project Id={},env={},path={},editreverse proxy configsucceeded",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(null);
     }
@@ -314,24 +321,25 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> deleteProxy(Long projectId, String env, String path, UserContext userContext) {
-        log.info("[deleteProxy] projectId={},env={},path={},删除反向代理配置", projectId, env, path);
+        log.info("[delete Proxy] project Id={},env={},path={},delete reverse proxy config", projectId, env, path);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(env).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("环境不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("environment is required"));
         Optional.ofNullable(path).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("path is required"));
 
         ReqResult<Void> result = customPageConfigDomainService.deleteProxy(projectId, env, path, userContext);
 
         if (!result.isSuccess()) {
-            log.error("[deleteProxy] projectId={},env={},path={},删除反向代理配置失败,message={}",
+            log.error("[delete Proxy] project Id={},env={},path={},delete reverse proxy configfailed,message={}",
                     projectId, env, path, result.getMessage());
-            throw new BizException("删除反向代理配置失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageDeleteReverseProxyFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[deleteProxy] projectId={},env={},path={},删除反向代理配置成功",
+        log.info("[delete Proxy] project Id={},env={},path={},delete reverse proxy configsucceeded",
                 projectId, env, path);
         return ReqResult.success(null);
     }
@@ -339,23 +347,24 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> savePathArgs(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[savePathArgs] projectId={},pageUri={},配置页面参数", projectId, pageArgConfig.getPageUri());
+        log.info("[save Path Args] project Id={},page Uri={},configure page args", projectId, pageArgConfig.getPageUri());
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(pageArgConfig.getPageUri()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("页面路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("page path cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.savePathArgs(projectId, pageArgConfig,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[savePathArgs] projectId={},pageUri={},配置页面参数失败,message={}",
+            log.error("[save Path Args] project Id={},page Uri={},configure page argsfailed,message={}",
                     projectId, pageArgConfig.getPageUri(), result.getMessage());
-            throw new BizException("配置页面参数失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageConfigPageParamsFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[savePathArgs] projectId={},pageUri={},配置页面参数成功",
+        log.info("[save Path Args] project Id={},page Uri={},configure page argssucceeded",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -363,23 +372,24 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> addPath(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[addPath] projectId={},pageUri={},添加路径配置", projectId, pageArgConfig.getPageUri());
+        log.info("[add Path] project Id={},page Uri={},add path config", projectId, pageArgConfig.getPageUri());
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(pageArgConfig.getPageUri()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("页面路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("page path cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.addPath(projectId, pageArgConfig,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[addPath] projectId={},pageUri={},添加路径配置失败,message={}",
+            log.error("[add Path] project Id={},page Uri={},add path configfailed,message={}",
                     projectId, pageArgConfig.getPageUri(), result.getMessage());
-            throw new BizException("添加路径配置失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageAddPathConfigFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[addPath] projectId={},pageUri={},添加路径配置成功",
+        log.info("[add Path] project Id={},page Uri={},add path configsucceeded",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -387,23 +397,24 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> editPath(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[editPath] projectId={},pageUri={},编辑路径配置", projectId, pageArgConfig.getPageUri());
+        log.info("[edit Path] project Id={},page Uri={},editpath config", projectId, pageArgConfig.getPageUri());
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(pageArgConfig.getPageUri()).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("页面路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("page path cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.editPath(projectId, pageArgConfig,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[editPath] projectId={},pageUri={},编辑路径配置失败,message={}",
+            log.error("[edit Path] project Id={},page Uri={},editpath configfailed,message={}",
                     projectId, pageArgConfig.getPageUri(), result.getMessage());
-            throw new BizException("编辑路径配置失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageEditPathConfigFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[editPath] projectId={},pageUri={},编辑路径配置成功",
+        log.info("[edit Path] project Id={},page Uri={},editpath configsucceeded",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -411,23 +422,24 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> deletePath(Long projectId, String pageUri, UserContext userContext) {
-        log.info("[deletePath] projectId={},pageUri={},删除路径配置", projectId, pageUri);
+        log.info("[delete Path] project Id={},page Uri={},delete path config", projectId, pageUri);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(pageUri).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("页面路径不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("page path cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.deletePath(projectId, pageUri,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[deletePath] projectId={},pageUri={},删除路径配置失败,message={}",
+            log.error("[delete Path] project Id={},page Uri={},delete path configfailed,message={}",
                     projectId, pageUri, result.getMessage());
-            throw new BizException("删除路径配置失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageDeletePathConfigFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[deletePath] projectId={},pageUri={},删除路径配置成功",
+        log.info("[delete Path] project Id={},page Uri={},delete path configsucceeded",
                 projectId, pageUri);
         return ReqResult.success(null);
     }
@@ -436,24 +448,25 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> batchConfigProxy(Long projectId, List<ProxyConfig> proxyConfigs,
                                             UserContext userContext) {
-        log.info("[batchConfigProxy] projectId={},configCount={},批量配置反向代理", projectId,
+        log.info("[batch Config Proxy] project Id={},config Count={},batch configure reverse proxy", projectId,
                 proxyConfigs != null ? proxyConfigs.size() : 0);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(proxyConfigs)
-                .orElseThrow(() -> new IllegalArgumentException("反向代理配置列表不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("reverse proxy configuration list cannot be empty"));
 
         ReqResult<Void> result = customPageConfigDomainService.batchConfigProxy(projectId, proxyConfigs,
                 userContext);
 
         if (!result.isSuccess()) {
-            log.error("[batchConfigProxy] projectId={},configCount={},批量配置反向代理失败,message={}", projectId,
+            log.error("[batch Config Proxy] project Id={},config Count={},batch configure reverse proxyfailed,message={}", projectId,
                     proxyConfigs != null ? proxyConfigs.size() : 0, result.getMessage());
-            throw new BizException("批量配置反向代理失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageBatchReverseProxyFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[batchConfigProxy] projectId={},configCount={},批量配置反向代理成功",
+        log.info("[batch Config Proxy] project Id={},config Count={},batch configure reverse proxysucceeded",
                 projectId, proxyConfigs != null ? proxyConfigs.size() : 0);
         return ReqResult.success(null);
     }
@@ -470,44 +483,44 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> bindDataSource(Long projectId, String type, Long dataSourceId,
                                           UserContext userContext) {
-        log.info("[bindDataSource] projectId={},type={},dataSourceId={},绑定数据源", projectId, type,
+        log.info("[bind Data Source] project Id={},type={},data Source Id={},binddata source", projectId, type,
                 dataSourceId);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(type).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("数据源类型不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("data source type is required"));
         Optional.ofNullable(dataSourceId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("数据源ID不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("data source ID is required or invalid"));
 
         String dataSourceName = null;
         String dataSourceIcon = null;
         if ("plugin".equalsIgnoreCase(type)) {
             PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(dataSourceId, null);
             if (pluginDto == null) {
-                log.error("[bindDataSource] projectId={},type={},dataSourceId={},插件不存在或未发布", projectId, type, dataSourceId);
-                return ReqResult.error("0001", "插件不存在或未发布");
+                log.error("[bind Data Source] project Id={},type={},data Source Id={},pluginnot foundor not published", projectId, type, dataSourceId);
+                return ReqResult.error("0001", "Plugin does not exist or is not published");
             }
 
             dataSourceName = pluginDto.getName();
             dataSourceIcon = pluginDto.getIcon();
-            log.info("[bindDataSource] projectId={},type={},dataSourceId={},获取插件信息成功", projectId, type, dataSourceId);
+            log.info("[bind Data Source] project Id={},type={},data Source Id={},getplugin succeeded", projectId, type, dataSourceId);
 
         } else if ("workflow".equalsIgnoreCase(type)) {
             WorkflowConfigDto workflowConfigDto = workflowApplicationService
                     .queryPublishedWorkflowConfig(dataSourceId, null);
             if (workflowConfigDto == null) {
-                log.error("[bindDataSource] projectId={},type={},dataSourceId={},工作流不存在或未发布", projectId, type, dataSourceId);
-                return ReqResult.error("0003", "工作流不存在或未发布");
+                log.error("[bind Data Source] project Id={},type={},data Source Id={},workflownot foundor not published", projectId, type, dataSourceId);
+                return ReqResult.error("0003", "Workflow does not exist or is not published");
             }
 
             dataSourceName = workflowConfigDto.getName();
             dataSourceIcon = workflowConfigDto.getIcon();
-            log.info("[bindDataSource] projectId={},type={},dataSourceId={},获取工作流信息成功", projectId, type, dataSourceId);
+            log.info("[bind Data Source] project Id={},type={},data Source Id={},getworkflow succeeded", projectId, type, dataSourceId);
 
         } else {
-            log.error("[bindDataSource] projectId={},type={},dataSourceId={},不支持的数据源类型, type={}", projectId, type, dataSourceId, type);
-            return ReqResult.error("0004", "不支持的数据源类型: " + type);
+            log.error("[bind Data Source] project Id={},type={},data Source Id={},unsupported data source type, type={}", projectId, type, dataSourceId, type);
+            return ReqResult.error("0004", "Unsupported data source type: " + type);
         }
 
         DataSourceDto dataSource = DataSourceDto.builder()
@@ -521,12 +534,13 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
         ReqResult<Void> result = customPageConfigDomainService.bindDataSource(projectId, dataSource, userContext);
 
         if (!result.isSuccess()) {
-            log.error("[bindDataSource] 保存数据源失败, projectId={}, type={}, dataSourceId={}, error={}",
+            log.error("[bind Data Source] savedata sourcefailed, project Id={}, type={}, data Source Id={}, error={}",
                     projectId, type, dataSourceId, result.getMessage());
-            throw new BizException("保存数据源失败: " + result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageSaveDataSourceFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[bindDataSource] 保存数据源成功, projectId={}, type={}, dataSourceId={}", projectId, type, dataSourceId);
+        log.info("[bind Data Source] savedata sourcesucceeded, project Id={}, type={}, data Source Id={}", projectId, type, dataSourceId);
         return ReqResult.success(null);
     }
 
@@ -534,15 +548,15 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Void> unbindDataSource(Long projectId, String type, Long dataSourceId,
                                             UserContext userContext) {
-        log.info("[unbindDataSource] projectId={},type={},dataSourceId={},解绑数据源", projectId, type,
+        log.info("[unbind Data Source] project Id={},type={},data Source Id={},unbinddata source", projectId, type,
                 dataSourceId);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(type).filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new IllegalArgumentException("数据源类型不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("data source type is required"));
         Optional.ofNullable(dataSourceId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("数据源ID不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("data source ID is required or invalid"));
 
         DataSourceDto dataSource = DataSourceDto.builder()
                 .type(type.toLowerCase())
@@ -552,17 +566,18 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
         ReqResult<Void> result = customPageConfigDomainService.unbindDataSource(projectId, dataSource, userContext);
 
         if (!result.isSuccess()) {
-            log.error("[unbindDataSource] 解绑数据源失败, projectId={}, type={}, dataSourceId={}, error={}", projectId, type, dataSourceId, result.getMessage());
-            throw new BizException("解绑数据源失败: " + result.getMessage());
+            log.error("[unbind Data Source] unbinddata sourcefailed, project Id={}, type={}, data Source Id={}, error={}", projectId, type, dataSourceId, result.getMessage());
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageUnbindDataSourceFailed,
+                    result.getMessage() != null ? result.getMessage() : "");
         }
 
-        log.info("[unbindDataSource] 解绑数据源成功, projectId={}, type={}, dataSourceId={}", projectId, type, dataSourceId);
+        log.info("[unbind Data Source] unbinddata sourcesucceeded, project Id={}, type={}, data Source Id={}", projectId, type, dataSourceId);
         return ReqResult.success(null);
     }
 
     @Override
     public CustomPageConfigModel getByProjectId(Long projectId) {
-        log.info("[getByProjectId] projectId={},查询项目", projectId);
+        log.info("[get By Project Id] project Id={},queryproject", projectId);
         return customPageConfigDomainService.getById(projectId);
     }
 
@@ -574,20 +589,21 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<CustomPageConfigModel> updateProject(CustomPageConfigModel model, UserContext userContext) {
-        log.info("[updateProject] projectId={},修改项目", model.getId());
+        log.info("[update Project] project Id={},modify project", model.getId());
         try {
             Optional.ofNullable(model.getId()).filter(x -> x > 0)
-                    .orElseThrow(() -> new IllegalArgumentException("项目ID不能为空或无效"));
+                    .orElseThrow(() -> new IllegalArgumentException("project ID is required or invalid"));
             Optional.ofNullable(model.getName()).filter(StringUtils::isNotBlank)
-                    .orElseThrow(() -> new IllegalArgumentException("项目名称不能为空"));
+                    .orElseThrow(() -> new IllegalArgumentException("project name is required"));
 
             // 更新config表
             ReqResult<CustomPageConfigModel> result = customPageConfigDomainService.update(model,
                     userContext);
             if (!result.isSuccess()) {
-                log.error("[updateProject] projectId={},修改项目失败,message={}", model.getId(),
+                log.error("[update Project] project Id={},modify projectfailed,message={}", model.getId(),
                         result.getMessage());
-                throw new BizException("修改项目失败: " + result.getMessage());
+                throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageUpdateProjectFailed,
+                        result.getMessage() != null ? result.getMessage() : "");
             }
             // 更新智能体
             Long devAgentId = ((CustomPageConfigModel) result.getData()).getDevAgentId();
@@ -599,31 +615,34 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
             com.xspaceagi.agent.core.sdk.dto.ReqResult<Void> agentResult = agentRpcService
                     .updatePageAppAgent(agentDto);
             if (!agentResult.isSuccess()) {
-                log.error("[updateProject] projectId={},更新智能体失败,message={}", model.getId(),
+                log.error("[update Project] project Id={},updateagentfailed,message={}", model.getId(),
                         agentResult.getMessage());
-                throw new BizException("更新智能体失败: " + agentResult.getMessage());
+                throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageUpdateAgentFailed,
+                        agentResult.getMessage() != null ? agentResult.getMessage() : "");
             }
 
-            log.info("[updateProject] projectId={},修改项目成功", model.getId());
+            log.info("[update Project] project Id={},modify projectsucceeded", model.getId());
             return ReqResult.success(result.getData());
         } catch (Exception e) {
-            log.error("[updateProject] projectId={},修改项目异常", model.getId(), e);
-            throw new BizException("修改项目异常: " + e.getMessage());
+            log.error("[update Project] project Id={},modify projectexception", model.getId(), e);
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageUpdateProjectException,
+                    e.getMessage() != null ? e.getMessage() : "");
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ReqResult<Map<String, Object>> deleteProject(Long projectId, UserContext userContext) {
-        log.info("[deleteProject] projectId={},删除项目", projectId);
+        log.info("[delete Project] project Id={},delete project", projectId);
         try {
             Optional.ofNullable(projectId).filter(x -> x > 0)
-                    .orElseThrow(() -> new IllegalArgumentException("项目ID不能为空或无效"));
+                    .orElseThrow(() -> new IllegalArgumentException("project ID is required or invalid"));
 
             ReqResult<Map<String, Object>> result = customPageConfigDomainService.delete(projectId, userContext);
             if (!result.isSuccess()) {
-                log.error("[deleteProject] projectId={},删除项目失败,message={}", projectId, result.getMessage());
-                throw new BizException("删除项目失败: " + result.getMessage());
+                log.error("[delete Project] project Id={},delete projectfailed,message={}", projectId, result.getMessage());
+                throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageDeleteProjectFailed,
+                        result.getMessage() != null ? result.getMessage() : "");
             }
 
             // 删除智能体
@@ -633,20 +652,22 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 com.xspaceagi.agent.core.sdk.dto.ReqResult<Void> agentResult = agentRpcService
                         .deletePageAppAgent(devAgentId);
                 if (!agentResult.isSuccess()) {
-                    log.error("[deleteProject] projectId={},删除智能体失败,message={}", projectId,
+                    log.error("[delete Project] project Id={},deleteagentfailed,message={}", projectId,
                             agentResult.getMessage());
-                    throw new BizException("删除智能体失败: " + agentResult.getMessage());
+                    throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageDeleteAgentFailed,
+                            agentResult.getMessage() != null ? agentResult.getMessage() : "");
                 }
             } catch (Exception e) {
-                log.error("[deleteProject] projectId={},删除智能体失败", projectId, e);
+                log.error("[delete Project] project Id={},deleteagentfailed", projectId, e);
                 // 不抛异常,老数据没有智能体,删除会异常
             }
 
-            log.info("[deleteProject] projectId={},删除项目成功", projectId);
+            log.info("[delete Project] project Id={},delete projectsucceeded", projectId);
             return result;
         } catch (Exception e) {
-            log.error("[deleteProject] projectId={},删除项目异常", projectId, e);
-            throw new BizException("删除项目异常: " + e.getMessage());
+            log.error("[delete Project] project Id={},delete projectexception", projectId, e);
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageDeleteProjectException,
+                    e.getMessage() != null ? e.getMessage() : "");
         }
     }
 
@@ -661,12 +682,12 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
         Long sourceSpaceId = sourceConfig.getSpaceId();
         Long targetProjectId = targetConfig.getId();
         Long targetSpaceId = targetConfig.getSpaceId();
-        log.info("[copyProject] targetProjectId={}, targetSpaceId={},开始复制数据源", targetProjectId, targetSpaceId);
+        log.info("[copy Project] target Project Id={}, target Space Id={},startcopydata source", targetProjectId, targetSpaceId);
 
         //本空间复制项目
         //直接绑定数据源
         if (sourceSpaceId.equals(targetSpaceId)) {
-            log.info("[copyProject] targetProjectId={}, targetSpaceId={},同空间,完全复制绑定关系", targetProjectId, targetSpaceId);
+            log.info("[copy Project] target Project Id={}, target Space Id={},same space,fully copy binding relationships", targetProjectId, targetSpaceId);
             CustomPageConfigModel updateConfig = new CustomPageConfigModel();
             updateConfig.setId(targetProjectId);
             updateConfig.setDataSources(sourceDataSources);
@@ -688,17 +709,17 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
             PublishedDto publishedDto = publishApplicationService.queryPublished(dataSourceType, dataSource.getId());
 
             if (publishedDto == null) {
-                log.info("[copyProject] projectId={},dataSourceId={},type={}, 数据源不存在,跳过", targetProjectId, dataSource.getId(), dataSourceType);
+                log.info("[copy Project] project Id={},data Source Id={},type={}, data sourcenot found,skip", targetProjectId, dataSource.getId(), dataSourceType);
                 continue;
             }
 
             if (publishedDto.getScope() == Published.PublishScope.Global || publishedDto.getScope() == Published.PublishScope.Tenant) {
                 //全局数据源，不需要复制，直接绑定
-                log.info("[copyProject] projectId={},dataSourceId={},type={}, 全局数据源,直接绑定", targetProjectId, dataSource.getId(), dataSourceType);
+                log.info("[copy Project] project Id={},data Source Id={},type={}, global data source, bind directly", targetProjectId, dataSource.getId(), dataSourceType);
                 targetDataSources.add(dataSource);
             } else if (publishedDto.getPublishedSpaceIds() != null && publishedDto.getPublishedSpaceIds().contains(targetSpaceId)) {
                 //已经发布到了目标空间
-                log.info("[copyProject] projectId={},dataSourceId={},type={}, 数据源已在目标空间发布过,直接绑定", targetProjectId, dataSource.getId(), dataSourceType);
+                log.info("[copy Project] project Id={},data Source Id={},type={}, data sourcealready published in target space, bind directly", targetProjectId, dataSource.getId(), dataSourceType);
                 targetDataSources.add(dataSource);
             } else {
 
@@ -716,13 +737,13 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                                 PublishedPermissionDto permissionDto = publishApplicationService.hasPermission(dataSourceType, dataSource.getId());
                                 allowCopy = permissionDto.isCopy();
                             } catch (Exception e) {
-                                log.info("[copyProject] projectId={},dataSourceId={},type={}, 校验数据源复制权限失败,跳过", targetProjectId, dataSource.getId(), dataSourceType, e);
+                                log.info("[copy Project] project Id={},data Source Id={},type={}, data source copy permission check failed, skip", targetProjectId, dataSource.getId(), dataSourceType, e);
                             }
                         }
                     }
                     if (!allowCopy) {
                         //不允许复制
-                        log.info("[copyProject] projectId={},dataSourceId={},type={}, 无数据源复制权限,跳过", targetProjectId, dataSource.getId(), dataSourceType);
+                        log.info("[copy Project] project Id={},data Source Id={},type={}, no data source copy permission, skip", targetProjectId, dataSource.getId(), dataSourceType);
                         continue;
                     }
 
@@ -739,10 +760,11 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
 
                         com.xspaceagi.agent.core.sdk.dto.ReqResult<Long> enableResult = agentRpcService.pluginEnableOrUpdate(pluginDto);
                         if (!enableResult.isSuccess()) {
-                            log.error("[copyProject] projectId={},dataSourceId={},type={},复制插件失败,message={}", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getMessage());
-                            throw new BizException("复制插件失败: " + enableResult.getMessage());
+                            log.error("[copy Project] project Id={},data Source Id={},type={},copypluginfailed,message={}", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getMessage());
+                            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCopyPluginFailed,
+                                    enableResult.getMessage() != null ? enableResult.getMessage() : "");
                         } else {
-                            log.info("[copyProject] projectId={},dataSourceId={},type={},复制插件成功", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getData());
+                            log.info("[copy Project] project Id={},data Source Id={},type={},copypluginsucceeded", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getData());
                         }
                         Long newPluginId = enableResult.getData();
                         DataSourceDto dataSourceDto = DataSourceDto.builder()
@@ -771,13 +793,13 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                                 PublishedPermissionDto permissionDto = publishApplicationService.hasPermission(dataSourceType, dataSource.getId());
                                 allowCopy = permissionDto.isCopy();
                             } catch (Exception e) {
-                                log.info("[copyProject] projectId={},dataSourceId={},type={}, 校验数据源复制权限失败,跳过", targetProjectId, dataSource.getId(), dataSourceType, e);
+                                log.info("[copy Project] project Id={},data Source Id={},type={}, data source copy permission check failed, skip", targetProjectId, dataSource.getId(), dataSourceType, e);
                             }
                         }
                     }
                     if (!allowCopy) {
                         //不允许复制
-                        log.info("[copyProject] projectId={},dataSourceId={},type={}, 无数据源复制权限,跳过", targetProjectId, dataSource.getId(), dataSourceType);
+                        log.info("[copy Project] project Id={},data Source Id={},type={}, no data source copy permission, skip", targetProjectId, dataSource.getId(), dataSourceType);
                         continue;
                     }
 
@@ -794,10 +816,11 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
 
                         com.xspaceagi.agent.core.sdk.dto.ReqResult<Long> enableResult = agentRpcService.templateEnableOrUpdate(templateDto);
                         if (!enableResult.isSuccess()) {
-                            log.error("[copyProject] projectId={},dataSourceId={},type={},复制工作流失败,message={}", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getMessage());
-                            throw new BizException("复制工作流失败: " + enableResult.getMessage());
+                            log.error("[copy Project] project Id={},data Source Id={},type={},copyworkflowfailed,message={}", targetProjectId, dataSource.getId(), dataSourceType, enableResult.getMessage());
+                            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageCopyWorkflowFailed,
+                                    enableResult.getMessage() != null ? enableResult.getMessage() : "");
                         } else {
-                            log.info("[copyProject] projectId={},dataSourceId={},type={},复制工作流成功", targetProjectId, dataSource.getId(), dataSourceType);
+                            log.info("[copy Project] project Id={},data Source Id={},type={},copyworkflowsucceeded", targetProjectId, dataSource.getId(), dataSourceType);
                         }
                         Long newWorkflowId = enableResult.getData();
                         DataSourceDto dataSourceDto = DataSourceDto.builder()
@@ -817,7 +840,7 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
             return newCreateDataSources;
         }
 
-        log.info("[copyProject] targetProjectId,targetSpaceId={},跨空间复制,绑定数据源,size={}", targetProjectId, targetSpaceId, targetDataSources.size());
+        log.info("[copy Project] target Project Id,target Space Id={},cross-spacecopy,binddata source,size={}", targetProjectId, targetSpaceId, targetDataSources.size());
         CustomPageConfigModel updateConfig = new CustomPageConfigModel();
         updateConfig.setId(targetProjectId);
         updateConfig.setDataSources(targetDataSources);

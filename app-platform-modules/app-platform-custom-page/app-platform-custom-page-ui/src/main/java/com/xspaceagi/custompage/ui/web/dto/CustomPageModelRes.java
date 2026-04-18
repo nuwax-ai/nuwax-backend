@@ -9,42 +9,42 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "模型响应体")
+@Schema(description = "Model list response body")
 public class CustomPageModelRes implements Serializable {
 
-    @Schema(description = "对话模型列表")
+    @Schema(description = "Chat model list")
     private List<ModelDto> chatModelList;
 
-    @Schema(description = "多模态模型列表")
+    @Schema(description = "Multimodal model list")
     private List<ModelDto> multiModelList;
 
-    @Schema(description = "模型信息")
+    @Schema(description = "Model metadata")
     @Data
     public static class ModelDto implements Serializable {
-        @Schema(description = "模型ID")
+        @Schema(description = "Model ID")
         private Long id;
 
-        @Schema(description = "模型名称")
+        @Schema(description = "Model display name")
         private String name;
 
-        @Schema(description = "模型描述")
+        @Schema(description = "Model description")
         private String description;
 
-        @Schema(description = "模型标识")
+        @Schema(description = "Model identifier")
         private String model;
 
-        @Schema(description = "模型接口协议，可选值：OpenAI, Ollama")
+        @Schema(description = "API protocol, e.g. OpenAI, Ollama")
         private ModelApiProtocolEnum apiProtocol;
 
-        @Schema(description = "租户ID")
+        @Schema(description = "Tenant ID")
         private Long tenantId;
 
-        @Schema(description = "空间ID")
+        @Schema(description = "Space ID")
         private Long spaceId;
 
         private Integer isReasonModel;
 
-        @Schema(description = "token上限")
+        @Schema(description = "Max tokens limit")
         private Integer maxTokens;
 
     }

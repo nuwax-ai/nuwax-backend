@@ -21,7 +21,9 @@ import com.xspaceagi.im.web.service.ImFileShareService;
 import com.xspaceagi.im.web.util.ImOutputProcessor;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -113,14 +115,14 @@ public class IMDingtalkController {
         String timestamp = request.getHeader("timestamp");
         String sign = request.getHeader("sign");
 
-        log.info("钉钉 Webhook 请求: method={}, contentLength={}, timestamp={}, sign={}, body={}",
+        log.info("DingTalk Webhook request: method={}, contentLength={}, timestamp={}, sign={}, body={}",
                 request.getMethod(), bodyBytes.length,
                 timestamp != null ? "***" : null, sign != null ? "***" : null,
                 bodyBytes.length > 500 ? bodyStr.substring(0, 500) + "..." : bodyStr);
 
         // 空 body 且无签名：可能是 URL 验证或测试请求，直接返回 200
         if (bodyBytes.length == 0 && (StringUtils.isBlank(timestamp) || StringUtils.isBlank(sign))) {
-            log.info("钉钉 Webhook 收到空请求（无 timestamp/sign），可能是 URL 验证或测试，返回 200");
+            log.info("DingTalk Webhook empty request (no timestamp/sign), likely URL verify, returning 200");
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json;charset=UTF-8");
             response.getOutputStream().write(JSON.toJSONString(Map.of(
@@ -132,7 +134,7 @@ public class IMDingtalkController {
         JSONObject body = JSON.parseObject(bodyStr);
         DingtalkBotConfig config = resolveBotConfig(timestamp, sign, body);
         if (config == null) {
-            log.warn("钉钉 Webhook 签名验证失败: timestamp={}, sign={}", timestamp, sign);
+            log.warn("DingTalk Webhook signature failed: timestamp={}, sign={}", timestamp, sign);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");
             response.getOutputStream().write(JSON.toJSONString(Map.of("error", "非法请求")).getBytes(StandardCharsets.UTF_8));
@@ -146,7 +148,7 @@ public class IMDingtalkController {
 
         String msgtype = body.getString("msgtype");
         if (!"text".equals(msgtype) && !"richText".equals(msgtype) && !"picture".equals(msgtype) && !"file".equals(msgtype)) {
-            log.info("钉钉 Webhook 不支持的消息类型，回复用户: msgtype={}", msgtype);
+            log.info("DingTalk Webhook unsupported msgtype, replying: msgtype={}", msgtype);
             String sessionWebhook = body.getString("sessionWebhook");
             if (StringUtils.isNotBlank(sessionWebhook)) {
                 replyBySessionWebhook(sessionWebhook, "抱歉，暂不支持此消息格式的处理", null,
@@ -161,7 +163,7 @@ public class IMDingtalkController {
         String dedupKey = StringUtils.isNotBlank(msgId) ? DINGTALK_MSG_PREFIX + msgId
                 : DINGTALK_MSG_PREFIX + body.getString("conversationId") + ":" + body.getLong("createAt");
         if (redisUtil != null && redisUtil.get(dedupKey) != null) {
-            log.info("钉钉 Webhook 重复消息，跳过: msgId={}", msgId);
+            log.info("DingTalk Webhook duplicate, skip: msgId={}", msgId);
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
@@ -182,7 +184,7 @@ public class IMDingtalkController {
             if (StringUtils.isNotBlank(code)) {
                 attachmentCodes.add(new DingtalkAttachmentCodeDto(code, "picture".equals(msgtype), fileName));
             } else {
-                log.warn("钉钉 {} 消息未解析到 downloadCode, bodyKeys={}, picture={}, content={}",
+                log.warn("DingTalk {} message missing downloadCode, bodyKeys={}, picture={}, content={}",
                         msgtype, body != null ? body.keySet() : null,
                         body != null ? body.getJSONObject("picture") : null,
                         body != null ? body.getJSONObject("content") : null);
@@ -249,12 +251,12 @@ public class IMDingtalkController {
         String sessionWebhook = body.getString("sessionWebhook");
         Long sessionWebhookExpiredTime = body.getLong("sessionWebhookExpiredTime");
         if (sessionWebhookExpiredTime != null && sessionWebhookExpiredTime < System.currentTimeMillis()) {
-            log.warn("钉钉 sessionWebhook 已过期: expiredTime={}", sessionWebhookExpiredTime);
+            log.warn("DingTalk sessionWebhook expired: expiredTime={}", sessionWebhookExpiredTime);
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
 
-        log.info("处理钉钉消息: senderId={}, conversationId={}, content={}, robotCode={}",
+        log.info("Handle DingTalk message: senderId={}, conversationId={}, content={}, robotCode={}",
                 senderId, body.getString("conversationId"), userMessage, body.getString("robotCode"));
 
         String conversationType = body.getString("conversationType");
@@ -324,19 +326,19 @@ public class IMDingtalkController {
             boolean isRobotNotFound = lastErr != null && (lastErr.contains("chatbot.notFound") || lastErr.contains("机器人不存在"));
             if (isCredentialError) {
                 // 凭证错误：不执行智能体，仅提示用户
-                log.warn("钉钉凭证配置错误，跳过回复: senderId={}, 原因={}", senderId, lastErr);
+                log.warn("DingTalk credential misconfigured, skip: senderId={}, reason={}", senderId, lastErr);
                 replyBySessionWebhook(sessionWebhook, "凭证配置错误，请联系管理员检查钉钉应用 ClientId/ClientSecret", quoteDisplayMessage, senderNick, senderStaffId, conversationType);
             } else if (isPermissionError) {
                 // 权限错误：提示开通会话管理权限
-                log.warn("钉钉应用权限未开通，跳过回复: senderId={}, 原因={}", senderId, lastErr);
+                log.warn("DingTalk app permission not enabled, skip: senderId={}, reason={}", senderId, lastErr);
                 replyBySessionWebhook(sessionWebhook, "钉钉应用权限未开通，请联系管理员在钉钉开放平台开通「会话管理」权限（qyapi_chat_manage）", quoteDisplayMessage, senderNick, senderStaffId, conversationType);
             } else if (isRobotNotFound) {
                 // 机器人不存在：提示检查机器人是否已添加到群聊
-                log.warn("钉钉机器人不存在，跳过回复: senderId={}, 原因={}", senderId, lastErr);
+                log.warn("DingTalk bot not found, skip reply: senderId={}, reason={}", senderId, lastErr);
                 replyBySessionWebhook(sessionWebhook, "机器人未找到，请确认：1) 机器人已添加到当前群聊；2) 机器人在钉钉开放平台已发布；3) 若 robotCode 与 AppKey 不同，请在配置中填写 robotCode（在【消息推送】获取）", quoteDisplayMessage, senderNick, senderStaffId, conversationType);
             } else {
                 // 其他失败（如网络等），回退到 sessionWebhook 流式回复
-                log.warn("钉钉发送互动卡片失败，回退到 sessionWebhook 模式: senderId={}, conversationId={}, 失败原因={}", senderId, conversationId, lastErr);
+                log.warn("DingTalk interactive card failed, fallback sessionWebhook: senderId={}, conversationId={}, reason={}", senderId, conversationId, lastErr);
                 streamBySessionWebhook(sessionWebhook, senderId, userMessage, quoteDisplayMessage, attachments, senderNick, senderStaffId,
                         conversationType, conversationId, config);
             }
@@ -356,7 +358,7 @@ public class IMDingtalkController {
         try {
             long ts = Long.parseLong(timestamp);
             if (Math.abs(System.currentTimeMillis() - ts) > TIMESTAMP_TOLERANCE_MS) {
-                log.warn("钉钉 timestamp 超出允许范围: ts={}", ts);
+                log.warn("DingTalk timestamp out of range: ts={}", ts);
                 return false;
             }
             String stringToSign = timestamp + "\n" + clientSecret;
@@ -366,7 +368,7 @@ public class IMDingtalkController {
             String expectedSign = Base64.getEncoder().encodeToString(signData);
             return sign.equals(expectedSign);
         } catch (Exception e) {
-            log.warn("钉钉签名验证异常: {}", e.getMessage());
+            log.warn("DingTalk signature verify error: {}", e.getMessage());
             return false;
         }
     }
@@ -390,12 +392,12 @@ public class IMDingtalkController {
 
     private DingtalkBotConfig getConfigByRobotCode(String robotCode) {
         if (StringUtils.isBlank(robotCode)) {
-            throw new BizException("钉钉 Webhook 缺少必要参数: robotCode");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imDingtalkWebhookMissingRobotCode);
         }
         ImChannelConfigDto cfg = imChannelConfigApplicationService.getDingtalkConfigByRobotCode(robotCode);
         ImChannelConfigDto.DingtalkConfig ding = cfg != null ? cfg.getDingtalk() : null;
         if (ding == null || StringUtils.isBlank(ding.getRobotCode())) {
-            throw new BizException("钉钉机器人未绑定");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imDingtalkBotNotBound);
         }
         return DingtalkBotConfig.builder()
                 .clientId(ding.getClientId())
@@ -597,13 +599,13 @@ public class IMDingtalkController {
                             }
                         },
                         e -> {
-                            log.error("钉钉流式执行异常: senderId={}", senderId, e);
+                            log.error("DingTalk stream error: senderId={}", senderId, e);
                             String errMsg = "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
                             // 仅更新卡片，避免同时调用 sessionWebhook 导致重复回复
                                     apiClient.updateInteractiveCard(outTrackId,
                                             DingtalkOpenApiClient.buildCardData(buildReplyContent(errMsg, quoteDisplayMessage, senderNick, senderStaffId, conversationType)));
                         },
-                        () -> log.debug("钉钉流式执行完成: senderId={}", senderId)
+                        () -> log.debug("DingTalk stream done: senderId={}", senderId)
                 );
     }
 
@@ -617,7 +619,7 @@ public class IMDingtalkController {
                                         String senderNick, String senderStaffId,
                                         String conversationType, String conversationId, DingtalkBotConfig config) {
         if (StringUtils.isBlank(sessionWebhook)) {
-            log.warn("钉钉 sessionWebhook 为空，无法回复");
+            log.warn("DingTalk sessionWebhook empty, cannot reply");
             return;
         }
 
@@ -636,7 +638,7 @@ public class IMDingtalkController {
                             }
                         },
                         e -> {
-                            log.error("钉钉 sessionWebhook 流式执行异常: senderId={}", senderId, e);
+                            log.error("DingTalk sessionWebhook stream error: senderId={}", senderId, e);
                             String errMsg = "执行异常: " + (e.getMessage() != null ? e.getMessage() : "未知错误");
                             replyBySessionWebhook(sessionWebhook, errMsg, quoteDisplayMessage, senderNick, senderStaffId, conversationType);
                         },
@@ -649,7 +651,7 @@ public class IMDingtalkController {
                                         imFileShareService, computerFileApplicationService);
                                 replyBySessionWebhook(sessionWebhook, content, quoteDisplayMessage, senderNick, senderStaffId, conversationType);
                             }
-                            log.debug("钉钉 sessionWebhook 流式执行完成: senderId={}", senderId);
+                            log.debug("DingTalk sessionWebhook stream done: senderId={}", senderId);
                         }
                 );
     }
@@ -692,10 +694,10 @@ public class IMDingtalkController {
             String resp = errStream != null
                     ? new String(StreamUtils.copyToByteArray(errStream), StandardCharsets.UTF_8)
                     : "";
-            log.warn("钉钉 sessionWebhook 回复失败: code={}, resp={}", code, resp);
+            log.warn("DingTalk sessionWebhook reply failed: code={}, resp={}", code, resp);
             return false;
         } catch (Exception e) {
-            log.error("钉钉 sessionWebhook 回复异常: url={}", sessionWebhook, e);
+            log.error("DingTalk sessionWebhook reply error: url={}", sessionWebhook, e);
             return false;
         }
     }

@@ -30,6 +30,7 @@ import com.xspaceagi.system.spec.exception.SpacePermissionException;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.tenant.thread.TenantRunnable;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -53,7 +54,7 @@ import java.util.stream.Collectors;
 import static com.xspaceagi.system.spec.enums.ResourceEnum.PAGE_APP_AI_CHAT;
 import static com.xspaceagi.system.spec.enums.ResourceEnum.PAGE_APP_QUERY_DETAIL;
 
-@Tag(name = "网页应用", description = "网页应用相关接口")
+@Tag(name = "Web app", description = "Custom page web app APIs")
 @RestController
 @RequestMapping("/api/custom-page")
 @Slf4j
@@ -79,10 +80,10 @@ public class CustomPageChatController extends BaseController {
     private Executor aiChatFluxExecutor;
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "发送聊天消息（流式输出）", description = "使用响应式流处理AI聊天，通过SSE推送执行进度")
+    @Operation(summary = "Send chat (streaming)", description = "Reactive AI chat with progress pushed via SSE")
     @PostMapping(value = "/ai-chat-flux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter aiChatFlux(@RequestBody Map<String, Object> chatBody, HttpServletResponse response) {
-        log.info("[Web] 接收到聊天消息Flux响应式流请求");
+        log.info("[Web] Received chat flux request");
 
         // 设置SSE相关的响应头
         response.setHeader("Cache-Control", "no-cache");
@@ -99,7 +100,7 @@ public class CustomPageChatController extends BaseController {
                 SseEmitter emitter = new SseEmitter();
                 emitter.send(SseEmitter.event()
                         .name("error")
-                        .data("{\"code\":\"0001\",\"message\":\"请求体不能为空\"}"));
+                        .data("{\"code\":\"0001\",\"message\":\"Request body cannot be null\"}"));
                 emitter.complete();
                 return emitter;
             }
@@ -111,16 +112,19 @@ public class CustomPageChatController extends BaseController {
             try {
                 BigDecimal ct = iUserMetricRpcService.queryMetricCurrent(userContext.getTenantId(), userContext.getUserId(), BizType.APP_DEV_CHAT.getCode(), PeriodType.DAY);
                 if (userDataPermission.getPageDailyPromptLimit() != null && userDataPermission.getPageDailyPromptLimit() >= 0 && ct.intValue() >= userDataPermission.getPageDailyPromptLimit()) {
-                    String msg = "网页应用开发每日限额已用完，你当前每日开发对话的上限次数为" + userDataPermission.getPageDailyPromptLimit();
+                    String msg = I18nUtil.systemMessage("Backend.CustomPage.DailyLimitReached", userDataPermission.getPageDailyPromptLimit().toString());
                     SseEmitter emitter = new SseEmitter();
+                    Map<String, String> errorBody = new HashMap<>();
+                    errorBody.put("code", "0001");
+                    errorBody.put("message", msg);
                     emitter.send(SseEmitter.event()
                             .name("error")
-                            .data("{\"code\":\"0001\",\"message\":\"" + msg + "\"}"));
+                            .data(JSON.toJSONString(errorBody)));
                     emitter.complete();
                     return emitter;
                 }
             } catch (Exception e) {
-                log.error("queryMetricCurrent error", e);
+                log.error("query Metric Current error", e);
             }
 
 
@@ -141,13 +145,13 @@ public class CustomPageChatController extends BaseController {
                                 emitter.send(SseEmitter.event()
                                         .name(eventType)
                                         .data(jsonData));
-                                log.debug("[Web] Flux 发送事件: {}", eventType);
+                                log.debug("[Web] Flux sent event: {}", eventType);
                             } catch (Exception e) {
-                                log.error("[Web] Flux 发送事件失败", e);
+                                log.error("[Web] Failed to send Flux event", e);
                             }
                         },
                         error -> {
-                            log.error("[Web] Flux 流异常", error);
+                            log.error("[Web] Flux stream error", error);
                             try {
                                 Map<String, Object> errorData = new HashMap<>();
                                 errorData.put("type", "error");
@@ -162,22 +166,22 @@ public class CustomPageChatController extends BaseController {
                             }
                         },
                         () -> {
-                            log.info("[Web] Flux 流完成");
+                            log.info("[Web] Flux stream completed");
                             emitter.complete();
                         });
             }));
 
             return emitter;
         } catch (Exception e) {
-            log.error("[Web] 发送聊天消息Flux流异常", e);
+            log.error("[Web] Chat flux error", e);
             SseEmitter emitter = new SseEmitter();
             try {
                 emitter.send(SseEmitter.event()
                         .name("error")
-                        .data("{\"code\":\"0001\",\"message\":\"发送聊天消息异常: " + e.getMessage() + "\"}"));
+                        .data("{\"code\":\"0001\",\"message\":\"Chat message error: " + e.getMessage() + "\"}"));
                 emitter.complete();
             } catch (Exception ex) {
-                log.error("[Web] 发送错误消息失败", ex);
+                log.error("[Web] Failed to send error message", ex);
                 emitter.completeWithError(ex);
             }
             return emitter;
@@ -185,34 +189,34 @@ public class CustomPageChatController extends BaseController {
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "终止聊天SSE会话", description = "通过会话ID终止正在进行的聊天SSE会话")
+    @Operation(summary = "Terminate chat SSE session", description = "Terminate an active chat SSE session by session ID")
     @PostMapping(value = "/ai-chat-terminate", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> aiChatTerminate(@RequestBody Map<String, Object> requestBody) {
-        log.info("[Web] 接收到终止聊天SSE会话请求");
+        log.info("[Web] Received terminate chat SSE request");
         try {
             if (requestBody == null) {
-                return ReqResult.error("0001", "请求体不能为空");
+                return ReqResult.error("0001", "Request body cannot be null");
             }
             Object sessionIdObj = requestBody.get("session_id");
             if (sessionIdObj == null) {
-                return ReqResult.error("0001", "session_id不能为空");
+                return ReqResult.error("0001", "session_id cannot be null");
             }
 
             String sessionId = String.valueOf(sessionIdObj);
             UserContext userContext = getUser();
             return customPageChatApplicationService.terminateChatSession(sessionId, userContext);
         } catch (Exception e) {
-            log.error("[Web] 终止聊天SSE会话异常", e);
-            return ReqResult.error("0001", "终止聊天SSE会话异常: " + e.getMessage());
+            log.error("[Web] Terminate chat SSE error", e);
+            return ReqResult.error("0001", "Terminate chat SSE session exception: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "建立Agent会话通知连接", description = "通过SSE建立与指定会话的实时通信")
+    @Operation(summary = "Agent session notification (SSE)", description = "Open SSE for real-time notifications for a session")
     @GetMapping(value = "/ai-session-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startSessionSse(@RequestParam("session_id") String sessionId,
                                       HttpServletResponse response) {
-        log.info("[Web] 建立会话SSE，sessionId={}", sessionId);
+        log.info("[Web] Session SSE connected, session Id={}", sessionId);
 
         // 设置SSE相关的响应头
         response.setHeader("Cache-Control", "no-cache");
@@ -237,20 +241,20 @@ public class CustomPageChatController extends BaseController {
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "取消Agent任务", description = "取消指定会话的Agent任务")
+    @Operation(summary = "Cancel Agent task", description = "Cancel the Agent task for the given session")
     @PostMapping(value = "/ai-session-cancel", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> agentSessionCancel(@RequestBody Map<String, Object> requestBody) {
-        log.info("[Web] 接收到取消Agent任务请求");
+        log.info("[Web] Received agent cancel request");
         try {
             if (requestBody == null) {
-                return ReqResult.error("0001", "请求体不能为空");
+                return ReqResult.error("0001", "Request body cannot be null");
             }
 
             Object projectIdObj = requestBody.get("project_id");
             Object sessionIdObj = requestBody.get("session_id");
 
             if (projectIdObj == null) {
-                return ReqResult.error("0001", "project_id为必填参数");
+                return ReqResult.error("0001", "project_id is required parameter");
             }
 
             String projectId = String.valueOf(projectIdObj);
@@ -259,59 +263,59 @@ public class CustomPageChatController extends BaseController {
             UserContext userContext = getUser();
             return customPageChatApplicationService.agentSessionCancel(projectId, sessionId, userContext);
         } catch (Exception e) {
-            log.error("[Web] 取消Agent任务异常", e);
-            return ReqResult.error("0001", "取消Agent任务异常: " + e.getMessage());
+            log.error("[Web] Agent cancel error", e);
+            return ReqResult.error("0001", "Cancel Agent task exception: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "查询Agent状态", description = "查询指定项目的Agent服务状态信息")
+    @Operation(summary = "Get Agent status", description = "Query Agent service status for a project")
     @GetMapping(value = "/agent/status/{project_id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> getAgentStatus(@PathVariable("project_id") String projectId) {
-        log.info("[Web] 接收到查询Agent状态请求，projectId={}", projectId);
+        log.info("[Web] Received agent status request, project Id={}", projectId);
         try {
             if (projectId == null || projectId.trim().isEmpty()) {
-                return ReqResult.error("0001", "project_id不能为空");
+                return ReqResult.error("0001", "project_id cannot be null");
             }
 
             UserContext userContext = getUser();
             return customPageChatApplicationService.getAgentStatus(projectId, userContext);
         } catch (Exception e) {
-            log.error("[Web] 查询Agent状态异常，projectId={}", projectId, e);
-            return ReqResult.error("0001", "查询Agent状态异常: " + e.getMessage());
+            log.error("[Web] Agent status query error, project Id={}", projectId, e);
+            return ReqResult.error("0001", "Query Agent status exception: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "停止Agent服务", description = "停止指定项目的Agent服务")
+    @Operation(summary = "Stop Agent service", description = "Stop the Agent service for a project")
     @PostMapping(value = "/agent/stop", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Map<String, Object>> stopAgent(@RequestParam("project_id") String projectId) {
-        log.info("[Web] 接收到停止Agent服务请求，projectId={}", projectId);
+        log.info("[Web] Received agent stop request, project Id={}", projectId);
         try {
             if (projectId == null || projectId.trim().isEmpty()) {
-                return ReqResult.error("0001", "project_id不能为空");
+                return ReqResult.error("0001", "project_id cannot be null");
             }
 
             UserContext userContext = getUser();
             return customPageChatApplicationService.stopAgent(projectId, userContext);
         } catch (Exception e) {
-            log.error("[Web] 停止Agent服务异常，projectId={}", projectId, e);
-            return ReqResult.error("0001", "停止Agent服务异常: " + e.getMessage());
+            log.error("[Web] Agent stop error, project Id={}", projectId, e);
+            return ReqResult.error("0001", "Stop Agent service exception: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询模型列表", description = "查询可用的对话模型列表和多模态模型列表")
+    @Operation(summary = "List models", description = "List available chat and multimodal models")
     @GetMapping(value = "/list-models", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageModelRes> listModels(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] 接收到查询模型列表请求");
+        log.info("[Web] Received model list request");
         try {
             if (projectId == null || projectId <= 0) {
-                return ReqResult.error("0001", "project_id不能为空");
+                return ReqResult.error("0001", "project_id cannot be null");
             }
             CustomPageConfigModel configModel = customPageConfigApplicationService.getByProjectId(projectId);
             if (configModel == null) {
-                return ReqResult.error("0001", "项目不存在");
+                return ReqResult.error("0001", "Project does not exist");
             }
 
             spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
@@ -338,15 +342,15 @@ public class CustomPageChatController extends BaseController {
                             }
                         });
             }
-            log.info("[Web] 查询到 {} 个对话模型，{} 个多模态模型", chatModelList.size(), multiModelList.size());
+            log.info("[Web] Found {} chat models, {} multi-modal models", chatModelList.size(), multiModelList.size());
 
             CustomPageModelRes res = new CustomPageModelRes();
             res.setChatModelList(chatModelList);
             res.setMultiModelList(multiModelList);
             return ReqResult.success(res);
         } catch (Exception e) {
-            log.error("[Web] 查询模型列表异常", e);
-            return ReqResult.error("0001", "查询模型列表异常: " + e.getMessage());
+            log.error("[Web] Model list query error", e);
+            return ReqResult.error("0001", "Query model list exception: " + e.getMessage());
         }
     }
 
@@ -365,10 +369,10 @@ public class CustomPageChatController extends BaseController {
     }
 
     @RequireResource(PAGE_APP_AI_CHAT)
-    @Operation(summary = "保存用户会话记录", description = "保存用户会话记录")
+    @Operation(summary = "Save conversation", description = "Save a user conversation record")
     @PostMapping(value = "/save-conversation", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> saveConversation(@RequestBody SaveConversationReq req) {
-        log.info("[Web] 接收到保存会话记录请求, projectId={}", req.getProjectId());
+        log.info("[Web] Received save conversation request, project Id={}", req.getProjectId());
         try {
             CustomPageConversationModel model = new CustomPageConversationModel();
             model.setProjectId(req.getProjectId());
@@ -378,22 +382,22 @@ public class CustomPageChatController extends BaseController {
             UserContext userContext = getUser();
             return customPageChatApplicationService.saveConversation(model, userContext);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 保存会话记录失败，projectId={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] Failed to save conversation, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 保存会话记录失败，projectId={}", req.getProjectId(), e);
-            return ReqResult.error("0001", "保存会话记录失败: " + e.getMessage());
+            log.error("[Web] Failed to save conversation, project Id={}", req.getProjectId(), e);
+            return ReqResult.error("0001", "Save conversation record failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "查询会话记录", description = "查询会话记录")
+    @Operation(summary = "List conversations", description = "List conversation records for a project")
     @GetMapping(value = "/list-conversations", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<ConversationRes>> listConversations(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] 接收到查询会话记录请求, projectId={}", projectId);
+        log.info("[Web] Received conversation list request, project Id={}", projectId);
         try {
             if (projectId == null || projectId <= 0) {
-                return ReqResult.error("0001", "projectId不能为空或无效");
+                return ReqResult.error("0001", "projectId cannot be null or invalid");
             }
 
             UserContext userContext = getUser();
@@ -415,28 +419,28 @@ public class CustomPageChatController extends BaseController {
                     })
                     .collect(Collectors.toList()));
         } catch (SpacePermissionException e) {
-            log.error("[Web] 查询会话记录失败，projectId={}, {}", projectId, e.getMessage());
+            log.error("[Web] Failed to query conversation, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 查询会话记录失败，projectId={}", projectId, e);
-            return ReqResult.error("0001", "查询会话记录失败: " + e.getMessage());
+            log.error("[Web] Failed to query conversation, project Id={}", projectId, e);
+            return ReqResult.error("0001", "Query conversation record failed: " + e.getMessage());
         }
     }
 
     @RequireResource(PAGE_APP_QUERY_DETAIL)
-    @Operation(summary = "分页查询会话记录", description = "分页查询会话记录")
+    @Operation(summary = "Page query conversations", description = "Paginated conversation records for a project")
     @PostMapping(value = "/page-query-conversations", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<SuperPage<ConversationRes>> pageQueryConversations(
             @RequestBody PageQueryVo<ConversationPageQueryReq> pageQueryVo) {
-        log.info("[Web] 接收到分页查询会话记录请求, pageQueryVo={}", pageQueryVo);
+        log.info("[Web] Received paged conversation query request, page Query Vo={}", pageQueryVo);
         try {
             if (pageQueryVo == null || pageQueryVo.getQueryFilter() == null) {
-                return ReqResult.error("0001", "请求参数不能为空");
+                return ReqResult.error("0001", "Request parameters cannot be null");
             }
 
             ConversationPageQueryReq queryReq = pageQueryVo.getQueryFilter();
             if (queryReq.getProjectId() == null || queryReq.getProjectId() <= 0) {
-                return ReqResult.error("0001", "projectId不能为空或无效");
+                return ReqResult.error("0001", "projectId cannot be null or invalid");
             }
 
             CustomPageConversationModel queryModel = new CustomPageConversationModel();
@@ -452,7 +456,7 @@ public class CustomPageChatController extends BaseController {
             }
 
             if (result.getData() == null) {
-                return ReqResult.error("0001", "查询结果为空");
+                return ReqResult.error("0001", "Query result is null");
             }
 
             SuperPage<ConversationRes> responsePage = new SuperPage<>(result.getData().getCurrent(),
@@ -476,14 +480,14 @@ public class CustomPageChatController extends BaseController {
 
             responsePage.setRecords(conversationResList);
 
-            log.info("[Web] 分页查询会话记录成功, total={}", responsePage.getTotal());
+            log.info("[Web] Paged conversation query completed, total={}", responsePage.getTotal());
             return ReqResult.success(responsePage);
         } catch (SpacePermissionException e) {
-            log.error("[Web] 分页查询会话记录失败", e);
+            log.error("[Web] Paged conversation query failed", e);
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] 分页查询会话记录失败", e);
-            return ReqResult.error("0001", "分页查询会话记录失败: " + e.getMessage());
+            log.error("[Web] Paged conversation query failed", e);
+            return ReqResult.error("0001", "Paged query conversation record failed: " + e.getMessage());
         }
     }
 }

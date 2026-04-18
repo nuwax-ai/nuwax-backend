@@ -48,7 +48,7 @@ public class FileAkUtil {
 
         Object ak0 = redisUtil.get("file.ak:" + uri);
         if (ak0 == null || !ak0.equals(ak)) {
-            throw new IllegalArgumentException("文件地址错误");
+            throw new IllegalArgumentException("Invalid file URL");
         }
     }
 

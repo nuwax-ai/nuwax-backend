@@ -14,7 +14,7 @@ public class ServerConfigDetailReqDTO {
     /**
      * 配置UID
      */
-    @NotBlank(message = "UID不能为空")
+    @NotBlank(message = "UID is required")
     @Schema(description = "配置UID", required = true)
     private String uid;
 

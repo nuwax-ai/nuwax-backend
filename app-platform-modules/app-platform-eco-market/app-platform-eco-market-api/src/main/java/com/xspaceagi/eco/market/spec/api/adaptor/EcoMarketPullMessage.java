@@ -46,7 +46,7 @@ public class EcoMarketPullMessage {
     public void init() {
         // 注册到EventBus
         eventBus.register(this);
-        log.info("EcoMarketPullMessage已注册到EventBus");
+        log.info("EcoMarketPullMessage registered on EventBus");
     }
 
     /**
@@ -56,12 +56,12 @@ public class EcoMarketPullMessage {
      */
     @Subscribe
     public void handlePullMessageEvent(PullMessageEvent event) {
-        log.info("收到消息拉取事件: {}", JSON.toJSONString(event));
+        log.info("Message pull event: {}", JSON.toJSONString(event));
         try {
             pullMessage(event.getUserId(), event.getTenantId());
 
         } catch (Exception e) {
-            log.error("处理消息拉取事件失败", e);
+            log.error("Message pull event handling failed", e);
         }
     }
 
@@ -72,7 +72,7 @@ public class EcoMarketPullMessage {
      * @param tenantId 租户ID
      */
     private void pullMessage(Long userId, Long tenantId) {
-        log.info("开始执行消息拉取逻辑，用户ID: {}, 租户ID: {}", userId, tenantId);
+        log.info("Run message pull, userId: {}, tenantId: {}", userId, tenantId);
 
         var userContext = UserContext.builder()
                 .userId(userId)
@@ -90,14 +90,14 @@ public class EcoMarketPullMessage {
             // 查询自动启用配置列表
             List<ServerConfigDetailRespDTO> autoConfigList = ecoMarketServerApiService.queryAutoUseConfigList();
 
-            log.debug("生态市场租户自动启用配置,查询到的自动启用配置列表: {}", JSON.toJSONString(autoConfigList));
+            log.debug("Eco-market tenant auto-enable: loaded auto-enable config list: {}", JSON.toJSONString(autoConfigList));
 
             // 使用结果中的 uid 来检查本地的生态市场配置,有无配置,如果没有,则主动启用,如果已经有了,但不做任何动作
 
             var autoUseUids = autoConfigList.stream().map(ServerConfigDetailRespDTO::getUid)
                     .collect(Collectors.toList());
 
-            log.info("生态市场租户自动启用配置,查询到的自动启用配置列表: {}", JSON.toJSONString(autoUseUids));
+            log.info("Eco-market tenant auto-enable: loaded auto-enable config list: {}", JSON.toJSONString(autoUseUids));
 
             // 检查本地有无启用记录,没有的话,一般需要启用
             var localConfigList = ecoMarketClientPublishConfigApplicationService.queryListByUids(autoUseUids);
@@ -118,7 +118,7 @@ public class EcoMarketPullMessage {
                     .filter(uid -> !myShareUids.contains(uid))
                     .collect(Collectors.toList());
 
-            log.info("生态市场租户自动启用配置,需要启用的配置列表: {}", JSON.toJSONString(needEnableUids));
+            log.info("Eco-market tenant auto-enable, need-enable list: {}", JSON.toJSONString(needEnableUids));
 
             for (var uid : needEnableUids) {
 
@@ -126,12 +126,12 @@ public class EcoMarketPullMessage {
                         .filter(config -> config.getUid().equals(uid))
                         .findFirst();
                 if (configOptional.isEmpty()) {
-                    log.warn("生态市场租户自动启用配置,未找到对应配置,uid: {}", uid);
+                    log.warn("Eco-market auto-enable: no config, uid: {}", uid);
                     continue;
                 }
                 var configJson = configOptional.get().getConfigJson();
                 if (configJson == null) {
-                    log.warn("生态市场租户自动启用配置,配置参数为空,uid: {}", uid);
+                    log.warn("Eco-market auto-enable: empty config params, uid: {}", uid);
                     continue;
                 }
                 var configParamJson = configOptional.get().getConfigParamJson();
@@ -142,16 +142,16 @@ public class EcoMarketPullMessage {
                     updateAndEnableConfigReqDTO.setConfigParamJson(configParamJson);
                     ecoMarketClientPublishConfigApplicationService.updateAndEnableConfig(updateAndEnableConfigReqDTO,
                             userContext);
-                    log.info("生态市场租户自动启用配置,更新并启用配置成功,uid: {}", uid);
+                    log.info("Eco-market tenant auto-enable, update-and-enable OK, uid: {}", uid);
                 } catch (Exception e) {
-                    log.error("生态市场租户自动启用配置,更新并启用配置失败,uid: {}, configParamJson: {}", uid, configParamJson, e);
+                    log.error("Eco-market tenant auto-enable, update-and-enable failed, uid: {}, configParamJson: {}", uid, configParamJson, e);
 
                 }
             }
 
-            log.info("生态市场租户自动启用配置执行完成，用户ID: {}, 租户ID: {}", userId, tenantId);
+            log.info("Eco-market auto-enable done, userId: {}, tenantId: {}", userId, tenantId);
         } catch (Exception e) {
-            log.error("生态市场租户自动启用配置处理异常，用户ID: {}, 租户ID: {}", userId, tenantId, e);
+            log.error("Eco-market auto-enable error, userId: {}, tenantId: {}", userId, tenantId, e);
         } finally {
             RequestContext.remove();
         }

@@ -12,11 +12,11 @@ import java.util.Map;
 public class WorkflowExecuteRequestDto implements Serializable {
 
     @Schema(description = "请求ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "请求ID不能为空")
+    @NotNull(message = "Request ID is required")
     private String requestId;
 
     @Schema(description = "工作流ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "工作流ID不能为空")
+    @NotNull(message = "Workflow ID is required")
     private Long workflowId;
 
     @Schema(description = "工作流参数", requiredMode = Schema.RequiredMode.REQUIRED)

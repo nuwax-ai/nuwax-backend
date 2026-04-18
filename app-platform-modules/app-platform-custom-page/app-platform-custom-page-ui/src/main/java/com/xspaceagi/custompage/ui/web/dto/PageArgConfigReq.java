@@ -6,52 +6,52 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 页面参数配置请求DTO
+ * Page argument schema request DTO
  */
 @Data
-@Schema(description = "页面参数配置请求DTO")
+@Schema(description = "Page argument schema request DTO")
 public class PageArgConfigReq {
 
-    @Schema(description = "项目ID", required = true)
+    @Schema(description = "Project ID", required = true)
     private Long projectId;
 
-    @Schema(description = "页面路径", required = true, example = "/view")
+    @Schema(description = "Page URI path", required = true, example = "/view")
     private String pageUri;
 
-    @Schema(description = "页面名称", example = "查看页面")
+    @Schema(description = "Page display name", example = "View page")
     private String name;
 
-    @Schema(description = "页面描述", example = "用于查看数据的页面")
+    @Schema(description = "Page description", example = "Page for viewing data")
     private String description;
 
-    @Schema(description = "参数配置列表", required = true)
+    @Schema(description = "Argument definitions", required = true)
     private List<PageArgReq> args;
 
     @Data
-    @Schema(description = "页面参数配置")
+    @Schema(description = "Page argument definition")
     public static class PageArgReq {
-        @Schema(description = "参数key，唯一标识")
+        @Schema(description = "Argument key (unique identifier)")
         private String key;
 
-        @Schema(description = "参数名称，符合函数命名规则", required = true, example = "userId")
+        @Schema(description = "Argument name (valid as identifier)", required = true, example = "userId")
         private String name;
 
-        @Schema(description = "参数详细描述信息", example = "用户ID")
+        @Schema(description = "Detailed description", example = "User ID")
         private String description;
 
-        @Schema(description = "数据类型", required = true, example = "String")
+        @Schema(description = "Data type", required = true, example = "String")
         private String dataType;
 
-        @Schema(description = "是否必须", example = "true")
+        @Schema(description = "Whether required", example = "true")
         private Boolean require;
 
-        @Schema(description = "是否开启（对模型可见，默认开启）", example = "true")
+        @Schema(description = "Whether enabled (visible to model; default true)", example = "true")
         private Boolean enable;
 
-        @Schema(description = "默认值", example = "123")
+        @Schema(description = "Default / bound value", example = "123")
         private String bindValue;
 
-        @Schema(description = "输入类型", example = "text")
+        @Schema(description = "Input type", example = "text")
         private String inputType;
     }
 }

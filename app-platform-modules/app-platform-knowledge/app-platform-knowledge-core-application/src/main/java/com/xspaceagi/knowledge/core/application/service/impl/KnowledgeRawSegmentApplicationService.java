@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import org.springframework.stereotype.Service;
 
@@ -67,7 +68,7 @@ public class KnowledgeRawSegmentApplicationService implements IKnowledgeRawSegme
 
         var existObj = this.knowledgeRawSegmentDomainService.queryOneInfoById(id);
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -81,11 +82,11 @@ public class KnowledgeRawSegmentApplicationService implements IKnowledgeRawSegme
     public Long updateInfo(KnowledgeRawSegmentModel model, UserContext userContext) {
         var existObj = this.knowledgeRawSegmentDomainService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         //数据正在向量化生成的过程中不能操作数据
         if(existObj.getQaStatus() != null && existObj.getQaStatus() != 1) {
-            throw new BizException("操作失败：当前数据正在生成问答，请稍后重试！");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeQaGenerationBusy);
         }
         // 校验用户和空间对应权限
         var spaceId = existObj.getSpaceId();
@@ -138,7 +139,7 @@ public class KnowledgeRawSegmentApplicationService implements IKnowledgeRawSegme
         // 查询基础配置,补全基础信息
         var knowledgeConfig = this.knowledgeConfigDomainService.queryOneInfoById(model.getKbId());
         if (Objects.isNull(knowledgeConfig)) {
-            throw KnowledgeException.build(BizExceptionCodeEnum.KNOWLEDGE_ERROR_5001);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
         }
         var spaceId = knowledgeConfig.getSpaceId();
         model.setSpaceId(spaceId);

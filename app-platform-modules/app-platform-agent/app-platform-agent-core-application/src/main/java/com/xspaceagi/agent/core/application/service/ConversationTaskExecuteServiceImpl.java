@@ -16,6 +16,7 @@ import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -100,7 +101,7 @@ public class ConversationTaskExecuteServiceImpl implements TaskExecuteService {
                                     TenantFunctions.callWithIgnoreCheck(() -> notifyMessageApplicationService.sendNotifyMessage(SendNotifyMessageDto.builder()
                                             .tenantId(requestContext.getTenantId())
                                             .scope(NotifyMessage.MessageScope.System)
-                                            .content("任务[" + conversation.getTopic() + "]执行失败，错误信息：" + res.getError())
+                                            .content(I18nUtil.systemMessage(userDto.getLangMap(), "Agent.AsyncExecute.Error.notifyMessage", conversation.getTopic(), res.getError()))
                                             .senderId(userDto.getId())
                                             .userIds(Collections.singletonList(conversation.getUserId()))
                                             .build()));

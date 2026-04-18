@@ -302,17 +302,17 @@ public class ComposeDbTableRpcServiceImplTest {
             queryRequest.setTableId(113L); // 请根据实际情况修改
 
             CreateTableDefineVo templateTable = composeDbTableRpcService.queryCreateTableInfo(queryRequest);
-            log.info("获取到模板表定义: {}", JSON.toJSONString(templateTable));
+            log.info("Loaded template table definition: {}", JSON.toJSONString(templateTable));
 
             // 第三步：执行创建表操作
             var tableId = composeDbTableRpcService.createTable(templateTable);
-            log.info("表创建成功,tableId={}",tableId);
+            log.info("Table created, tableId={}",tableId);
 
             // 可以再次查询验证表是否创建成功
             // 这里省略验证步骤
 
         } catch (Exception e) {
-            log.error("创建表失败", e);
+            log.error("Create table failed", e);
             assert false : "表创建应该成功，但抛出了异常: " + e.getMessage();
         } finally {
             RequestContext.remove();

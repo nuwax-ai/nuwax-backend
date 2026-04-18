@@ -13,7 +13,10 @@ import com.xspaceagi.im.web.util.ImDtoConvertor;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -49,11 +52,13 @@ public class ImChannelController {
     @Operation(summary = "统计IM渠道配置")
     public ReqResult<List<ImChannelStatisticsResponse>> statistics(@RequestBody ImChannelStatisticsRequest request) {
         if (request.getSpaceId() == null) {
-            throw new BizException("空间ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "空间ID");
         }
         spacePermissionService.checkSpaceUserPermission(request.getSpaceId());
 
         List<ImChannelStatisticsResponse> response = imChannelConfigApplicationService.statistics(request.getSpaceId());
+
+        I18nUtil.replaceSystemMessage(response);
         return ReqResult.success(response);
     }
 
@@ -62,7 +67,7 @@ public class ImChannelController {
     @Operation(summary = "查询IM渠道配置列表")
     public ReqResult<List<ImChannelConfigResponse>> list(@RequestBody ImChannelConfigQueryRequest request) {
         if (request.getSpaceId() == null) {
-            throw new BizException("空间ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "空间ID");
         }
         spacePermissionService.checkSpaceUserPermission(request.getSpaceId());
 
@@ -95,7 +100,7 @@ public class ImChannelController {
                     agentMap = agents.stream().collect(Collectors.toMap(AgentConfigDto::getId, Function.identity()));
                 }
             } catch (Exception e) {
-                log.warn("批量查询智能体信息失败: agentIds={}", agentIds, e);
+                log.warn("Batch query agents failed: agentIds={}", agentIds, e);
             }
         }
         final Map<Long, AgentConfigDto> finalAgentMap = agentMap;
@@ -111,7 +116,7 @@ public class ImChannelController {
     public ReqResult<ImChannelConfigResponse> getById(@PathVariable Long id) {
         ImChannelConfig config = imChannelConfigApplicationService.getById(id);
         if (config == null) {
-            throw new BizException("配置不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.configNotFound);
         }
         spacePermissionService.checkSpaceUserPermission(config.getSpaceId());
 
@@ -126,7 +131,7 @@ public class ImChannelController {
     public ReqResult<Void> add(@Valid @RequestBody ImChannelConfigSaveRequest request) {
         // 校验空间权限
         if (request.getSpaceId() == null) {
-            throw new BizException("空间ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "空间ID");
         }
         spacePermissionService.checkSpaceUserPermission(request.getSpaceId());
 
@@ -142,11 +147,11 @@ public class ImChannelController {
     @Operation(summary = "修改IM渠道配置")
     public ReqResult<Void> update(@Valid @RequestBody ImChannelConfigSaveRequest request) {
         if (request.getId() == null) {
-            throw new BizException("配置ID不能为空");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "配置ID");
         }
         ImChannelConfig exist = imChannelConfigApplicationService.getById(request.getId());
         if (exist == null) {
-            throw new IllegalArgumentException("配置不存在");
+            throw new IllegalArgumentException("Configuration does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(exist.getSpaceId());
 
@@ -169,7 +174,7 @@ public class ImChannelController {
 //        }
 //        ImChannelConfig exist = imChannelConfigApplicationService.getById(request.getId());
 //        if (exist == null) {
-//            throw new IllegalArgumentException("配置不存在");
+//            throw new IllegalArgumentException("Configuration does not exist");
 //        }
 //        spacePermissionService.checkSpaceUserPermission(exist.getSpaceId());
 //
@@ -188,7 +193,7 @@ public class ImChannelController {
     public ReqResult<Void> delete(@PathVariable Long id) {
         ImChannelConfig exist = imChannelConfigApplicationService.getById(id);
         if (exist == null) {
-            throw new IllegalArgumentException("配置不存在");
+            throw new IllegalArgumentException("Configuration does not exist");
         }
         spacePermissionService.checkSpaceUserPermission(exist.getSpaceId());
 
@@ -208,7 +213,7 @@ public class ImChannelController {
                 request.getTargetType(),
                 request.getConfigData()
         );
-        log.info("IM渠道连通性结果: {}", JSON.toJSONString(response));
+        log.info("IM channel connectivity result: {}", JSON.toJSONString(response));
         if (response.getSuccess()) {
             return ReqResult.success();
         }

@@ -44,7 +44,7 @@ public class EcoMarketClientPublishConfigApplicationService implements IEcoMarke
 
     @Override
     public EcoMarketClientPublishConfigModel queryOneByUid(String uid) {
-        log.info("根据UID查询客户端已发布配置: uid={}", uid);
+        log.info("Query client published config by uid: uid={}", uid);
         return ecoMarketClientPublishConfigDomainService.queryOneByUid(uid);
     }
     
@@ -55,7 +55,7 @@ public class EcoMarketClientPublishConfigApplicationService implements IEcoMarke
      * @return 已发布配置列表
      */
     public List<EcoMarketClientPublishConfigModel> queryListByParams(Map<String, Object> params) {
-        log.info("根据参数查询客户端已发布配置列表: params={}", params);
+        log.info("Query published configs: params={}", params);
         // 使用根据UID批量查询
         if (params != null && params.containsKey("uids")) {
             List<String> uids = (List<String>) params.get("uids");
@@ -82,10 +82,10 @@ public class EcoMarketClientPublishConfigApplicationService implements IEcoMarke
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public EcoMarketClientPublishConfigModel enableConfig(String uid, UserContext userContext) {
-        log.info("应用层启用配置: uid={}", uid);
+        log.info("Application layer: enable config: uid={}", uid);
         
         if (uid == null || uid.isEmpty()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
         
         // 调用领域服务启用配置
@@ -102,10 +102,10 @@ public class EcoMarketClientPublishConfigApplicationService implements IEcoMarke
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public EcoMarketClientPublishConfigModel disableConfig(String uid, UserContext userContext) {
-        log.info("应用层禁用配置: uid={}", uid);
+        log.info("Application layer: disable config: uid={}", uid);
         
         if (uid == null || uid.isEmpty()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
         
         // 调用领域服务禁用配置
@@ -125,10 +125,10 @@ public class EcoMarketClientPublishConfigApplicationService implements IEcoMarke
 
         var uid = request.getUid();
         var configParamJson = request.getConfigParamJson();
-        log.info("应用层更新并启用配置: uid={}, configParamJson={}", uid, configParamJson);
+        log.info("Application layer: update and enable config: uid={}, configParamJson={}", uid, configParamJson);
         
         if (uid == null || uid.isEmpty()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
         
         // 然后启用配置

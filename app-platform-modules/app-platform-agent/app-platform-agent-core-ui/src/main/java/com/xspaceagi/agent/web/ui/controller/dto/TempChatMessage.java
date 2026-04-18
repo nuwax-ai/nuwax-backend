@@ -13,11 +13,11 @@ import java.util.Map;
 public class TempChatMessage {
 
     @Schema(description = "链接Key", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "chatKey不能为空")
+    @NotNull(message = "chatKey is required")
     private String chatKey;
 
     @Schema(description = "会话唯一标识")
-    @NotNull(message = "conversationUid不能为空")
+    @NotNull(message = "conversationUid is required")
     private String conversationUid;
 
     @Schema(description = "变量参数，前端需要根据agent配置组装参数")

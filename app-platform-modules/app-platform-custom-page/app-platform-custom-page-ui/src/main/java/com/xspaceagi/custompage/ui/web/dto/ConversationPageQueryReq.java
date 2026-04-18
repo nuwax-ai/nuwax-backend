@@ -4,13 +4,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 会话记录分页查询请求参数
+ * Conversation page query filter
  */
 @Data
-@Schema(description = "会话记录分页查询请求参数")
+@Schema(description = "Conversation page query request parameters")
 public class ConversationPageQueryReq {
 
-    @Schema(description = "项目ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "Project ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Long projectId;
 
 }

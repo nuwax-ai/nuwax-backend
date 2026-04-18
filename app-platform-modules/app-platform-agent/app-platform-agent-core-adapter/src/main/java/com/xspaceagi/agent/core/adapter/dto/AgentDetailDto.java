@@ -20,6 +20,9 @@ public class AgentDetailDto implements Serializable {
     @Schema(description = "智能体ID")
     private Long agentId;
 
+    @Schema(description = "agent唯一标识")
+    private String uid; // agent唯一标识
+
     @Schema(description = "智能体类型，ChatBot 对话智能体；PageApp 网页应用智能体")
     private String type;
 

@@ -226,7 +226,7 @@ public class FlowSseClient {
     }
 
     public void close() {
-        log.debug("关闭FlowSseClient {}", this.url);
+        log.debug("Closing FlowSseClient {}", this.url);
         if (this.subscription != null) {
             try {
                 this.subscription.cancel();

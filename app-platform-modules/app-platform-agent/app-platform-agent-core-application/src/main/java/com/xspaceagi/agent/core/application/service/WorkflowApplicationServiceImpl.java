@@ -38,9 +38,12 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.FileAkUtil;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import com.xspaceagi.system.spec.utils.TimeWheel;
 import jakarta.annotation.Resource;
@@ -121,7 +124,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 .build();
         workflowConfig.setId(workflowConfigDto.getId());
         workflowDomainService.add(workflowConfig);
-        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Add, "创建工作流");
+        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Add, I18nUtil.systemMessage("Workflow.ConfigHistory.Add"));
         return workflowConfig.getId();
     }
 
@@ -149,11 +152,11 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             JSONObject node = nodes.getJSONObject(i);
             Long id = node.getLong("id");
             if (id == null) {
-                throw new BizException("节点id不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "Node ID");
             }
             nodeIdSet.add(id);
             if (node.getString("type") == null) {
-                throw new BizException("节点类型不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, I18nUtil.systemMessage("Workflow.Validate.NodeType"));
             }
             WorkflowNodeConfig.NodeType type = WorkflowNodeConfig.NodeType.valueOf(node.getString("type"));
             //前端自定义的节点新增，如果主键冲突会报错
@@ -180,7 +183,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             }
             NodeConfigDto nodeConfigDto = WorkflowConfigDto.convertToNodeConfigDto(type, node.getString("nodeConfig"));
             if (nodeConfigDto == null) {
-                throw new BizException("节点配置不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, I18nUtil.systemMessage("Workflow.Validate.NodeConfig"));
             }
             workflowNodeDto.setNodeConfig(nodeConfigDto);
             updateWorkflowNodeConfig(workflowNodeDto);
@@ -193,10 +196,10 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         }
 
         if (!hasStartNode) {
-            throw new BizException("工作流缺少开始节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowMissingStartNode);
         }
         if (!hasEndNode) {
-            throw new BizException("工作流缺少结束节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowMissingEndNode);
         }
 
         //删除多余的节点
@@ -205,7 +208,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 workflowDomainService.deleteWorkflowNode(node.getId());
             }
         });
-        addConfigHistory(workflowId, ConfigHistory.Type.Edit, "更新工作流配置");
+        addConfigHistory(workflowId, ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.UpdateConfig"));
     }
 
     @Override
@@ -216,7 +219,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             workflowConfig.setExt(JSON.toJSONString(workflowConfigDto.getExtension()));
         }
         workflowDomainService.update(workflowConfig);
-        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, "修改工作流");
+        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.Edit"));
     }
 
     @Override
@@ -227,7 +230,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     @Override
     public Long copyWorkflow(Long userId, Long workflowId) {
         Long newWorkflowId = workflowDomainService.copy(userId, workflowId);
-        addConfigHistory(newWorkflowId, ConfigHistory.Type.Add, "复制工作流");
+        addConfigHistory(newWorkflowId, ConfigHistory.Type.Add, I18nUtil.systemMessage("Workflow.ConfigHistory.Copy"));
         return newWorkflowId;
     }
 
@@ -321,7 +324,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             workflowNodeConfigs.add(workflowNodeConfig1);
         });
         Long newWorkflowId = workflowDomainService.copy(userId, workflowConfig, workflowNodeConfigs, targetSpaceId);
-        addConfigHistory(newWorkflowId, ConfigHistory.Type.Add, "复制工作流", workflowConfigDto.getId());
+        addConfigHistory(newWorkflowId, ConfigHistory.Type.Add, I18nUtil.systemMessage("Workflow.ConfigHistory.Copy"), workflowConfigDto.getId());
         return newWorkflowId;
     }
 
@@ -337,7 +340,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             workflowNodeConfigs.add(workflowNodeConfig);
         });
         workflowDomainService.restoreWorkflow(workflowConfig, workflowNodeConfigs);
-        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, "恢复工作流");
+        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.Restore"));
     }
 
     public void restoreWorkflow(String historyConfig) {
@@ -345,7 +348,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         WorkflowConfig workflowConfig = jsonObject.getJSONObject("workflowConfig").toJavaObject(WorkflowConfig.class);
         List<WorkflowNodeConfig> workflowNodeConfigs = jsonObject.getJSONArray("workflowNodeConfigs").toJavaList(WorkflowNodeConfig.class);
         workflowDomainService.restoreWorkflow(workflowConfig, workflowNodeConfigs);
-        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, "恢复工作流");
+        addConfigHistory(workflowConfig.getId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.Restore"));
     }
 
     private Long generateNewModelId(Long modelId, Long targetSpaceId) {
@@ -376,7 +379,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     @Override
     public void transfer(Long workflowId, Long targetSpaceId) {
         workflowDomainService.transfer(workflowId, targetSpaceId);
-        addConfigHistory(workflowId, ConfigHistory.Type.Edit, "工作流空间迁移");
+        addConfigHistory(workflowId, ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.SpaceTransfer"));
     }
 
     @Override
@@ -408,8 +411,14 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         BeanUtils.copyProperties(workflowConfig, workflowConfigDto);
         completeCreator(List.of(workflowConfigDto));
         WorkflowNodeDto startNodeDto = queryWorkflowNode(workflowConfig.getStartNodeId());
+        if (startNodeDto == null) {
+            throw new BizException("Workflow configuration exception, missing start node, please delete and recreate.");
+        }
         workflowConfigDto.setInputArgs(startNodeDto.getNodeConfig().getInputArgs());
         WorkflowNodeDto endNodeDto = queryWorkflowNode(workflowConfig.getEndNodeId());
+        if (endNodeDto == null) {
+            throw new BizException("Workflow configuration exception, missing end node, please delete and recreate.");
+        }
         workflowConfigDto.setOutputArgs(endNodeDto.getNodeConfig().getOutputArgs());
         workflowConfigDto.setStartNode(startNodeDto);
         workflowConfigDto.setEndNode(endNodeDto);
@@ -483,6 +492,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         }
         workflowConfigDto.setNodes(nodes);
         workflowConfigDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());
+        workflowConfigDto.setScope(publishedDto.getScope());
         return workflowConfigDto;
     }
 
@@ -515,18 +525,18 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         switch (workflowNodeAddDto.getType()) {
             case Workflow -> {
                 if (workflowNodeAddDto.getTypeId().equals(workflowNodeAddDto.getWorkflowId())) {
-                    throw new BizException("工作流不能引用自己");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowSelfReference);
                 }
                 WorkflowConfig workflowConfig = workflowDomainService.queryById(workflowNodeAddDto.getTypeId());
                 if (workflowConfig == null) {
-                    throw new BizException("工作流不存在");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFound);
                 }
                 name = workflowConfig.getName();
                 description = workflowConfig.getDescription();
                 WorkflowConfigDto workflowConfigDto = queryPublishedWorkflowConfig(workflowNodeAddDto.getTypeId(), spaceId);
                 if (workflowConfigDto == null) {
                     //数据存在异常
-                    throw new BizException("工作流未发布");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotPublished);
                 }
                 nodeConfigDto = WorkflowAsNodeConfigDto.builder().workflowId(workflowNodeAddDto.getTypeId()).build();
                 nodeConfigDto.setInputArgs(workflowConfigDto.getInputArgs());
@@ -558,11 +568,11 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             case Plugin -> {
                 PluginDto pluginDto = pluginApplicationService.queryById(workflowNodeAddDto.getTypeId());
                 if (pluginDto == null) {
-                    throw new BizException("插件不存在");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPluginNotFound);
                 }
                 PluginDto publishedPluginDto = pluginApplicationService.queryPublishedPluginConfig(workflowNodeAddDto.getTypeId(), spaceId);
                 if (publishedPluginDto == null) {
-                    throw new BizException("没有插件权限");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
                 }
                 name = pluginDto.getName();
                 description = pluginDto.getDescription();
@@ -575,7 +585,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             case Mcp -> {
                 McpDto mcpDto = mcpRpcService.queryMcp(workflowNodeAddDto.getTypeId(), spaceId);
                 if (mcpDto == null) {
-                    throw new BizException("MCP不存在");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.mcpNotFound);
                 }
                 name = mcpDto.getName() + "/" + workflowNodeAddDto.getNodeConfigDto().getToolName();
                 McpNodeConfigDto mcpNodeConfigDto = new McpNodeConfigDto();
@@ -778,7 +788,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 .id(workflowNodeAddDto.getId())
                 .build();
         workflowDomainService.addWorkflowNode(workflowNodeConfig);
-        addConfigHistory(workflowNodeAddDto.getWorkflowId(), ConfigHistory.Type.Edit, "添加节点-" + name);
+        addConfigHistory(workflowNodeAddDto.getWorkflowId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.AddNode", name));
         return workflowNodeConfig.getId();
     }
 
@@ -852,10 +862,10 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         workflowDomainService.updateWorkflowNodeConfig(workflowNodeConfig);
         workflowNodeConfig = workflowDomainService.queryWorkflowNode(workflowNodeConfig.getId());
         if (workflowNodeConfig != null) {
-            addConfigHistory(workflowNodeConfig.getWorkflowId(), ConfigHistory.Type.Edit, "更新节点-" + workflowNodeConfig.getName());
+            addConfigHistory(workflowNodeConfig.getWorkflowId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.UpdateNode", workflowNodeConfig.getName()));
         }
         if (log.isDebugEnabled()) {
-            log.debug("更新节点配置:{}", JSON.toJSONString(workflowNodeDto));
+            log.debug("Update node config: {}", JSON.toJSONString(workflowNodeDto));
         }
     }
 
@@ -902,13 +912,13 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     public void deleteWorkflowNode(Long id) {
         WorkflowNodeDto workflowNodeDto = queryWorkflowNode(id);
         if (workflowNodeDto == null) {
-            throw new BizException("节点ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNodeIdInvalid);
         }
         if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Start || workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.End) {
-            throw new BizException("不能删除起始节点和结束节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCannotDeleteTerminalNodes);
         }
         if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.LoopStart || workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.LoopEnd) {
-            throw new BizException("不能删除循环起始节点和结束节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCannotDeleteLoopTerminalNodes);
         }
         workflowDomainService.deleteWorkflowNode(id);
     }
@@ -966,7 +976,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         Map<Long, WorkflowNodeDto> workflowNodeDtoMap = workflowNodeDtos.stream().collect(Collectors.toMap(WorkflowNodeDto::getId, workflowNodeDto -> workflowNodeDto));
         WorkflowNodeDto startNode = workflowNodeDtos.stream().filter(workflowNodeDto -> workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Start).findFirst().orElse(null);
         if (startNode == null) {
-            throw new BizException("未找到起始节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowStartNodeNotFound);
         }
         WorkflowNodeDto nodeDto = workflowNodeDtoMap.get(nodeId);
         PreviousDto previousDto = generatePreviousNodes(workflowNodeDtos, nodeId);
@@ -1155,7 +1165,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     indexOutputArg.setName(SystemArgNameEnum.INDEX.name());
                     indexOutputArg.setDataType(DataTypeEnum.Integer);
                     indexOutputArg.setSystemVariable(true);
-                    indexOutputArg.setDescription("数组索引");
+                    indexOutputArg.setDescription(I18nUtil.systemMessage("Workflow.Output.ArrayIndex"));
                     outputArgs.add(indexOutputArg);
                     generateKey(loopNode.getId() + "-input", outputArgs, argMap);
 
@@ -1315,10 +1325,10 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     public Long copyWorkflowNode(Long id) {
         WorkflowNodeDto workflowNodeDto = queryWorkflowNode(id);
         if (workflowNodeDto == null) {
-            throw new BizException("节点ID错误");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNodeIdInvalid);
         }
         if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Start || workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.End) {
-            throw new BizException("不能复制起始节点和结束节点");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowCannotCopyTerminalNodes);
         }
         WorkflowNodeAddDto workflowNodeAddDto = new WorkflowNodeAddDto();
         AddNodeConfigDto nodeConfigDto = new AddNodeConfigDto();
@@ -1367,14 +1377,14 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 .build();
         workflowDomainService.updateWorkflowNodeConfig(workflowNodeConfig);
         workflowNodeConfig = workflowDomainService.queryWorkflowNode(nodeId);
-        addConfigHistory(workflowNodeConfig.getWorkflowId(), ConfigHistory.Type.Edit, "更新连线-" + workflowNodeConfig.getName());
+        addConfigHistory(workflowNodeConfig.getWorkflowId(), ConfigHistory.Type.Edit, I18nUtil.systemMessage("Workflow.ConfigHistory.UpdateConnection", workflowNodeConfig.getName()));
     }
 
     @Override
     public void checkSpaceWorkflowPermission(Long spaceId, Long workflowId) {
         PublishedDto published = publishApplicationService.queryPublished(Published.TargetType.Workflow, workflowId);
         if (published == null) {
-            throw new BizException("工作流未发布");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotPublished);
         }
         if (published.getScope() == Published.PublishScope.Tenant || published.getScope() == Published.PublishScope.Global) {
             return;
@@ -1383,7 +1393,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             return;
         }
         if (!published.getPublishedSpaceIds().contains(spaceId)) {
-            throw new BizException("当前空间没有工作流[" + published.getName() + "]的权限");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
     }
 
@@ -1467,7 +1477,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     public List<WorkflowNodeCheckDto> validWorkflow(Long workflowId) {
         WorkflowConfigDto workflowConfigDto = queryById(workflowId);
         if (workflowConfigDto == null) {
-            throw new BizException("工作流不存在");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFound);
         }
         return validWorkflow(workflowConfigDto);
     }
@@ -1487,7 +1497,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     } else if (CollectionUtils.isEmpty(exceptionHandleNodeIds)) {
                         workflowAsNodeCheckDto.setNodeId(node.getId());
                         workflowAsNodeCheckDto.setSuccess(false);
-                        workflowAsNodeCheckDto.setMessages(List.of("未设置异常处理节点"));
+                        workflowAsNodeCheckDto.setMessages(List.of(I18nUtil.systemMessage("Workflow.Validate.NoExceptionHandle")));
                         workflowNodeCheckDtos.add(workflowAsNodeCheckDto);
                     }
                 }
@@ -1500,7 +1510,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 if (workflowAsNodeConfigDto.getWorkflowId().equals(workflowConfigDto.getId())) {
                     workflowAsNodeCheckDto.setNodeId(node.getId());
                     workflowAsNodeCheckDto.setSuccess(false);
-                    workflowAsNodeCheckDto.setMessages(List.of("不能引用当前工作流"));
+                    workflowAsNodeCheckDto.setMessages(List.of(I18nUtil.systemMessage("Workflow.Validate.CannotReferenceSelf")));
                     workflowNodeCheckDtos.add(workflowAsNodeCheckDto);
                 }
             }
@@ -1513,7 +1523,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                             if (skillComponentConfig.getTypeId().equals(workflowConfigDto.getId())) {
                                 workflowAsNodeCheckDto.setNodeId(node.getId());
                                 workflowAsNodeCheckDto.setSuccess(false);
-                                workflowAsNodeCheckDto.setMessages(List.of("引用了当前工作流"));
+                                workflowAsNodeCheckDto.setMessages(List.of(I18nUtil.systemMessage("Workflow.Validate.ReferencedCurrentWorkflow")));
                                 workflowNodeCheckDtos.add(workflowAsNodeCheckDto);
                             }
                         }
@@ -1575,11 +1585,11 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             if (node.getType() == WorkflowNodeConfig.NodeType.Loop) {
                 if (node.getInnerStartNodeId() == null || nodeMap.get(node.getInnerStartNodeId()) == null) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置循环内部开始节点");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoLoopStartNode"));
                 }
                 if (node.getInnerEndNodeId() == null || nodeMap.get(node.getInnerEndNodeId()) == null) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置循环内部结束节点");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoLoopEndNode"));
                 }
                 LoopNodeConfigDto loopNodeConfigDto = (LoopNodeConfigDto) node.getNodeConfig();
                 if (loopNodeConfigDto.getLoopType() != LoopNodeConfigDto.LoopTypeEnum.ARRAY_LOOP) {
@@ -1592,7 +1602,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                             && innerNode.getLoopNodeId().equals(node.getId()) && innerNode.getType() == WorkflowNodeConfig.NodeType.LoopBreak).findFirst().orElse(null);
                     if (loopBreakNode == null) {
                         workflowNodeCheckDto.setSuccess(false);
-                        workflowNodeCheckDto.getMessages().add("无限循环缺少终止循环节点");
+                        workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.LoopMissingBreakNode"));
                     }
                 }
             }
@@ -1627,10 +1637,10 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 }
             });
             if (nextNodes.isEmpty() && startNode.getType() != WorkflowNodeConfig.NodeType.End) {
-                addErrorMessage(workflowNodeCheckDtos, startNode.getId(), "<" + startNode.getName() + ">未连通到结束节点");
+                addErrorMessage(workflowNodeCheckDtos, startNode.getId(), I18nUtil.systemMessage("Workflow.Validate.NotConnectedToEnd", startNode.getName()));
             }
         } else if (startNode.getType() != WorkflowNodeConfig.NodeType.End) {
-            addErrorMessage(workflowNodeCheckDtos, startNode.getId(), "<" + startNode.getName() + ">未连通到结束节点");
+            addErrorMessage(workflowNodeCheckDtos, startNode.getId(), I18nUtil.systemMessage("Workflow.Validate.NotConnectedToEnd", startNode.getName()));
         }
     }
 
@@ -1672,45 +1682,45 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             LLMNodeConfigDto nodeConfigDto = (LLMNodeConfigDto) node.getNodeConfig();
             if (nodeConfigDto.getModelId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定模型");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoModelBound"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.Plugin) {
             PluginNodeConfigDto nodeConfigDto = (PluginNodeConfigDto) node.getNodeConfig();
             if (nodeConfigDto.getPluginId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定插件");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoPluginBound"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.Mcp) {
             McpNodeConfigDto mcpNodeConfigDto = (McpNodeConfigDto) node.getNodeConfig();
             if (mcpNodeConfigDto.getMcpId() == null || mcpNodeConfigDto.getToolName() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定MCP服务");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoMcpServiceBound"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.Workflow) {
             WorkflowAsNodeConfigDto nodeConfigDto = (WorkflowAsNodeConfigDto) node.getNodeConfig();
             if (nodeConfigDto.getWorkflowId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定工作流");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoWorkflowBound"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.IntentRecognition) {
             IntentRecognitionNodeConfigDto nodeConfigDto = (IntentRecognitionNodeConfigDto) node.getNodeConfig();
             if (CollectionUtils.isEmpty(nodeConfigDto.getIntentConfigs())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定意图");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoIntentBound"));
             }
             if (nodeConfigDto.getModelId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定模型");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoModelBound"));
             }
             if (!CollectionUtils.isEmpty(nodeConfigDto.getIntentConfigs())) {
                 nodeConfigDto.getIntentConfigs().forEach(intentConfigDto -> {
                     if (CollectionUtils.isEmpty(intentConfigDto.getNextNodeIds())) {
                         workflowNodeCheckDto.setSuccess(false);
-                        workflowNodeCheckDto.getMessages().add("未绑定<" + intentConfigDto.getIntent() + ">的下级节点");
+                        workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoIntentNextNode", intentConfigDto.getIntent()));
                     }
                 });
             }
@@ -1719,19 +1729,19 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             QaNodeConfigDto nodeConfigDto = (QaNodeConfigDto) node.getNodeConfig();
             if (nodeConfigDto.getModelId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定模型");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoModelBound"));
             }
             if (nodeConfigDto.getAnswerType() == QaNodeConfigDto.AnswerTypeEnum.SELECT && !CollectionUtils.isEmpty(nodeConfigDto.getOptions())) {
                 nodeConfigDto.getOptions().forEach(optionConfigDto -> {
                     if (CollectionUtils.isEmpty(optionConfigDto.getNextNodeIds())) {
                         workflowNodeCheckDto.setSuccess(false);
-                        workflowNodeCheckDto.getMessages().add("未绑定选项<" + optionConfigDto.getContent() + ">的下级节点");
+                        workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoOptionNextNode", optionConfigDto.getContent()));
                     }
                 });
             }
             if (StringUtils.isBlank(nodeConfigDto.getQuestion())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("问答问题未配置");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.QaQuestionNotConfigured"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.Loop) {
@@ -1739,7 +1749,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             if (loopNodeConfigDto.getLoopType() == LoopNodeConfigDto.LoopTypeEnum.SPECIFY_TIMES_LOOP) {
                 if (loopNodeConfigDto.getLoopTimes() == null || loopNodeConfigDto.getLoopTimes() < 1) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置循环次数");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoLoopTimes"));
                 }
                 loopNodeConfigDto.setInputArgs(List.of());
             }
@@ -1749,16 +1759,16 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             if (loopNodeConfigDto.getLoopType() == LoopNodeConfigDto.LoopTypeEnum.ARRAY_LOOP) {
                 if (CollectionUtils.isEmpty(loopNodeConfigDto.getInputArgs())) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置循环数组");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoLoopArray"));
                 } else {
                     loopNodeConfigDto.getInputArgs().forEach(arg -> {
                         if (arg.getBindValueType() != Arg.BindValueType.Reference) {
                             workflowNodeCheckDto.setSuccess(false);
-                            workflowNodeCheckDto.getMessages().add("循环数组未绑定参数");
+                            workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.LoopArrayNotBound"));
                         }
                         if (!arg.getDataType().name().startsWith("Array")) {
                             workflowNodeCheckDto.setSuccess(false);
-                            workflowNodeCheckDto.getMessages().add("循环数组引用数据类型错误，若引用的数据类型有过修改，请删除该参数后重新引用");
+                            workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.LoopArrayTypeError"));
                         }
                     });
                 }
@@ -1773,7 +1783,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 conditionNodeConfigDto.getConditionBranchConfigs().forEach(conditionBranchConfigDto -> {
                     if (CollectionUtils.isEmpty(conditionBranchConfigDto.getNextNodeIds())) {
                         workflowNodeCheckDto.setSuccess(false);
-                        workflowNodeCheckDto.getMessages().add("未绑定条件分支的下级节点");
+                        workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoConditionBranch"));
                     }
                 });
             }
@@ -1782,7 +1792,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             NodeConfigDto nodeConfigDto = node.getNodeConfig();
             if (CollectionUtils.isEmpty(nodeConfigDto.getInputArgs())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("缺少文档地址输入参数");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoDocumentUrl"));
             } else {
                 //如果为输类型入，判断是否为网络地址
                 Arg arg = nodeConfigDto.getInputArgs().get(0);
@@ -1790,7 +1800,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     //判断是否为合法的网络地址
                     if (!arg.getBindValue().startsWith("http://") && !arg.getBindValue().startsWith("https://")) {
                         workflowNodeCheckDto.setSuccess(false);
-                        workflowNodeCheckDto.getMessages().add("文档地址输入参数不是合法的网络地址");
+                        workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.InvalidDocumentUrl"));
                     }
                 }
             }
@@ -1799,17 +1809,17 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             HttpNodeConfigDto httpNodeConfigDto = (HttpNodeConfigDto) node.getNodeConfig();
             if (StringUtils.isBlank(httpNodeConfigDto.getUrl())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定URL");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoUrlBound"));
             } else {
                 //判断是否为合法的URL地址
                 if (!httpNodeConfigDto.getUrl().startsWith("http://") && !httpNodeConfigDto.getUrl().startsWith("https://")) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("URL地址不是合法的网络地址");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.InvalidUrl"));
                 }
             }
             if (httpNodeConfigDto.getTimeout() == null || httpNodeConfigDto.getTimeout() <= 0) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置超时时间");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoTimeout"));
             }
             checkAndUpdateInputArgs(node, httpNodeConfigDto.getHeaders(), argMap, workflowNodeCheckDto);
             checkAndUpdateInputArgs(node, httpNodeConfigDto.getQueries(), argMap, workflowNodeCheckDto);
@@ -1818,22 +1828,22 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         if (node.getNodeConfig() instanceof TableNodeConfigDto tableNodeConfigDto) {
             if (tableNodeConfigDto.getTableId() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未绑定数据表");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoTableBound"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.TableSQL && node.getNodeConfig() instanceof TableCustomSqlNodeConfigDto tableSqlNodeConfigDto) {
             if (StringUtils.isBlank(tableSqlNodeConfigDto.getSql())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置SQL语句");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoSqlStatement"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.TableDataQuery && node.getNodeConfig() instanceof TableDataQueryNodeConfigDto tableDataQueryNodeConfigDto) {
             if (tableDataQueryNodeConfigDto.getLimit() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置数据表名称");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoTableName"));
             } else if (tableDataQueryNodeConfigDto.getLimit() > 1000) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("数据表查询限制不能超过1000");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.QueryLimitExceeded"));
             }
             checkTableConditionArgs(tableDataQueryNodeConfigDto.getConditionType(), tableDataQueryNodeConfigDto.getConditionArgs(), workflowNodeCheckDto);
         }
@@ -1849,16 +1859,16 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         if (!CollectionUtils.isEmpty(conditionArgs)) {
             if (conditionType == null && conditionArgs.size() > 1) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置条件参数类型");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoConditionType"));
             }
             for (TableNodeConfigDto.ConditionArgDto conditionArgDto : conditionArgs) {
                 if (conditionArgDto.getCompareType() == null) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置条件参数比较类型");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoCompareType"));
                 }
                 if (conditionArgDto.getFirstArg() == null || (StringUtils.isBlank(conditionArgDto.getFirstArg().getName()) && StringUtils.isBlank(conditionArgDto.getFirstArg().getBindValue()))) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("未配置条件参数");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoConditionParameter"));
                 }
             }
         }
@@ -1888,17 +1898,17 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             TableCustomSqlNodeConfigDto tableSqlNodeConfigDto = (TableCustomSqlNodeConfigDto) node.getNodeConfig();
             if (StringUtils.isBlank(tableSqlNodeConfigDto.getSql())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置SQL语句");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoSqlStatement"));
             }
         }
         if (node.getType() == WorkflowNodeConfig.NodeType.TableDataQuery) {
             TableDataQueryNodeConfigDto tableDataQueryNodeConfigDto = (TableDataQueryNodeConfigDto) node.getNodeConfig();
             if (tableDataQueryNodeConfigDto.getLimit() == null) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("未配置数据表名称");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.NoTableName"));
             } else if (tableDataQueryNodeConfigDto.getLimit() > 1000) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("数据表查询限制不能超过1000");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.QueryLimitExceeded"));
             }
             checkTableConditionArgs(tableDataQueryNodeConfigDto.getConditionType(), tableDataQueryNodeConfigDto.getConditionArgs(), workflowNodeCheckDto);
         }
@@ -1927,7 +1937,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 //判断参数是否符合函数签名命名规则
                 if (!arg.getName().matches("^[a-zA-Z_][a-zA-Z0-9_-]*$")) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("参数[" + arg.getName() + "]命名不符合规范");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.InvalidParamName", arg.getName()));
                 }
             });
             checkDuplicateArgs(outputArgs, workflowNodeCheckDto);
@@ -1946,17 +1956,17 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             //判断参数是否符合函数签名命名规则
             if (!inputArg.getName().matches("^[a-zA-Z][a-zA-Z0-9_-]*$")) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("参数[" + inputArg.getName() + "]命名不符合规范");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.InvalidParamName", inputArg.getName()));
             }
             if (inputArg.isRequire() && StringUtils.isEmpty(inputArg.getBindValue())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("参数[" + inputArg.getName() + "]未绑定值");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.ParamNotBound", inputArg.getName()));
             }
             if (StringUtils.isNotBlank(inputArg.getBindValue()) && inputArg.getBindValueType() == Arg.BindValueType.Reference) {
                 Arg arg = argMap.get(inputArg.getBindValue());
                 if (arg == null) {
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.getMessages().add("参数[" + inputArg.getName() + "]绑定值不存在");
+                    workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.ParamBindValueNotExist", inputArg.getName()));
                 } else if (arg.getOriginDataType() != null) {
                     if (inputArg.getDataType() != arg.getOriginDataType()) {
                         inputArg.setDataType(arg.getOriginDataType());
@@ -1988,7 +1998,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         args.forEach(arg -> {
             if (argNames.contains(arg.getName())) {
                 workflowNodeCheckDto.setSuccess(false);
-                workflowNodeCheckDto.getMessages().add("参数[" + arg.getName() + "]重复");
+                workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.ParamDuplicate", arg.getName()));
             }
             argNames.add(arg.getName());
         });
@@ -2009,8 +2019,9 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 if (lineNodeIds.contains(next.getId())) {
                     workflowNodeCheckDto.setNodeId(node.getId());
                     workflowNodeCheckDto.setSuccess(false);
-                    workflowNodeCheckDto.setMessages(List.of("节点<" + node.getName() + ">与节点<" + next.getName() + ">存在循环连线"));
-                    throw new BizException("节点<" + node.getName() + ">与节点<" + next.getName() + ">存在循环连线");
+                    workflowNodeCheckDto.setMessages(List.of(I18nUtil.systemMessage("Workflow.Validate.CyclicConnection", node.getName(), next.getName())));
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNodeCycleEdge,
+                            node.getName(), next.getName());
                 }
                 checkIfHasLoopLine(next, lineNodeIds, nodeMap, workflowNodeCheckDto);
             }
@@ -2079,12 +2090,12 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 updateInputArgs(workflowNodeDto.getId().toString(), inputArgs, inputArgMap);
                 nodeConfig.setInputArgs(inputArgs);
                 List<Arg> outputArgs = new ArrayList<>();
-                outputArgs.add(Arg.builder().dataType(DataTypeEnum.Boolean).name("success").description("是否调用成功").enable(true).build());
-                outputArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("message").description("失败消息").enable(true).build());
+                outputArgs.add(Arg.builder().dataType(DataTypeEnum.Boolean).name("success").description(I18nUtil.systemMessage("Workflow.Output.CallSuccess")).enable(true).build());
+                outputArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("message").description(I18nUtil.systemMessage("Workflow.Output.FailureMessage")).enable(true).build());
                 List<Arg> contentArgs = new ArrayList<>();
-                contentArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("type").description("数据类型：text 文本；image 图片").enable(true).build());
-                contentArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("data").description("结果数据").enable(true).build());
-                outputArgs.add(Arg.builder().dataType(DataTypeEnum.Array_Object).name("result").description("执行结果").subArgs(contentArgs).enable(true).build());
+                contentArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("type").description("Data type: text text; image image").enable(true).build());
+                contentArgs.add(Arg.builder().dataType(DataTypeEnum.String).name("data").description(I18nUtil.systemMessage("Workflow.Output.ResultData")).enable(true).build());
+                outputArgs.add(Arg.builder().dataType(DataTypeEnum.Array_Object).name("result").description(I18nUtil.systemMessage("Workflow.Output.ExecutionResult")).subArgs(contentArgs).enable(true).build());
                 mcpNodeConfig.setOutputArgs(outputArgs);
                 mcpNodeConfig.setMcp(mcpDto);
                 if (!forExecute) {
@@ -2223,6 +2234,8 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             if (!forExecute && Objects.nonNull(modelConfigDto)) {
                 modelConfigDto.setApiInfoList(null);
             }
+            intentRecognitionNodeConfigDto.getIntentConfigs().stream().filter(intentConfig -> intentConfig.getIntentType() == IntentRecognitionNodeConfigDto.IntentTypeEnum.OTHER).findFirst().ifPresent(intentConfigDto -> intentConfigDto.setIntent(I18nUtil.systemMessage("Backend.Workflow.Intent.Other")));
+            I18nUtil.replaceSystemMessage("WorkflowIntent", intentRecognitionNodeConfigDto.getOutputArgs());
         }
         if (nodeConfig instanceof CodeNodeConfigDto codeNodeConfig) {
             String codePython = codeNodeConfig.getCodePython();
@@ -2244,6 +2257,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 List<Arg> textOutputArgs = TextProcessingNodeConfigDto.obtainDefaultOutputArgs(textProcessingNodeConfigDto.getTextHandleType());
                 textProcessingNodeConfigDto.setOutputArgs(textOutputArgs);
             }
+            I18nUtil.replaceSystemMessage("WorkflowText", textProcessingNodeConfigDto.getOutputArgs());
         }
         if (nodeConfig instanceof KnowledgeNodeConfigDto knowledgeNodeConfigDto) {
             if (!CollectionUtils.isEmpty((knowledgeNodeConfigDto).getKnowledgeBaseConfigs())) {
@@ -2257,6 +2271,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                         }
                     }
                 });
+                I18nUtil.replaceSystemMessage("WorkflowKb", knowledgeNodeConfigDto.getOutputArgs());
             }
         }
         if (nodeConfig instanceof TableNodeConfigDto tableNodeConfigDto) {
@@ -2268,7 +2283,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     dorisTableDefinitionVo = iComposeDbTableRpcService.queryTableDefinition(request);
                 } catch (Exception e) {
                     // 忽略
-                    log.warn("查询表结构定义失败 {}", tableNodeConfigDto.getTableId());
+                    log.warn("Failed to query table schema definition {}", tableNodeConfigDto.getTableId());
                 }
                 if (dorisTableDefinitionVo != null) {
                     tableNodeConfigDto.setName(dorisTableDefinitionVo.getTableName());
@@ -2309,9 +2324,9 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     nodeConfig.setInputArgs(newInputArgs);
                 }
                 nodeConfig.getOutputArgs().add(Arg.builder().key("id").name("id").dataType(DataTypeEnum.Number)
-                        .description("数据唯一ID").systemVariable(true).require(true).build());
+                        .description("Data unique ID").systemVariable(true).require(true).build());
                 nodeConfig.getOutputArgs().add(Arg.builder().key("success").name("success").dataType(DataTypeEnum.Boolean)
-                        .description("是否新增成功").systemVariable(true).require(true).build());
+                        .description(I18nUtil.systemMessage("Workflow.Output.InsertSuccess")).systemVariable(true).require(true).build());
             }
             if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.TableDataDelete) {
                 TableDataDeleteNodeConfigDto tableDataDeleteNodeConfigDto = (TableDataDeleteNodeConfigDto) nodeConfig;
@@ -2319,7 +2334,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     tableDataDeleteNodeConfigDto.setConditionArgs(new ArrayList<>());
                 }
                 nodeConfig.getOutputArgs().add(Arg.builder().key("success").name("success").dataType(DataTypeEnum.Boolean)
-                        .description("是否删除成功").systemVariable(true).require(true).build());
+                        .description(I18nUtil.systemMessage("Workflow.Output.DeleteSuccess")).systemVariable(true).require(true).build());
             }
             if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.TableDataUpdate) {
                 TableDataUpdateNodeConfigDto tableDataUpdateNodeConfigDto = (TableDataUpdateNodeConfigDto) nodeConfig;
@@ -2327,7 +2342,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     tableDataUpdateNodeConfigDto.setConditionArgs(new ArrayList<>());
                 }
                 nodeConfig.getOutputArgs().add(Arg.builder().key("success").name("success").dataType(DataTypeEnum.Boolean)
-                        .description("是否更新成功").systemVariable(true).require(true).build());
+                        .description(I18nUtil.systemMessage("Workflow.Output.UpdateSuccess")).systemVariable(true).require(true).build());
             }
             if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.TableDataQuery) {
                 TableDataQueryNodeConfigDto tableDataQueryNodeConfigDto = (TableDataQueryNodeConfigDto) nodeConfig;
@@ -2336,15 +2351,15 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 }
                 tableNodeConfigDto.getTableFields().forEach(tableField -> tableField.setSystemVariable(true));
                 nodeConfig.getOutputArgs().add(Arg.builder().key("outputList").name("outputList").dataType(DataTypeEnum.Array_Object)
-                        .description("查询结果").systemVariable(true).require(true).subArgs(tableNodeConfigDto.getTableFields()).build());
-                nodeConfig.getOutputArgs().add(Arg.builder().key("rowNum").name("rowNum").dataType(DataTypeEnum.Number).description("查询结果总数")
+                        .description(I18nUtil.systemMessage("Workflow.Output.QueryResult")).systemVariable(true).require(true).subArgs(tableNodeConfigDto.getTableFields()).build());
+                nodeConfig.getOutputArgs().add(Arg.builder().key("rowNum").name("rowNum").dataType(DataTypeEnum.Number).description(I18nUtil.systemMessage("Workflow.Output.TotalCount"))
                         .systemVariable(true).require(true).build());
             }
             if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.TableSQL) {
                 if (CollectionUtils.isEmpty(nodeConfig.getOutputArgs())) {
                     tableNodeConfigDto.getOutputArgs().add(Arg.builder().key("outputList").name("outputList").dataType(DataTypeEnum.Array_Object)
-                            .description("查询结果").systemVariable(true).require(true).build());
-                    tableNodeConfigDto.getOutputArgs().add(Arg.builder().key("rowNum").name("rowNum").dataType(DataTypeEnum.Number).description("查询结果总数")
+                            .description(I18nUtil.systemMessage("Workflow.Output.QueryResult")).systemVariable(true).require(true).build());
+                    tableNodeConfigDto.getOutputArgs().add(Arg.builder().key("rowNum").name("rowNum").dataType(DataTypeEnum.Number).description(I18nUtil.systemMessage("Workflow.Output.TotalCount"))
                             .systemVariable(true).require(true).build());
                 }
             }
@@ -2492,7 +2507,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             workflowContext1.setParams(workflowExecuteRequestDto.getParams());
             workflowContext1.setFrom(workflowExecuteRequestDto.getFrom());
             workflowContext1.setNodeExecutingConsumer(nodeExecutingDto -> {
-                log.info("节点执行信息: {}", nodeExecutingDto);
+                log.info("Node execution info: {}", nodeExecutingDto);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setSuccess(nodeExecutingDto.getStatus() != NodeExecuteStatus.FAILED);
                 workflowExecutingDto.setRequestId(workflowExecuteRequestDto.getRequestId());
@@ -2510,7 +2525,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             nextHeartBeat(emitter, isComplete);
             Disposable disposable = workflowExecutor.execute(workflowContext1).doOnError(e -> {
                 isComplete.set(true);
-                log.warn("工作流执行失败 {}", workflowConfigDto.getName(), e);
+                log.warn("Workflow execution failed {}", workflowConfigDto.getName(), e);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setSuccess(false);
                 workflowExecutingDto.setRequestId(workflowExecuteRequestDto.getRequestId());
@@ -2521,7 +2536,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 emitter.complete();
             }).doOnCancel(() -> isComplete.set(true)).subscribe((result) -> {
                 isComplete.set(true);
-                log.info("工作流执行成功 {}", workflowConfigDto.getName());
+                log.info("Workflow succeeded {}", workflowConfigDto.getName());
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                 workflowExecutingDto.setData(result);
                 workflowExecutingDto.setSuccess(true);

@@ -118,6 +118,7 @@ public class AgentContext implements Serializable {
                 variableParams.put(GlobalVariableEnum.SYS_USER_ID.name(), user.getId());
                 variableParams.put(GlobalVariableEnum.USER_UID.name(), user.getUid());
                 variableParams.put(GlobalVariableEnum.USER_NAME.name(), user.getNickName() == null ? user.getUserName() : user.getNickName());
+                variableParams.put(GlobalVariableEnum.USER_LANG.name(), user.getLang());
             }
         }
         return variableParams;

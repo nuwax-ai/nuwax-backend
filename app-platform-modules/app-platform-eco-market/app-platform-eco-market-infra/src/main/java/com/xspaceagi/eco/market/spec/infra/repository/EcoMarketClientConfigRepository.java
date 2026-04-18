@@ -59,7 +59,7 @@ public class EcoMarketClientConfigRepository implements IEcoMarketClientConfigRe
     public void deleteById(Long id) {
         var existObj = this.ecoMarketClientConfigService.getById(id);
         if (existObj == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
         this.ecoMarketClientConfigService.deleteById(id);
     }
@@ -68,7 +68,7 @@ public class EcoMarketClientConfigRepository implements IEcoMarketClientConfigRe
     public Long updateInfo(EcoMarketClientConfigModel model, UserContext userContext) {
         var existObj = this.ecoMarketClientConfigService.queryOneInfoById(model.getId());
         if (Objects.isNull(existObj)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         model.setCreatorId(null);
@@ -85,7 +85,7 @@ public class EcoMarketClientConfigRepository implements IEcoMarketClientConfigRe
     public Long updateInfoByUid(EcoMarketClientConfigModel model, UserContext userContext) {
         var existObj = this.ecoMarketClientConfigService.queryOneByUid(model.getUid());
         if (Objects.isNull(existObj)) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8001);
+            throw EcoMarketException.build(BizExceptionCodeEnum.configNotFound);
         }
 
         model.setCreatorId(null);
@@ -160,14 +160,14 @@ public class EcoMarketClientConfigRepository implements IEcoMarketClientConfigRe
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public boolean updateShareStatusByUid(String uid, Integer shareStatus, String approveMessage, UserContext userContext) {
-        log.info("根据uid更新分享状态: uid={}, shareStatus={}", uid, shareStatus);
+        log.info("Update share status by uid: uid={}, shareStatus={}", uid, shareStatus);
 
         if (uid == null || uid.isEmpty()) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8007);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "配置UID");
         }
 
         if (shareStatus == null) {
-            throw EcoMarketException.build(BizExceptionCodeEnum.ECO_MARKET_ERROR_8008);
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "分享状态");
         }
 
         Long modifiedId = null;
@@ -177,7 +177,7 @@ public class EcoMarketClientConfigRepository implements IEcoMarketClientConfigRe
 
         boolean result = ecoMarketClientConfigService.updateShareStatusByUid(uid, shareStatus, approveMessage, modifiedId);
 
-        log.info("更新分享状态结果: uid={}, shareStatus={}, result={}", uid, shareStatus, result);
+        log.info("Share status update result: uid={}, shareStatus={}, result={}", uid, shareStatus, result);
 
         return result;
     }

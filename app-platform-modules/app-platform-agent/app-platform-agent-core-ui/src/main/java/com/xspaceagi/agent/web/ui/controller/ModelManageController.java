@@ -13,7 +13,9 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -64,7 +66,7 @@ public class ModelManageController extends BaseController {
     public ReqResult<Void> delete(@PathVariable Long modelId) {
         ModelConfigDto ModelConfigDto = modelApplicationService.queryModelConfigById(modelId);
         if (ModelConfigDto != null && ModelConfigDto.getType() == ModelTypeEnum.Embeddings) {
-            throw new BizException("嵌入模型不允许删除");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentEmbeddingModelDeleteForbidden);
         }
         modelApplicationService.delete(modelId);
         return ReqResult.success();

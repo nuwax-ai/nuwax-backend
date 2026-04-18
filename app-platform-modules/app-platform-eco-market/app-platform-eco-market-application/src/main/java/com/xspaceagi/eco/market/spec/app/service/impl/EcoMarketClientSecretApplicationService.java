@@ -47,7 +47,7 @@ public class EcoMarketClientSecretApplicationService implements IEcoMarketClient
     @Override
     @DSTransactional(rollbackFor = Exception.class)
     public Long saveClientSecretDTO(ClientSecretDTO clientSecretDTO, UserContext userContext) {
-        log.info("应用层：保存客户端密钥，租户ID: {}, 客户端ID: {}", clientSecretDTO.getTenantId(), clientSecretDTO.getClientId());
+        log.info("Application layer: save client secret, tenantId: {}, clientId: {}", clientSecretDTO.getTenantId(), clientSecretDTO.getClientId());
         return ecoMarketClientSecretDomainService.saveFromClientSecretDTO(clientSecretDTO, userContext);
     }
     

@@ -3,7 +3,6 @@ package com.xspaceagi.agent.core.infra.component.agent;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.util.DateUtils;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
@@ -38,6 +37,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.exception.AgentException;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +76,7 @@ public class SandboxAgentClient {
     private static final CharSequence CONTEXT_LIMIT_REACHED_MSG = "The model has reached its context window limit";
 
     static {
-        // disable keep alive，暂不使用连接池
+        // disable keep alive, do not use connection pool for now
         System.setProperty("jdk.httpclient.keepalive.timeout", "0");
     }
 
@@ -165,19 +165,23 @@ public class SandboxAgentClient {
     }
 
     public Flux<CallMessage> chat(AgentContext agentContext) {
-        // 远程SSE订阅
+        // Remote SSE subscription
         AtomicReference<SseSubscription> sseSubscriptionAtomicReference = new AtomicReference<>();
         Long startTime = System.currentTimeMillis();
         StringBuilder finalText = new StringBuilder();
         Flux<CallMessage> sseFlux = Flux.create(sink -> {
-            // 获取沙箱服务
+            // Get sandbox service
             SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(agentContext.getTenantConfig(), agentContext.getUserId(), agentContext.getConversation().getSandboxServerId());
-            // 启动沙箱服务
+            // Start sandbox service
             if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
                 checkAgentIfAlive(agentContext, sandboxServer)
                         .doOnSuccess(res0 -> {
-                            //agent未启动，追加提示词
-                            executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, res0 != null && !res0);
+                            // agent not started, append prompt
+                            try {
+                                executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, res0 != null && !res0);
+                            } catch (Exception e) {
+                                sink.error(e);
+                            }
                         })
                         .onErrorResume(throwable -> Mono.just(false))
                         .subscribe();
@@ -185,13 +189,21 @@ public class SandboxAgentClient {
                 startSandbox(agentContext, sandboxServer)
                         .doOnSuccess(res -> {
                             if (CollectionUtils.isEmpty(agentContext.getContextMessages())) {
-                                executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, false);
+                                try {
+                                    executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, false);
+                                } catch (Exception e) {
+                                    sink.error(e);
+                                }
                                 return;
                             }
                             checkAgentIfAlive(agentContext, sandboxServer)
                                     .doOnSuccess(res0 -> {
-                                        //agent未启动，追加提示词
-                                        executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, res0 != null && !res0);
+                                        // agent not started, append prompt
+                                        try {
+                                            executeTask(agentContext, sandboxServer, sink, sseSubscriptionAtomicReference, finalText, res0 != null && !res0);
+                                        } catch (Exception e) {
+                                            sink.error(e);
+                                        }
                                     })
                                     .onErrorResume(throwable -> Mono.just(false))
                                     .subscribe();
@@ -211,7 +223,7 @@ public class SandboxAgentClient {
                     buildAndSetModelResult(agentContext, finalText.toString(), startTime);
                 }).onErrorResume(throwable -> {
                     if (throwable instanceof CompletionException && throwable.getCause() instanceof ConnectException) {
-                        return Mono.error(new BizException("智能体电脑连接失败"));
+                        return Mono.error(new BizException(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ComputerConnectFailed")));
                     }
                     return Mono.error(throwable);
                 })
@@ -222,8 +234,8 @@ public class SandboxAgentClient {
 
     private static Mono<Boolean> checkAgentIfAlive(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer) {
         return Mono.create(sink -> {
-            //查询agent启动状态/computer/agent/status
-            log.info("查询会话Agent状态是否启动， userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
+            //Query agent startup status/computer/agent/status
+            log.info("Checking if session Agent status is started, userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/agent/status"))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of("user_id", agentContext.getUserId().toString(), "project_id", agentContext.getConversationId()))))
@@ -231,7 +243,7 @@ public class SandboxAgentClient {
                     .build();
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
                 String body = response.body();
-                log.info("查询Agent状态结果, userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), body);
+                log.info("Query Agent status result, userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), body);
                 if (JSON.isValidObject(body)) {
                     JSONObject data = JSON.parseObject(body).getJSONObject("data");
                     if (data == null) {
@@ -247,7 +259,7 @@ public class SandboxAgentClient {
                     sink.success(null);
                 }
             }).exceptionally(throwable -> {
-                log.error("查询Agent状态异常", throwable);
+                log.error("Query Agent status exception", throwable);
                 sink.success(null);
                 return null;
             });
@@ -255,17 +267,17 @@ public class SandboxAgentClient {
     }
 
     private Mono<Boolean> startSandbox(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer) {
-        //redis加锁，避免同一个用户并发启动，最多等待60秒
+        //Redis lock to avoid concurrent startup by the same user, wait up to 60 seconds
         final String lockKey = "sandbox_lock_" + agentContext.getUserId();
         try {
             redisUtil.lock(lockKey, 60000);
         } catch (Exception e) {
             // ignore
-            log.error("获取锁异常", e);
+            log.error("Failed to acquire lock", e);
         }
         Mono<Boolean> mono = Mono.create(sink -> {
             //查询sandbox启动状态
-            log.info("查询sandbox状态， userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
+            log.info("Query sandbox status, userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/pod/status?user_id=" + agentContext.getUserId() + "&project_id=" + agentContext.getConversationId()))
                     .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
                     .timeout(java.time.Duration.ofSeconds(10))
@@ -273,9 +285,9 @@ public class SandboxAgentClient {
             CompletableFuture<HttpResponse<String>> httpResponseCompletableFuture = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
             httpResponseCompletableFuture.thenAccept(httpResponse -> {
                         String body = httpResponse.body();
-                        log.info("查询sandbox状态结果， userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), body);
+                        log.info("Query sandbox status result, userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), body);
                         if (!JSON.isValid(body)) {
-                            sink.error(new IllegalArgumentException("sandbox状态查询失败"));
+                            sink.error(new IllegalArgumentException(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.SandboxStatusQueryFailed")));
                             return;
                         }
                         JSONObject jsonObject = JSON.parseObject(body);
@@ -285,14 +297,14 @@ public class SandboxAgentClient {
                         }
                         JSONObject data = jsonObject.getJSONObject("data");
                         if (data == null) {
-                            sink.error(new BizException("状态查询返回数据结构异常"));
+                            sink.error(new BizException(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.StatusQueryResponseInvalid")));
                             return;
                         }
                         if (data.getBoolean("alive") != null && data.getBoolean("alive")) {
                             sink.success(true);
                             return;
                         }
-                        ComponentExecutingDto sandboxStartingDto = buildSandboxStartingDto();
+                        ComponentExecutingDto sandboxStartingDto = buildSandboxStartingDto(agentContext.getUser().getLangMap());
                         if (agentContext.getComponentExecutingConsumer() != null) {
                             agentContext.getComponentExecutingConsumer().accept(sandboxStartingDto);
                         }
@@ -319,11 +331,11 @@ public class SandboxAgentClient {
                                         "project_id", agentContext.getConversationId(),
                                         "resource_limits", Map.of("cpu", perUserCpuCores, "memory", perUserMemoryGB * 1024 * 1024 * 1024, "swap", perUserMemoryGB * 1024 * 1024 * 1024 * 2)
                                 )))).build();
-                        log.info("sandbox开始启动， userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
+                        log.info("Sandbox starting, userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
                         CompletableFuture<HttpResponse<String>> startHttpResponseCompletableFuture = httpClient.sendAsync(startRequest, HttpResponse.BodyHandlers.ofString());
                         startHttpResponseCompletableFuture.thenAccept(startHttpResponse -> {
                                     String startBody = startHttpResponse.body();
-                                    log.info("sandbox启动结果， userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), startBody);
+                                    log.info("Sandbox startup result, userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), startBody);
                                     sandboxStartingDto.getResult().setEndTime(System.currentTimeMillis());
                                     if (!JSON.isValid(startBody)) {
                                         if (agentContext.getComponentExecutingConsumer() != null) {
@@ -331,7 +343,7 @@ public class SandboxAgentClient {
                                             sandboxStartingDto.getResult().setError(startBody);
                                             agentContext.getComponentExecutingConsumer().accept(sandboxStartingDto);
                                         }
-                                        sink.error(new BizException("智能体电脑启动失败，请重试"));
+                                        sink.error(new BizException(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ComputerStartupFailed")));
                                         return;
                                     }
                                     JSONObject startJsonObject = JSON.parseObject(startBody);
@@ -341,7 +353,7 @@ public class SandboxAgentClient {
                                             sandboxStartingDto.getResult().setError(startJsonObject.getString("message"));
                                             agentContext.getComponentExecutingConsumer().accept(sandboxStartingDto);
                                         }
-                                        sink.error(new BizException("智能体电脑启动失败，请重试"));
+                                        sink.error(new BizException(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ComputerStartupFailed")));
                                         return;
                                     }
                                     if (agentContext.getComponentExecutingConsumer() != null) {
@@ -395,7 +407,7 @@ public class SandboxAgentClient {
                 while (val != null) {
                     apiInfoList.remove(apiInfo);
                     if (apiInfoList.isEmpty()) {
-                        String error = "当前过于火爆，请稍后再试";
+                        String error = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.SystemOverloaded");
                         sink.next(buildChatMessage(agentContext, "\n\n```\n" + error + "\n```\n\n"));
                         sink.error(new AgentException("0001", error));
                         return;
@@ -420,9 +432,7 @@ public class SandboxAgentClient {
             buildAutoToolCallMessages(agentContext, contextPromptBuilder);
         }
         ConversationDto conversation = agentContext.getConversation();
-        String currentTime = DateUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss");
-        String currentTimePrompt = Prompts.CURRENT_TIME.replace("{time}", currentTime);
-        String systemPrompt = currentTimePrompt + "\n" + Prompts.ANTI_CLAUDE_SYSTEM_PROMPT + "\n" + agentContext.getAgentConfig().getSystemPrompt() + "\n" + Prompts.DEPENDENCY_INSTALLATION_PROMPT + "\n" + Prompts.TASK_AGENT_OUTPUT_PROMPT;
+        String systemPrompt = Prompts.ANTI_CLAUDE_SYSTEM_PROMPT + "\n" + agentContext.getAgentConfig().getSystemPrompt() + "\n" + Prompts.DEPENDENCY_INSTALLATION_PROMPT + "\n" + Prompts.TASK_AGENT_OUTPUT_PROMPT;
         String userPrompt = contextPromptBuilder + agentContext.getMessage();
         // 全局模型走代理模式，为用户生成独立的key
         if (modelConfig.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
@@ -454,25 +464,25 @@ public class SandboxAgentClient {
                 .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
                 .timeout(Duration.ofSeconds(180))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8)).build();
-        log.info("发起会话请求， agentId {}, conversationId {}, requestBody {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), requestBody);
+        log.info("Initiate conversation request, agentId {}, conversationId {}, requestBody {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), requestBody);
         try {
             CompletableFuture<HttpResponse<String>> httpResponseCompletableFuture = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
             httpResponseCompletableFuture.orTimeout(180, TimeUnit.SECONDS).thenAccept(httpResponse -> {
                 int status = httpResponse.statusCode();
                 if (status != 200 && status != 201 && status != 202 && status != 206) {
                     sink.error(new RuntimeException("Failed to connect to SSE stream. Unexpected status code: " + status));
-                    log.error("发起会话请求失败， agentId {}, conversationId {}, status {}, body {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), status, httpResponse.body());
+                    log.error("Failed to initiate conversation request, agentId {}, conversationId {}, status {}, body {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), status, httpResponse.body());
                     return;
                 }
                 String body = httpResponse.body();
-                log.info("发起会话请求返回， agentId {}, conversationId {}, body {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), body);
+                log.info("Initiate conversation request returned, agentId {}, conversationId {}, body {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), body);
                 JSONObject jsonObject = JSON.parseObject(body);
                 if (!jsonObject.containsKey("code") || !"0000".equals(jsonObject.getString("code"))) {
                     if (jsonObject.containsKey("error")) {
                         boolean isInternalError = false;
                         String error = jsonObject.getString("error");
                         if (error.equals("Internal error")) {
-                            error = "智能体执行异常，请重试，若持续失败，请重启智能体或新开会话";
+                            error = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.InternalError");
                             isInternalError = true;
                         }
                         sink.next(buildChatMessage(agentContext, "\n\n```\n" + error + "\n```\n\n"));
@@ -559,20 +569,20 @@ public class SandboxAgentClient {
                                     }
                                 }
                                 if (message == null) {
-                                    message = "智能体执行异常，请重试，若持续失败，请重启智能体或新开会话";
+                                    message = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.InternalError");
                                 }
                                 boolean isInternalError = false;
                                 if (message.contains("Internal error")) {
-                                    message = "智能体执行异常，请重试，若持续失败，请重启智能体或新开会话";
+                                    message = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.InternalError");
                                     isInternalError = true;
                                 }
                                 callMessage.setText("\n```\n" + message + "\n```");
                                 if (message.contains(CONTEXT_LIMIT_REACHED_MSG) || message.contains("model_context_window_exceeded")) {
-                                    callMessage.setText("\n```\n模型已达到其上下文窗口限制，请重新发送指令，或开启新会话继续。\n```");
+                                    callMessage.setText("\n```\n" + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ContextLimitReached") + "\n```");
                                     agentStop(agentContext.getConversationId());
                                 }
                                 if (isInternalError) {
-                                    callMessage.setText("\n```\n模型执行异常，请重试，若持续失败，请重启智能体或新开会话\n```");
+                                    callMessage.setText("\n```\n" + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ModelExecutionError") + "\n```");
                                     agentStop(agentContext.getConversationId());
                                 }
                                 sink.next(callMessage);
@@ -615,17 +625,16 @@ public class SandboxAgentClient {
                             sink.next(chatMessageDto);
                         }
 
-                        if ((event.type.equals("tool_call") || "tool_call".equals(jsonObject.getString("subType")))
-                                || ((event.type.equals("tool_call_update") || "tool_call_update".equals(data.getString("subType"))) && ("in_progress".equals(data.getString("status")) || "completed".equals(data.getString("status")) || "failed".equals(data.getString("status"))))) {
+                        if (event.type.equals("tool_call") || "tool_call".equals(jsonObject.getString("subType")) || event.type.equals("tool_call_update") || "tool_call_update".equals(data.getString("subType"))) {
                             Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
                             if (componentExecutingConsumer != null && data.getString("toolCallId") != null) {
-                                ComponentExecutingDto componentExecutingDto = buildComponentExecutingDto(data, componentExecutingDtoMap);
+                                ComponentExecutingDto componentExecutingDto = buildComponentExecutingDto(data, componentExecutingDtoMap, agentContext.getUser().getLangMap());
                                 componentExecutingConsumer.accept(componentExecutingDto);
                                 // 添加桌面打开事件
                                 if (agentContext.getAgentConfig().getHideDesktop() == null || agentContext.getAgentConfig().getHideDesktop() != 1) {
                                     if (data.getString("title") != null && (data.getString("title").contains("mcp__chrome") || data.getString("title").contains("chrome-tools") || data.getString("title").contains("navigate_page")) && !subEventTypeEnumSet.contains(ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP)) {
                                         subEventTypeEnumSet.add(ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP);
-                                        componentExecutingDto = buildExecutingEvent("打开桌面", ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP, null);
+                                        componentExecutingDto = buildExecutingEvent(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Event.OpenDesktop"), ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP, null);
                                         componentExecutingConsumer.accept(componentExecutingDto);
                                     }
                                 }
@@ -634,7 +643,7 @@ public class SandboxAgentClient {
                         if (event.type.equals("plan") || "plan".equals(jsonObject.getString("subType"))) {
                             Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
                             if (componentExecutingConsumer != null) {
-                                ComponentExecutingDto componentExecutingDto = buildComponentExecutingPlan(data);
+                                ComponentExecutingDto componentExecutingDto = buildComponentExecutingPlan(data, agentContext.getUser().getLangMap());
                                 if (componentExecutingDto == null) {
                                     return;
                                 }
@@ -660,10 +669,11 @@ public class SandboxAgentClient {
             }).exceptionally(throwable -> {
                 log.error("subscribe error", throwable);
                 if (throwable.getCause() != null && throwable.getCause() instanceof TimeoutException) {
+                    String timeoutMsg = I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.InitializationTimeout");
                     CallMessage callMessage = buildChatFinishedMessage(agentContext, "error");
-                    callMessage.setText("\n```\n智能体初始化超时，请重试（过多的MCP可能导致超时）。如果持续失败请重启智能体电脑（点击PC端右上图标展开后，在“...”里点击重启智能体电脑）\n```");
+                    callMessage.setText("\n```\n" + timeoutMsg + "\n```");
                     sink.next(callMessage);
-                    sink.error(new TimeoutException("智能体初始化超时，请重试（过多的MCP可能导致超时）。如果持续失败请重启智能体电脑（点击PC端右上图标展开后，在“...”里点击重启智能体电脑）"));
+                    sink.error(new TimeoutException(timeoutMsg));
                     return null;
                 }
                 sink.error(throwable);
@@ -683,6 +693,9 @@ public class SandboxAgentClient {
         env.put("PLATFORM_BASE_URL", siteUrl);
         env.put("SANDBOX_ID", sandboxServer.getServerId());
         env.put("SYS_USER_ID", String.valueOf(agentContext.getUserId()));
+        env.put("CONVERSATION_ID", agentContext.getConversationId());
+        env.put("SYS_USER_UID", String.valueOf(agentContext.getUser().getUid()));
+        env.put("SYS_USER_LANG", String.valueOf(agentContext.getUser().getLang()));
         if (agentContext.getVariableParams().containsKey("SANDBOX_ACCESS_KEY")) {
             env.put("SANDBOX_ACCESS_KEY", agentContext.getVariableParams().get("SANDBOX_ACCESS_KEY").toString());
         }
@@ -747,10 +760,10 @@ public class SandboxAgentClient {
                 contextPromptBuilder.append(message.getMessageType()).append(": ").append(text).append("\n");
             });
             contextPromptBuilder.append("\n</context-message>\n");
+            contextPromptBuilder.append("<system-reminder>");
+            contextPromptBuilder.append("Please read the working directory before starting the task");
+            contextPromptBuilder.append("</system-reminder>\n");
         }
-        contextPromptBuilder.append("<system-reminder>");
-        contextPromptBuilder.append("开始任务之前请先阅读工作目录");
-        contextPromptBuilder.append("</system-reminder>\n");
     }
 
     private static void buildAutoToolCallMessages(AgentContext agentContext, StringBuilder contextPromptBuilder) {
@@ -790,9 +803,12 @@ public class SandboxAgentClient {
         StringBuilder text = new StringBuilder();
         finalComponentExecutingDto.getResult().getLocations().forEach(location -> {
             if (location instanceof Map<?, ?>) {
-                String path = ((Map<?, ?>) location).get("path").toString();
-                if (path != null && path.contains(agentContext.getConversationId())) {
-                    text.append(resultFileText.replace("{description}", path).replace("{file}", path));
+                Object path = ((Map<?, ?>) location).get("path");
+                if (path == null) {
+                    path = ((Map<?, ?>) location).get("filePath");
+                }
+                if (path != null && path.toString().contains(agentContext.getConversationId())) {
+                    text.append(resultFileText.replace("{description}", path.toString()).replace("{file}", path.toString()));
                 }
             }
         });
@@ -819,12 +835,12 @@ public class SandboxAgentClient {
     }
 
 
-    private static ComponentExecutingDto buildSandboxStartingDto() {
+    private static ComponentExecutingDto buildSandboxStartingDto(Map<String, String> langMap) {
         ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
         componentExecuteResult.setExecuteId(UUID.randomUUID().toString().replace("-", ""));
         componentExecuteResult.setStartTime(System.currentTimeMillis());
         componentExecuteResult.setId(-1L);
-        componentExecuteResult.setName("智能体电脑启动");
+        componentExecuteResult.setName(I18nUtil.systemMessage(langMap, "Backend.Sandbox.SandboxStarting"));
         componentExecuteResult.setType(ComponentTypeEnum.SandboxStart);
         ComponentExecutingDto componentExecutingDto = new ComponentExecutingDto();
         componentExecutingDto.setTargetId(-1L);
@@ -835,7 +851,7 @@ public class SandboxAgentClient {
         return componentExecutingDto;
     }
 
-    private static ComponentExecutingDto buildComponentExecutingPlan(JSONObject data) {
+    private static ComponentExecutingDto buildComponentExecutingPlan(JSONObject data, Map<String, String> langMap) {
         JSONArray entries = data.getJSONArray("entries");
         if (entries == null || entries.isEmpty()) {
             return null;
@@ -848,7 +864,7 @@ public class SandboxAgentClient {
             }
             return false;
         }).toList();
-        String title = "执行计划（" + completedEntries.size() + "/" + entries.size() + "已完成）";
+        String title = I18nUtil.systemMessage(langMap, "Backend.Sandbox.PlanTitle", String.valueOf(completedEntries.size()), String.valueOf(entries.size()));
         ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
         componentExecuteResult.setExecuteId(UUID.randomUUID().toString().replace("-", ""));
         componentExecuteResult.setStartTime(System.currentTimeMillis());
@@ -1018,91 +1034,159 @@ public class SandboxAgentClient {
         return null;
     }
 
-    private static ComponentExecutingDto buildComponentExecutingDto(JSONObject jsonObject, Map<String, ComponentExecutingDto> componentExecutingDtoMap) {
+    private static ComponentExecutingDto buildComponentExecutingDto(JSONObject jsonObject, Map<String, ComponentExecutingDto> componentExecutingDtoMap, Map<String, String> langMap) {
         String toolCallId = jsonObject.getString("toolCallId");
         ComponentExecutingDto componentExecutingDto = componentExecutingDtoMap.get(toolCallId);
+        ComponentExecuteResult componentExecuteResult;
+        if (componentExecutingDto == null) {
+            componentExecutingDto = new ComponentExecutingDto();
+            componentExecutingDto.setTargetId(-1L);
+            componentExecutingDto.setType(ComponentTypeEnum.ToolCall);
+            componentExecutingDtoMap.put(toolCallId, componentExecutingDto);
+            componentExecuteResult = new ComponentExecuteResult();
+            componentExecuteResult.setExecuteId(toolCallId);
+            componentExecuteResult.setStartTime(System.currentTimeMillis());
+            componentExecuteResult.setId(-1L);
+            componentExecuteResult.setType(ComponentTypeEnum.ToolCall);
+            componentExecutingDto.setResult(componentExecuteResult);
+        } else {
+            componentExecuteResult = componentExecutingDto.getResult();
+        }
+
+        String title = jsonObject.getString("title");
+        if (title != null) {
+            componentExecutingDto.setOriginalTitle(title);
+        } else {
+            title = componentExecutingDto.getOriginalTitle();
+        }
+        if (title != null && title.contains("mcp__chrome")) {
+            title = title.replace("mcp__chrome-devtools", "mcp__browser");
+        }
+
+        Object rawInput = jsonObject.get("rawInput");
+        if (rawInput instanceof JSONObject && !((JSONObject) rawInput).isEmpty()) {
+            componentExecuteResult.setInput(rawInput);
+            if (((JSONObject) rawInput).getString("description") != null) {
+                title = ((JSONObject) rawInput).getString("description");
+            }
+        }
+        if (rawInput instanceof JSONArray && !((JSONArray) rawInput).isEmpty()) {
+            componentExecuteResult.setInput(rawInput);
+        }
+
+        //kind
+        String kind = jsonObject.getString("kind");
+        if (kind != null) {
+            componentExecuteResult.setKind(kind);
+        } else {
+            kind = componentExecuteResult.getKind();
+        }
+
+        // 文件操作
+        if ("edit".equals(kind) && CollectionUtils.isEmpty(componentExecuteResult.getLocations())) {
+            List<Object> locations = jsonObject.getJSONArray("locations");
+            if (locations != null) {
+                componentExecuteResult.setLocations(locations);
+            } else {
+                Object content = jsonObject.get("content");
+                String path = null;
+                if (content instanceof JSONArray && !((JSONArray) content).isEmpty()) {
+                    List<Object> locations0 = new ArrayList<>();
+                    for (Object item : ((JSONArray) content)) {
+                        if (item instanceof JSONObject) {
+                            JSONObject location = new JSONObject();
+                            path = ((JSONObject) item).getString("filePath");
+                            if (path == null) {
+                                continue;
+                            }
+                            location.put("path", path);
+                            location.put("filePath", path);
+                            location.put("file_path", path);
+                            locations0.add(location);
+                        }
+                    }
+                    componentExecuteResult.setLocations(locations0);
+                }
+                if (path != null && title != null && (title.startsWith("Write") || title.startsWith("Edit") || title.startsWith("Read"))) {
+                    title = title + " " + path;
+                    componentExecutingDto.setOriginalTitle(title);
+                }
+            }
+        }
+
+        if ("execute".equals(kind) && title != null && !title.startsWith("Terminal")) {
+            title = "Terminal " + title;
+        }
+
+        if (title != null && (title.startsWith("Write") || title.startsWith("Edit"))) {
+            if (componentExecuteResult.getInput() == null) {
+                componentExecuteResult.setInput(jsonObject.get("content"));
+            }
+            if (jsonObject.get("rawOutput") != null) {
+                componentExecuteResult.setData(jsonObject.get("rawOutput"));
+            }
+        }
+
+        if (StringUtils.isNotBlank(title)) {
+            title = rewriteTitle(title, jsonObject, langMap);
+            if (title != null) {
+                componentExecuteResult.setName(title);
+                componentExecutingDto.setName(title);
+            }
+        }
+        componentExecuteResult.setKind(kind);
+
         String status = jsonObject.getString("status");
         if (status != null && (status.equals("completed") || status.equals("failed"))) {
-            if (componentExecutingDto == null) {
-                return new ComponentExecutingDto();
-            }
-            ComponentExecuteResult result = componentExecutingDto.getResult();
-            result.setEndTime(System.currentTimeMillis());
-            result.setSuccess(!"failed".equals(jsonObject.getString("status")));
+            componentExecuteResult.setEndTime(System.currentTimeMillis());
+            componentExecuteResult.setSuccess(!"failed".equals(jsonObject.getString("status")));
             componentExecutingDto.setStatus(status.equals("completed") ? ExecuteStatusEnum.FINISHED : ExecuteStatusEnum.FAILED);
             if (jsonObject.get("content") != null) {
-                result.setData(jsonObject.get("content"));
+                componentExecuteResult.setData(jsonObject.get("content"));
             }
             return componentExecutingDto;
         }
 
-        String title = jsonObject.getString("title");
-        if (title != null && title.contains("mcp__chrome")) {
-            title = title.replace("mcp__chrome-devtools", "mcp__browser");
-        }
-        if (jsonObject.get("rawInput") != null && jsonObject.get("rawInput") instanceof JSONObject) {
-            if (jsonObject.getJSONObject("rawInput").getString("description") != null) {
-                title = jsonObject.getJSONObject("rawInput").getString("description");
-            }
-        }
-        String kind = null;
-        List<Object> locations = jsonObject.getJSONArray("locations");
-        if (locations != null) {
-            kind = jsonObject.getString("kind");
-        }
-        if (StringUtils.isBlank(title) && componentExecutingDto != null && StringUtils.isNotBlank(componentExecutingDto.getName())) {
-            title = componentExecutingDto.getName();
-        }
-        title = rewriteTitle(title, jsonObject);
-        ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
-        componentExecuteResult.setExecuteId(jsonObject.getString("toolCallId"));
-        componentExecuteResult.setStartTime(System.currentTimeMillis());
-        componentExecuteResult.setId(-1L);
-        componentExecuteResult.setName(title);
-        componentExecuteResult.setType(ComponentTypeEnum.ToolCall);
-        componentExecuteResult.setInput(jsonObject.get("rawInput"));
-        componentExecuteResult.setKind(kind);
-        componentExecuteResult.setLocations(locations);
-        componentExecutingDto = new ComponentExecutingDto();
-        componentExecutingDto.setTargetId(-1L);
-        componentExecutingDto.setName(title);
-        componentExecutingDto.setType(ComponentTypeEnum.ToolCall);
         componentExecutingDto.setStatus(ExecuteStatusEnum.EXECUTING);
-        componentExecutingDto.setResult(componentExecuteResult);
-        componentExecutingDtoMap.put(toolCallId, componentExecutingDto);
         return componentExecutingDto;
     }
 
-    private static String rewriteTitle(String title, JSONObject jsonObject) {
+    private static String rewriteTitle(String title, JSONObject jsonObject, Map<String, String> langMap) {
         if ("Skill".equalsIgnoreCase(title)) {
             Object o = jsonObject.get("rawInput");
             if (o instanceof JSONObject) {
                 String skillName = ((JSONObject) o).getString("skill");
                 String skillName0 = ((JSONObject) o).getString("name");
                 if (StringUtils.isNotBlank(skillName)) {
-                    title = "加载技能 " + skillName;
+                    return I18nUtil.systemMessage(langMap, "Backend.Sandbox.LoadSkill") + " " + skillName;
                 } else if (StringUtils.isNotBlank(skillName0)) {
-                    title = "加载技能 " + skillName0;
+                    return I18nUtil.systemMessage(langMap, "Backend.Sandbox.LoadSkill") + " " + skillName0;
                 } else {
-                    title = "加载技能";
+                    return I18nUtil.systemMessage(langMap, "Backend.Sandbox.LoadSkill");
                 }
             }
+            if (jsonObject.getString("rawOutput") != null && jsonObject.getString("rawOutput").contains("Launching skill")) {
+                return I18nUtil.systemMessage(langMap, "Backend.Sandbox.LoadSkill") + " " + jsonObject.getString("rawOutput").replace("Launching skill:", "").trim();
+            }
+            return null;
         } else if (title.startsWith("Write")) {
-            title = title.replaceFirst("Write", "写入文件");
+            title = title.replaceFirst("Write", I18nUtil.systemMessage(langMap, "Backend.Sandbox.WriteFile"));
         } else if (title.startsWith("write")) {
-            title = title.replaceFirst("write", "写入文件");
+            title = title.replaceFirst("write", I18nUtil.systemMessage(langMap, "Backend.Sandbox.WriteFile"));
         } else if (title.startsWith("Edit")) {
-            title = title.replaceFirst("Edit", "编辑文件");
+            title = title.replaceFirst("Edit", I18nUtil.systemMessage(langMap, "Backend.Sandbox.EditFile"));
         } else if (title.startsWith("edit")) {
-            title = title.replaceFirst("edit", "编辑文件");
+            title = title.replaceFirst("edit", I18nUtil.systemMessage(langMap, "Backend.Sandbox.EditFile"));
         } else if (title.startsWith("read")) {
-            title = title.replaceFirst("read", "读取文件");
+            title = title.replaceFirst("read", I18nUtil.systemMessage(langMap, "Backend.Sandbox.ReadFile"));
         } else if (title.startsWith("bash")) {
-            title = title.replaceFirst("bash", "执行命令");
+            title = title.replaceFirst("bash", I18nUtil.systemMessage(langMap, "Backend.Sandbox.ExecuteCommand"));
         } else if (title.startsWith("Terminal")) {
-            title = title.replaceFirst("Terminal", "终端执行");
+            title = title.replaceFirst("Terminal", I18nUtil.systemMessage(langMap, "Backend.Sandbox.TerminalExecute"));
+        } else if (jsonObject.getString("kind") != null && jsonObject.getString("kind").equals("execute")) {
+            title = I18nUtil.systemMessage(langMap, "Backend.Sandbox.TerminalExecute") + " " + title;
         }
-        if (title.startsWith("read") || title.startsWith("edit") || title.startsWith("write") || title.startsWith("读取文件") || title.startsWith("编辑文件") || title.startsWith("写入文件")) {
+        if (title.startsWith("read") || title.startsWith("edit") || title.startsWith("write")) {
             if (jsonObject.get("rawInput") != null && jsonObject.get("rawInput") instanceof JSONObject) {
                 if (jsonObject.getJSONObject("rawInput").getString("filePath") != null) {
                     title = title + " " + jsonObject.getJSONObject("rawInput").getString("filePath");
@@ -1119,11 +1203,11 @@ public class SandboxAgentClient {
         }
 
         if (title.startsWith("glob")) {
-            title = title.replaceFirst("glob", "搜索文件");
+            title = title.replaceFirst("glob", I18nUtil.systemMessage(langMap, "Backend.Sandbox.SearchFiles"));
         }
 
         if (title.startsWith("Read File")) {
-            title = title.replaceFirst("Read File", "读取文件");
+            title = title.replaceFirst("Read File", I18nUtil.systemMessage(langMap, "Backend.Sandbox.ReadFile"));
             if (jsonObject.get("rawInput") != null && jsonObject.get("rawInput") instanceof JSONObject) {
                 if (jsonObject.getJSONObject("rawInput").getString("file_path") != null) {
                     title = title + " " + jsonObject.getJSONObject("rawInput").getString("file_path");
@@ -1131,12 +1215,12 @@ public class SandboxAgentClient {
             }
         }
         if (title.startsWith("mcp__chrome-tools__") || title.startsWith("chrome-tools_")) {
-            if ((title.equals("mcp__chrome-tools__navigate_page") || title.equals("chrome-tools_new_page")) && jsonObject.get("rawInput") != null
+            if ((title.equals("mcp__chrome-tools__navigate_page") || title.equals("mcp__chrome-tools__new_page") || title.equals("chrome-tools_new_page")) && jsonObject.get("rawInput") != null
                     && jsonObject.get("rawInput") instanceof JSONObject && jsonObject.getJSONObject("rawInput").getString("url") != null) {
                 title = title + " " + jsonObject.getJSONObject("rawInput").getString("url");
             }
-            title = title.replaceFirst("mcp__chrome-tools__", "浏览器操作 ");
-            title = title.replaceFirst("chrome-tools_", "浏览器操作 ");
+            title = title.replaceFirst("mcp__chrome-tools__", I18nUtil.systemMessage(langMap, "Backend.Sandbox.BrowserOperation").trim() + " ");
+            title = title.replaceFirst("chrome-tools_", I18nUtil.systemMessage(langMap, "Backend.Sandbox.BrowserOperation").trim() + " ");
         }
         if (title.startsWith("mcp__platform__")) {
             title = title.replaceFirst("mcp__platform__", "");
@@ -1353,7 +1437,7 @@ public class SandboxAgentClient {
                     eventHandler.onEvent(event);
                 }
                 eventHandler.onComplete();
-                log.info("会话结束, url {}", url);
+                log.info("Session ended, url {}", url);
             }
         };
 
@@ -1372,7 +1456,7 @@ public class SandboxAgentClient {
         Disposable disposable = Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(10)).takeUntil(aLong -> isFinished.get()).subscribe(ct -> {
             if (System.currentTimeMillis() - lastTime.get() > 60000) {
                 isFinished.set(true);
-                log.warn("心跳检测，sse连接已断开, url {}", url);
+                log.warn("Heartbeat detection, SSE connection disconnected, url {}", url);
 
                 try {
                     future.cancel(true);

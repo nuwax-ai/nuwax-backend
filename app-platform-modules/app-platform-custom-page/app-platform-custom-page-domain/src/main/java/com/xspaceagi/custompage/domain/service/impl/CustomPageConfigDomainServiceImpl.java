@@ -12,7 +12,9 @@ import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.id.IdGenerator;
 import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.utils.IdGeneratorRetryUtil;
@@ -123,12 +125,12 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
     @Override
     public ReqResult<CustomPageConfigModel> update(CustomPageConfigModel model, UserContext userContext) {
-        log.info("[update] 更新项目, projectId={}", model.getId());
+        log.info("[update] update project, project Id={}", model.getId());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(model.getId());
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", model.getId());
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", model.getId());
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -140,20 +142,20 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(model, userContext);
 
-        log.info("[update] 更新项目成功, projectId={}", model.getId());
+        log.info("[update] update projectsucceeded, project Id={}", model.getId());
         return ReqResult.success(configModel);
     }
 
     @Override
     public ReqResult<List<ProxyConfig>> addProxy(Long projectId, ProxyConfig proxyConfig,
                                                  UserContext userContext) {
-        log.info("[Domain] 更新反向代理配置, projectId={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+        log.info("[Domain] updatereverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -168,9 +170,9 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         for (int i = 0; i < existingProxyConfigs.size(); i++) {
             ProxyConfig existing = existingProxyConfigs.get(i);
             if (existing.getEnv() == proxyConfig.getEnv() && existing.getPath().equals(proxyConfig.getPath())) {
-                log.error("[Domain] 反向代理配置已存在, projectId={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+                log.error("[Domain] reverse proxy configalready exists, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                         proxyConfig.getPath());
-                throw new BizException("0002", "指定环境和路径的代理配置已存在，无法添加");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyEnvPathExists);
             }
         }
 
@@ -187,20 +189,20 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 更新反向代理配置成功, projectId={}, env={}, path={}",
+        log.info("[Domain] updatereverse proxy configsucceeded, project Id={}, env={}, path={}",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(existingProxyConfigs);
     }
 
     @Override
     public ReqResult<Void> editProxy(Long projectId, ProxyConfig proxyConfig, UserContext userContext) {
-        log.info("[Domain] 编辑反向代理配置, projectId={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+        log.info("[Domain] editreverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -221,9 +223,9 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (!found) {
-            log.error("[Domain] 反向代理配置不存在, projectId={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+            log.error("[Domain] Reverse proxy config not found, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                     proxyConfig.getPath());
-            throw new BizException("0002", "指定环境和路径的代理配置不存在，无法编辑");
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyEnvPathNotFoundForEdit);
         }
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
@@ -234,19 +236,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 编辑反向代理配置成功, projectId={}, env={}, path={}",
+        log.info("[Domain] editreverse proxy configsucceeded, project Id={}, env={}, path={}",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> deleteProxy(Long projectId, String env, String path, UserContext userContext) {
-        log.info("[Domain] 删除反向代理配置, projectId={}, env={}, path={}", projectId, env, path);
+        log.info("[Domain] delete reverse proxy config, project Id={}, env={}, path={}", projectId, env, path);
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -269,8 +271,8 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (!found) {
-            log.error("[Domain] 反向代理配置不存在, projectId={}, env={}, path={}", projectId, env, path);
-            throw new BizException("0002", "指定环境和路径的代理配置不存在，无法删除");
+            log.error("[Domain] Reverse proxy config not found, project Id={}, env={}, path={}", projectId, env, path);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyEnvPathNotFoundForDelete);
         }
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
@@ -281,19 +283,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 删除反向代理配置成功, projectId={}, env={}, path={}",
+        log.info("[Domain] delete reverse proxy configsucceeded, project Id={}, env={}, path={}",
                 projectId, env, path);
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> savePathArgs(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[Domain] 配置路径参数, projectId={}, pageUri={}", projectId, pageArgConfig.getPageUri());
+        log.info("[Domain] configure path args, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -329,19 +331,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 配置路径参数成功, projectId={}, pageUri={}",
+        log.info("[Domain] configure path argssucceeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> addPath(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[Domain] 添加路径配置, projectId={}, pageUri={}", projectId, pageArgConfig.getPageUri());
+        log.info("[Domain] add path config, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -356,8 +358,8 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         // 查找是否已存在相同pageUri的配置
         for (PageArgConfig existing : existingPageArgConfigs) {
             if (existing.getPageUri().equals(pageArgConfig.getPageUri())) {
-                log.error("[Domain] 路径配置已存在, projectId={}, pageUri={}", projectId, pageArgConfig.getPageUri());
-                throw new BizException("0003", "指定路径的配置已存在，无法添加");
+                log.error("[Domain] path configalready exists, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPagePathConfigExists);
             }
         }
 
@@ -371,19 +373,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 添加路径配置成功, projectId={}, pageUri={}",
+        log.info("[Domain] add path configsucceeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> editPath(Long projectId, PageArgConfig pageArgConfig, UserContext userContext) {
-        log.info("[Domain] 编辑路径配置, projectId={}, pageUri={}", projectId, pageArgConfig.getPageUri());
+        log.info("[Domain] editpath config, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -408,8 +410,8 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (!found) {
-            log.error("[Domain] 路径配置不存在, projectId={}, pageUri={}", projectId, pageArgConfig.getPageUri());
-            throw new BizException("0004", "指定路径的配置不存在，无法编辑");
+            log.error("[Domain] Path config not found, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPagePathConfigNotFoundForEdit);
         }
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
@@ -420,19 +422,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 编辑路径配置成功, projectId={}, pageUri={}",
+        log.info("[Domain] editpath configsucceeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> deletePath(Long projectId, String pageUri, UserContext userContext) {
-        log.info("[Domain] 删除路径配置, projectId={}, pageUri={}", projectId, pageUri);
+        log.info("[Domain] delete path config, project Id={}, page Uri={}", projectId, pageUri);
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -453,8 +455,8 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (!found) {
-            log.error("[Domain] 路径配置不存在, projectId={}, pageUri={}", projectId, pageUri);
-            throw new BizException("0005", "指定路径的配置不存在，无法删除");
+            log.error("[Domain] Path config not found, project Id={}, page Uri={}", projectId, pageUri);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPagePathConfigNotFoundForDelete);
         }
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
@@ -465,25 +467,25 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 删除路径配置成功, projectId={}, pageUri={}",
+        log.info("[Domain] delete path configsucceeded, project Id={}, page Uri={}",
                 projectId, pageUri);
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> batchConfigProxy(Long projectId, List<ProxyConfig> proxyConfigs, UserContext userContext) {
-        log.info("[Domain] 批量配置反向代理, projectId={}, configCount={}", projectId,
+        log.info("[Domain] batch configure reverse proxy, project Id={}, config Count={}", projectId,
                 proxyConfigs != null ? proxyConfigs.size() : 0);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(proxyConfigs)
-                .orElseThrow(() -> new IllegalArgumentException("反向代理配置列表不能为空"));
+                .orElseThrow(() -> new IllegalArgumentException("reverse proxy configuration list cannot be empty"));
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            throw new BizException("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProjectConfigNotFound);
         }
 
         // 验证配置数据
@@ -497,7 +499,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 批量配置反向代理成功, projectId={}, configCount={}",
+        log.info("[Domain] batch configure reverse proxysucceeded, project Id={}, config Count={}",
                 projectId, proxyConfigs != null ? proxyConfigs.size() : 0);
         return ReqResult.success(null);
     }
@@ -515,19 +517,22 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         for (ProxyConfig config : proxyConfigs) {
             String pathKey = config.getEnv().name() + ":" + config.getPath();
             if (paths.contains(pathKey)) {
-                throw new BizException("0002", "存在重复的路径配置: " + config.getEnv().name() + ":" + config.getPath());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageDuplicatePathConfig,
+                        config.getEnv().name(), config.getPath());
             }
             paths.add(pathKey);
 
             // 检查backend是否为空
             if (config.getBackends() == null || config.getBackends().isEmpty()) {
-                throw new BizException("0003", "后端地址列表不能为空: " + config.getEnv().name() + ":" + config.getPath());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageBackendListEmpty,
+                        config.getEnv().name(), config.getPath());
             }
 
             // 检查每个backend的地址是否为空，并设置默认weight
             for (var backend : config.getBackends()) {
                 if (backend.getBackend() == null || backend.getBackend().trim().isEmpty()) {
-                    throw new BizException("0004", "后端地址不能为空: " + config.getEnv().name() + ":" + config.getPath());
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageBackendAddressEmpty,
+                            config.getEnv().name(), config.getPath());
                 }
                 // 设置默认weight为1
                 if (backend.getWeight() <= 0) {
@@ -538,21 +543,21 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     }
 
     public ReqResult<InputStream> exportProject(Long projectId, ExportTypeEnum exportType, UserContext userContext) {
-        log.info("[exportProject] projectId={}, exportType={},开始导出项目", projectId, exportType);
+        log.info("[export Project] project Id={}, export Type={},startexportproject", projectId, exportType);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
         var buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         Integer latestVersion = buildModel.getCodeVersion() == null ? 0 : buildModel.getCodeVersion();
@@ -563,10 +568,10 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         InputStream inputStream = pageFileBuildClient.exportProject(projectId, exportVersion, exportType.name(), configExportDto);
         if (inputStream == null) {
-            return ReqResult.error("9999", "导出项目失败，server端无响应");
+            return ReqResult.error("9999", "Export project failed: build server returned no response");
         }
 
-        log.info("[exportProject] 导出项目成功, projectId={}, exportType={}, codeVersion={}", projectId, exportType, exportVersion);
+        log.info("[export Project] exportprojectsucceeded, project Id={}, export Type={}, code Version={}", projectId, exportType, exportVersion);
         return ReqResult.success(inputStream);
     }
 
@@ -606,7 +611,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                             try {
                                 spacePermissionService.checkSpaceUserPermission(pluginSpaceId);
                             } catch (Exception e) {
-                                log.info("[exportProject] projectId={},导出用户无插件空间权限,忽略插件,id={}, error={}", configModel.getId(),
+                                log.info("[export Project] project Id={},exportuserno plugin space permission,ignoreplugin,id={}, error={}", configModel.getId(),
                                         pluginSpaceId, e.getMessage());
                                 continue;
                             }
@@ -626,9 +631,10 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         if (pluginMap != null) {
                             dataSourcePlugins.add(pluginMap);
                         } else {
-                            log.warn("[exportProject] projectId={},查询插件详细信息失败,id={}, error={}", configModel.getId(),
+                            log.warn("[export Project] project Id={},queryplugindetailsfailed,id={}, error={}", configModel.getId(),
                                     dataSource.getId(), errResult != null ? errResult.getMessage() : "无响应");
-                            throw new BizException("9999", "查询插件失败,插件[" + dataSource.getId() + ":" + dataSource.getName() + "]");
+                            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPagePluginQueryFailed,
+                                    dataSource.getId(), dataSource.getName());
                         }
 
                     } else if ("workflow".equalsIgnoreCase(dataSource.getType())) {
@@ -646,7 +652,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                             try {
                                 spacePermissionService.checkSpaceUserPermission(workflowSpaceId);
                             } catch (Exception e) {
-                                log.info("[exportProject] projectId={},导出用户无工作流空间权限,忽略工作流,id={}, error={}", configModel.getId(),
+                                log.info("[export Project] project Id={},exportuserno workflow space permission,ignoreworkflow,id={}, error={}", configModel.getId(),
                                         workflowSpaceId, e.getMessage());
                                 continue;
                             }
@@ -666,14 +672,15 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         if (workflowMap != null) {
                             dataSourceWorkflows.add(workflowMap);
                         } else {
-                            log.warn("[exportProject] projectId={},查询工作流详细信息失败,id={}, error={}", configModel.getId(),
+                            log.warn("[export Project] project Id={},queryworkflowdetailsfailed,id={}, error={}", configModel.getId(),
                                     dataSource.getId(), errResult != null ? errResult.getMessage() : "无响应");
-                            throw new BizException("9999", "查询工作流失败,工作流[" + dataSource.getId() + ":" + dataSource.getName() + "]");
+                            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageWorkflowQueryFailed,
+                                    dataSource.getId(), dataSource.getName());
                         }
 
                     }
                 } catch (Exception e) {
-                    log.warn("[exportProject] projectId={},查询数据源详细信息失败, type={}, id={}, error={}", configModel.getId(),
+                    log.warn("[export Project] project Id={},querydata sourcedetailsfailed, type={}, id={}, error={}", configModel.getId(),
                             dataSource.getType(), dataSource.getId(), e.getMessage());
                 }
             }
@@ -686,22 +693,22 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
     @Override
     public ReqResult<Map<String, Object>> queryProjectContent(Long projectId, String command, String proxyPath) {
-        log.info("[Domain] 查询项目文件内容, projectId={}, command={}", projectId, command);
+        log.info("[Domain] query project file content, project Id={}, command={}", projectId, command);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
 
         // 校验空间权限
         // CustomPageConfigModel configModel =
         // customPageConfigRepository.getById(projectId);
         // if (configModel == null) {
-        // return ReqResult.error("0001", "项目不存在");
+        // return ReqResult.error("0001", "Project does not exist");
         // }
         // spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
         Map<String, Object> resp = pageFileBuildClient.getProjectContent(projectId, command, proxyPath);
         if (resp == null) {
-            return ReqResult.error("9999", "查询项目文件内容失败，server端无响应");
+            return ReqResult.error("9999", "Failed to query project file content: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
@@ -713,22 +720,22 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
     @Override
     public ReqResult<Map<String, Object>> queryProjectContentByVersion(Long projectId, Integer codeVersion, String proxyPath) {
-        log.info("[Domain] 查询项目历史版本文件内容, projectId={}, codeVersion={}", projectId, codeVersion);
+        log.info("[Domain] query project historical version file content, project Id={}, code Version={}", projectId, codeVersion);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("projectId不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
 
         Optional.ofNullable(codeVersion).filter(x -> x >= 0)
-                .orElseThrow(() -> new IllegalArgumentException("codeVersion不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("codeVersion is required or invalid"));
 
         // 查询版本是否存在
         var buildModel = customPageBuildRepository.getByProjectId(projectId);
         if (buildModel == null) {
-            return ReqResult.error("0001", "项目不存在");
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         if (codeVersion > buildModel.getCodeVersion()) {
-            return ReqResult.error("0002", "指定版本不存在");
+            return ReqResult.error("0002", "The specified version does not exist");
         }
 
         Map<String, Object> resp = null;
@@ -741,7 +748,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
             }
 
             if (!versionExists) {
-                return ReqResult.error("0002", "指定版本不存在");
+                return ReqResult.error("0002", "The specified version does not exist");
             }
 
             resp = pageFileBuildClient.getProjectContentByVersion(projectId, codeVersion, null, proxyPath);
@@ -750,7 +757,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (resp == null) {
-            return ReqResult.error("9999", "查询项目历史版本文件内容失败，server端无响应");
+            return ReqResult.error("9999", "Failed to query historical project file content: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
@@ -772,11 +779,11 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         List<String> names = new ArrayList<>();
         for (PageArg arg : pageArgConfig.getArgs()) {
             if (arg.getName() == null || arg.getName().trim().isEmpty()) {
-                throw new BizException("0005", "参数名称不能为空");
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "parameter name");
             }
 
             if (names.contains(arg.getName())) {
-                throw new BizException("0006", "存在重复的参数名称: " + arg.getName());
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageDatasourceParamNameDuplicate, arg.getName());
             }
             names.add(arg.getName());
         }
@@ -784,28 +791,28 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
     @Override
     public ReqResult<Void> bindDataSource(Long projectId, DataSourceDto dataSource, UserContext userContext) {
-        log.info("[Domain] 保存数据源, projectId={}, type={}, dataSourceId={}",
+        log.info("[Domain] savedata source, project Id={}, type={}, data Source Id={}",
                 projectId, dataSource.getType(), dataSource.getId());
 
         if (dataSource.getType() == null || dataSource.getType().trim().isEmpty()) {
-            log.error("[Domain] 数据源类型不能为空, projectId={}", projectId);
-            return ReqResult.error("0003", "数据源类型不能为空");
+            log.error("[Domain] data sourcetype cannot be empty, project Id={}", projectId);
+            return ReqResult.error("0003", "Data source type is required");
         }
 
         if (dataSource.getId() == null || dataSource.getId() <= 0) {
-            log.error("[Domain] 数据源ID不能为空或无效, projectId={}", projectId);
-            return ReqResult.error("0004", "数据源ID不能为空或无效");
+            log.error("[Domain] data source ID cannot be empty or invalid, project Id={}", projectId);
+            return ReqResult.error("0004", "Data source ID is required or invalid");
         }
 
         if (dataSource.getName() == null || dataSource.getName().trim().isEmpty()) {
-            log.error("[Domain] 数据源名称不能为空, projectId={}", projectId);
-            return ReqResult.error("0005", "数据源名称不能为空");
+            log.error("[Domain] data sourcename cannot be empty, project Id={}", projectId);
+            return ReqResult.error("0005", "Data source name is required");
         }
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目不存在");
+            log.error("[Domain] Project not found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project does not exist");
         }
 
         // 校验空间权限
@@ -823,7 +830,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                 // 更新现有数据源
                 existingDataSources.set(i, dataSource);
                 found = true;
-                log.info("[Domain] 更新现有数据源, projectId={}, type={}, id={}",
+                log.info("[Domain] update existing data source, project Id={}, type={}, id={}",
                         projectId, dataSource.getType(), dataSource.getId());
                 break;
             }
@@ -831,7 +838,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         if (!found) {
             existingDataSources.add(dataSource);
-            log.info("[Domain] 添加新数据源, projectId={}, type={}, id={}",
+            log.info("[Domain] add new data source, project Id={}, type={}, id={}",
                     projectId, dataSource.getType(), dataSource.getId());
         }
 
@@ -843,20 +850,20 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 保存数据源成功, projectId={}, type={}, id={}",
+        log.info("[Domain] savedata sourcesucceeded, project Id={}, type={}, id={}",
                 projectId, dataSource.getType(), dataSource.getId());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> unbindDataSource(Long projectId, DataSourceDto dataSource, UserContext userContext) {
-        log.info("[unbindDataSource] 解绑数据源, projectId={}, type={}, dataSourceId={}",
+        log.info("[unbind Data Source] unbinddata source, project Id={}, type={}, data Source Id={}",
                 projectId, dataSource.getType(), dataSource.getId());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[unbindDataSource] 项目不存在, projectId={}", projectId);
-            return ReqResult.error("0001", "项目配置不存在");
+            log.error("[unbind Data Source] projectnot found, project Id={}", projectId);
+            return ReqResult.error("0001", "Project configuration does not exist");
         }
 
         // 校验空间权限
@@ -873,16 +880,16 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                 // 删除现有数据源
                 existingDataSources.remove(existing);
                 found = true;
-                log.info("[unbindDataSource] 解绑数据源, projectId={}, type={}, id={}",
+                log.info("[unbind Data Source] unbinddata source, project Id={}, type={}, id={}",
                         projectId, dataSource.getType(), dataSource.getId());
                 break;
             }
         }
 
         if (!found) {
-            log.info("[unbindDataSource] 未找到要解绑的数据源, projectId={}, type={}, id={}",
+            log.info("[unbind Data Source] no data source to unbind found, project Id={}, type={}, id={}",
                     projectId, dataSource.getType(), dataSource.getId());
-            return ReqResult.create("0000", "未找到要解绑的数据源", null);
+            return ReqResult.create("0000", "No data source found to unbind", null);
         }
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
@@ -893,22 +900,22 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] 解绑数据源成功, projectId={}, type={}, id={}",
+        log.info("[Domain] unbinddata sourcesucceeded, project Id={}, type={}, id={}",
                 projectId, dataSource.getType(), dataSource.getId());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Map<String, Object>> delete(Long projectId, UserContext userContext) {
-        log.info("[Domain] 删除项目, projectId={}", projectId);
+        log.info("[Domain] delete project, project Id={}", projectId);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
-                .orElseThrow(() -> new IllegalArgumentException("项目ID不能为空或无效"));
+                .orElseThrow(() -> new IllegalArgumentException("project ID is required or invalid"));
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[Domain] 项目配置不存在, projectId={}", projectId);
-            throw new BizException("0001", "项目配置不存在");
+            log.error("[Domain] Project config not found, project Id={}", projectId);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProjectConfigNotFound);
         }
         CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
 
@@ -926,7 +933,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         // 删除build
         customPageBuildRepository.deleteByProjectId(projectId, userContext);
 
-        log.info("[Domain] 删除项目成功, projectId={}", projectId);
+        log.info("[Domain] delete projectsucceeded, project Id={}", projectId);
         Map<String, Object> map = new HashMap<>();
         map.put("config", configModel);
         map.put("build", buildModel);
@@ -939,26 +946,26 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
      */
     public void importProjectConfig(CustomPageConfigModel model, UserContext userContext) {
         Long projectId = model.getId();
-        log.info("[upload-project] projectId={},开始导入配置文件", projectId);
+        log.info("[upload-project] project Id={},startimportconfig file", projectId);
 
         String proxyPath = "/page/static/" + projectId;
         // 获取项目文件内容
         ReqResult<Map<String, Object>> contentResult = this.queryProjectContent(projectId, "cpage_config", proxyPath);
         if (!contentResult.isSuccess()) {
-            log.warn("[upload-project] projectId={},获取项目文件内容失败", projectId);
+            log.warn("[upload-project] project Id={},getprojectfilecontentfailed", projectId);
             return;
         }
 
         Map<String, Object> data = contentResult.getData();
         Object filesObj = data.get("files");
         if (filesObj == null) {
-            log.info("[upload-project] projectId={},项目文件列表为空", projectId);
+            log.info("[upload-project] project Id={},projectfile list is empty", projectId);
             return;
         }
 
         // 查找 cpage_config.json 文件
         if (!(filesObj instanceof List)) {
-            log.warn("[upload-project] projectId={},filesObj 不是 List 类型", projectId);
+            log.warn("[upload-project] project Id={},files Obj is not a List type", projectId);
             return;
         }
 
@@ -980,28 +987,29 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (configFile == null) {
-            log.info("[upload-project] projectId={},未找到 cpage_config.json 文件", projectId);
+            log.info("[upload-project] project Id={},cpage_config.json file not found", projectId);
             return;
         }
-        log.info("[upload-project] projectId={},找到 cpage_config.json 文件,开始解析配置", projectId);
+        log.info("[upload-project] project Id={},found cpage_config.json file,startparseconfig", projectId);
 
         // 解析配置文件
         try {
             ProjectConfigExportDto configDto = JSON.parseObject(configFile.getContents(),
                     ProjectConfigExportDto.class);
             if (configDto == null) {
-                log.warn("[upload-project] projectId={},配置文件解析失败", projectId);
+                log.warn("[upload-project] project Id={}, failed to parse config file", projectId);
                 return;
             }
-            log.info("[upload-project] projectId={},配置文件已解析,configDto={}", projectId, configDto);
+            log.info("[upload-project] project Id={},config file parsed,config Dto={}", projectId, configDto);
 
             // 应用配置
             applyProjectConfig(model, configDto, userContext);
 
-            log.info("[upload-project] projectId={},配置文件导入成功", projectId);
+            log.info("[upload-project] project Id={},config fileimportsucceeded", projectId);
         } catch (Exception e) {
-            log.error("[upload-project] projectId={},配置文件解析失败", projectId, e);
-            throw new BizException("配置文件解析失败: " + e.getMessage());
+            log.error("[upload-project] project Id={}, failed to parse config file", projectId, e);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageConfigFileParseFailed,
+                    e.getMessage() != null ? e.getMessage() : "");
         }
     }
 
@@ -1011,7 +1019,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     private void applyProjectConfig(CustomPageConfigModel model, ProjectConfigExportDto configDto,
                                     UserContext userContext) {
         Long projectId = model.getId();
-        log.info("[upload-project] projectId={},开始应用配置", projectId);
+        log.info("[upload-project] project Id={},startapplyconfig", projectId);
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
         updateModel.setId(projectId);
@@ -1052,7 +1060,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         // 创建插件
         if (configDto.getDataSourcePlugins() != null && !configDto.getDataSourcePlugins().isEmpty()) {
-            log.info("[upload-project] projectId={},开始创建插件,count={}", projectId,
+            log.info("[upload-project] project Id={},startcreateplugin,count={}", projectId,
                     configDto.getDataSourcePlugins().size());
             for (Map<String, Object> pluginMap : configDto.getDataSourcePlugins()) {
                 try {
@@ -1074,13 +1082,13 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                     com.xspaceagi.agent.core.sdk.dto.ReqResult<Long> pluginResult = agentRpcService
                             .pluginEnableOrUpdate(pluginDto);
                     if (!pluginResult.isSuccess()) {
-                        log.error("[upload-project] projectId={},创建插件失败,message={}",
+                        log.error("[upload-project] project Id={},createpluginfailed,message={}",
                                 projectId,
                                 pluginResult.getMessage());
                         // throw new BizException("创建插件失败: " + pluginResult.getMessage());
                         continue;
                     } else {
-                        log.info("[upload-project] projectId={},创建插件成功,pluginId={}",
+                        log.info("[upload-project] project Id={},createpluginsucceeded,plugin Id={}",
                                 projectId, pluginResult.getData());
                     }
                     Long pluginId = pluginResult.getData();
@@ -1095,14 +1103,14 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         dataSources.add(dataSource);
                     }
                 } catch (Exception e) {
-                    log.error("[upload-project] projectId={},创建插件失败", projectId, e);
+                    log.error("[upload-project] project Id={},createpluginfailed", projectId, e);
                 }
             }
         }
 
         // 创建工作流
         if (configDto.getDataSourceWorkflows() != null && !configDto.getDataSourceWorkflows().isEmpty()) {
-            log.info("[upload-project] projectId={},开始创建工作流,count={}", projectId,
+            log.info("[upload-project] project Id={},startcreateworkflow,count={}", projectId,
                     configDto.getDataSourceWorkflows().size());
             for (Map<String, Object> workflowMap : configDto.getDataSourceWorkflows()) {
                 try {
@@ -1122,11 +1130,11 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                     com.xspaceagi.agent.core.sdk.dto.ReqResult<Long> templateResult = agentRpcService
                             .templateEnableOrUpdate(templateDto);
                     if (!templateResult.isSuccess()) {
-                        log.error("[upload-project] projectId={},创建工作流失败", projectId);
+                        log.error("[upload-project] project Id={}, failed to create workflow", projectId);
                         // throw new BizException("创建工作流失败: " + templateResult.getMessage());
                         continue;
                     } else {
-                        log.info("[upload-project] projectId={},创建工作流成功,workflowId={}",
+                        log.info("[upload-project] project Id={},createworkflowsucceeded,workflow Id={}",
                                 projectId, templateResult.getData());
                     }
                     Long workflowId = templateResult.getData();
@@ -1141,14 +1149,14 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         dataSources.add(dataSource);
                     }
                 } catch (Exception e) {
-                    log.error("[upload-project] projectId={},创建工作流失败", projectId, e);
+                    log.error("[upload-project] project Id={}, failed to create workflow", projectId, e);
                 }
             }
         }
 
         if (!dataSources.isEmpty()) {
             updateModel.setDataSources(dataSources);
-            log.info("[upload-project] projectId={},绑定数据源,dataSources={}", projectId, dataSources);
+            log.info("[upload-project] project Id={},binddata source,data Sources={}", projectId, dataSources);
         }
 
         // 统一更新项目配置
@@ -1161,7 +1169,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
             customPageConfigRepository.updateById(updateModel, userContext);
 
-            log.info("[upload-project] projectId={},更新项目配置成功", projectId);
+            log.info("[upload-project] project Id={},update project configsucceeded", projectId);
         }
     }
 

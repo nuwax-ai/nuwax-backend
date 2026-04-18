@@ -14,7 +14,7 @@ public class ClientRegisterReqDTO {
     /**
      * 名称
      */
-    @NotBlank(message = "名称不能为空")
+    @NotBlank(message = "Name is required")
     @Schema(description = "名称", required = true)
     private String name;
 

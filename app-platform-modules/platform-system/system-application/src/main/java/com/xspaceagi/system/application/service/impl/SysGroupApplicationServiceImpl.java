@@ -166,7 +166,7 @@ public class SysGroupApplicationServiceImpl implements SysGroupApplicationServic
     @Override
     public List<MenuNode> getMenuTreeByGroupId(Long groupId) {
         if (groupId == null) {
-            throw new IllegalArgumentException("组ID不能为空");
+            throw new IllegalArgumentException("Group ID cannot be empty");
         }
 
         // domain层已经构建好的完整菜单树（包含root节点和资源详情，以及绑定类型打标）

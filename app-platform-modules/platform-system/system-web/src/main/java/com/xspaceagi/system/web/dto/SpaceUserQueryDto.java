@@ -11,7 +11,7 @@ import java.io.Serializable;
 public class SpaceUserQueryDto implements Serializable {
 
     @Schema(description = "空间ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotNull(message = "空间ID不能为空")
+    @NotNull(message = "Space ID is required")
     private Long spaceId;
 
     @Schema(description = "关键字", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

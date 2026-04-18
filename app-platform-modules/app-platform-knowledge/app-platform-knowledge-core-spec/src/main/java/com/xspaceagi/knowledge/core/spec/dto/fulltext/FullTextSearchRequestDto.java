@@ -26,20 +26,20 @@ public class FullTextSearchRequestDto {
     /**
      * 知识库ID
      */
-    @NotNull(message = "知识库ID不能为空")
+    @NotNull(message = "Knowledge base ID is required")
     private Long kbId;
 
     /**
      * 查询文本（自然语言）
      */
-    @NotBlank(message = "查询文本不能为空")
+    @NotBlank(message = "Query text is required")
     private String queryText;
 
     /**
      * 返回结果数量（Top-K），默认 10
      */
-    @Min(value = 1, message = "返回结果数量至少为1")
-    @Max(value = 100, message = "返回结果数量最多为100")
+    @Min(value = 1, message = "Result size must be at least 1")
+    @Max(value = 100, message = "Result size must be at most 100")
     @Builder.Default
     private Integer topK = 10;
 
@@ -51,8 +51,8 @@ public class FullTextSearchRequestDto {
     /**
      * BM25 参数：忽略低重要性词的比例（0.0-1.0），默认 0.2
      */
-    @Min(value = 0, message = "dropRatioSearch范围0.0-1.0")
-    @Max(value = 1, message = "dropRatioSearch范围0.0-1.0")
+    @Min(value = 0, message = "dropRatioSearch must be between 0.0 and 1.0")
+    @Max(value = 1, message = "dropRatioSearch must be between 0.0 and 1.0")
     @Builder.Default
     private Float dropRatioSearch = 0.2f;
 

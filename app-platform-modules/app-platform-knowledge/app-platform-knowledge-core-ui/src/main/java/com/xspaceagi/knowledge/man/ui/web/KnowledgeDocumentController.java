@@ -23,7 +23,9 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.page.PageQueryParamVo;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
@@ -268,7 +270,8 @@ public class KnowledgeDocumentController extends BaseController {
                 Double gbSize = fileSize / (1024.0 * 1024 * 1024);
                 //System.out.println("LimitGb："+userDataPermissions.getKnowledgeStorageLimitGb() + ",gbSize:" + gbSize);
                 if (userDataPermissions.getKnowledgeStorageLimitGb().doubleValue() <= gbSize) {
-                    throw new BizException("操作失败，已超过知识库的存储上限！(最大" + userDataPermissions.getKnowledgeStorageLimitGb() + "GB)");
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.knowledgeStorageUpperBound,
+                            userDataPermissions.getKnowledgeStorageLimitGb());
                 }
             }
         }

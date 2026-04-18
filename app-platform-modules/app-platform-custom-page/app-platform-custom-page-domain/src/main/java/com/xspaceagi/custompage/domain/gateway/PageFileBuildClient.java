@@ -37,68 +37,68 @@ public class PageFileBuildClient {
 
     public Map<String, Object> startDev(Long projectId, String devProxyPath) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/build/start-dev").queryParam("projectId", projectId).queryParam("basePath", devProxyPath).toUriString();
-        log.info("[Build-server] projectId={} 调用开发启动接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} call dev start API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用开发启动接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} call dev start API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用开发启动接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} call dev start APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> keepAlive(Long projectId, String devProxyPath, Integer devPid, Integer devPort) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/build/keep-alive").queryParam("projectId", projectId).queryParam("basePath", devProxyPath).queryParam("pid", devPid).queryParam("port", devPort).toUriString();
-        log.info("[Build-server] projectId={} 调用保活接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callkeep-alive API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用保活接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} callkeep-alive API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用保活接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callkeep-alive APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> build(Long projectId, String prodProxyPath) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/build/build").queryParam("projectId", projectId).queryParam("basePath", prodProxyPath).toUriString();
-        log.info("[Build-server] projectId={} 调用构建接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callbuild API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用构建接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} callbuild API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用构建接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callbuild APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> stopDev(Long projectId, Integer pid) {
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl + "/build/stop-dev").queryParam("projectId", projectId).queryParam("pid", pid).toUriString();
-        log.info("[Build-server] projectId={} 调用停止开发服务器接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callstop dev server API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用停止开发服务器接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} callstop dev server API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用停止开发服务器接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callstop dev server APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -110,24 +110,24 @@ public class PageFileBuildClient {
             uriComponentsBuilder.queryParam("pid", pid);
         }
         String url = uriComponentsBuilder.toUriString();
-        log.info("[Build-server] projectId={} 调用重启开发服务器接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callrestart dev server API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用重启开发服务器接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} callrestart dev server API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用重启开发服务器接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callrestart dev server APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> createProject(Long projectId) {
         String url = baseUrl + "/project/create-project";
-        log.info("[Build-server] projectId={} 调用create-project接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callcreate-project API, url={}", projectId, url);
 
         // 创建请求体
         Map<String, Object> requestBody = new HashMap<>();
@@ -143,17 +143,17 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用create-project接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} callcreate-project API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用create-project接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callcreate-project APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> uploadProject(Long projectId, MultipartFile file, Integer codeVersion, Integer pid, String devProxyPath) {
         String url = baseUrl + "/project/upload-project";
-        log.info("[Build-server] projectId={} 调用上传项目接口, url={}, codeVersion={}", projectId, url, codeVersion);
+        log.info("[Build-server] project Id={} callupload project API, url={}, code Version={}", projectId, url, codeVersion);
 
         // 创建请求体，包含文件、projectId和版本号
         HttpHeaders headers = new HttpHeaders();
@@ -176,10 +176,10 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[Build-server] projectId={} 调用上传项目接口, 响应结果={}", projectId, responseBody);
+            log.info("[Build-server] project Id={} callupload project API, response={}", projectId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用上传项目接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callupload project APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -190,17 +190,17 @@ public class PageFileBuildClient {
                 .queryParam("command", command)
                 .queryParam("proxyPath", proxyPath)
                 .toUriString();
-        log.info("[Build-server] projectId={} 调用查询项目内容接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callqueryprojectcontent API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用查询项目内容接口, 已响应", projectId);
+            log.info("[Build-server] project Id={} callqueryprojectcontent API, response sent", projectId);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用查询项目内容接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callqueryprojectcontent APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -212,17 +212,17 @@ public class PageFileBuildClient {
                 .queryParam("command", command)
                 .queryParam("proxyPath", proxyPath)
                 .toUriString();
-        log.info("[Build-server] projectId={} 调用查询项目历史版本内容接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} callqueryprojecthistorical version content API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用查询项目历史版本内容接口, 已响应", projectId);
+            log.info("[Build-server] project Id={} callqueryprojecthistorical version content API, response sent", projectId);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用查询项目历史版本内容接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callqueryprojecthistorical version content APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -232,7 +232,7 @@ public class PageFileBuildClient {
      */
     public Map<String, Object> specifiedFilesUpdate(Long projectId, List<PageFileInfo> files, Integer codeVersion, String devProxyPath, Integer devPid) {
         String url = baseUrl + "/project/specified-files-update";
-        log.info("[Build-server] projectId={} 指定文件修改, url={}", projectId, url);
+        log.info("[Build-server] project Id={} specifiedfileupdate, url={}", projectId, url);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("projectId", String.valueOf(projectId));
@@ -250,10 +250,10 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 指定文件修改, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} specifiedfileupdate, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用指定文件修改接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callspecifiedfileupdate APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -263,7 +263,7 @@ public class PageFileBuildClient {
      */
     public Map<String, Object> allFilesUpdate(Long projectId, List<PageFileInfo> files, Integer codeVersion, String devProxyPath, Integer devPid) {
         String url = baseUrl + "/project/all-files-update";
-        log.info("[Build-server] projectId={} 全量文件修改, url={}", projectId, url);
+        log.info("[Build-server] project Id={} fullfileupdate, url={}", projectId, url);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("projectId", String.valueOf(projectId));
@@ -281,10 +281,10 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 全量文件修改, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} fullfileupdate, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用全量文件修改接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callfullfileupdate APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -294,7 +294,7 @@ public class PageFileBuildClient {
      */
     public Map<String, Object> uploadSingleFile(Long projectId, MultipartFile file, String filePath, Integer codeVersion) {
         String url = baseUrl + "/project/upload-single-file";
-        log.info("[Build-server] projectId={} 上传单个文件, url={}, filePath={}, codeVersion={}", projectId, url, filePath, codeVersion);
+        log.info("[Build-server] project Id={} upload single file, url={}, file Path={}, code Version={}", projectId, url, filePath, codeVersion);
 
         // 创建请求体，包含文件、projectId、filePath和codeVersion
         HttpHeaders headers = new HttpHeaders();
@@ -314,17 +314,17 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[Build-server] projectId={} 上传单个文件, 响应结果={}", projectId, responseBody);
+            log.info("[Build-server] project Id={} upload single file, response={}", projectId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用上传单个文件接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callupload single file APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> uploadAttachmentFile(Long projectId, MultipartFile file, String uploadFileName) {
         String url = baseUrl + "/project/upload-attachment-file";
-        log.info("[Build-server] projectId={} 上传附件, url={}, uploadFileName={}", projectId, url, uploadFileName);
+        log.info("[Build-server] project Id={} upload attachment, url={}, upload File Name={}", projectId, url, uploadFileName);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -341,17 +341,17 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[Build-server] projectId={} 上传附件, 响应结果={}", projectId, responseBody);
+            log.info("[Build-server] project Id={} upload attachment, response={}", projectId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用上传附件接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callupload attachment APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public Map<String, Object> backupCurrentVersion(Long projectId, Integer codeVersion) {
         String url = baseUrl + "/project/backup-current-version";
-        log.info("[Build-server] projectId={} 备份当前版本, url={}, codeVersion={}", projectId, url, codeVersion);
+        log.info("[Build-server] project Id={} backup current version, url={}, code Version={}", projectId, url, codeVersion);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("projectId", String.valueOf(projectId));
@@ -366,10 +366,10 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 备份当前版本, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} backup current version, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用备份当前版本接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callbackup current version APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -379,7 +379,7 @@ public class PageFileBuildClient {
      */
     public Map<String, Object> rollbackVersion(Long projectId, Integer rollbackTo, Integer codeVersion, String devProxyPath, Integer devPid) {
         String url = baseUrl + "/project/rollback-version";
-        log.info("[Build-server] projectId={} 回滚版本, url={}, rollbackTo={}, codeVersion={}", projectId, url, rollbackTo, codeVersion);
+        log.info("[Build-server] project Id={} rollback version, url={}, rollback To={}, code Version={}", projectId, url, rollbackTo, codeVersion);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("projectId", String.valueOf(projectId));
@@ -397,17 +397,17 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 回滚版本, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} rollback version, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用回滚版本接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} callrollback version APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
 
     public InputStream exportProject(Long projectId, Integer codeVersion, String exportType, ProjectConfigExportDto configExportDto) {
         String url = baseUrl + "/project/export-project";
-        log.info("[Build-server] projectId={} 导出项目, url={}, codeVersion={}, exportType={}", projectId, url, codeVersion, exportType);
+        log.info("[Build-server] project Id={} exportproject, url={}, code Version={}, export Type={}", projectId, url, codeVersion, exportType);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("projectId", String.valueOf(projectId));
@@ -424,7 +424,7 @@ public class PageFileBuildClient {
         ResponseEntity<byte[]> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, byte[].class);
 
         byte[] body = entity.getBody();
-        log.info("[Build-server] projectId={} 导出项目, 响应大小={} bytes", projectId, body != null ? body.length : 0);
+        log.info("[Build-server] project Id={} exportproject, response size={} bytes", projectId, body != null ? body.length : 0);
         return body != null ? new ByteArrayInputStream(body) : null;
     }
 
@@ -432,17 +432,17 @@ public class PageFileBuildClient {
         UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + "/project/delete-project").queryParam("projectId", projectId).queryParam("pid", pid);
 
         String url = uriComponentsBuilder.toUriString();
-        log.info("[Build-server] projectId={} 调用删除项目接口, url={}", projectId, url);
+        log.info("[Build-server] project Id={} calldelete project API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] projectId={} 调用删除项目接口, 响应结果={}", projectId, body);
+            log.info("[Build-server] project Id={} calldelete project API, response={}", projectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用删除项目接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} calldelete project APIfailed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -453,17 +453,17 @@ public class PageFileBuildClient {
                 .queryParam("startIndex", startIndex)
                 .queryParam("logType", logType)
                 .toUriString();
-        log.debug("[Build-server] projectId={} 调用查询日志接口, url={}", projectId, url);
+        log.debug("[Build-server] project Id={} callquery logs API, url={}", projectId, url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.debug("[Build-server] projectId={} 调用查询日志接口, 已响应", projectId);
+            log.debug("[Build-server] project Id={} callquery logs API, response sent", projectId);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用查询日志接口失败, status={}, responseBody={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} query logs API failed, status={}, response Body={}", projectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(projectId, e);
         }
     }
@@ -473,7 +473,7 @@ public class PageFileBuildClient {
                 //.queryParam("sourceProjectId", sourceProjectId)
                 //.queryParam("targetProjectId", targetProjectId)
                 .toUriString();
-        log.info("[Build-server] sourceProjectId={},targetProjectId={}, 调用复制项目接口, url={}", sourceProjectId, targetProjectId, url);
+        log.info("[Build-server] source Project Id={},target Project Id={}, callcopyproject API, url={}", sourceProjectId, targetProjectId, url);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("sourceProjectId", String.valueOf(sourceProjectId));
@@ -489,27 +489,27 @@ public class PageFileBuildClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] sourceProjectId={},targetProjectId={}, 调用复制项目接口, 响应结果={}", sourceProjectId, targetProjectId, body);
+            log.info("[Build-server] source Project Id={},target Project Id={}, callcopyproject API, response={}", sourceProjectId, targetProjectId, body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] projectId={} 调用查询日志接口失败, status={}, responseBody={}", sourceProjectId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] project Id={} query logs API failed, status={}, response Body={}", sourceProjectId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(sourceProjectId, e);
         }
     }
 
     public Map<String, Object> getLogCacheStats() {
         String url = baseUrl + "/build/get-log-cache-stats";
-        log.info("[Build-server] 调用获取日志缓存统计接口, url={}", url);
+        log.info("[Build-server] callgetlogcachestats API, url={}", url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] 调用获取日志缓存统计接口, 响应结果={}", body);
+            log.info("[Build-server] callgetlogcachestats API, response={}", body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] 调用获取日志缓存统计接口失败, status={}, responseBody={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] callgetlogcachestats APIfailed, status={}, response Body={}", e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(null, e);
         }
     }
@@ -523,7 +523,7 @@ public class PageFileBuildClient {
         String[] relativeSegments = Arrays.stream(relativePath.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
 
         String url = UriComponentsBuilder.fromHttpUrl(baseUrl).pathSegment(prefixSegments).pathSegment(relativeSegments).toUriString();
-        log.info("[Build-server] logId={} 调用获取静态文件接口, url={}, targetPrefix={}, relativePath={}", logId, url, targetPrefix, relativePath);
+        log.info("[Build-server] log Id={} callgetstaticfile API, url={}, target Prefix={}, relative Path={}", logId, url, targetPrefix, relativePath);
 
         return webClient.get()
                 .uri(url)
@@ -531,27 +531,27 @@ public class PageFileBuildClient {
                 .retrieve()
                 .bodyToFlux(DataBuffer.class)
                 .doOnError(WebClientResponseException.class, e -> {
-                    log.warn("[Build-server] logId={} 调用获取静态文件接口失败, status={}, responseBody={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
+                    log.warn("[Build-server] log Id={} callgetstaticfile APIfailed, status={}, response Body={}", logId, e.getStatusCode(), e.getResponseBodyAsString());
                 }).doOnError(Throwable.class, e -> {
-                    log.error("[Build-server] logId={} 调用获取静态文件接口异常", logId, e);
+                    log.error("[Build-server] log Id={} callgetstaticfile APIexception", logId, e);
                 }).doOnDiscard(DataBuffer.class, DataBufferUtils::release).doOnComplete(() -> {
-                    log.info("[Build-server] logId={} 调用获取静态文件接口, 流式传输完成", logId);
+                    log.info("[Build-server] log Id={} callgetstaticfile API, streaming completed", logId);
                 });
     }
 
     public Map<String, Object> clearAllLogCache() {
         String url = baseUrl + "/build/clear-all-log-cache";
-        log.info("[Build-server] 调用清理日志缓存接口, url={}", url);
+        log.info("[Build-server] callclearlogcache API, url={}", url);
 
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> body = entity.getBody();
-            log.info("[Build-server] 调用清理日志缓存接口, 响应结果={}", body);
+            log.info("[Build-server] callclearlogcache API, response={}", body);
             return body;
         } catch (HttpClientErrorException e) {
-            log.warn("[Build-server] 调用清理日志缓存接口失败, status={}, responseBody={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[Build-server] callclearlogcache APIfailed, status={}, response Body={}", e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(null, e);
         }
     }
@@ -582,7 +582,7 @@ public class PageFileBuildClient {
                 }
             }
         } catch (Exception parseException) {
-            log.error("[Build-server] projectId={} 解析错误响应体失败", projectId, parseException);
+            log.error("[Build-server] project Id={} parse error response body failed", projectId, parseException);
         }
         return resultMap;
     }

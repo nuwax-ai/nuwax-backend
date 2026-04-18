@@ -1,5 +1,7 @@
 package com.xspaceagi.system.application.dto.permission;
 
+import com.xspaceagi.system.spec.annotation.I18n;
+import com.xspaceagi.system.spec.annotation.I18nField;
 import com.xspaceagi.system.spec.enums.SourceEnum;
 import com.xspaceagi.system.spec.enums.StatusEnum;
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
@@ -10,12 +12,14 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+@I18n(module = "PermissionRole")
 @Data
 public class SysRoleDto implements Serializable {
 
     @Schema(description = "ID")
     private Long id;
 
+    @I18nField(keyPrefix = true)
     @Schema(description = "编码")
     private String code;
 

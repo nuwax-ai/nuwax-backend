@@ -22,6 +22,7 @@ import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.page.SuperPage;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -112,7 +113,7 @@ public class HomeController extends BaseController {
             //userAgentDtos根据sort从小到大排序
             homeItemDtos.sort(Comparator.comparing(HomeItemDto::getSort));
             Integer sort = getCategorySort(userAgentCategorySortMap, HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name());
-            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name()).categoryType(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT).name(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.getName()).sort(sort).build());
+            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name()).categoryType(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT).name(I18nUtil.systemMessage("Backend.Home.Category.AgentCollect")).sort(sort).build());
             homeItemListDto.getCategoryItems().put(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name(), homeItemDtos);
         }
 
@@ -122,11 +123,12 @@ public class HomeController extends BaseController {
             List<HomeItemDto> homeItemDtos = publishedDtos.stream().map(publishedDto -> convertToHomeItemDto(publishedDto, userAgentSortMap.get(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name()), usedAgentMap)).collect(Collectors.toList());
             homeItemDtos.sort(Comparator.comparing(HomeItemDto::getSort));
             Integer sort = getCategorySort(userAgentCategorySortMap, HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name());
-            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name()).categoryType(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND).name(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.getName()).sort(sort).build());
+            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name()).categoryType(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND).name(I18nUtil.systemMessage("Backend.Home.Category.AgentRecommend")).sort(sort).build());
             homeItemListDto.getCategoryItems().put(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name(), homeItemDtos);
         }
         //查询用户空间列表
         List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
+        I18nUtil.replaceSystemMessage(spaceDtos);
         //获取spaceDtos的id列表
         List<Long> spaceIds = spaceDtos.stream().map(SpaceDto::getId).toList();
         PublishedQueryDto publishedQueryDto = PublishedQueryDto.builder()
@@ -162,7 +164,7 @@ public class HomeController extends BaseController {
         }
 
         if (homeItemListDto.getCategories().isEmpty()) {
-            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name()).name(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.getName()).build());
+            homeItemListDto.getCategories().add(HomeCategoryDto.builder().type(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_COLLECT.name()).name(I18nUtil.systemMessage("Backend.Home.Category.AgentCollect")).build());
         }
         homeItemListDto.getCategories().sort(Comparator.comparing(HomeCategoryDto::getSort));
         homeItemListDto.getCategoryItems().values().forEach(list -> list.forEach(homeItemDto -> homeItemDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(homeItemDto.getIcon(), homeItemDto.getName()))));

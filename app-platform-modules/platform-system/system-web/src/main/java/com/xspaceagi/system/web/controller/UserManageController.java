@@ -13,7 +13,9 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.web.dto.UserAddDto;
 import com.xspaceagi.system.web.dto.UserStatsDto;
 import com.xspaceagi.system.web.dto.UserUpdateDto;
@@ -159,7 +161,7 @@ public class UserManageController {
      */
     private void checkAdmin() {
         if (((UserDto) RequestContext.get().getUser()).getRole() != User.Role.Admin) {
-            throw new BizException("你没有该操作权限");
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
     }
 }

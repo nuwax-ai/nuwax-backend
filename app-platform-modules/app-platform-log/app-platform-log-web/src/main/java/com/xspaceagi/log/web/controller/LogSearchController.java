@@ -70,10 +70,10 @@ public class LogSearchController extends BaseController {
 
                         return ReqResult.success(result);
                 } catch (LogPlatformException e) {
-                        log.error("日志搜索失败: {}", e.getMessage(), e);
+                        log.error("Log search failed: {}", e.getMessage(), e);
                         return ReqResult.error(e.getCode(), e.getMessage());
                 } catch (Exception e) {
-                        log.error("日志搜索发生未知错误", e);
+                        log.error("Unknown error during log search", e);
                         return ReqResult.error("日志搜索发生未知错误: " + e.getMessage());
                 }
         }
@@ -108,7 +108,7 @@ public class LogSearchController extends BaseController {
                         log.error("日志详情失败: {}", e.getMessage(), e);
                         return ReqResult.error(e.getCode(), e.getMessage());
                 } catch (Exception e) {
-                        log.error("日志详情发生未知错误", e);
+                        log.error("Unknown error while loading log detail", e);
                         return ReqResult.error("日志搜索发生未知错误: " + e.getMessage());
                 }
         }

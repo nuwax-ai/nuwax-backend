@@ -29,7 +29,7 @@ public class TenantCallable<V> implements Callable<V> {
 
     public TenantCallable(Long tenantId, Callable<V> callable) {
         if (Objects.isNull(tenantId)) {
-            throw new IllegalArgumentException("tenantId is null,please assign it");
+            throw new IllegalArgumentException("tenantId is null; please set it");
         }
 
         this.tenantId = tenantId;
