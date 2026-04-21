@@ -5,7 +5,7 @@
   },
   {
     "name": "references/api-docs.md",
-    "contents": "# API 文档\n\n在此处补充与技能相关的接口说明。"
+    "contents": "# API Documentation\n\nAdd interface descriptions related to skills here."
   },
   {
     "name": "scripts/process.py",

@@ -62,8 +62,11 @@ public class WorkflowContext implements Serializable {
 
     private Long originalWorkflowId;
 
-    //工作流作为节点时，相关节点ID
-    private Long workflowAsNodeId;
+    //工作流作为节点时，相关联的上级节点ID列表，用于缓存数据时生成key
+    private String workflowPreIds;
+
+    //工作流作为节点时，相关联的循环节点ID列表，用于缓存数据时生成key
+    private String workflowLoopNodeIndex;
 
     // 相同requestId时是否使用缓存的结果，解决问答场景
     private boolean useResultCache;

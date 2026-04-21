@@ -2031,7 +2031,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 }
             }
         }
-        Object val = redisUtil.get("agent.model.selected:" + agentConfigDto.getId());
+        Object val = redisUtil.get("agent.model.selected:" + userId + ":" + agentConfigDto.getId());
         if (val != null) {
             try {
                 firstModelId = Long.parseLong(val.toString());

@@ -44,6 +44,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -51,6 +52,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -531,11 +533,26 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             } else {
                 // Non-vector model, use chat interface for testing
                 ChatClient chatClient = modelClientFactory.createChatClient(modelConfig);
-                String response = chatClient.prompt()
+                Flux<ChatResponse> chatResponseFlux = chatClient.prompt()
                         .user(testPrompt)
-                        .call().content();
+                        .stream().chatResponse();
+
+                StringBuilder responseBuilder = new StringBuilder();
+                chatResponseFlux
+                        .doOnNext(chatResponse -> {
+                            Generation result = chatResponse.getResult();
+                            if (result != null && result.getOutput() != null) {
+                                AssistantMessage assistantMessage = result.getOutput();
+                                if (assistantMessage.getText() != null) {
+                                    responseBuilder.append(assistantMessage.getText());
+                                }
+                            }
+                        })
+                        .blockLast();
+
+                String response = responseBuilder.toString();
                 log.info("Model connectivity test name={}, return: {}", modelConfig.getName(), response);
-                if (response == null || response.isBlank()) {
+                if (response.isBlank()) {
                     return "No response";
                 }
                 return null;

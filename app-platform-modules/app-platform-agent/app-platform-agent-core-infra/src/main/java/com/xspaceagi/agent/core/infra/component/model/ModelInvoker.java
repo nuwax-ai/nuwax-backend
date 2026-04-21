@@ -213,7 +213,6 @@ public class ModelInvoker extends BaseComponent {
         chatClientRequestSpec = createChatClientRequestSpec(modelContext, functionCallbacks, new Prompt(tempMessages));
         String messageId = modelContext.getRequestId();
         AtomicBoolean thinking = new AtomicBoolean(false);
-        AtomicBoolean addThinkTag = new AtomicBoolean(false);
         AtomicBoolean finished = new AtomicBoolean(false);
         Disposable disposable = chatClientRequestSpec.stream().chatResponse().onErrorResume(throwable -> {
             if (throwable instanceof TimeoutException) {
@@ -232,7 +231,7 @@ public class ModelInvoker extends BaseComponent {
                 return;
             }
             AssistantMessage assistantMessage = chatResponse.getResult().getOutput();
-            doMessage(modelContext, sink, messageId, assistantMessage, assistantMessage.getText(), finalMsgSb, thinking, addThinkTag, finished, null);
+            doMessage(modelContext, sink, messageId, assistantMessage, assistantMessage.getText(), finalMsgSb, thinking, finished, null);
         }, throwable -> doOnError(modelContext, sink, messageId, throwable));
         atomicReference.set(disposable);
         return atomicReference;
@@ -311,7 +310,7 @@ public class ModelInvoker extends BaseComponent {
                 }
             }
 
-            doMessage(modelContext, sink, messageId, assistantMessage, text, finalMsgSb, thinking, addThinkTag, finished, waitingForToolCallInfo);
+            doMessage(modelContext, sink, messageId, assistantMessage, text, finalMsgSb, thinking, finished, waitingForToolCallInfo);
         }, throwable -> doOnError(modelContext, sink, messageId, throwable));
         // Can be dynamically replaced during react process
         atomicReference.set(disposable);
@@ -386,7 +385,7 @@ public class ModelInvoker extends BaseComponent {
     }
 
     private void doMessage(ModelContext modelContext, Sinks.Many<CallMessage> sink, String messageId, AssistantMessage assistantMessage,
-                           String text, StringBuilder msgSb, AtomicBoolean thinking, AtomicBoolean addThinkTag, AtomicBoolean finished, AtomicBoolean waitingForToolCallInfo) {
+                           String text, StringBuilder msgSb, AtomicBoolean thinking, AtomicBoolean finished, AtomicBoolean waitingForToolCallInfo) {
         if (modelContext.getAgentContext().isInterrupted()) {
             if (thinking.get()) {
                 msgSb.append("</think>");
@@ -445,13 +444,6 @@ public class ModelInvoker extends BaseComponent {
                 text = reasoningContent.toString();
             }
         } else if (isReasoningModel) {
-            // Models without reasoning_content field but with think tags
-            // Compatible with reasoning models that have neither reasoning_content nor think start tags
-            if (!addThinkTag.get() && StringUtils.isNotBlank(text) && !text.contains("<think>")) {
-                text = "<think>" + text;
-                addThinkTag.set(true);
-            }
-
             // Do not handle the case where start and end tags are together for now
             if (text != null && text.contains("<think>") && !thinking.get()) {
                 // Start tag processing

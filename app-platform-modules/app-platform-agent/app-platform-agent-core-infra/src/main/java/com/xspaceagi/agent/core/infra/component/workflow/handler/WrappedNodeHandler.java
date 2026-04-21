@@ -62,8 +62,11 @@ public class WrappedNodeHandler implements NodeHandler {
     // 生成key
     private String generateKey(WorkflowContext workflowContext, WorkflowNodeDto node) {
         StringBuilder keyBuilder = new StringBuilder().append("wf_node_res:").append(workflowContext.getRequestId()).append(":").append(node.getId());
-        if (workflowContext.getWorkflowAsNodeId() != null) {
-            keyBuilder.append(":").append(workflowContext.getWorkflowAsNodeId());
+        if (workflowContext.getWorkflowPreIds() != null) {
+            keyBuilder.append(":").append(workflowContext.getWorkflowPreIds());
+        }
+        if (workflowContext.getWorkflowLoopNodeIndex() != null) {
+            keyBuilder.append(":").append(workflowContext.getWorkflowLoopNodeIndex());
         }
         if (node.getLoopNodeId() != null && node.getLoopNodeId() > 0) {
             LoopNodeExecutingDto loopNodeExecutingDto = workflowContext.getExecutingLoopNodeMap().get(node.getLoopNodeId().toString());

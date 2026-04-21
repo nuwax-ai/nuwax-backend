@@ -342,12 +342,23 @@ public class AgentExecutor extends BaseComponent {
     }
 
     private static String buildProcessingText(ComponentExecutingDto componentExecutingDto) {
-        String text = "\n<div><markdown-custom-process executeId=\"{executeId}\" type=\"{type}\" status=\"{status}\" name=\"{name}\"></markdown-custom-process></div>\n";
-        text = text.replace("{executeId}", componentExecutingDto.getResult().getExecuteId())
-                .replace("{type}", componentExecutingDto.getType().name())
-                .replace("{status}", componentExecutingDto.getStatus().name())
-                .replace("{name}", componentExecutingDto.getName());
-        return text;
+        return String.format(
+            "\n<div><markdown-custom-process executeId=\"%s\" type=\"%s\" status=\"%s\" name=\"%s\"></markdown-custom-process></div>\n\n",
+            escapeHtmlAttr(componentExecutingDto.getResult().getExecuteId()),
+            escapeHtmlAttr(componentExecutingDto.getType().name()),
+            escapeHtmlAttr(componentExecutingDto.getStatus().name()),
+            escapeHtmlAttr(componentExecutingDto.getName())
+        );
+    }
+
+    private static String escapeHtmlAttr(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                    .replace("\"", "&quot;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;");
     }
 
     private void chatError(AgentContext agentContext, String message, String reasoningText, Sinks.Many<AgentOutputDto> sink, List<ComponentExecutingDto> componentExecutedList, Throwable e) {
@@ -827,7 +838,7 @@ public class AgentExecutor extends BaseComponent {
             workflowContext1.setAgentContext(agentContext);
             workflowContext1.setRequestId(agentContext.getRequestId());
             workflowContext1.setWorkflowConfig(workflowConfigDto);
-            workflowContext1.setUseResultCache(true);
+            workflowContext1.setUseResultCache(workflowBindConfigDto.isUseResultCache());
             workflowContext1.setAsyncExecute(workflowBindConfigDto.getAsync() != null && workflowBindConfigDto.getAsync() == 1);
             workflowContext1.setAsyncReplyContent(workflowBindConfigDto.getAsyncReplyContent());
             workflowContext1.setNodeExecutingConsumer(nodeExecutingDto -> {

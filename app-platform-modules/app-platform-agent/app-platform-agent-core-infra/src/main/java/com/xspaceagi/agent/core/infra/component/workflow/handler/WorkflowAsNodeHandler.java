@@ -5,6 +5,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowAsNodeConfig
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowExecutor;
+import com.xspaceagi.agent.core.infra.component.workflow.dto.LoopNodeExecutingDto;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
@@ -28,8 +29,17 @@ public class WorkflowAsNodeHandler extends AbstractNodeHandler {
         workflowContext1.setNodeExecutingConsumer(workflowContext.getNodeExecutingConsumer());
         workflowContext1.setOriginalWorkflowId(workflowContext.getOriginalWorkflowId());
         workflowContext1.setUseResultCache(workflowContext.isUseResultCache());
-        workflowContext1.setWorkflowAsNodeId(node.getId());
+        workflowContext1.setWorkflowPreIds(workflowContext.getWorkflowPreIds() == null ? node.getId().toString() : workflowContext.getWorkflowPreIds() + ":" + node.getId().toString());
         workflowContext1.setWorkflowContextServiceHolder(workflowContext.getWorkflowContextServiceHolder());
+        if (node.getLoopNodeId() != null && node.getLoopNodeId() > 0) {
+            LoopNodeExecutingDto loopNodeExecutingDto = workflowContext.getExecutingLoopNodeMap().get(node.getLoopNodeId().toString());
+            if (loopNodeExecutingDto != null) {
+                workflowContext1.setWorkflowLoopNodeIndex(workflowContext.getWorkflowLoopNodeIndex() == null ? loopNodeExecutingDto.getId().toString() + "-" + loopNodeExecutingDto.getIndex()
+                        : workflowContext.getWorkflowLoopNodeIndex() + ":" + loopNodeExecutingDto.getId().toString() + "-" + loopNodeExecutingDto.getIndex());
+            }
+        } else {
+            workflowContext1.setWorkflowLoopNodeIndex(workflowContext.getWorkflowLoopNodeIndex());
+        }
         Map<String, Object> params = extraBindValueMap(workflowContext, node, workflowAsNodeConfigDto.getInputArgs());
         workflowContext1.setParams(params);
         AtomicReference<Set<Disposable>> disposableAtomicReference = new AtomicReference<>(new ConcurrentHashSet<>());

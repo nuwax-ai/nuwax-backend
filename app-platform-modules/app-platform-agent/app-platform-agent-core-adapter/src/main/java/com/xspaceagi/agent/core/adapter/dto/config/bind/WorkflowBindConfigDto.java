@@ -34,6 +34,9 @@ public class WorkflowBindConfigDto implements Serializable {
     @Schema(description = "是否直接输出，0-否，1-是")
     private Integer directOutput;
 
+    // 相同requestId时是否使用缓存的结果，问答场景
+    private boolean useResultCache;
+
     public enum WorkflowInvokeTypeEnum {
         //自动调用、按需调用
         AUTO, ON_DEMAND, MANUAL, MANUAL_ON_DEMAND

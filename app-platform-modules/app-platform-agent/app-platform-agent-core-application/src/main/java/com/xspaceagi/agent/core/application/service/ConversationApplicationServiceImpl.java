@@ -833,6 +833,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     }
 
     public Flux<AgentOutputDto> chat(TryReqDto tryReqDto, Map<String, String> headersFromRequest, boolean isTempChat, Boolean devMode) {
+        log.info("ConversationApplicationServiceImpl.chat {}", tryReqDto);
         ConversationDto conversationDto = getConversation(null, tryReqDto.getConversationId());
         AgentOutputDto errorOutput = new AgentOutputDto();
         errorOutput.setEventType(AgentOutputDto.EventTypeEnum.FINAL_RESULT);
@@ -917,41 +918,41 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
         Object targetConfig = agentConfigDto.getModelComponentConfig().getTargetConfig();
         // 模型变化后是否需要重启智能体（通用智能体需要重启生效）；全局模型在开启代理的情况下无需重启
+        String selectedKey = "agent.model.selected:" + RequestContext.get().getUserId() + ":" + agentConfigDto.getId();
         boolean modelChanged = false;
         // 用户选择了模型
         if (tryReqDto.getModelId() != null && YesOrNoEnum.Y.getKey().equals(agentConfigDto.getAllowOtherModel())) {
-            if (targetConfig instanceof ModelConfigDto modelConfigDto && !modelConfigDto.getId().equals(tryReqDto.getModelId())) {
-                modelChanged = true;
-                Object val = redisUtil.get("agent.model.selected:" + agentConfigDto.getId());
-                if (val != null) {
-                    try {
-                        Long mid = Long.parseLong(val.toString());
-                        if (mid.equals(tryReqDto.getModelId())) {
-                            modelChanged = false;
-                        }
-                    } catch (NumberFormatException ignored) {
+            Object val = redisUtil.get(selectedKey);
+            if (val != null) {
+                try {
+                    Long mid = Long.parseLong(val.toString());
+                    if (!mid.equals(tryReqDto.getModelId())) {
+                        modelChanged = true;
                     }
+                } catch (NumberFormatException ignored) {
                 }
+            } else if (targetConfig instanceof ModelConfigDto modelConfigDto && !modelConfigDto.getId().equals(tryReqDto.getModelId())) {
+                modelChanged = true;
+            }
 
-                ModelConfigDto modelConfigDto1 = modelApplicationService.queryModelConfigById(tryReqDto.getModelId());
-                if (modelConfigDto1 != null) {
-                    boolean hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Tenant;
-                    if (hasPermission && modelConfigDto1.getAccessControl() != null && modelConfigDto1.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
-                        hasPermission = userDataPermission.getModelIds() != null && userDataPermission.getModelIds().contains(modelConfigDto1.getId());
-                    } else if (!hasPermission) {
-                        hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Space && modelConfigDto1.getCreatorId().equals(RequestContext.get().getUserId());
-                    }
-                    if (hasPermission) {
-                        agentConfigDto.getModelComponentConfig().setTargetConfig(modelConfigDto1);
-                        agentConfigDto.getModelComponentConfig().setTargetId(modelConfigDto1.getId());
-                        targetConfig = modelConfigDto1;
-                        redisUtil.set("agent.model.selected:" + agentConfigDto.getId(), tryReqDto.getModelId().toString());
-                    } else {
-                        modelChanged = false;
-                    }
+            ModelConfigDto modelConfigDto1 = modelApplicationService.queryModelConfigById(tryReqDto.getModelId());
+            if (modelConfigDto1 != null) {
+                boolean hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Tenant;
+                if (hasPermission && modelConfigDto1.getAccessControl() != null && modelConfigDto1.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
+                    hasPermission = userDataPermission.getModelIds() != null && userDataPermission.getModelIds().contains(modelConfigDto1.getId());
+                } else if (!hasPermission) {
+                    hasPermission = modelConfigDto1.getScope() == ModelConfig.ModelScopeEnum.Space && modelConfigDto1.getCreatorId().equals(RequestContext.get().getUserId());
+                }
+                if (hasPermission) {
+                    agentConfigDto.getModelComponentConfig().setTargetConfig(modelConfigDto1);
+                    agentConfigDto.getModelComponentConfig().setTargetId(modelConfigDto1.getId());
+                    targetConfig = modelConfigDto1;
+                    redisUtil.set(selectedKey, tryReqDto.getModelId().toString());
                 } else {
                     modelChanged = false;
                 }
+            } else {
+                modelChanged = false;
             }
         }
 
@@ -1057,6 +1058,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow && agentComponentConfigDto.getTargetId() != null && agentComponentConfigDto.getTargetId().equals(qaDto.getWorkflowId())) {
                         WorkflowBindConfigDto bindConfig = (WorkflowBindConfigDto) agentComponentConfigDto.getBindConfig();
                         bindConfig.setInvokeType(WorkflowBindConfigDto.WorkflowInvokeTypeEnum.AUTO);
+                        bindConfig.setUseResultCache(true);
                     }
                 });
             }
