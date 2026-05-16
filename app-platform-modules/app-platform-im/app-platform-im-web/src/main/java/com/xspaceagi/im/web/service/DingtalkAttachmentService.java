@@ -21,7 +21,7 @@ import java.util.List;
 @Service
 public class DingtalkAttachmentService {
 
-    @Resource
+    @Resource(name = "imFileUploadHelper")
     private ImFileUploadHelper fileUploadHelperService;
 
     /**

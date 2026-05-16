@@ -224,6 +224,8 @@ Nuwax AI 智能体平台由多个相互关联的仓库组成：
 
 ## 快速开始
 
+本地通过 OrbStack/Docker Compose 启动后端依赖服务，请参考 [docs/local-backend.md](docs/local-backend.md)。
+
 ### 环境要求
 
 | 组件     | 最低要求   | 推荐配置       |

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class WechatIlinkAttachmentServiceImpl implements WechatIlinkAttachmentService {
 
-    @Resource
+    @Resource(name = "imFileUploadHelper")
     private ImFileUploadHelper fileUploadHelperService;
 
     @Resource

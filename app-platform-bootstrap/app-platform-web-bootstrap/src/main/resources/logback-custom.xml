@@ -57,6 +57,12 @@
                 <appender-ref ref="ASYNC_APP_LOG_FILE"/>
             </then>
         </if>
+        <if condition='"${DEV_MODE}".equals("local")'>
+            <then>
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="ASYNC_APP_LOG_FILE"/>
+            </then>
+        </if>
         <if condition='"${DEV_MODE}".equals("prod")'>
             <then>
                 <appender-ref ref="ASYNC_APP_LOG_FILE"/>

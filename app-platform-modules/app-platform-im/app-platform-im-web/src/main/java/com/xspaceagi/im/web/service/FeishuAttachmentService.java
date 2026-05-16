@@ -25,7 +25,7 @@ import java.util.List;
 @Service
 public class FeishuAttachmentService {
 
-    @Resource
+    @Resource(name = "imFileUploadHelper")
     private ImFileUploadHelper fileUploadHelperService;
 
     /**

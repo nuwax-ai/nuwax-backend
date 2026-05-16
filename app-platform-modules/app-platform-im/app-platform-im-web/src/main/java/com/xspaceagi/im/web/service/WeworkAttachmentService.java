@@ -30,7 +30,7 @@ import java.util.Base64;
 @Service
 public class WeworkAttachmentService {
 
-    @Resource
+    @Resource(name = "imFileUploadHelper")
     private ImFileUploadHelper fileUploadHelperService;
 
     private final RestTemplate restTemplate;

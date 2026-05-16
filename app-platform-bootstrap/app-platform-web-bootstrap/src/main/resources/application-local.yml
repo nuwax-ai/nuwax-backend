@@ -1,0 +1,193 @@
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  datasource:
+    sql-generator:
+      type: mysql
+    dynamic:
+      primary: master
+      strict: false
+      p6spy: false
+      seata: false
+      datasource:
+        master:
+          url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:13306}/${DB_NAME:agent_platform}?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowMultiQueries=true&socketTimeout=300000&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${DB_USERNAME:root}
+          password: ${DB_PASSWORD:nuwax_local_mysql}
+          druid:
+            initial-size: 5
+            min-idle: 5
+            max-active: 20
+            max-wait: 60000
+            time-between-eviction-runs-millis: 60000
+            min-evictable-idle-time-millis: 300000
+            validation-query: SELECT 1 FROM DUAL
+            test-while-idle: true
+            test-on-borrow: false
+            test-on-return: false
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 20
+            filters: stat
+        doris:
+          url: jdbc:mysql://${DORIS_HOST:127.0.0.1}:${DORIS_PORT:13306}/${DORIS_DB_NAME:agent_platform}?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowMultiQueries=true&socketTimeout=300000&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${DORIS_USERNAME:root}
+          password: ${DORIS_PASSWORD:nuwax_local_mysql}
+          table:
+            replication-num: 1
+            bucket-num: 10
+            duplicate-key: id
+            distributed-key: id
+          druid:
+            initial-size: 2
+            min-idle: 2
+            max-active: 10
+            max-wait: 60000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+      password: ${REDIS_PASSWORD:nuwax_local_redis}
+      database: ${REDIS_DB:1}
+      lettuce:
+        pool:
+          max-idle: 16
+          max-active: 32
+          min-idle: 8
+
+  main:
+    allow-circular-references: true
+
+log:
+  level: DEBUG
+
+server:
+  port: ${SERVER_PORT:8081}
+
+jwt:
+  secretKey: ${JWT_SECRET_KEY:nuwax_local_jwt_secret_key_minimum_32_chars}
+
+file:
+  uploadFolder: ${FILE_UPLOAD_FOLDER:/tmp/nuwax-backend/uploads}
+  baseUrl: ${FILE_BASE_URL:http://localhost:8081/api/file}
+
+storage:
+  type: ${STORAGE_TYPE:local}
+
+local:
+  upload:
+    folder: ${LOCAL_UPLOAD_FOLDER:/tmp/nuwax-backend/uploads}
+
+cos:
+  secret-id: ${COS_SECRET_ID:}
+  secret-key: ${COS_SECRET_KEY:}
+  region: ${COS_REGION:ap-chengdu}
+  bucket-name: ${COS_BUCKET_NAME:}
+  endpoint: ${COS_ENDPOINT:}
+  secretId: ${COS_SECRET_ID:}
+  secretKey: ${COS_SECRET_KEY:}
+  baseUrl: ${COS_BASE_URL:}
+
+oss:
+  endpoint: ${OSS_ENDPOINT:}
+  access-key-id: ${OSS_ACCESS_KEY_ID:}
+  access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+  region-name: ${OSS_REGION_NAME:cn-chengdu}
+  bucket-name: ${OSS_BUCKET_NAME:}
+
+s3:
+  endpoint: ${S3_ENDPOINT:}
+  access-key: ${S3_ACCESS_KEY:}
+  secret-key: ${S3_SECRET_KEY:}
+  bucket-name: ${S3_BUCKET_NAME:}
+  region: ${S3_REGION:us-east-1}
+
+vector-store:
+  engine: milvus
+
+milvus:
+  uri: ${MILVUS_URI:http://127.0.0.1:19530}
+  user: ${MILVUS_USER:}
+  password: ${MILVUS_PASSWORD:}
+
+code:
+  execute:
+    url: ${CODE_EXECUTE_URL:http://127.0.0.1:8020/api/run_code_with_log}
+
+log-module:
+  log:
+    rust-service:
+      base-url: ${LOG_SERVICE_URL:http://127.0.0.1:8097}
+      connect-timeout-seconds: 10
+      write-timeout-seconds: 30
+      read-timeout-seconds: 30
+      enable-connection-pool: true
+      max-idle-connections: 5
+      keep-alive-duration-minutes: 5
+
+search:
+  elasticsearch:
+    url: ${ES_URL:http://127.0.0.1:19200}
+    username: ${ES_USERNAME:}
+    password: ${ES_PASSWORD:}
+    api_key: ${ES_API_KEY:}
+
+eco-market:
+  server:
+    base-url: ${ECO_MARKET_SERVER_URL:https://test-agent-market-api.xspaceagi.com}
+  client:
+    retry:
+      interval: 300
+
+mcp:
+  proxy-base-url: ${MCP_PROXY_URL:http://127.0.0.1:8020}
+
+knife4j:
+  enable: true
+  production: false
+
+custom-page:
+  http-proxy:
+    host: ${CUSTOM_PAGE_PROXY_HOST:0.0.0.0}
+    port: ${CUSTOM_PAGE_PROXY_PORT:18082}
+  dev-server-host: ${DEV_SERVER_HOST:http://localhost}
+  prod-server-host: ${PROD_SERVER_HOST:http://localhost:8099}
+  build-server:
+    base-url: ${BUILD_SERVER_URL:http://127.0.0.1:60000/api}
+  ai-agent:
+    base-url: ${AI_AGENT_URL:http://127.0.0.1:8086}
+  docker-proxy:
+    enable: ${DOCKER_PROXY_ENABLE:false}
+    base-url: ${DOCKER_PROXY_URL:http://127.0.0.1:8088}
+
+computer:
+  proxy:
+    host: ${COMPUTER_PROXY_HOST:0.0.0.0}
+    port: ${COMPUTER_PROXY_PORT:18085}
+
+supportCustomDomain: true
+
+reverse:
+  server:
+    inner:
+      service-host: ${SERVICE_HOST:127.0.0.1}
+      bind-host: ${BIND_HOST:0.0.0.0}
+      ports: ${REVERSE_PORTS:30000-40000}
+    outer:
+      host: ${OUTER_HOST:}
+      port: ${OUTER_PORT:10076}
+
+model-api-proxy:
+  base-api-url: ${MODEL_API_BASE_URL:}
+  enable-model-proxy: ${MODEL_PROXY_ENABLE:false}
+  port: ${MODEL_PROXY_PORT:18086}
+  save-log: ${MODEL_PROXY_SAVE_LOG:false}
