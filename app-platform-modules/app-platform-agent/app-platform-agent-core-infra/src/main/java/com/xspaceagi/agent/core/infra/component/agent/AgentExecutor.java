@@ -300,6 +300,16 @@ public class AgentExecutor extends BaseComponent {
         // sandbox补充使用
         agentContext.setComponentExecutingConsumer(modelContext.getComponentExecutingConsumer());
 
+        agentContext.setAcpPermissionConsumer((permissionData) -> {
+            log.info("[ACP PERMISSION] AgentExecutor acpPermissionConsumer invoked, cid {}", agentContext.getConversationId());
+            AgentOutputDto agentOutputDto = new AgentOutputDto();
+            agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.ACP_REQUEST_PERMISSION);
+            agentOutputDto.setRequestId(modelContext.getRequestId());
+            agentOutputDto.setData(permissionData);
+            Sinks.EmitResult emitResult = sink.tryEmitNext(agentOutputDto);
+            log.info("[ACP PERMISSION] AgentExecutor sink emit result: {}, cid {}", emitResult, agentContext.getConversationId());
+        });
+
         Consumer<AgentOutputDto> outputConsumer = agentContext.getOutputConsumer();
         agentContext.setOutputConsumer((agentOutputDto) -> {
             if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.MESSAGE && agentOutputDto.getData() instanceof ChatMessageDto) {

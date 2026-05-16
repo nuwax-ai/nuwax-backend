@@ -205,6 +205,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         SandboxServerConfig.SandboxServer sandboxServer = new SandboxServerConfig.SandboxServer();
         sandboxServer.setServerId(sandboxConfigRpcDto.getId().toString());
         sandboxServer.setServerName(sandboxConfigRpcDto.getName());
+        sandboxServer.setConfigKey(sandboxConfigRpcDto.getConfigKey());
         String hostWithScheme = sandboxConfigRpcDto.getConfigValue().getHostWithScheme();
         if (StringUtils.isBlank(hostWithScheme)) {
             throw new IllegalArgumentException("Invalid agent computer configuration");
@@ -243,6 +244,35 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
             sandboxServer.setPerUserCpuCores(2);
         }
         return sandboxServer;
+    }
+
+    public SandboxServerConfig.SandboxServer getServerBypassOnlineCheck(Long tenantId, String serverId) {
+        try {
+            SandboxConfigRpcDto sandboxConfigRpcDto = iSandboxConfigRpcService.queryById(Long.parseLong(serverId));
+            if (sandboxConfigRpcDto != null) {
+                SandboxServerConfig.SandboxServer sandboxServer = new SandboxServerConfig.SandboxServer();
+                sandboxServer.setServerId(sandboxConfigRpcDto.getId().toString());
+                sandboxServer.setServerName(sandboxConfigRpcDto.getName());
+                sandboxServer.setConfigKey(sandboxConfigRpcDto.getConfigKey());
+                sandboxServer.setScope(sandboxConfigRpcDto.getScope());
+                String hostWithScheme = sandboxConfigRpcDto.getConfigValue().getHostWithScheme();
+                if (StringUtils.isBlank(hostWithScheme)) {
+                    throw new IllegalArgumentException("Invalid agent computer configuration");
+                }
+                if (hostWithScheme.endsWith("/")) {
+                    hostWithScheme = hostWithScheme.substring(0, hostWithScheme.length() - 1);
+                }
+                sandboxServer.setServerAgentUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getAgentPort());
+                sandboxServer.setServerVncUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getVncPort());
+                sandboxServer.setServerFileUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getFileServerPort());
+                sandboxServer.setServerApiKey(sandboxConfigRpcDto.getConfigValue().getApiKey());
+                sandboxServer.setMaxUsers(sandboxConfigRpcDto.getConfigValue().getMaxUsers());
+                return sandboxServer;
+            }
+        } catch (NumberFormatException e) {
+            log.warn("Unable to convert serverId to Long type: {}", serverId);
+        }
+        return null;
     }
 
     @Override

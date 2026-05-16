@@ -31,6 +31,9 @@ public class AgentOutputDto implements Serializable {
         //  心跳
         HEART_BEAT,
         // 异常信息
-        ERROR
+        ERROR,
+
+        // ACP 权限申请（跨端审批）
+        ACP_REQUEST_PERMISSION
     }
 }

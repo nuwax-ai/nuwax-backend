@@ -24,6 +24,7 @@ public class SandboxServerConfig implements Serializable {
         private String serverVncUrl;
         private String serverFileUrl;
         private String serverApiKey;
+        private String configKey;
         private int maxUsers;
         private double perUserMemoryGB;
         private int perUserCpuCores;

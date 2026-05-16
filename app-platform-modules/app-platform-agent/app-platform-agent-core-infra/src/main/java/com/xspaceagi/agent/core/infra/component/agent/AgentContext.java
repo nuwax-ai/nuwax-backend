@@ -83,6 +83,9 @@ public class AgentContext implements Serializable {
     @Schema(description = "组件执行跟踪")
     private Consumer<ComponentExecutingDto> componentExecutingConsumer;
 
+    @Schema(description = "ACP 权限申请事件（Sandbox → Backend → 前端）")
+    private Consumer<Object> acpPermissionConsumer;
+
     private UserDataPermissionDto userDataPermission;
 
     @Schema(description = "是否过滤长期记忆中的敏感信息")

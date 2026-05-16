@@ -625,6 +625,14 @@ public class SandboxAgentClient {
                             sink.next(chatMessageDto);
                         }
 
+                        if (event.type.equals("AcpRequestPermission") || "AcpRequestPermission".equals(jsonObject.getString("subType")) || "request_permission".equals(jsonObject.getString("subType"))) {
+                            Consumer<Object> acpPermissionConsumer = agentContext.getAcpPermissionConsumer();
+                            log.info("[ACP PERMISSION] Received AcpRequestPermission event, cid {}, consumer={}, data={}", agentContext.getConversationId(), acpPermissionConsumer != null ? "SET" : "NULL", data != null ? "PRESENT" : "NULL");
+                            if (acpPermissionConsumer != null && data != null) {
+                                log.info("[ACP PERMISSION] Forwarding permission payload to consumer, cid {}", agentContext.getConversationId());
+                                acpPermissionConsumer.accept(data);
+                            }
+                        }
                         if (event.type.equals("tool_call") || "tool_call".equals(jsonObject.getString("subType")) || event.type.equals("tool_call_update") || "tool_call_update".equals(data.getString("subType"))) {
                             Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
                             if (componentExecutingConsumer != null && data.getString("toolCallId") != null) {
