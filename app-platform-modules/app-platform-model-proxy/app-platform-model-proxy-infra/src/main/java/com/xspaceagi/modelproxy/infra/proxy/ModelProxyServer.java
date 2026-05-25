@@ -2,6 +2,7 @@ package com.xspaceagi.modelproxy.infra.proxy;
 
 import com.xspaceagi.modelproxy.infra.service.TokenLogService;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -35,6 +36,7 @@ public class ModelProxyServer {
     public static AttributeKey<Channel> nextChannelAttributeKey = AttributeKey.newInstance("nextChannel");
     public static AttributeKey<String> accessKeyAttributeKey = AttributeKey.newInstance("accessKey");
     public static AttributeKey<String> backendModelAttributeKey = AttributeKey.newInstance("backendModel");
+    public static AttributeKey<TraceContext> traceContextAttributeKey = AttributeKey.newInstance("traceContext");
     public static AttributeKey<String> backendUrlAttributeKey = AttributeKey.newInstance("backendUrl");
     public static AttributeKey<Queue<Map<String, String>>> logRequestQueueAttributeKey = AttributeKey.newInstance("logRequestQueue");
 

@@ -9,6 +9,7 @@ import com.xspaceagi.system.infra.dao.entity.I18nLang;
 import com.xspaceagi.system.infra.dao.entity.Tenant;
 import com.xspaceagi.system.infra.dao.service.I18nLangService;
 import com.xspaceagi.system.infra.dao.service.I18nService;
+import com.xspaceagi.system.spec.constants.I18nSyncConstants;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
@@ -41,7 +42,7 @@ public class I18nImportServiceImpl implements I18nImportService {
             log.warn("配置项导入失败，版本号为空，tenantId={}", tenant.getId());
             return;
         }
-        List<Map<String, Object>> items = loadConfigFromClasspath(version);
+        List<Map<String, Object>> items = loadConfigItemsFromClasspath(I18nSyncConstants.buildI18nConfigClasspathPath(version));
         if (CollectionUtils.isEmpty(items)) {
             log.warn("配置项导入失败，未读取到可用数据，tenantId={}, version={}", tenant.getId(), version);
             return;
@@ -86,28 +87,42 @@ public class I18nImportServiceImpl implements I18nImportService {
     }
 
     @Override
-    public void overwriteDiffConfigToTenant(Tenant tenant, String version) {
+    public void addConfigToTenant(Tenant tenant, String version) {
+        importDiffConfigsFromClasspath(tenant, version, I18nSyncConstants.buildI18nConfigAddClasspathPath(version), true);
+    }
+
+    @Override
+    public void updateConfigToTenant(Tenant tenant, String version) {
+        importDiffConfigsFromClasspath(tenant, version, I18nSyncConstants.buildI18nConfigUpdateClasspathPath(version), false);
+    }
+
+    /**
+     * @param insertOnly true：仅插入（已存在跳过）；false：仅更新（不存在跳过）
+     */
+    private void importDiffConfigsFromClasspath(Tenant tenant, String version, String classpathPath, boolean insertOnly) {
+        String action = insertOnly ? "新增差异配置导入" : "变更差异配置更新";
         if (tenant == null || tenant.getId() == null) {
-            log.warn("差异配置覆写失败，租户信息无效，version={}", version);
+            log.warn("{}失败，租户信息无效，version={}", action, version);
             return;
         }
         if (StringUtils.isBlank(version)) {
-            log.warn("差异配置覆写失败，版本号为空，tenantId={}", tenant.getId());
+            log.warn("{}失败，版本号为空，tenantId={}", action, tenant.getId());
             return;
         }
-        List<Map<String, Object>> items = loadDiffConfigFromClasspath(version);
+        List<Map<String, Object>> items = loadConfigItemsFromClasspath(classpathPath);
         if (CollectionUtils.isEmpty(items)) {
-            log.warn("差异配置覆写失败，未读取到可用数据，tenantId={}, version={}", tenant.getId(), version);
+            log.warn("{}失败，未读取到可用数据，tenantId={}, version={}, path={}",
+                    action, tenant.getId(), version, classpathPath);
             return;
         }
         List<I18nConfig> uniqueConfigs = parseAndDedupeConfigsFromItems(items, tenant.getId());
         if (CollectionUtils.isEmpty(uniqueConfigs)) {
             if (CollectionUtils.isNotEmpty(items)) {
                 Map<String, Object> sample = items.get(0);
-                log.warn("差异配置覆写失败，解析后无有效配置项，tenantId={}, version={}, rawCount={}, firstEntryKeys={}",
-                        tenant.getId(), version, items.size(), sample == null ? null : sample.keySet());
+                log.warn("{}失败，解析后无有效配置项，tenantId={}, version={}, rawCount={}, firstEntryKeys={}",
+                        action, tenant.getId(), version, items.size(), sample == null ? null : sample.keySet());
             } else {
-                log.warn("差异配置覆写失败，解析后无有效配置项，tenantId={}, version={}", tenant.getId(), version);
+                log.warn("{}失败，解析后无有效配置项，tenantId={}, version={}", action, tenant.getId(), version);
             }
             return;
         }
@@ -122,10 +137,21 @@ public class I18nImportServiceImpl implements I18nImportService {
 
             List<I18nConfig> toSave = new ArrayList<>();
             List<I18nConfig> toUpdate = new ArrayList<>();
+            int skipped = 0;
             for (I18nConfig cfg : uniqueConfigs) {
                 String uk = mysqlUkKey(cfg);
                 I18nConfig hit = existingByUk.get(uk);
-                if (hit != null) {
+                if (insertOnly) {
+                    if (hit != null) {
+                        skipped++;
+                        continue;
+                    }
+                    toSave.add(cfg);
+                } else {
+                    if (hit == null) {
+                        skipped++;
+                        continue;
+                    }
                     hit.setType(cfg.getType());
                     hit.setSide(cfg.getSide());
                     hit.setModule(cfg.getModule());
@@ -135,8 +161,6 @@ public class I18nImportServiceImpl implements I18nImportService {
                     hit.setFieldValue(cfg.getFieldValue());
                     hit.setRemark(cfg.getRemark());
                     toUpdate.add(hit);
-                } else {
-                    toSave.add(cfg);
                 }
             }
             if (CollectionUtils.isNotEmpty(toSave)) {
@@ -145,8 +169,13 @@ public class I18nImportServiceImpl implements I18nImportService {
             if (CollectionUtils.isNotEmpty(toUpdate)) {
                 i18nService.updateBatchById(toUpdate);
             }
-            log.info("差异配置覆写完成，tenantId={}, version={}, inserted={}, updated={}",
-                    tenant.getId(), version, toSave.size(), toUpdate.size());
+            if (insertOnly) {
+                log.info("{}完成，tenantId={}, version={}, inserted={}, skippedExisting={}",
+                        action, tenant.getId(), version, toSave.size(), skipped);
+            } else {
+                log.info("{}完成，tenantId={}, version={}, updated={}, skippedMissing={}",
+                        action, tenant.getId(), version, toUpdate.size(), skipped);
+            }
         });
     }
 
@@ -247,8 +276,7 @@ public class I18nImportServiceImpl implements I18nImportService {
         }
     }
 
-    private List<Map<String, Object>> loadConfigFromClasspath(String version) {
-        String path = "i18n/i18n-config-" + version + ".json";
+    private List<Map<String, Object>> loadConfigItemsFromClasspath(String path) {
         try {
             ClassPathResource resource = new ClassPathResource(path);
             if (!resource.exists()) {
@@ -258,21 +286,6 @@ public class I18nImportServiceImpl implements I18nImportService {
             return unwrapJsonToMapList(json, path, "configs", "items");
         } catch (IOException e) {
             log.warn("读取配置项文件失败，path={}", path, e);
-            return List.of();
-        }
-    }
-
-    private List<Map<String, Object>> loadDiffConfigFromClasspath(String version) {
-        String path = "i18n/i18n-config-diff-" + version + ".json";
-        try {
-            ClassPathResource resource = new ClassPathResource(path);
-            if (!resource.exists()) {
-                return List.of();
-            }
-            String json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return unwrapJsonToMapList(json, path, "configs", "items");
-        } catch (IOException e) {
-            log.warn("读取差异配置项文件失败，path={}", path, e);
             return List.of();
         }
     }

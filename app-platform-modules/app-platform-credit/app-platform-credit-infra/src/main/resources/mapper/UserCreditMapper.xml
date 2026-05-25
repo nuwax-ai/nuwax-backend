@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.credit.infra.dao.mapper.UserCreditMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.credit.infra.dao.entity.UserCredit">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="credit_type" property="creditType"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="used_amount" property="usedAmount"/>
+        <result column="remain_amount" property="remainAmount"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="created" property="created"/>
+        <result column="modified" property="modified"/>
+        <result column="version" property="version"/>
+        <result column="repaid_amount" property="repaidAmount"/>
+        <result column="repay_status" property="repayStatus"/>
+        <result column="remark" property="remark"/>
+        <result column="extra" property="extra"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.xspaceagi.credit.infra.dao.entity.UserCredit" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_credit (user_id, batch_no, credit_type, total_amount, used_amount, remain_amount, expire_time, repaid_amount, repay_status, version, remark, extra)
+        VALUES (#{userId}, #{batchNo}, #{creditType}, #{totalAmount}, #{usedAmount}, #{remainAmount}, #{expireTime}, #{repaidAmount}, #{repayStatus}, 1, #{remark}, #{extra})
+    </insert>
+
+    <update id="updateById" parameterType="com.xspaceagi.credit.infra.dao.entity.UserCredit">
+        UPDATE user_credit
+        <set>
+            <if test="usedAmount != null">used_amount = #{usedAmount},</if>
+            <if test="remainAmount != null">remain_amount = #{remainAmount},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateRemainAmount">
+        UPDATE user_credit
+        SET used_amount = used_amount + #{deductAmount},
+            remain_amount = remain_amount - #{deductAmount}
+        WHERE id = #{id} AND remain_amount >= #{deductAmount}
+    </update>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM user_credit WHERE id = #{id}
+    </select>
+
+    <select id="selectByBatchNo" resultMap="BaseResultMap">
+        SELECT * FROM user_credit WHERE batch_no = #{batchNo} LIMIT 1
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT * FROM user_credit WHERE user_id = #{userId} ORDER BY created DESC
+    </select>
+
+    <select id="selectByUserIdAndType" resultMap="BaseResultMap">
+        SELECT * FROM user_credit WHERE user_id = #{userId} AND credit_type = #{creditType} ORDER BY created DESC
+    </select>
+
+    <select id="selectExpiredCredits" resultMap="BaseResultMap">
+        SELECT * FROM user_credit
+        WHERE user_id = #{userId}
+        <if test="creditType != null">AND credit_type = #{creditType}</if>
+        AND expire_time IS NOT NULL
+        AND expire_time &lt; NOW()
+        AND remain_amount &gt; 0
+        ORDER BY expire_time ASC
+    </select>
+
+    <select id="selectValidCredits" resultMap="BaseResultMap">
+        SELECT * FROM user_credit
+        WHERE user_id = #{userId}
+        <if test="creditType != null">AND credit_type = #{creditType}</if>
+        AND remain_amount &gt; 0
+        AND (expire_time IS NULL OR expire_time &gt; NOW())
+        ORDER BY
+            CASE WHEN expire_time IS NULL THEN 1 ELSE 0 END,
+            expire_time ASC
+    </select>
+
+    <select id="selectValidCreditsOrderByExpireTime" resultMap="BaseResultMap">
+        SELECT * FROM user_credit
+        WHERE user_id = #{userId}
+        AND (expire_time IS NULL OR expire_time &gt; NOW())
+        AND remain_amount &gt; 0
+        ORDER BY
+            CASE WHEN expire_time IS NULL THEN 0 ELSE 1 END,
+            expire_time ASC,
+            created ASC
+    </select>
+
+    <select id="sumRemainAmountByUserId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(remain_amount), 0) + COALESCE(SUM(CASE WHEN credit_type = 5 THEN repaid_amount - total_amount ELSE 0 END), 0)
+        FROM user_credit
+        WHERE user_id = #{userId}
+        AND (remain_amount &gt; 0 OR (credit_type = 5 AND repaid_amount &lt; total_amount))
+        AND (expire_time IS NULL OR expire_time &gt; NOW())
+    </select>
+
+    <select id="sumRemainAmountByUserIdAndType" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(remain_amount), 0)
+        FROM user_credit
+        WHERE user_id = #{userId}
+        AND credit_type = #{creditType}
+        AND remain_amount &gt; 0
+        AND (expire_time IS NULL OR expire_time &gt; NOW())
+    </select>
+
+    <select id="selectSummaryList" resultType="java.util.HashMap">
+        SELECT
+            user_id,
+            COALESCE(SUM(remain_amount), 0) + COALESCE(SUM(CASE WHEN credit_type = 5 THEN repaid_amount - total_amount ELSE 0 END), 0) AS totalCredit,
+            COALESCE(SUM(CASE WHEN credit_type = 1 THEN remain_amount ELSE 0 END), 0) AS subscriptionCredit,
+            COALESCE(SUM(CASE WHEN credit_type = 2 THEN remain_amount ELSE 0 END), 0) AS purchaseCredit,
+            COALESCE(SUM(CASE WHEN credit_type = 3 THEN remain_amount ELSE 0 END), 0) AS activityCredit,
+            COALESCE(SUM(CASE WHEN credit_type = 4 THEN remain_amount ELSE 0 END), 0) AS manualCredit
+        FROM user_credit
+        WHERE (remain_amount &gt; 0 OR (credit_type = 5 AND repaid_amount &lt; total_amount))
+          AND (expire_time IS NULL OR expire_time &gt; NOW())
+        <if test="userId != null">AND user_id = #{userId}</if>
+        GROUP BY user_id
+        ORDER BY user_id ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countSummaryList" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT user_id)
+        FROM user_credit
+        WHERE (remain_amount &gt; 0 OR (credit_type = 5 AND repaid_amount &lt; total_amount))
+          AND (expire_time IS NULL OR expire_time &gt; NOW())
+        <if test="userId != null">AND user_id = #{userId}</if>
+    </select>
+
+    <select id="selectUnpaidLoans" resultMap="BaseResultMap">
+        SELECT * FROM user_credit
+        WHERE user_id = #{userId}
+        AND credit_type = 5
+        AND total_amount &gt; repaid_amount
+        AND repay_status = 0
+        ORDER BY created ASC
+    </select>
+
+    <update id="updateRepayAmount">
+        UPDATE user_credit
+        SET repaid_amount = repaid_amount + #{repayAmount},
+            repay_status = #{repayStatus},
+            version = version + 1,
+            modified = NOW()
+        WHERE id = #{id} AND version = #{version}
+    </update>
+
+</mapper>

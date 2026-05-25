@@ -16,7 +16,6 @@ import com.xspaceagi.memory.app.service.dto.MemoryUnitMergeInfo;
 import com.xspaceagi.memory.infra.dao.entity.MemoryUnit;
 import com.xspaceagi.memory.infra.dao.entity.MemoryUnitTag;
 import com.xspaceagi.memory.sdk.dto.*;
-import com.xspaceagi.system.sdk.retry.annotation.Retry;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
@@ -310,7 +309,6 @@ public class MemoryApplicationServiceImpl implements MemoryApplicationService {
     @Resource
     private MemoryUnitService memoryUnitService;
 
-    @Retry
     @Override
     public List<MemoryExtractDto> createMemory(MemoryMetaData memoryData) {
         boolean hasRequestContext = RequestContext.get() != null;

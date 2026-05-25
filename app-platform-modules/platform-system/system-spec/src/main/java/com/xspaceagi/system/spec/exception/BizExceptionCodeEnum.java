@@ -35,6 +35,7 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     permissionDenied("3020", "无权限", "Permission denied.", "通用"),
 
     //系统管理
+    systemGetTenantFailed("3202", "获取租户信息失败", "Failed to fetch tenant information.", "IM"),
     systemUserNotFound("3001", "用户不存在", "User does not exist.", "用户不存在"),
     systemUserStatusInvalid("3002", "用户启用状态标记异常", "Invalid user enabled status flag.", "用户启用状态标记异常"),
     systemLoginCredentialsInvalid("3003", "用户或密码错误", "Invalid username or password.", "用户或密码错误"),
@@ -193,7 +194,6 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     imWechatChannelNotFoundForUser("3199", "未找到当前用户的微信渠道配置", "No WeChat channel configuration found for the current user.", "IM"),
     imWechatChannelDisabled("3200", "微信渠道配置已禁用", "WeChat channel configuration is disabled.", "IM"),
     imWechatIlinkParseFailed("3201", "微信 iLink 配置解析失败", "Failed to parse WeChat iLink configuration.", "IM"),
-    imTenantFetchFailed("3202", "获取租户信息失败", "Failed to fetch tenant information.", "IM"),
     imCannotResolveTargetId("3207", "无法从配置数据中解析目标唯一标识", "Cannot resolve target unique identifier from configuration data.", "IM"),
     imChannelConfigDuplicate("3208", "该渠道配置已存在", "This channel configuration already exists.", "IM"),
     imChannelConfigDuplicateDetail("3209", "该渠道配置已存在: %s %s %s", "This channel configuration already exists: %s %s %s", "IM"),
@@ -553,8 +553,12 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     agentWorkflowMcpReferenceRemoved("9377", "节点引用的MCP服务已被删除", "MCP service referenced by the node has been deleted.", "工作流"),
     agentWorkflowLoopNotFullyConnected("9378", "循环节点未完整连接", "Loop nodes are not fully connected.", "工作流"),
     agentWorkflowLoopMaxCountInvalid("9379", "循环节点最大循环次数不能小于等于0", "Loop max iterations must be greater than 0.", "工作流"),
-    agentWorkflowConditionBranchesEmpty("9380", "条件分支列表不能为空", "Condition branch list cannot be empty.", "工作流");
+    agentWorkflowConditionBranchesEmpty("9380", "条件分支列表不能为空", "Condition branch list cannot be empty.", "工作流"),
 
+
+    pay_order_not_found("9381", "支付订单不存在", "Payment order not found", "支付"),
+
+    pay_developer_account_not_found("9382", "开发者账户信息不存在", "Developer account not found", "支付");
 
     /**
      * 错误码

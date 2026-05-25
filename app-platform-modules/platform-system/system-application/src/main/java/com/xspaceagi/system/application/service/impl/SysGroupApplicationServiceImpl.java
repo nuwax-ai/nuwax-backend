@@ -3,14 +3,20 @@ package com.xspaceagi.system.application.service.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.xspaceagi.subscription.sdk.dto.PlanDTO;
+import com.xspaceagi.subscription.sdk.dto.UserSubscriptionDTO;
+import com.xspaceagi.subscription.sdk.rpc.ISubscriptionRpcService;
 import com.xspaceagi.system.application.service.SysGroupApplicationService;
 import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
 import com.xspaceagi.system.domain.model.GroupBindMenuModel;
@@ -23,12 +29,15 @@ import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.annotation.ClearUserPermissionCacheByUserIds;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.constants.RedisKeyConstants;
+import com.xspaceagi.system.spec.enums.StatusEnum;
 
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 用户组应用服务实现
  */
+@Slf4j
 @Service
 public class SysGroupApplicationServiceImpl implements SysGroupApplicationService {
 
@@ -36,6 +45,8 @@ public class SysGroupApplicationServiceImpl implements SysGroupApplicationServic
     private SysGroupDomainService sysGroupDomainService;
     @Resource
     private SysUserPermissionCacheService sysUserPermissionCacheService;
+    @Resource
+    private ISubscriptionRpcService subscriptionRpcService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -99,6 +110,52 @@ public class SysGroupApplicationServiceImpl implements SysGroupApplicationServic
     @Override
     public List<SysGroup> getGroupListByUserId(Long userId) {
         return sysGroupDomainService.queryGroupListByUserId(userId);
+    }
+
+    @Override
+    public List<SysGroup> getEffectiveGroupListByUserId(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        List<SysGroup> groupList = getGroupListByUserId(userId);
+        groupList = CollectionUtils.isEmpty(groupList) ? new ArrayList<>() : new ArrayList<>(groupList);
+
+        Set<Long> existingGroupIds = groupList.stream()
+                .map(SysGroup::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<Long> subscriptionGroupIds = getSubscriptionPlanGroupIds(userId);
+        List<Long> additionalGroupIds = subscriptionGroupIds.stream()
+                .filter(id -> !existingGroupIds.contains(id))
+                .toList();
+        if (CollectionUtils.isNotEmpty(additionalGroupIds)) {
+            List<SysGroup> subscriptionGroups = listGroupsByIds(additionalGroupIds);
+            if (CollectionUtils.isNotEmpty(subscriptionGroups)) {
+                groupList.addAll(subscriptionGroups);
+            }
+        }
+
+        return CollectionUtils.isEmpty(groupList)
+                ? List.of()
+                : groupList.stream().filter(g -> StatusEnum.isEnabled(g.getStatus())).toList();
+    }
+
+    private List<Long> getSubscriptionPlanGroupIds(Long userId) {
+        try {
+            UserSubscriptionDTO subscription = subscriptionRpcService.getUserCurrentSystemSubscription(userId);
+            if (subscription == null) {
+                return List.of();
+            }
+            PlanDTO plan = subscription.getPlan();
+            if (plan == null || CollectionUtils.isEmpty(plan.getGroupIds())) {
+                return List.of();
+            }
+            return plan.getGroupIds().stream().filter(Objects::nonNull).distinct().toList();
+        } catch (Exception e) {
+            log.warn("查询用户订阅计划用户组失败, userId={}", userId, e);
+            return List.of();
+        }
     }
 
     @Override

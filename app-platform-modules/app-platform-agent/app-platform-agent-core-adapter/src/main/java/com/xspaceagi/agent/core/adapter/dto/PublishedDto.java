@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -94,4 +95,16 @@ public class PublishedDto implements Serializable {
 
     @Schema(description = "封面图片来源")
     private SourceTypeEnum coverImgSourceType;
+
+    @Schema(description = "是否需要付费")
+    private boolean paymentRequired;
+
+    @Schema(description = "价格")
+    private BigDecimal price;
+
+    @Schema(description = "是否已订阅，对智能体和技能有效")
+    private boolean subscribed;
+
+    @Schema(description = "是否超出调用限制")
+    private boolean overCallLimit;
 }

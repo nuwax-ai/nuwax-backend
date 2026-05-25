@@ -1,0 +1,1978 @@
+{
+  "provider": {
+    "name": "Nuwax",
+    "id": "nuwax",
+    "env": [
+      "DASHSCOPE_API_KEY"
+    ],
+    "npm": "@ai-sdk/openai-compatible",
+    "doc": "https://eco.nuwax.com/models.html",
+    "api": {
+      "OpenAI": "https://api.nuwax.com/v1",
+      "Anthropic": "https://api.nuwax.com/anthropic"
+    },
+    "icon": "https://s3.nuwax.com:9443/nuwax-public/providers/nuwax.png"
+  },
+  "models": [
+    {
+      "id": "MiniMax/MiniMax-M2.7",
+      "name": "MiniMax-M2.7",
+      "family": "minimax",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "family": "minimax",
+      "release_date": "2026-02-12",
+      "last_updated": "2026-02-12",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "name": "DeepSeek R1 0528",
+      "family": "deepseek-thinking",
+      "release_date": "2025-05-28",
+      "last_updated": "2025-05-28",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "family": "deepseek-thinking",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-llama-8b",
+      "name": "DeepSeek R1 Distill Llama 8B",
+      "family": "deepseek-thinking",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-1-5b",
+      "name": "DeepSeek R1 Distill Qwen 1.5B",
+      "family": "qwen",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-14b",
+      "name": "DeepSeek R1 Distill Qwen 14B",
+      "family": "qwen",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-32b",
+      "name": "DeepSeek R1 Distill Qwen 32B",
+      "family": "qwen",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1-distill-qwen-7b",
+      "name": "DeepSeek R1 Distill Qwen 7B",
+      "family": "qwen",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-r1",
+      "name": "DeepSeek R1",
+      "family": "deepseek-thinking",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v3-1",
+      "name": "DeepSeek V3.1",
+      "family": "deepseek",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v3-2-exp",
+      "name": "DeepSeek V3.2 Exp",
+      "family": "deepseek",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v3",
+      "name": "DeepSeek V3",
+      "family": "deepseek",
+      "release_date": "2024-12-01",
+      "last_updated": "2024-12-01",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 65536,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "family": "deepseek-flash",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "structured_output": true,
+      "open_weights": true,
+      "knowledge": "2025-05",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "family": "deepseek-thinking",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "structured_output": true,
+      "open_weights": true,
+      "knowledge": "2025-05",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.1",
+      "name": "GLM-5.1",
+      "family": "glm",
+      "release_date": "2026-04-14",
+      "last_updated": "2026-04-14",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 202752,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "family": "glm",
+      "release_date": "2026-02-11",
+      "last_updated": "2026-02-11",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 202752,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi/kimi-k2.5",
+      "name": "kimi/kimi-k2.5",
+      "family": "kimi",
+      "release_date": "2026-01-27",
+      "last_updated": "2026-01-27",
+      "knowledge": "2025-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": false,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k2-thinking",
+      "name": "Moonshot Kimi K2 Thinking",
+      "family": "kimi",
+      "release_date": "2025-11-06",
+      "last_updated": "2025-11-06",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 262144,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Moonshot Kimi K2.5",
+      "family": "kimi",
+      "release_date": "2026-01-27",
+      "last_updated": "2026-01-27",
+      "knowledge": "2025-01",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": false,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Moonshot Kimi K2.6",
+      "family": "kimi",
+      "release_date": "2026-04-21",
+      "last_updated": "2026-04-21",
+      "knowledge": "2025-01",
+      "attachment": true,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": false,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 262144,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "moonshot-kimi-k2-instruct",
+      "name": "Moonshot Kimi K2 Instruct",
+      "family": "kimi",
+      "release_date": "2025-01-01",
+      "last_updated": "2025-01-01",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "structured_output": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qvq-max",
+      "name": "QVQ Max",
+      "family": "qvq",
+      "release_date": "2025-03-25",
+      "last_updated": "2025-03-25",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-deep-research",
+      "name": "Qwen Deep Research",
+      "family": "qwen",
+      "release_date": "2024-01",
+      "last_updated": "2024-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-doc-turbo",
+      "name": "Qwen Doc Turbo",
+      "family": "qwen",
+      "release_date": "2024-01",
+      "last_updated": "2024-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-flash",
+      "name": "Qwen Flash",
+      "family": "qwen",
+      "release_date": "2025-07-28",
+      "last_updated": "2025-07-28",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-long",
+      "name": "Qwen Long",
+      "family": "qwen",
+      "release_date": "2025-01-25",
+      "last_updated": "2025-01-25",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 10000000,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-math-plus",
+      "name": "Qwen Math Plus",
+      "family": "qwen",
+      "release_date": "2024-08-16",
+      "last_updated": "2024-09-19",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 4096,
+        "output": 3072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-math-turbo",
+      "name": "Qwen Math Turbo",
+      "family": "qwen",
+      "release_date": "2024-09-19",
+      "last_updated": "2024-09-19",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 4096,
+        "output": 3072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-max",
+      "name": "Qwen Max",
+      "family": "qwen",
+      "release_date": "2024-04-03",
+      "last_updated": "2025-01-25",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-mt-plus",
+      "name": "Qwen-MT Plus",
+      "family": "qwen",
+      "release_date": "2025-01",
+      "last_updated": "2025-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": false,
+      "open_weights": false,
+      "limit": {
+        "context": 16384,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-mt-turbo",
+      "name": "Qwen-MT Turbo",
+      "family": "qwen",
+      "release_date": "2025-01",
+      "last_updated": "2025-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": false,
+      "open_weights": false,
+      "limit": {
+        "context": 16384,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-omni-turbo-realtime",
+      "name": "Qwen-Omni Turbo Realtime",
+      "family": "qwen",
+      "release_date": "2025-05-08",
+      "last_updated": "2025-05-08",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen-omni-turbo",
+      "name": "Qwen-Omni Turbo",
+      "family": "qwen",
+      "release_date": "2025-01-19",
+      "last_updated": "2025-03-26",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen-plus-character",
+      "name": "Qwen Plus Character",
+      "family": "qwen",
+      "release_date": "2024-01",
+      "last_updated": "2024-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-plus",
+      "name": "Qwen Plus",
+      "family": "qwen",
+      "release_date": "2024-01-25",
+      "last_updated": "2025-09-11",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-turbo",
+      "name": "Qwen Turbo",
+      "family": "qwen",
+      "release_date": "2024-11-01",
+      "last_updated": "2025-07-15",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-vl-max",
+      "name": "Qwen-VL Max",
+      "family": "qwen",
+      "release_date": "2024-04-08",
+      "last_updated": "2025-08-13",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-vl-ocr",
+      "name": "Qwen-VL OCR",
+      "family": "qwen",
+      "release_date": "2024-10-28",
+      "last_updated": "2025-04-13",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": false,
+      "open_weights": false,
+      "limit": {
+        "context": 34096,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen-vl-plus",
+      "name": "Qwen-VL Plus",
+      "family": "qwen",
+      "release_date": "2024-01-25",
+      "last_updated": "2025-08-15",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-14b-instruct",
+      "name": "Qwen2.5 14B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-32b-instruct",
+      "name": "Qwen2.5 32B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-72b-instruct",
+      "name": "Qwen2.5 72B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-7b-instruct",
+      "name": "Qwen2.5 7B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-coder-32b-instruct",
+      "name": "Qwen2.5-Coder 32B Instruct",
+      "family": "qwen",
+      "release_date": "2024-11",
+      "last_updated": "2024-11",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-coder-7b-instruct",
+      "name": "Qwen2.5-Coder 7B Instruct",
+      "family": "qwen",
+      "release_date": "2024-11",
+      "last_updated": "2024-11",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-math-72b-instruct",
+      "name": "Qwen2.5-Math 72B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 4096,
+        "output": 3072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-math-7b-instruct",
+      "name": "Qwen2.5-Math 7B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 4096,
+        "output": 3072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-omni-7b",
+      "name": "Qwen2.5-Omni 7B",
+      "family": "qwen",
+      "release_date": "2024-12",
+      "last_updated": "2024-12",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-vl-72b-instruct",
+      "name": "Qwen2.5-VL 72B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen2-5-vl-7b-instruct",
+      "name": "Qwen2.5-VL 7B Instruct",
+      "family": "qwen",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3 235B-A22B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-32b",
+      "name": "Qwen3 32B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-asr-flash",
+      "name": "Qwen3-ASR Flash",
+      "family": "qwen",
+      "release_date": "2025-09-08",
+      "last_updated": "2025-09-08",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": false,
+      "tool_call": false,
+      "open_weights": false,
+      "limit": {
+        "context": 53248,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen3-Coder 30B-A3B Instruct",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3-Coder 480B-A35B Instruct",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-flash",
+      "name": "Qwen3 Coder Flash",
+      "family": "qwen",
+      "release_date": "2025-07-28",
+      "last_updated": "2025-07-28",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "family": "qwen",
+      "release_date": "2025-07-23",
+      "last_updated": "2025-07-23",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-max",
+      "name": "Qwen3 Max",
+      "family": "qwen",
+      "release_date": "2025-09-23",
+      "last_updated": "2025-09-23",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3-Next 80B-A3B Instruct",
+      "family": "qwen",
+      "release_date": "2025-09",
+      "last_updated": "2025-09",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3-Next 80B-A3B (Thinking)",
+      "family": "qwen",
+      "release_date": "2025-09",
+      "last_updated": "2025-09",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-omni-flash-realtime",
+      "name": "Qwen3-Omni Flash Realtime",
+      "family": "qwen",
+      "release_date": "2025-09-15",
+      "last_updated": "2025-09-15",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 65536,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-omni-flash",
+      "name": "Qwen3-Omni Flash",
+      "family": "qwen",
+      "release_date": "2025-09-15",
+      "last_updated": "2025-09-15",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 65536,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-vl-235b-a22b",
+      "name": "Qwen3-VL 235B-A22B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-vl-30b-a3b",
+      "name": "Qwen3-VL 30B-A3B",
+      "family": "qwen",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-vl-plus",
+      "name": "Qwen3-VL Plus",
+      "family": "qwen",
+      "release_date": "2025-09-23",
+      "last_updated": "2025-09-23",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B-A17B",
+      "family": "qwen",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-flash",
+      "name": "Qwen3.5 Flash",
+      "family": "qwen",
+      "release_date": "2026-02-23",
+      "last_updated": "2026-02-23",
+      "knowledge": "2025-04",
+      "attachment": true,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "structured_output": true,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "family": "qwen",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.6-max-preview",
+      "name": "Qwen3.6 Max Preview",
+      "family": "qwen",
+      "release_date": "2026-04-20",
+      "last_updated": "2026-04-21",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "structured_output": true,
+      "limit": {
+        "context": 245800,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "family": "qwen",
+      "release_date": "2026-04-02",
+      "last_updated": "2026-04-02",
+      "knowledge": "2025-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwq-32b",
+      "name": "QwQ 32B",
+      "family": "qwen",
+      "release_date": "2024-12",
+      "last_updated": "2024-12",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwq-plus",
+      "name": "QwQ Plus",
+      "family": "qwen",
+      "release_date": "2025-03-05",
+      "last_updated": "2025-03-05",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tongyi-intent-detect-v3",
+      "name": "Tongyi Intent Detect V3",
+      "family": "yi",
+      "release_date": "2024-01",
+      "last_updated": "2024-01",
+      "knowledge": "2024-04",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": false,
+      "open_weights": false,
+      "limit": {
+        "context": 8192,
+        "output": 1024
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

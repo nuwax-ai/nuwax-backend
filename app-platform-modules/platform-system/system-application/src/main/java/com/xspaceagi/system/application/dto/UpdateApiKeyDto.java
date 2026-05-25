@@ -22,4 +22,7 @@ public class UpdateApiKeyDto {
     private Date expire;
     @Schema(description = "接口调用频率限制，每分钟调用次数")
     private List<UserAccessKeyDto.ApiConfig> apiConfigs;
+
+    @Schema(description = "已授权的模型ID列表")
+    private List<Long> modelIds;
 }

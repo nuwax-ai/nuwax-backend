@@ -308,7 +308,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     public List<ImChannelConfig> list(ImChannelConfig query) {
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGetTenantFailed);
         }
         if (query.getSpaceId() == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "spaceId");
@@ -376,7 +376,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
 
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGetTenantFailed);
         }
         var userDto = (UserDto) RequestContext.get().getUser();
         config.setUserId(userDto.getId());
@@ -408,7 +408,7 @@ public class ImChannelConfigApplicationServiceImpl implements ImChannelConfigApp
     private ImChannelConfig addWechatIlinkBotConfig(ImChannelConfig config) {
         RequestContext<?> requestContext = RequestContext.get();
         if (requestContext == null || requestContext.getTenantId() == null) {
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.imTenantFetchFailed);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGetTenantFailed);
         }
         Long tenantId = requestContext.getTenantId();
         Long spaceId = config.getSpaceId();

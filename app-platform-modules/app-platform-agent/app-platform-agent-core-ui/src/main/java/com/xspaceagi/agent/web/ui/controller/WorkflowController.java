@@ -2,6 +2,7 @@ package com.xspaceagi.agent.web.ui.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
@@ -12,6 +13,7 @@ import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowExecutor;
 import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.web.ui.controller.util.SpaceObjectPermissionUtil;
 import com.xspaceagi.agent.web.ui.dto.WorkflowPublishApplyDto;
 import com.xspaceagi.compose.sdk.request.DorisTableDefineRequest;
@@ -22,11 +24,14 @@ import com.xspaceagi.knowledge.domain.model.KnowledgeConfigModel;
 import com.xspaceagi.mcp.sdk.dto.McpComponentDto;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.enums.McpComponentTypeEnum;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -51,10 +56,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
@@ -97,6 +99,9 @@ public class WorkflowController {
 
     @Resource
     private WorkflowExecutor workflowExecutor;
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @RequireResource(COMPONENT_LIB_CREATE)
     @Operation(summary = "新增工作流接口")
@@ -254,7 +259,7 @@ public class WorkflowController {
         }
 
         workflowConfigDto.setNodes(workflowApplicationService.queryWorkflowNodeListForTestExecute(workflowExecuteRequestDto.getWorkflowId()));
-
+        workflowExecuteRequestDto.setTest(true);
         return executeWorkflow(workflowExecuteRequestDto, workflowConfigDto, response);
     }
 
@@ -317,6 +322,42 @@ public class WorkflowController {
                 return;
             }
             long startTimestamp = System.currentTimeMillis();
+
+            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+            workflowContext1.setTraceContext(TraceContext.builder()
+                    .userId(RequestContext.get().getUserId())
+                    .userName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName())
+                    .nickName(userDto.getNickName())
+                    .conversationId(RequestContext.get().getRequestId())
+                    .tenantId(RequestContext.get().getTenantId())
+                    .traceId(RequestContext.get().getRequestId())
+                    .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                    .billUserId(userDto.getId())
+                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                            .targetType(TraceContext.TraceTargetType.Workflow)
+                            .name(workflowConfigDto.getName())
+                            .description(workflowConfigDto.getDescription())
+                            .icon(workflowConfigDto.getIcon())
+                            .targetId(workflowConfigDto.getId().toString())
+                            .build()))
+                    .build());
+            if (workflowContext1.getTraceContext().isEnableSubscription()) {
+                List<PriceEstimate.EstimateTarget> estimateTargets = new ArrayList<>();
+                resourcePricingRpcService.completeWorkflowNodeEstimateTargets(estimateTargets, nodeDto, new HashSet<>());
+                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(),
+                        List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build()));
+                if (!priceEstimate.isPass()) {
+                    WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
+                    workflowExecutingDto.setSuccess(false);
+                    workflowExecutingDto.setRequestId(workflowNodeExecuteRequestDto.getRequestId());
+                    workflowExecutingDto.setMessage(priceEstimate.getMessage());
+                    workflowExecutingDto.setComplete(true);
+                    emitter.next(workflowExecutingDto);
+                    emitter.complete();
+                    return;
+                }
+            }
+
             workflowExecutor.testExecuteNode(workflowContext1, nodeDto).doOnError(e -> {
                 log.warn("Workflow node execution failed {}", nodeDto.getName(), e);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();

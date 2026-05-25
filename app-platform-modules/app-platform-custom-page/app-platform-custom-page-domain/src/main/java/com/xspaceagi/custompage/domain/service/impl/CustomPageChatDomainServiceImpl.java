@@ -1,13 +1,7 @@
 package com.xspaceagi.custompage.domain.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.Map;
-import java.util.List;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -16,231 +10,37 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
-import com.xspaceagi.agent.core.sdk.IAgentRpcService;
 import com.xspaceagi.custompage.domain.gateway.AiAgentClient;
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
-import com.xspaceagi.custompage.domain.keepalive.IKeepAliveService;
-import com.xspaceagi.custompage.domain.proxypath.ICustomPageProxyPathService;
-import com.xspaceagi.custompage.domain.repository.ICustomPageBuildRepository;
-import com.xspaceagi.custompage.domain.model.CustomPageConversationModel;
+import com.xspaceagi.custompage.domain.service.CustomPageAgentProgressCaptureService;
 import com.xspaceagi.custompage.domain.service.ICustomPageChatDomainService;
-import com.xspaceagi.custompage.domain.service.ICustomPageConversationDomainService;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainService {
 
-    @jakarta.annotation.Resource
+    @Resource
     private AiAgentClient aiAgentClient;
-    @jakarta.annotation.Resource
-    private IAgentRpcService agentRpcService;
-    @jakarta.annotation.Resource
-    private IKeepAliveService keepAliveService;
-    @jakarta.annotation.Resource
-    private PageFileBuildClient pageFileBuildClient;
-    @jakarta.annotation.Resource
-    private SpacePermissionService spacePermissionService;
-    @jakarta.annotation.Resource
-    private ModelApplicationService modelApplicationService;
-    @jakarta.annotation.Resource
-    private ICustomPageBuildRepository customPageBuildRepository;
-    @jakarta.annotation.Resource
-    private ICustomPageProxyPathService customPageProxyPathService;
-    @jakarta.annotation.Resource
-    private ICustomPageConversationDomainService customPageConversationDomainService;
+    @Resource
+    private CustomPageAgentProgressCaptureService agentProgressCaptureService;
 
     private final static ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
-    public SseEmitter startAgentSessionSse(String sessionId, Long projectId, UserContext userContext) {
+    public SseEmitter startAgentSessionSse(String sessionId, Long projectId, String requestId,
+            UserContext userContext) {
         if (StringUtils.isBlank(sessionId)) {
             throw new IllegalArgumentException("sessionId is required");
         }
         if (projectId == null || projectId <= 0) {
             throw new IllegalArgumentException("projectId is required");
         }
-
-        SseEmitter emitter = new SseEmitter(10L * 60 * 1000); // 超时时间10分钟
-        List<Map<String, Object>> assistantEvents = Collections.synchronizedList(new ArrayList<>());
-        AtomicReference<String> assistantRequestIdRef = new AtomicReference<>();
-        AtomicBoolean persisted = new AtomicBoolean(false);
-
-        emitter.onCompletion(() -> {
-            log.info("[Domain] SSE connection completed, session Id={}", sessionId);
-            persistAssistantConversationOnce(projectId, sessionId, assistantEvents, assistantRequestIdRef.get(), userContext, persisted);
-        });
-
-        emitter.onTimeout(() -> {
-            log.warn("[Domain] SSE connection timeout, session Id={}", sessionId);
-            persistAssistantConversationOnce(projectId, sessionId, assistantEvents, assistantRequestIdRef.get(), userContext, persisted);
-        });
-
-        emitter.onError((throwable) -> {
-            log.error("[Domain] SSE connection error, session Id={}", sessionId, throwable);
-            persistAssistantConversationOnce(projectId, sessionId, assistantEvents, assistantRequestIdRef.get(), userContext, persisted);
-        });
-
-        aiAgentClient.subscribeSessionSse(sessionId, emitter, projectId, userContext, (eventName, data) -> {
-            collectAssistantEvent(eventName, data, assistantEvents, assistantRequestIdRef);
-            if (isFinalEvent(eventName, data)) {
-                persistAssistantConversationOnce(projectId, sessionId, assistantEvents, assistantRequestIdRef.get(),
-                        userContext, persisted);
-            }
-        });
-        return emitter;
-    }
-
-    private void collectAssistantEvent(String eventName, String data, List<Map<String, Object>> assistantEvents,
-                                       AtomicReference<String> assistantRequestIdRef) {
-        if (!shouldPersist(eventName)) {
-            return;
-        }
-        Map<String, Object> eventRecord = new HashMap<>();
-        eventRecord.put("event", eventName);
-        eventRecord.put("data", parseRawData(data));
-        assistantEvents.add(eventRecord);
-
-        String requestId = extractRequestId(data);
-        if (StringUtils.isNotBlank(requestId)) {
-            assistantRequestIdRef.set(requestId);
-        }
-    }
-
-    private void persistAssistantConversationOnce(Long projectId, String sessionId, List<Map<String, Object>> assistantEvents,
-                                                  String requestId, UserContext userContext, AtomicBoolean persisted) {
-        if (!persisted.compareAndSet(false, true)) {
-            return;
-        }
-        if (assistantEvents.isEmpty()) {
-            return;
-        }
-        boolean createdContext = false;
-        try {
-            RequestContext<Object> requestContext = RequestContext.get();
-            if (requestContext == null) {
-                requestContext = new RequestContext<>();
-                requestContext.setTenantId(userContext.getTenantId());
-                requestContext.setUserId(userContext.getUserId());
-                RequestContext.set(requestContext);
-                createdContext = true;
-            } else {
-                if (requestContext.getTenantId() == null) {
-                    requestContext.setTenantId(userContext.getTenantId());
-                }
-                if (requestContext.getUserId() == null) {
-                    requestContext.setUserId(userContext.getUserId());
-                }
-            }
-
-            CustomPageConversationModel model = new CustomPageConversationModel();
-            model.setProjectId(projectId);
-            model.setTopic("Assistant");
-            model.setContent(JSON.toJSONString(Map.of("events", assistantEvents)));
-            model.setRole("ASSISTANT");
-            model.setSessionId(sessionId);
-            model.setRequestId(requestId);
-            customPageConversationDomainService.saveConversation(model, userContext);
-        } catch (Exception e) {
-            log.warn("[Domain] auto save assistant conversation failed, session Id={}", sessionId, e);
-        } finally {
-            if (createdContext) {
-                RequestContext.remove();
-            }
-        }
-    }
-
-    private boolean shouldPersist(String eventName) {
-        return !"ping".equalsIgnoreCase(eventName);
-    }
-
-    private boolean isFinalEvent(String eventName, String data) {
-        if ("success".equalsIgnoreCase(eventName) || "error".equalsIgnoreCase(eventName)
-                || "canceled".equalsIgnoreCase(eventName)
-                || "end_turn".equalsIgnoreCase(eventName)) {
-            return true;
-        }
-        if (!JSON.isValidObject(data)) {
-            return false;
-        }
-        try {
-            Map<String, Object> payload = objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
-            });
-            Object type = payload.get("type");
-            if (type != null) {
-                String typeStr = String.valueOf(type);
-                if ("success".equalsIgnoreCase(typeStr) || "error".equalsIgnoreCase(typeStr)
-                        || "canceled".equalsIgnoreCase(typeStr)
-                        || "end_turn".equalsIgnoreCase(typeStr)) {
-                    return true;
-                }
-            }
-            Object subType = payload.get("subType");
-            if (subType != null && "end_turn".equalsIgnoreCase(String.valueOf(subType))) {
-                return true;
-            }
-            Object reason = payload.get("reason");
-            if (reason != null && "EndTurn".equalsIgnoreCase(String.valueOf(reason))) {
-                return true;
-            }
-            Object dataObj = payload.get("data");
-            if (dataObj instanceof Map<?, ?> dataMap) {
-                Object nestedReason = dataMap.get("reason");
-                if (nestedReason != null && "EndTurn".equalsIgnoreCase(String.valueOf(nestedReason))) {
-                    return true;
-                }
-                Object nestedSubType = dataMap.get("subType");
-                if (nestedSubType != null && "end_turn".equalsIgnoreCase(String.valueOf(nestedSubType))) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private Object parseRawData(String data) {
-        if (!JSON.isValidObject(data)) {
-            return data;
-        }
-        try {
-            return objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
-            });
-        } catch (Exception e) {
-            return data;
-        }
-    }
-
-    private String extractRequestId(String data) {
-        if (!JSON.isValidObject(data)) {
-            return null;
-        }
-        try {
-            Map<String, Object> payload = objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {
-            });
-            Object requestId = payload.get("request_id");
-            if (requestId != null && StringUtils.isNotBlank(String.valueOf(requestId))) {
-                return String.valueOf(requestId);
-            }
-            Object dataObj = payload.get("data");
-            if (dataObj instanceof Map<?, ?> dataMap) {
-                Object requestIdInData = dataMap.get("request_id");
-                if (requestIdInData != null && StringUtils.isNotBlank(String.valueOf(requestIdInData))) {
-                    return String.valueOf(requestIdInData);
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
+        return agentProgressCaptureService.attachFrontendSse(sessionId, projectId, userContext, requestId);
     }
 
     @Override

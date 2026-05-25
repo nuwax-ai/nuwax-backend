@@ -89,7 +89,7 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
     private boolean completeAuthContext(HttpServletRequest request, UserAccessKeyDto userAccessKeyDto) {
         String originalRequestUri = getOriginalRequestUri(request);
         UserDto userDto = userApplicationService.queryById(userAccessKeyDto.getUserId());
-        if (userDto == null || userDto.getStatus() == User.Status.Disabled) {
+        if (userDto == null || userDto.getStatus() == User.Status.Disabled || userDto.getStatus() == User.Status.Deleted) {
             throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.apiKeyUserDisabled);
         }
         RequestContext.get().setUserId(userDto.getId());

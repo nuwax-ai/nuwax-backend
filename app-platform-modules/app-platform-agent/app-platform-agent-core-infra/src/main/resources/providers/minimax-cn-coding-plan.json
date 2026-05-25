@@ -1,0 +1,162 @@
+{
+  "provider": {
+    "name": "MiniMax Coding Plan",
+    "id": "minimax-cn-coding-plan",
+    "env": [
+      "MINIMAX_API_KEY"
+    ],
+    "npm": "@ai-sdk/anthropic",
+    "doc": "https://platform.minimaxi.com/docs/coding-plan/intro",
+    "api": {
+      "OpenAI": "https://api.minimaxi.com/v1",
+      "Anthropic": "https://api.minimaxi.com/anthropic"
+    },
+    "icon": "https://s3.nuwax.com:9443/nuwax-public/providers/minimax.png"
+  },
+  "models": [
+    {
+      "id": "MiniMax-M2.1",
+      "name": "MiniMax-M2.1",
+      "family": "minimax",
+      "release_date": "2025-12-23",
+      "last_updated": "2025-12-23",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2.5-highspeed",
+      "name": "MiniMax-M2.5-highspeed",
+      "family": "minimax",
+      "release_date": "2026-02-13",
+      "last_updated": "2026-02-13",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "family": "minimax",
+      "release_date": "2026-02-12",
+      "last_updated": "2026-02-12",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2.7-highspeed",
+      "name": "MiniMax-M2.7-highspeed",
+      "family": "minimax",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2.7",
+      "name": "MiniMax-M2.7",
+      "family": "minimax",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "MiniMax-M2",
+      "name": "MiniMax-M2",
+      "family": "minimax",
+      "release_date": "2025-10-27",
+      "last_updated": "2025-10-27",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "limit": {
+        "context": 196608,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

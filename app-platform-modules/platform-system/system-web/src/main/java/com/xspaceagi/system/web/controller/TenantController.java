@@ -32,9 +32,11 @@ public class TenantController {
     @Value("${spring.servlet.multipart.max-file-size:100MB}")
     private String maxFileSize;
 
-
     @Value("${license:}")
     private String license;
+
+    @Value("${model-api-proxy.base-api-url:}")
+    private String baseApiUrl;
 
     @Operation(summary = "租户配置信息查询接口")
     @RequestMapping(path = "/config", method = RequestMethod.GET)
@@ -95,6 +97,15 @@ public class TenantController {
         if (StringUtils.isNotBlank(license)) {
             tenantConfigDto.setCommercialEdition(true);
         }
+
+        String siteUrl = tenantConfigDto.getSiteUrl();
+        if (StringUtils.isNotBlank(baseApiUrl)) {
+            siteUrl = baseApiUrl;
+        }
+        if (siteUrl.endsWith("/")) {
+            siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
+        }
+        tenantConfigDto.setBaseModelApiUrl(siteUrl + "/api/proxy/model");
         I18nUtil.replaceSystemMessage(tenantConfigDto);
         return ReqResult.success(tenantConfigDto);
     }

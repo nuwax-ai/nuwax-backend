@@ -24,7 +24,7 @@ import java.util.HashMap;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "storage.type", havingValue = "cos")
+//@ConditionalOnProperty(name = "storage.type", havingValue = "cos")
 public class CosFileStorageStrategy implements FileStorageStrategy {
 
     @Value("${cos.secret-id:}")

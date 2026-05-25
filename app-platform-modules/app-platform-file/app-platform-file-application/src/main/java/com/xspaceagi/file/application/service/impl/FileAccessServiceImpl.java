@@ -8,6 +8,7 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -127,7 +128,8 @@ public class FileAccessServiceImpl implements IFileAccessService {
             redisUtil.set("file.ak:" + path, ak.toString(), 60 * 60 * 24);
             return fileUrl + "?ak=" + ak;
         }
-        return fileManagementService.generatePresignedUrlByType(fileKey, storageType, 60 * 60 * 24, 0);
+        String url = fileManagementService.generatePresignedUrlByType(fileKey, extractStorageTypeFromFileKey(fileKey), 60 * 60 * 24, 0);
+        return url;
     }
 
     public void checkFileUrlAk(String uri, String ak) {
@@ -152,5 +154,22 @@ public class FileAccessServiceImpl implements IFileAccessService {
         URL url;
         url = new URL(fileUrl);
         return url.getPath();
+    }
+
+    private String extractStorageTypeFromFileKey(String fileKey) {
+        if (StringUtils.isBlank(fileKey)) {
+            return null;
+        }
+
+        // Remove leading slash
+        String key = fileKey.startsWith("/") ? fileKey.substring(1) : fileKey;
+
+        // Extract first segment as storage type
+        int firstSlash = key.indexOf('/');
+        if (firstSlash > 0) {
+            return key.substring(0, firstSlash);
+        }
+
+        return null;
     }
 }

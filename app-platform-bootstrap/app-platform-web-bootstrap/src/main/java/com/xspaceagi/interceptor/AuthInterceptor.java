@@ -201,7 +201,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 log.debug("jwt token: {}", token);
                 UserDto userDto = authService.getLoginUserInfo(token);
                 if (userDto != null && userDto.getTenantId().equals(tenantId)) {
-                    if (userDto.getStatus() == User.Status.Disabled) {
+                    if (userDto.getStatus() == User.Status.Disabled || userDto.getStatus() == User.Status.Deleted) {
                         authService.expireUserAllToken(userDto.getId());
                         throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.systemAccountDisabled);
                     }

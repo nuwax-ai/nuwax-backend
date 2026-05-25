@@ -36,6 +36,7 @@ import com.xspaceagi.knowledge.sdk.response.KnowledgeQaVo;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpExecuteOutput;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
@@ -47,7 +48,6 @@ import com.xspaceagi.system.spec.utils.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -78,8 +78,6 @@ public class AgentExecutor extends BaseComponent {
 
     private ConversationApplicationService conversationApplicationService;
 
-    private ChatMemory chatMemory;
-
     private ModelInvoker modelInvoker;
 
     private WorkflowExecutor workflowExecutor;
@@ -95,7 +93,6 @@ public class AgentExecutor extends BaseComponent {
     @Autowired
     public void setConversationApplicationService(ConversationApplicationService conversationApplicationService) {
         this.conversationApplicationService = conversationApplicationService;
-        this.chatMemory = (ChatMemory) conversationApplicationService;
     }
 
     @Autowired
@@ -148,7 +145,7 @@ public class AgentExecutor extends BaseComponent {
         }
         List<Message> contextMessages = new ArrayList<>();
         if (contextRounds > 0) {
-            contextMessages.addAll(chatMemory.get(agentContext.getConversationId(), contextRounds * 2));
+            contextMessages.addAll(conversationApplicationService.getRoundMessages(agentContext.getConversationId(), contextRounds * 2));
         }
         agentContext.setContextMessages(contextMessages);
 
@@ -215,7 +212,7 @@ public class AgentExecutor extends BaseComponent {
                 .id(UUID.randomUUID().toString().replace("-", ""))
                 .time(new Date())
                 .build();
-        chatMemory.add(agentContext.getConversationId(), userMessageDto);
+        conversationApplicationService.addRoundMessage(agentContext.getConversationId(), userMessageDto);
 
         if (!directOutputResults.isEmpty()) {
             ChatMessageDto chatMessageDto = ChatMessageDto.builder()
@@ -343,11 +340,11 @@ public class AgentExecutor extends BaseComponent {
 
     private static String buildProcessingText(ComponentExecutingDto componentExecutingDto) {
         return String.format(
-            "\n<div><markdown-custom-process executeId=\"%s\" type=\"%s\" status=\"%s\" name=\"%s\"></markdown-custom-process></div>\n\n",
-            escapeHtmlAttr(componentExecutingDto.getResult().getExecuteId()),
-            escapeHtmlAttr(componentExecutingDto.getType().name()),
-            escapeHtmlAttr(componentExecutingDto.getStatus().name()),
-            escapeHtmlAttr(componentExecutingDto.getName())
+                "\n<div><markdown-custom-process executeId=\"%s\" type=\"%s\" status=\"%s\" name=\"%s\"></markdown-custom-process></div>\n\n",
+                escapeHtmlAttr(componentExecutingDto.getResult().getExecuteId()),
+                escapeHtmlAttr(componentExecutingDto.getType().name()),
+                escapeHtmlAttr(componentExecutingDto.getStatus().name()),
+                escapeHtmlAttr(componentExecutingDto.getName())
         );
     }
 
@@ -356,9 +353,9 @@ public class AgentExecutor extends BaseComponent {
             return "";
         }
         return value.replace("&", "&amp;")
-                    .replace("\"", "&quot;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;");
+                .replace("\"", "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     private void chatError(AgentContext agentContext, String message, String reasoningText, Sinks.Many<AgentOutputDto> sink, List<ComponentExecutingDto> componentExecutedList, Throwable e) {
@@ -381,7 +378,7 @@ public class AgentExecutor extends BaseComponent {
                     .time(new Date())
                     .componentExecutedList(componentExecutedList.stream().map(componentExecutingDto -> (Object) componentExecutingDto).toList())
                     .build();
-            chatMemory.add(agentContext.getConversationId(), assistantMessage);
+            conversationApplicationService.addRoundMessage(agentContext.getConversationId(), assistantMessage);
         } else {
             CallMessage callMessage = new CallMessage();
             callMessage.setText("```\n" + e.getMessage() + "\n```");
@@ -430,7 +427,7 @@ public class AgentExecutor extends BaseComponent {
                     .time(new Date())
                     .finished(true)
                     .build();
-            chatMemory.add(agentContext.getConversationId(), assistantMessage);
+            conversationApplicationService.addRoundMessage(agentContext.getConversationId(), assistantMessage);
         }
         if (agentContext.getAgentExecuteResult().getSuccess() == null) {
             agentContext.getAgentExecuteResult().setSuccess(true);
@@ -797,6 +794,7 @@ public class AgentExecutor extends BaseComponent {
 
     private String invokeMcp(AgentContext agentContext, AgentComponentConfigDto agentComponentConfigDto, Map<String, Object> input, ComponentExecuteResult componentExecuteResult) {
         McpBindConfigDto mcpBindConfigDto = (McpBindConfigDto) agentComponentConfigDto.getBindConfig();
+        McpDto mcpDto = (McpDto) agentComponentConfigDto.getTargetConfig();
         McpContext mcpContext = McpContext.builder()
                 .requestId(agentContext.getRequestId())
                 .conversationId(agentContext.getConversationId())
@@ -804,6 +802,7 @@ public class AgentExecutor extends BaseComponent {
                 .mcpDto((McpDto) agentComponentConfigDto.getTargetConfig())
                 .params(input)
                 .name(mcpBindConfigDto.getToolName())
+                .traceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Mcp, mcpDto.getId().toString(), mcpDto.getName(), mcpDto.getDescription(), mcpDto.getIcon()))
                 .build();
         try {
             McpExecuteOutput mcpExecuteOutput = mcpExecutor.execute(mcpContext).blockLast();
@@ -844,6 +843,7 @@ public class AgentExecutor extends BaseComponent {
             workflowContext1.setNodeExecutingConsumer(nodeExecutingDto -> {
             });
             workflowContext1.setParams(input);
+            workflowContext1.setTraceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Workflow, workflowConfigDto.getId().toString(), workflowConfigDto.getName(), workflowConfigDto.getDescription(), workflowConfigDto.getIcon()));
             Object res = workflowExecutor.execute(workflowContext1).block();
             EndNodeConfigDto endNodeConfigDto = (EndNodeConfigDto) workflowConfigDto.getEndNode().getNodeConfig();
             if (endNodeConfigDto.getReturnType() == EndNodeConfigDto.ReturnType.TEXT && StringUtils.isNotBlank(workflowContext1.getEndNodeContent())) {
@@ -881,6 +881,7 @@ public class AgentExecutor extends BaseComponent {
                     .userId(agentContext.getUserId())
                     .asyncExecute(pluginBindConfigDto.getAsync() != null && pluginBindConfigDto.getAsync() == 1)
                     .asyncReplyContent(pluginBindConfigDto.getAsyncReplyContent())
+                    .traceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Plugin, pluginDto.getId().toString(), pluginDto.getName(), pluginDto.getDescription(), pluginDto.getIcon()))
                     .build();
             PluginExecuteResultDto pluginExecuteResultDto = pluginExecutor.execute(pluginContext).block();
             Object res = null;
@@ -1327,6 +1328,8 @@ public class AgentExecutor extends BaseComponent {
         modelCallConfigDto.setTemperature(modelBindConfigDto.getTemperature());
         modelCallConfigDto.setTopP(modelBindConfigDto.getTopP());
         modelContext.setModelCallConfig(modelCallConfigDto);
+        modelContext.setTraceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelContext.getModelConfig().getId().toString(),
+                modelContext.getModelConfig().getModel(), modelContext.getModelConfig().getName(), null, agentContext.isDefaultModelChanged() ? agentContext.getUserId() : null));
         return modelContext;
     }
 
@@ -1372,8 +1375,7 @@ public class AgentExecutor extends BaseComponent {
         agentExecuteResult.setPromptTokens(agentExecuteResult0.getPromptTokens());
         agentExecuteResult.setTotalTokens(agentExecuteResult0.getTotalTokens());
         agentExecuteResult.setOutputText(agentExecuteResult0.getOutputText());
-        List<ComponentExecuteResult> componentExecuteResults = new ArrayList<>();
-        componentExecuteResults.addAll(agentExecuteResult0.getComponentExecuteResults());
+        List<ComponentExecuteResult> componentExecuteResults = new ArrayList<>(agentExecuteResult0.getComponentExecuteResults());
         agentExecuteResult.setComponentExecuteResults(componentExecuteResults);
         Map<String, Map<String, Object>> modelExecuteInfos = (Map<String, Map<String, Object>>) hashAll.get("modelExecuteInfos");
         if (modelExecuteInfos != null) {

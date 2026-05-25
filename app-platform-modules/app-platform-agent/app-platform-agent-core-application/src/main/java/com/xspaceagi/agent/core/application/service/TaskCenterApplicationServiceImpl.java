@@ -28,7 +28,6 @@ import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
@@ -55,7 +54,8 @@ public class TaskCenterApplicationServiceImpl implements TaskExecuteService {
 
     @Resource
     private NotifyMessageApplicationService notifyMessageApplicationService;
-    @Autowired
+
+    @Resource
     private AgentApplicationService agentApplicationService;
 
     @Override

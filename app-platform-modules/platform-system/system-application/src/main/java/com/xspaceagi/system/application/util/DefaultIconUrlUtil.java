@@ -40,7 +40,11 @@ public class DefaultIconUrlUtil {
             } catch (Exception e) {
             }
         }
-        return iFileAccessService.getFileUrlWithAk(originalIcon, true);
+        return originalIcon;
+    }
+
+    public static String setDefaultIconUrl(String originalIcon, String name, String type, boolean returnOriginalUrl) {
+        return iFileAccessService.getFileUrlWithAk(setDefaultIconUrl(originalIcon, name, type), returnOriginalUrl);
     }
 
     public static String removeDefaultIconUrl(String url) {

@@ -26,10 +26,6 @@
             <artifactId>app-platform-compose-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.xspaceagi</groupId>
             <artifactId>system-application</artifactId>
         </dependency>

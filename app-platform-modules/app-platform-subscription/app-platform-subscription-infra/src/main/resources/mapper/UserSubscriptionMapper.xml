@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.subscription.infra.dao.mapper.UserSubscriptionMapper">
+
+    <select id="selectStatsByPlanBiz" resultType="java.util.HashMap">
+        SELECT
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN us.created >= #{todayStart} THEN 1 ELSE 0 END) AS todayCount,
+            SUM(CASE WHEN us.created >= #{monthStart} THEN 1 ELSE 0 END) AS monthCount
+        FROM user_subscription us
+        INNER JOIN subscription_plan sp ON us.plan_id = sp.id
+        WHERE sp.biz_type = #{bizType} AND sp.biz_id = #{bizId}
+    </select>
+
+    <select id="selectByPlanBiz" resultType="com.xspaceagi.subscription.infra.dao.entity.UserSubscription">
+        SELECT us.*
+        FROM user_subscription us
+        WHERE us.biz_type = #{bizType} AND us.biz_id = #{bizId}
+        ORDER BY us.created DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByPlanBiz" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user_subscription us
+        INNER JOIN subscription_plan sp ON us.plan_id = sp.id
+        WHERE sp.biz_type = #{bizType} AND sp.biz_id = #{bizId}
+    </select>
+
+</mapper>

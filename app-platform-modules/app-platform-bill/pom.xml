@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-modules</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>app-platform-bill</artifactId>
+    <packaging>pom</packaging>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>system-sdk</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-application</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-infra</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-spec</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-sdk</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>app-platform-bill-spec</module>
+        <module>app-platform-bill-sdk</module>
+        <module>app-platform-bill-domain</module>
+        <module>app-platform-bill-infra</module>
+        <module>app-platform-bill-application</module>
+        <module>app-platform-bill-api</module>
+        <module>app-platform-bill-web</module>
+    </modules>
+</project>

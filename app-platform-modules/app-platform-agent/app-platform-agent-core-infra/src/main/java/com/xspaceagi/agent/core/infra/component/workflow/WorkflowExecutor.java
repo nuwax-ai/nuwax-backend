@@ -2,7 +2,6 @@ package com.xspaceagi.agent.core.infra.component.workflow;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
 import com.alibaba.fastjson2.JSON;
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.ExceptionHandleConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.NodeConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
@@ -25,6 +24,7 @@ import com.xspaceagi.log.sdk.service.ILogRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.memory.sdk.service.IMemoryRpcService;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.utils.HttpClient;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -91,8 +91,8 @@ public class WorkflowExecutor {
 
 
     @Autowired
-    public void setChatMemory(ConversationApplicationService chatMemory) {
-        this.chatMemory = (ChatMemory) chatMemory;
+    public void setChatMemory(ChatMemory chatMemory) {
+        this.chatMemory = chatMemory;
     }
 
     @Autowired
@@ -147,22 +147,11 @@ public class WorkflowExecutor {
             workflowContext.setWorkflowContextServiceHolder(workflowContextServiceHolder);
         }
         workflowContext.setAgentContext(workflowContext.getCopiedAgentContext());
-        UserDto user = workflowContext.getAgentContext().getUser();
-        LogDocument logDocument = LogDocument.builder()
-                .tenantId(user.getTenantId())
-                .id(UUID.randomUUID().toString().replace("-", ""))
-                .requestId(workflowContext.getRequestId())
-                .spaceId(workflowContext.getWorkflowConfig().getSpaceId())
-                .userId(workflowContext.getAgentContext().getUserId())
-                .userName(user.getNickName() == null ? user.getUserName() : user.getNickName())
-                .targetType("Workflow")
-                .targetName(workflowContext.getWorkflowConfig().getName())
-                .targetId(workflowContext.getWorkflowConfig().getId().toString())
-                .conversationId(workflowContext.getAgentContext().getConversationId())
-                .input(JSON.toJSONString(workflowContext.getParams()))
-                .requestStartTime(System.currentTimeMillis())
-                .from(workflowContext.getFrom())
-                .build();
+        LogDocument logDocument = buildLogDocument(workflowContext);
+        TraceContext traceContext = workflowContext.getTraceContext();
+        if (traceContext != null) {
+            traceContext.setLog(logDocument);
+        }
         AtomicReference<Set<Disposable>> disposableAtomicReference = new AtomicReference<>(new ConcurrentHashSet<>());
         return Mono.create(emitter -> {
                     if (workflowContext.isAsyncExecute()) {
@@ -190,6 +179,25 @@ public class WorkflowExecutor {
                 }));
     }
 
+    public static LogDocument buildLogDocument(WorkflowContext workflowContext) {
+        UserDto user = workflowContext.getAgentContext().getUser();
+        return LogDocument.builder()
+                .tenantId(user.getTenantId())
+                .id(UUID.randomUUID().toString().replace("-", ""))
+                .requestId(workflowContext.getRequestId())
+                .spaceId(workflowContext.getWorkflowConfig().getSpaceId())
+                .userId(workflowContext.getAgentContext().getUserId())
+                .userName(user.getNickName() == null ? user.getUserName() : user.getNickName())
+                .targetType("Workflow")
+                .targetName(workflowContext.getWorkflowConfig().getName())
+                .targetId(workflowContext.getWorkflowConfig().getId().toString())
+                .conversationId(workflowContext.getAgentContext().getConversationId())
+                .input(JSON.toJSONString(workflowContext.getParams()))
+                .requestStartTime(System.currentTimeMillis())
+                .from(workflowContext.getFrom())
+                .build();
+    }
+
     private @NotNull WorkflowContextServiceHolder getWorkflowContextServiceHolder() {
         WorkflowContextServiceHolder workflowContextServiceHolder = new WorkflowContextServiceHolder();
         workflowContextServiceHolder.setChatMemory(chatMemory);
@@ -203,10 +211,11 @@ public class WorkflowExecutor {
         workflowContextServiceHolder.setCodeExecuteService(codeExecuteService);
         workflowContextServiceHolder.setHttpClient(httpClient);
         workflowContextServiceHolder.setIMemoryRpcService(iMemoryRpcService);
+        workflowContextServiceHolder.setILogRpcService(iLogRpcService);
         return workflowContextServiceHolder;
     }
 
-    private void logSuccess(WorkflowContext workflowContext, Object result, LogDocument logDocument) {
+    public static void logSuccess(WorkflowContext workflowContext, Object result, LogDocument logDocument) {
         try {
             logDocument.setProcessData(JSON.toJSONString(workflowContext.getNodeExecuteResultMap()));
             logDocument.setOutput(JSON.toJSONString(result));
@@ -214,21 +223,26 @@ public class WorkflowExecutor {
             logDocument.setResultCode("0000");
             logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
-            iLogRpcService.bulkIndex(List.of(logDocument));
+            workflowContext.getWorkflowContextServiceHolder().getILogRpcService().pushTraceLog(workflowContext.getTraceContext());
         } catch (Exception e) {
             // Ignore
             log.error("Workflow log recording error", e);
         }
     }
 
-    private void logError(WorkflowContext workflowContext, Throwable throwable, LogDocument logDocument) {
+    public static void logError(WorkflowContext workflowContext, Throwable throwable, LogDocument logDocument) {
         try {
             logDocument.setProcessData(JSON.toJSONString(workflowContext.getNodeExecuteResultMap()));
             logDocument.setCreateTime(System.currentTimeMillis());
             logDocument.setResultCode("0001");
             logDocument.setResultMsg(throwable.getMessage());
             logDocument.setRequestEndTime(System.currentTimeMillis());
-            iLogRpcService.bulkIndex(List.of(logDocument));
+            if (workflowContext.getTraceContext() != null) {
+                workflowContext.getTraceContext().setErrorMessage(throwable.getMessage());
+                workflowContext.getTraceContext().setErrorCode("0001");
+                workflowContext.getTraceContext().setError(true);
+            }
+            workflowContext.getWorkflowContextServiceHolder().getILogRpcService().pushTraceLog(workflowContext.getTraceContext());
         } catch (Exception e) {
             // Ignore
             log.error("Workflow log recording error", e);

@@ -1,0 +1,212 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.description",
+    "fieldValue": "Component Resources",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.name",
+    "fieldValue": "Component Resources",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.description",
+    "fieldValue": "组件资源",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.name",
+    "fieldValue": "组件资源",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.description",
+    "fieldValue": "元件資源",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.name",
+    "fieldValue": "元件資源",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.description",
+    "fieldValue": "Component Resource Module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.name",
+    "fieldValue": "Component Resource Module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.description",
+    "fieldValue": "组件资源模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.name",
+    "fieldValue": "组件资源模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.description",
+    "fieldValue": "元件資源模組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.component_lib_dev.name",
+    "fieldValue": "元件資源模組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.model_manage.description",
+    "fieldValue": "Model Management",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.model_manage.name",
+    "fieldValue": "Model",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.model_manage.description",
+    "fieldValue": "模型管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.model_manage.name",
+    "fieldValue": "模型管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.model_manage.description",
+    "fieldValue": "模型管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.model_manage.name",
+    "fieldValue": "模型管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.GlobalModelManage.pageTitle",
+    "fieldValue": "Model Configuration",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.GlobalModelManage.pageTitle",
+    "fieldValue": "模型配置",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.GlobalModelManage.pageTitle",
+    "fieldValue": "模型設定",
+    "remark": null
+  }
+]

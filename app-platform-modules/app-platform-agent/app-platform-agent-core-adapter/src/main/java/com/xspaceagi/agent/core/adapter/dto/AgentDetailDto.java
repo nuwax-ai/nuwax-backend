@@ -115,4 +115,19 @@ public class AgentDetailDto implements Serializable {
 
     @Schema(description = "事件绑定配置")
     private EventBindConfigDto eventBindConfig;
+
+    @Schema(description = "是否需要付费")
+    private boolean paymentRequired;
+
+    @Schema(description = "可试用次数，0=不支持试用")
+    private Integer trialCount;
+
+    @Schema(description = "已调用的试用次数")
+    private Integer calledTrialCount;
+
+    @Schema(description = "是否已订阅，对智能体和技能有效")
+    private boolean subscribed;
+
+    @Schema(description = "超出调用限制提示")
+    private boolean overCallLimit;
 }

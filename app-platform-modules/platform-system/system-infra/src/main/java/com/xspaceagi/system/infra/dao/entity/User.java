@@ -36,6 +36,6 @@ public class User {
     }
 
     public enum Status {
-        Enabled, Disabled
+        Enabled, Disabled, Deleted
     }
 }

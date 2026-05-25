@@ -10,6 +10,8 @@ public interface ILogRpcService {
 
     void bulkIndex(List<LogDocument> list);
 
+    void pushTraceLog(Object traceContext);
+
     void deleteLogDocument(String id);
 
     SearchResult search(DocumentSearchRequest documentSearchRequest);

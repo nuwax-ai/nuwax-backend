@@ -9,6 +9,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -77,6 +78,9 @@ public class AgentContext implements Serializable {
     @Schema(description = "自动工具调用消息")
     private List<Message> autoToolCallMessages;
 
+    @Schema(description = "调用轨迹")
+    private TraceContext traceContext;
+
     @Schema(description = "过程输出")
     private Consumer<AgentOutputDto> outputConsumer;
 
@@ -89,7 +93,7 @@ public class AgentContext implements Serializable {
     private boolean filterSensitive;
 
     private boolean debug;
-
+    private boolean defaultModelChanged;
     private Function<Long, AgentContext> agentContextFunction;
 
     private Consumer<ConversationDto> sandboxSessionCreatedConsumer;

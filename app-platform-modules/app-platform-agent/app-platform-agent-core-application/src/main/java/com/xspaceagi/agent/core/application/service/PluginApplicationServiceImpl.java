@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.application.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
@@ -20,11 +21,17 @@ import com.xspaceagi.agent.core.infra.component.ArgExtractUtil;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginContext;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginExecutor;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
 import com.xspaceagi.agent.core.spec.enums.PluginTypeEnum;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
@@ -64,6 +71,9 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
     @Resource
     private PluginExecutor pluginExecutor;
 
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
+
     @Override
     public Long add(PluginAddDto pluginAddDto) {
         PluginConfig pluginConfig = new PluginConfig();
@@ -89,6 +99,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
 
     @Override
     public List<Arg> analysisPluginOutput(AnalysisHttpPluginOutputDto analysisHttpPluginOutputDto) {
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         PluginDto pluginDto = queryById(analysisHttpPluginOutputDto.getPluginId());
         PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginDto.getConfig();
         //用默认值作为参数
@@ -109,6 +120,21 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
                 .params(params)
                 .userId(RequestContext.get().getUserId())
                 .test(false)
+                .traceContext(TraceContext.builder()
+                        .userId(RequestContext.get().getUserId())
+                        .tenantId(RequestContext.get().getTenantId())
+                        .conversationId(RequestContext.get().getRequestId())
+                        .traceId(RequestContext.get().getRequestId())
+                        .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                        .billUserId(RequestContext.get().getUserId())
+                        .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                                .targetType(TraceContext.TraceTargetType.Plugin)
+                                .name(pluginDto.getName())
+                                .description(pluginDto.getDescription())
+                                .icon(pluginDto.getIcon())
+                                .targetId(pluginDto.getId().toString())
+                                .build()))
+                        .build())
                 .build();
         Mono<PluginExecuteResultDto> mono = pluginExecutor.execute(pluginContext);
         PluginExecuteResultDto resultDto = mono.block();
@@ -320,11 +346,13 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         pluginDto.setPublishDate(publishedDto.getModified());
         pluginDto.setScope(publishedDto.getScope());
         pluginDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());
+        pluginDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(pluginDto.getIcon(), pluginDto.getName(), "plugin"));
         return pluginDto;
     }
 
     @Override
     public PluginExecuteResultDto execute(PluginExecuteRequestDto pluginExecuteRequestDto, PluginDto pluginDto) {
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         AgentContext agentContext = new AgentContext();
         agentContext.setRequestId(pluginExecuteRequestDto.getRequestId());
         agentContext.setUser((UserDto) RequestContext.get().getUser());
@@ -344,7 +372,35 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
                 .params(pluginExecuteRequestDto.getParams())
                 .userId(RequestContext.get().getUserId())
                 .test(pluginExecuteRequestDto.isTest())
+                .traceContext(TraceContext.builder()
+                        .userId(RequestContext.get().getUserId())
+                        .tenantId(RequestContext.get().getTenantId())
+                        .conversationId(pluginExecuteRequestDto.getRequestId())
+                        .traceId(pluginExecuteRequestDto.getRequestId())
+                        .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                        .billUserId(RequestContext.get().getUserId())
+                        .devTest(pluginExecuteRequestDto.isTest())
+                        .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                                .targetType(TraceContext.TraceTargetType.Plugin)
+                                .name(pluginDto.getName())
+                                .description(pluginDto.getDescription())
+                                .icon(pluginDto.getIcon())
+                                .targetId(pluginDto.getId().toString())
+                                .build()))
+                        .build())
                 .build();
+        if (pluginContext.getTraceContext().isEnableSubscription() && !pluginExecuteRequestDto.isTest()) {
+            PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), pluginContext.getTraceContext().getBillUserId(),
+                    List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.PLUGIN).targetId(pluginDto.getId().toString()).build()));
+            if (!priceEstimate.isPass()) {
+                return PluginExecuteResultDto.builder()
+                        .error(priceEstimate.getMessage())
+                        .success(false)
+                        .requestId(pluginExecuteRequestDto.getRequestId())
+                        .costTime(0L)
+                        .build();
+            }
+        }
         Mono<PluginExecuteResultDto> mono = pluginExecutor.execute(pluginContext);
         return mono.block();
     }

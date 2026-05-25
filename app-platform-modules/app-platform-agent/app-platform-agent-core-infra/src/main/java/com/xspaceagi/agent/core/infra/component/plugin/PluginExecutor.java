@@ -28,7 +28,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -108,6 +107,7 @@ public class PluginExecutor {
                 .input(JSON.toJSONString(logDocumentMap))
                 .requestStartTime(System.currentTimeMillis())
                 .build();
+        pluginContext.getTraceContext().setLog(logDocument);
         Mono<PluginExecuteResultDto> mono0 = Mono.create(emitter -> {
             if (pluginContext.isAsyncExecute()) {
                 PluginExecuteResultDto resultDto = PluginExecuteResultDto.builder()
@@ -121,23 +121,23 @@ public class PluginExecutor {
                 Mono<PluginExecuteResultDto> mono = Mono.create(sink -> execute0(pluginContext, sink));
                 mono.doOnError(e -> {
                             asyncExecuteResponseHandler.handleError(pluginContext.getAgentContext(), ComponentTypeEnum.Plugin, e);
-                            logError(e, logDocument);
+                            logError(pluginContext, e, logDocument);
                         })
                         .subscribe(result -> {
                             asyncExecuteResponseHandler.handlePluginSuccess(pluginContext, result);
-                            logSuccess(result, logDocument);
+                            logSuccess(pluginContext, result, logDocument);
                         });
             } else {
                 execute0(pluginContext, emitter);
             }
         });
 
-        return mono0.doOnError(e -> logError(e, logDocument))
-                .doOnSuccess(result -> logSuccess(result, logDocument));
+        return mono0.doOnError(e -> logError(pluginContext, e, logDocument))
+                .doOnSuccess(result -> logSuccess(pluginContext, result, logDocument));
     }
 
 
-    private void logSuccess(PluginExecuteResultDto result, LogDocument logDocument) {
+    private void logSuccess(PluginContext pluginContext, PluginExecuteResultDto result, LogDocument logDocument) {
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("result", result.getResult());
@@ -148,20 +148,25 @@ public class PluginExecutor {
             logDocument.setResultCode("0000");
             logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
-            iLogRpcService.bulkIndex(List.of(logDocument));
+            iLogRpcService.pushTraceLog(pluginContext.getTraceContext());
         } catch (Exception e) {
             // Ignore
             log.error("Plugin log recording error", e);
         }
     }
 
-    private void logError(Throwable throwable, LogDocument logDocument) {
+    private void logError(PluginContext pluginContext, Throwable throwable, LogDocument logDocument) {
         try {
             logDocument.setCreateTime(System.currentTimeMillis());
             logDocument.setResultCode("0001");
             logDocument.setResultMsg(throwable.getMessage());
             logDocument.setRequestEndTime(System.currentTimeMillis());
-            iLogRpcService.bulkIndex(List.of(logDocument));
+            if (pluginContext.getTraceContext() != null) {
+                pluginContext.getTraceContext().setErrorCode("0001");
+                pluginContext.getTraceContext().setErrorMessage(throwable.getMessage());
+                pluginContext.getTraceContext().setError(true);
+            }
+            iLogRpcService.pushTraceLog(pluginContext.getTraceContext());
         } catch (Exception e) {
             // Ignore
             log.error("Plugin log recording error", e);

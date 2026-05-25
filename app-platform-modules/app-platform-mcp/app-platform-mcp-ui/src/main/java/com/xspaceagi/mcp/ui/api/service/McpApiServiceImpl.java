@@ -22,7 +22,12 @@ import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpComponentTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpContentTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpDataTypeEnum;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.sdk.rpc.IPricingRpcService;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
@@ -63,6 +68,9 @@ public class McpApiServiceImpl implements IMcpApiService {
 
     @Resource
     private ILogRpcService iLogRpcService;
+
+    @Resource
+    private IPricingRpcService iPricingRpcService;
 
     @Override
     public McpDto getDeployedMcp(Long id, Long spaceId) {
@@ -545,9 +553,20 @@ public class McpApiServiceImpl implements IMcpApiService {
         workflowExecuteRequest.setUser(mcpExecuteRequestDto.getUser());
         workflowExecuteRequest.setConfig(component.getTargetConfig());
         workflowExecuteRequest.setBindConfig(component.getTargetBindConfig());
-        return Flux.create(sink -> iAgentRpcService.executeWorkflow(workflowExecuteRequest)
-                .onErrorResume(throwable -> Mono.error(throwable))
-                .doOnNext(result -> {
+        workflowExecuteRequest.setTraceContext(mcpExecuteRequestDto.getTraceContext());
+        TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        if (tenantConfig != null && tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1) {
+            List<PriceEstimate.EstimateTarget> estimateTargets = List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(component.getTargetId().toString()).build());
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(mcpExecuteRequestDto.getTraceContext().getTenantId(), mcpExecuteRequestDto.getTraceContext().getBillUserId(), estimateTargets);
+            if (priceEstimate != null && !priceEstimate.isPass()) {
+                return Flux.just(McpExecuteOutput.builder()
+                        .success(false)
+                        .message(priceEstimate.getMessage())
+                        .build());
+            }
+        }
+        return iAgentRpcService.executeWorkflow(workflowExecuteRequest)
+                .<McpExecuteOutput>map(result -> {
                     if (result.getType() == WfExecuteResultTypeEnum.EXECUTE_RESULT) {
                         String content;
                         if (StringUtils.isNotBlank(result.getOutputContent())) {
@@ -558,28 +577,25 @@ public class McpApiServiceImpl implements IMcpApiService {
                         McpTextContent mcpTextContent = new McpTextContent();
                         mcpTextContent.setData(content);
                         mcpTextContent.setType(McpContentTypeEnum.TEXT);
-                        McpExecuteOutput mcpExecuteOutput = McpExecuteOutput.builder()
+                        return McpExecuteOutput.builder()
                                 .success(true)
                                 .result(List.of(mcpTextContent))
                                 .build();
-                        sink.next(mcpExecuteOutput);
                     } else if (result.getType() == WfExecuteResultTypeEnum.EXECUTING_LOG) {
                         McpLogContent mcpLogContent = new McpLogContent();
                         mcpLogContent.setData(JSON.toJSONString(result.getData()));
                         mcpLogContent.setType(McpContentTypeEnum.TEXT);
-                        McpExecuteOutput mcpExecuteOutput = McpExecuteOutput.builder()
+                        return McpExecuteOutput.builder()
                                 .success(true)
                                 .result(List.of(mcpLogContent))
                                 .build();
-                        sink.next(mcpExecuteOutput);
                     }
-                }).doOnError(throwable -> {
-                    McpExecuteOutput mcpExecuteOutput = McpExecuteOutput.builder()
-                            .success(false)
-                            .message(throwable.getMessage()).build();
-                    sink.next(mcpExecuteOutput);
-                    sink.complete();
-                }).doOnComplete(sink::complete).subscribe());
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .onErrorResume(throwable -> Flux.just(McpExecuteOutput.builder()
+                        .success(false)
+                        .message(throwable.getMessage()).build()));
     }
 
     private Flux<McpExecuteOutput> executeAgent(McpComponentDto component, McpExecuteRequest
@@ -598,6 +614,7 @@ public class McpApiServiceImpl implements IMcpApiService {
         agentExecuteRequestDto.setMessage(mcpExecuteRequestDto.getParams().get("message").toString());
         agentExecuteRequestDto.setUser(mcpExecuteRequestDto.getUser());
         agentExecuteRequestDto.setSessionId(mcpExecuteRequestDto.getSessionId());
+        agentExecuteRequestDto.setTraceContext(mcpExecuteRequestDto.getTraceContext());
         return Flux.create(sink -> iAgentRpcService.executeAgent(agentExecuteRequestDto)
                 .onErrorResume(throwable -> Mono.error(throwable))
                 .doOnNext(result -> {
@@ -635,37 +652,48 @@ public class McpApiServiceImpl implements IMcpApiService {
                 }).doOnComplete(sink::complete).subscribe());
     }
 
-    private Flux<McpExecuteOutput> executePlugin(McpDto mcpDto, McpComponentDto
-            component, McpExecuteRequest mcpExecuteRequestDt) {
+    private Flux<McpExecuteOutput> executePlugin(McpDto mcpDto, McpComponentDto component, McpExecuteRequest mcpExecuteRequestDt) {
         PluginExecuteRequestDto pluginExecuteRequest = new PluginExecuteRequestDto();
         pluginExecuteRequest.setSpaceId(mcpDto.getSpaceId());
         pluginExecuteRequest.setParams(mcpExecuteRequestDt.getParams());
         pluginExecuteRequest.setConfig(component.getTargetConfig());
         pluginExecuteRequest.setBindConfig(component.getTargetBindConfig());
         pluginExecuteRequest.setUser(mcpExecuteRequestDt.getUser());
-        return Flux.create(sink -> iAgentRpcService.executePlugin(pluginExecuteRequest)
-                .timeout(Duration.ofSeconds(60))
+        pluginExecuteRequest.setTraceContext(mcpExecuteRequestDt.getTraceContext());
+        TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        if (tenantConfig != null && tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1) {
+            List<PriceEstimate.EstimateTarget> estimateTargets = List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.PLUGIN).targetId(component.getTargetId().toString()).build());
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(mcpExecuteRequestDt.getTraceContext().getTenantId(), mcpExecuteRequestDt.getTraceContext().getBillUserId(), estimateTargets);
+            if (priceEstimate != null && !priceEstimate.isPass()) {
+                return Flux.just(McpExecuteOutput.builder()
+                        .success(false)
+                        .message(priceEstimate.getMessage())
+                        .build());
+            }
+        }
+        return iAgentRpcService.executePlugin(pluginExecuteRequest)
+                .timeout(Duration.ofSeconds(180))
                 .onErrorResume(throwable -> {
                     log.warn("executePlugin error", throwable);
                     if (throwable instanceof TimeoutException) {
-                        return Mono.error(new TimeoutException("executePlugin执行等待超时"));
+                        return Mono.error(new TimeoutException("executePlugin timeout"));
                     }
                     return Mono.error(throwable);
                 })
-                .doOnSuccess(pluginExecuteResult -> {
+                .<McpExecuteOutput>map(pluginExecuteResult -> {
                     McpTextContent mcpTextContent = new McpTextContent();
                     mcpTextContent.setData(JSON.toJSONString(pluginExecuteResult));
                     mcpTextContent.setType(McpContentTypeEnum.TEXT);
-                    McpExecuteOutput mcpExecuteOutput = McpExecuteOutput.builder()
+                    return McpExecuteOutput.builder()
                             .success(true)
                             .result(List.of(mcpTextContent))
                             .build();
-                    sink.next(mcpExecuteOutput);
-                    sink.complete();
-                }).doOnError((error) -> {
-                    sink.next(new McpExecuteOutput(false, error.getMessage(), null));
-                    sink.complete();
-                }).subscribe());
+                })
+                .onErrorResume(error -> {
+                    log.warn("executePlugin failed", error);
+                    return Mono.just(new McpExecuteOutput(false, error.getMessage(), null));
+                })
+                .flux();
     }
 
     @Override
@@ -695,8 +723,8 @@ public class McpApiServiceImpl implements IMcpApiService {
     }
 
     @Override
-    public String getExportMcpServerConfig(Long userId, Long mcpId) {
-        return mcpConfigApplicationService.getExportMcpServerConfig(userId, mcpId);
+    public String getExportMcpServerConfig(Long userId, Long mcpId, UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig) {
+        return mcpConfigApplicationService.getExportMcpServerConfig(userId, mcpId, userAccessKeyConfig);
     }
 
     @Override

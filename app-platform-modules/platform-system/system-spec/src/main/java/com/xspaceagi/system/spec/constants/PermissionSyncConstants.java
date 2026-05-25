@@ -37,4 +37,19 @@ public class PermissionSyncConstants {
     public static String buildExportFileName(String version) {
         return "permission-" + version + ".json";
     }
+
+    /**
+     * 差异 JSON 的 classpath 路径前缀
+     * 完整路径：{@code permission/permission-{toVersion}-diff.json}
+     */
+    public static String buildDiffClasspathPath(String toVersion) {
+        return "permission/permission-" + toVersion + "-diff.json";
+    }
+
+    /**
+     * 根据目标版本构建差异文件名
+     */
+    public static String buildDiffFileName(String toVersion) {
+        return "permission-" + toVersion + "-diff.json";
+    }
 }

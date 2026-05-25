@@ -1,12 +1,11 @@
 package com.xspaceagi.agent.core.adapter.application;
 
-import java.util.List;
-
-import org.springframework.core.ParameterizedTypeReference;
-
 import com.xspaceagi.agent.core.adapter.dto.CodeCheckResultDto;
 import com.xspaceagi.agent.core.adapter.dto.ModelQueryDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import org.springframework.core.ParameterizedTypeReference;
+
+import java.util.List;
 
 public interface ModelApplicationService {
 
@@ -59,6 +58,8 @@ public interface ModelApplicationService {
      * @return
      */
     ModelConfigDto queryModelConfigById(Long modelId);
+
+    List<ModelConfigDto> queryModelConfigListByIds(List<Long> modelIds);
 
     ModelConfigDto queryDefaultModelConfig();
 
@@ -139,4 +140,6 @@ public interface ModelApplicationService {
      * @return
      */
     String testModelConnectivity(ModelConfigDto modelConfig, String testPrompt);
+
+    List<ModelConfigDto> getMySystemModels(Long userId, String tab);
 }

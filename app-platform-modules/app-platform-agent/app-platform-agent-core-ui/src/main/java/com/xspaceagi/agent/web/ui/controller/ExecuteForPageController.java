@@ -21,7 +21,7 @@ import com.xspaceagi.custompage.sdk.dto.DataSourceDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;

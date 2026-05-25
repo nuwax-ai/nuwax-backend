@@ -24,7 +24,7 @@ import com.xspaceagi.custompage.sdk.dto.PageArgConfig;
 import com.xspaceagi.custompage.sdk.dto.ProxyConfig;
 import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;

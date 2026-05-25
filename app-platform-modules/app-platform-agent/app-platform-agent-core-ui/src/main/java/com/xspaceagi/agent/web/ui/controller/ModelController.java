@@ -5,18 +5,20 @@ import com.xspaceagi.agent.core.adapter.dto.ModelConfigAddDto;
 import com.xspaceagi.agent.core.adapter.dto.ModelQueryDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
+import com.xspaceagi.agent.core.infra.modelproviders.ModelProviderParser;
+import com.xspaceagi.agent.core.infra.modelproviders.vo.ModelProviderVo;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
-import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -118,4 +120,18 @@ public class ModelController {
         return ReqResult.success(true);
     }
 
+    @Operation(summary = "模型厂商查询")
+    @RequestMapping(path = "/providers", method = RequestMethod.GET)
+    public ReqResult<List<ModelProviderVo>> getModelProviders() {
+        List<ModelProviderVo> modelProviderVos = ModelProviderParser.loadAll();
+        I18nUtil.replaceSystemMessage(modelProviderVos);
+        return ReqResult.success(modelProviderVos);
+    }
+
+    @Operation(summary = "查询我的模型权限,tab=System|Space")
+    @RequestMapping(path = "/my", method = RequestMethod.GET)
+    public ReqResult<List<ModelConfigDto>> getMySystemModels(@RequestParam String tab) {
+        List<ModelConfigDto> models = modelApplicationService.getMySystemModels(RequestContext.get().getUserId(), tab);
+        return ReqResult.success(models);
+    }
 }

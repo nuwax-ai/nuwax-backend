@@ -3,7 +3,7 @@ package com.xspaceagi.custompage.infra.proxy;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.custompage.infra.service.ProxyAuthService;
 import com.xspaceagi.custompage.infra.service.ProxyConfigService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;

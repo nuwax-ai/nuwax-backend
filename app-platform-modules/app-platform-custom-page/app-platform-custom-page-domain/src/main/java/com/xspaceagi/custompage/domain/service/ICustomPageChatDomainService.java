@@ -15,7 +15,7 @@ public interface ICustomPageChatDomainService {
     /**
      * 建立会话 SSE 连接
      */
-    SseEmitter startAgentSessionSse(String sessionId, Long projectId, UserContext userContext);
+    SseEmitter startAgentSessionSse(String sessionId, Long projectId, String requestId, UserContext userContext);
 
     /**
      * 取消 agent 任务

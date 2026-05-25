@@ -1,0 +1,122 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.description",
+    "fieldValue": "Component Resources",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.component_lib_dev.name",
+    "fieldValue": "Component Resources",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.model_manage.description",
+    "fieldValue": "Model Management",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.permanentUse",
+    "fieldValue": "Permanent",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceLibrary.Index.pageTitle",
+    "fieldValue": "Component Resources",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.permanentUse",
+    "fieldValue": "永久使用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.stateActive",
+    "fieldValue": "使用中",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceLibrary.CreateModel.reasoningModel",
+    "fieldValue": "开启思考模式",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceLibrary.Index.pageTitle",
+    "fieldValue": "组件资源",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.permanentUse",
+    "fieldValue": "永久使用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.stateActive",
+    "fieldValue": "使用中",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceLibrary.Index.pageTitle",
+    "fieldValue": "元件資源",
+    "remark": null
+  }
+]

@@ -28,4 +28,9 @@ public interface I18nApplicationService {
     void translateForKey(Long tenantId, I18nConfigDto i18nConfigDto, String sourceLang, String targetLang);
 
     void translateForKeysBatch(Long tenantId, List<I18nConfigDto> sourceItems, String sourceLang, String targetLang);
+
+    /**
+     * 按 key 列表从源语言翻译到目标语言并写入目标语言配置
+     */
+    void translateForKeys(Long tenantId, List<String> keys, String sourceLang, String targetLang);
 }

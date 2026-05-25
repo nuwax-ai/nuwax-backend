@@ -3,8 +3,9 @@ package com.xspaceagi.system.application.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.xspaceagi.eco.market.sdk.service.IEcoMarketSecretRpcService;
+import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictSupport;
+import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictor;
 import com.xspaceagi.system.application.dto.*;
-import com.xspaceagi.system.application.service.PermissionImportService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Tenant;
@@ -20,7 +21,9 @@ import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,8 +51,14 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
     @Resource
     private IEcoMarketSecretRpcService ecoMarketSecretRpcService;
 
+    @Autowired(required = false)
+    private PayGatewayOutboundCacheEvictor payGatewayOutboundCacheEvictor;
+
     @Value("${app.version:1.0.0}")
     private String newVersion;
+
+    @Value("${license:}")
+    private String license;
 
     @Override
     public List<TenantConfigItemDto> getTenantConfigList() {
@@ -115,7 +124,11 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
     @Override
     public void updateConfig(TenantConfigDto tenantConfigDto) {
         Map<String, Object> updateConfig = new HashMap<>();
-        JSON.parseObject(JSON.toJSONString(tenantConfigDto)).forEach((k, v) -> updateConfig.put(k, v));
+        JSON.parseObject(JSON.toJSONString(tenantConfigDto)).forEach((k, v) -> {
+            if (v != null) {
+                updateConfig.put(k, v);
+            }
+        });
         tenantConfigService.updateConfig(updateConfig);
         if (CollectionUtils.isNotEmpty(tenantConfigDto.getDomainNames())) {
             tenantConfigDto.getDomainNames().forEach(domainName -> {
@@ -127,6 +140,10 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
             redisUtil.expire("tenant_domain", 0);
         }
         redisUtil.expire("tenant_config:" + tenantConfigDto.getTenantId(), 0);
+        if (updateConfig.containsKey("paymentGateway")) {
+            PayGatewayOutboundCacheEvictSupport.evictIfPresent(
+                    payGatewayOutboundCacheEvictor, tenantConfigDto.getTenantId());
+        }
     }
 
     @Override
@@ -150,6 +167,9 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
         }
         TenantConfigDto tenantConfigDto = JSON.parseObject(configStr.toString(), TenantConfigDto.class);
         tenantConfigDto.setTenantId(tenantId);
+        if (StringUtils.isNotBlank(license)) {
+            tenantConfigDto.setCommercialEdition(true);
+        }
         return tenantConfigDto;
     }
 

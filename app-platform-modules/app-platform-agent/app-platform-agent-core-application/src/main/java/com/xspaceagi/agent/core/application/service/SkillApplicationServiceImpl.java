@@ -193,6 +193,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             skillConfigDto.setPublishDate(publishedDto.getModified());
             skillConfigDto.setScope(publishedDto.getScope());
             skillConfigDto.setCategory(publishedDto.getCategory());
+            skillConfigDto.setPublishStatus(Published.PublishStatus.Published);
         }
         return skillConfigDto;
     }
@@ -213,6 +214,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             skillConfigDto.setName(publishedDto.getName());
             skillConfigDto.setDescription(publishedDto.getDescription());
             skillConfigDto.setIcon(publishedDto.getIcon());
+//            skillConfigDto.setCreatorId(publishedDto.getPublishUser().getUserId());
         }
         skillConfigDto.setPublishDate(publishedDto.getModified());
         skillConfigDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());

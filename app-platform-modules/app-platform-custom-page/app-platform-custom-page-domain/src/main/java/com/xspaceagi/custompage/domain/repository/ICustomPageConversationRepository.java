@@ -33,6 +33,28 @@ public interface ICustomPageConversationRepository {
     boolean updateUserSessionIdByRequestId(Long projectId, String requestId, String sessionId, Long userId);
 
     /**
+     * 按 sessionId 查询最新一条用户消息
+     */
+    CustomPageConversationModel findLatestUserBySessionId(Long projectId, String sessionId);
+
+    /**
+     * 按项目查询最新一条用户消息（用于未传 request_id 且 USER 尚未回填 Agent sessionId 时的回退）
+     */
+    CustomPageConversationModel findLatestUserByProjectId(Long projectId);
+
+    /**
+     * 按 requestId 查询本轮助手消息
+     */
+    CustomPageConversationModel findAssistantByProjectIdAndRequestId(Long projectId, String requestId);
+
+    CustomPageConversationModel findById(Long id);
+
+    /**
+     * 更新助手消息内容
+     */
+    boolean updateAssistantContent(Long id, String content, String requestId, UserContext userContext);
+
+    /**
      * 按项目ID删除会话记录（软删）
      */
     boolean deleteByProjectId(Long projectId, Long userId);

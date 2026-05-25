@@ -3,8 +3,10 @@ package com.xspaceagi.mcp.adapter.application;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xspaceagi.mcp.adapter.dto.McpPageQueryDto;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 
 import java.util.List;
+import java.util.Map;
 
 public interface McpConfigApplicationService {
 
@@ -24,7 +26,7 @@ public interface McpConfigApplicationService {
 
     IPage<McpDto> queryDeployedMcpListForManage(McpPageQueryDto mcpPageQueryDto);
 
-    String getExportMcpServerConfig(Long userId, Long mcpId);
+    String getExportMcpServerConfig(Long userId, Long mcpId, UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig);
 
     String refreshExportMcpServerConfig(Long userId, Long mcpId);
 

@@ -3,6 +3,7 @@ package com.xspaceagi.mcp.sdk;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpExecuteOutput;
 import com.xspaceagi.mcp.sdk.dto.McpExecuteRequest;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import reactor.core.publisher.Flux;
 
 public interface IMcpApiService {
@@ -28,7 +29,7 @@ public interface IMcpApiService {
 
     Long deployProxyMcp(McpDto mcpDto);
 
-    String getExportMcpServerConfig(Long userId, Long mcpId);
+    String getExportMcpServerConfig(Long userId, Long mcpId, UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig);
 
     /**
      * 统计 MCP 总数

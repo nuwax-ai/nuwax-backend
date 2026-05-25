@@ -6,7 +6,7 @@ import com.xspaceagi.agent.core.spec.utils.CopyRelationCacheUtil;
 import com.xspaceagi.compose.sdk.request.DorisTableDefineRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
 import com.xspaceagi.compose.sdk.vo.define.CreateTableDefineVo;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.exception.BizException;

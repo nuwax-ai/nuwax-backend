@@ -8,7 +8,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.domain.repository.ICustomPageConfigRepository;
@@ -19,6 +22,7 @@ import com.xspaceagi.system.spec.common.UserContext;
 import jakarta.annotation.Resource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -43,6 +47,9 @@ public class AiAgentClient {
     private ICustomPageConfigRepository customPageConfigRepository;
     @Resource
     private ISandboxConfigRpcService sandboxConfigRpcService;
+    @Resource
+    @Qualifier("aiAgentProgressExecutor")
+    private Executor aiAgentProgressExecutor;
 
     @Data
     @AllArgsConstructor
@@ -85,9 +92,19 @@ public class AiAgentClient {
 
     public void subscribeSessionSse(String sessionId, SseEmitter emitter, Long projectId, UserContext userContext,
             BiConsumer<String, String> eventConsumer) {
+        subscribeSessionSse(sessionId, emitter, projectId, userContext, eventConsumer, null, null);
+    }
+
+    public void subscribeSessionSse(String sessionId, SseEmitter emitter, Long projectId, UserContext userContext,
+            BiConsumer<String, String> eventConsumer, Runnable onStreamFinished) {
+        subscribeSessionSse(sessionId, emitter, projectId, userContext, eventConsumer, onStreamFinished, null);
+    }
+
+    public void subscribeSessionSse(String sessionId, SseEmitter emitter, Long projectId, UserContext userContext,
+            BiConsumer<String, String> eventConsumer, Runnable onStreamFinished, Consumer<String> onSubscribeError) {
         AgentRuntimeContext runtimeContext = buildAgentRuntimeContext(projectId, userContext);
-        // 在异步线程中订阅 SSE
-        new Thread(() -> {
+        AtomicBoolean clientDisconnected = new AtomicBoolean(false);
+        aiAgentProgressExecutor.execute(() -> {
             HttpURLConnection connection = null;
             try {
                 String urlStr = appendRuntimeParams(UriComponentsBuilder.fromHttpUrl(buildBaseUrl(runtimeContext) + "/agent/progress/" + sessionId), runtimeContext).toUriString();
@@ -104,7 +121,14 @@ public class AiAgentClient {
 
                 int status = connection.getResponseCode();
                 if (status != 200) {
-                    emitter.completeWithError(new IllegalStateException("SSE subscribe failed, httpStatus=" + status));
+                    String errorMessage = "SSE subscribe failed, httpStatus=" + status;
+                    notifySubscribeError(onSubscribeError, errorMessage);
+                    if (emitter != null) {
+                        try {
+                            emitter.completeWithError(new IllegalStateException(errorMessage));
+                        } catch (Exception ignore) {
+                        }
+                    }
                     return;
                 }
                 try (InputStream inputStream = connection.getInputStream();
@@ -138,14 +162,21 @@ public class AiAgentClient {
                                     if (eventConsumer != null) {
                                         eventConsumer.accept(eventName, dataBuilder.toString());
                                     }
-                                    emitter.send(eventBuilder);
-                                } catch (Exception sendEx) {
-                                    if (isClientDisconnected(sendEx)) {
-                                        log.warn("[Infra] SSE send to frontend failed, client disconnected,session Id={}", sessionId, sendEx);
-                                    } else {
-                                        log.warn("[Infra] SSE send to frontend failed,session Id={}", sendEx, sessionId, sendEx);
+                                    if (emitter != null && !clientDisconnected.get()) {
+                                        try {
+                                            emitter.send(eventBuilder);
+                                        } catch (Exception sendEx) {
+                                            if (isClientDisconnected(sendEx)) {
+                                                clientDisconnected.set(true);
+                                                log.warn("[Infra] SSE send to frontend failed, client disconnected, continue consuming agent stream, session Id={}",
+                                                        sessionId);
+                                            } else {
+                                                log.warn("[Infra] SSE send to frontend failed, session Id={}", sessionId, sendEx);
+                                            }
+                                        }
                                     }
-                                    break;
+                                } catch (Exception sendEx) {
+                                    log.warn("[Infra] SSE event handling failed, session Id={}", sessionId, sendEx);
                                 }
                             }
                             currentEvent = null;
@@ -153,19 +184,46 @@ public class AiAgentClient {
                         }
                     }
                 }
-                emitter.complete();
+                if (emitter != null) {
+                    try {
+                        emitter.complete();
+                    } catch (Exception ignore) {
+                    }
+                }
             } catch (Exception e) {
                 log.error("[Infra] AI Agent SSE exception", e);
-                try {
-                    emitter.completeWithError(e);
-                } catch (Exception ignore) {
+                notifySubscribeError(onSubscribeError, e.getMessage());
+                if (emitter != null) {
+                    try {
+                        emitter.completeWithError(e);
+                    } catch (Exception ignore) {
+                    }
                 }
             } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
+                if (onStreamFinished != null) {
+                    try {
+                        onStreamFinished.run();
+                    } catch (Exception callbackEx) {
+                        log.warn("[Infra] AI Agent SSE onStreamFinished callback failed, session Id={}", sessionId,
+                                callbackEx);
+                    }
+                }
             }
-        }, "ai-agent-sse-" + sessionId).start();
+        });
+    }
+
+    private void notifySubscribeError(Consumer<String> onSubscribeError, String message) {
+        if (onSubscribeError == null || message == null) {
+            return;
+        }
+        try {
+            onSubscribeError.accept(message);
+        } catch (Exception e) {
+            log.warn("[Infra] onSubscribeError callback failed", e);
+        }
     }
 
     private boolean isClientDisconnected(Exception e) {

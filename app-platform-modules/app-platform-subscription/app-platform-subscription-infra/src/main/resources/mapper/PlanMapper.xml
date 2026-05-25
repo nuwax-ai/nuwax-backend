@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.subscription.infra.dao.mapper.PlanMapper">
+
+    <select id="selectListWithFilters" resultType="com.xspaceagi.subscription.infra.dao.entity.Plan">
+        SELECT * FROM subscription_plan
+        <where>
+            <if test="query.bizType != null">AND biz_type = #{query.bizType.code}</if>
+            <if test="query.bizId != null">AND biz_id = #{query.bizId}</if>
+            <if test="query.status != null">AND status = #{query.status}</if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND name LIKE CONCAT('%', #{query.keyword}, '%')
+            </if>
+        </where>
+        ORDER BY sort ASC, id ASC
+    </select>
+
+</mapper>

@@ -1,10 +1,13 @@
 package com.xspaceagi.modelproxy.infra.service;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.xspaceagi.agent.core.spec.utils.TikTokensUtil;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.modelproxy.infra.rpc.LogSaveRpcService;
 import com.xspaceagi.modelproxy.spec.utils.AnthropicSSEParser;
 import com.xspaceagi.modelproxy.spec.utils.OpenAISSEParser;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.server.IUserMetricRpcService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.TaskExecuteService;
@@ -14,6 +17,7 @@ import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -63,6 +67,7 @@ public class TokenLogService implements TaskExecuteService {
         while (val != null) {
             JSONObject jsonObject = JSONObject.parseObject(val.toString());
             String apiProtocol = jsonObject.getString("apiProtocol");
+            TraceContext traceContext = jsonObject.getObject("traceContext", TraceContext.class);
             //记录日志以及token计算
             if (StringUtils.isNotBlank(apiProtocol)) {
                 Long userId = jsonObject.getLong("userId");
@@ -79,12 +84,16 @@ public class TokenLogService implements TaskExecuteService {
                 String responseBody = jsonObject.getString("responseBody");
                 //当前只支持anthropic和openai的token记录
                 // responseBody 为对应的sse完整数据
+                long cacheInputTokens = 0L;
                 long inputTokens = 0L;
                 long outputTokens = 0L;
+                String content = null;
                 if ("Anthropic".equalsIgnoreCase(apiProtocol)) {
                     AnthropicSSEParser.TokenUsage tokenUsage = AnthropicSSEParser.extractTokenUsage(responseBody);
                     inputTokens = tokenUsage.inputTokens;
                     outputTokens = tokenUsage.outputTokens;
+                    cacheInputTokens = tokenUsage.cacheInputTokens;
+                    content = tokenUsage.text;
                     if (tokenUsage.stopAccount) {
                         String backendApiKeyMd5 = jsonObject.getString("backendApiKeyMd5");
                         if (StringUtils.isNotBlank(backendApiKeyMd5)) {
@@ -95,33 +104,54 @@ public class TokenLogService implements TaskExecuteService {
                     }
                 } else if ("OpenAi".equalsIgnoreCase(apiProtocol)) {
                     OpenAISSEParser.TokenUsage tokenUsage = OpenAISSEParser.extractTokenUsage(responseBody);
+                    cacheInputTokens = tokenUsage.cachedTokens;
                     inputTokens = tokenUsage.promptTokens;
                     outputTokens = tokenUsage.completionTokens;
+                    content = tokenUsage.content;
+                }
+                if (inputTokens == 0) {
+                    //大致计算输入token
+                    inputTokens = TikTokensUtil.tikTokensCount(requestBody);
+                }
+                if (outputTokens == 0) {
+                    outputTokens = TikTokensUtil.tikTokensCount(content);
                 }
                 if (inputTokens > 0) {
                     userMetricRpcService.incrementMetricAllPeriods(tenantId, userId, BizType.TOKEN_USAGE.getCode(), BigDecimal.valueOf(inputTokens + outputTokens));
                 }
                 if ("true".equalsIgnoreCase(saveLog)) {
+                    long spaceId = -1L;
+                    if (traceContext != null && CollectionUtils.isNotEmpty(traceContext.getTraceTargets())) {
+                        TraceContext.TraceTarget traceTarget = traceContext.getTraceTargets().get(traceContext.getTraceTargets().size() - 1);
+                        spaceId = traceTarget.getSpaceId() != null ? traceTarget.getSpaceId() : -1L;
+                    }
                     logSaveRpcService.saveLog(LogDocument.builder()
                             .from("model-proxy")
                             .id(UUID.randomUUID().toString().replace("-", ""))
                             .tenantId(tenantId)
+                            .spaceId(spaceId)
                             .requestStartTime(Long.parseLong(requestTime))
                             .requestEndTime(Long.parseLong(responseTime))
                             .requestId(requestId)
                             .input(requestBody)
                             .createTime(Long.parseLong(responseTime))
                             .output(responseBody)
-                            .spaceId(-1L)
                             .userId(userId)
                             .userName(userName)
                             .targetType("Model")
                             .targetId(String.valueOf(modelId))
                             .conversationId(conversationId)
                             .targetName(model)
+                            .cacheInputToken((int) cacheInputTokens)
                             .inputToken((int) inputTokens)
                             .outputToken((int) outputTokens)
                             .build());
+                }
+                if (traceContext != null) {
+                    traceContext.setTokenUsage(new TraceContext.TokenUsage(cacheInputTokens, inputTokens, outputTokens));
+                    redisUtil.rightPush("bill:queue", JSON.toJSONString(traceContext));
+                } else {
+                    log.warn("traceContext is null, jsonObject:{}", jsonObject);
                 }
             }
             val = redisUtil.rightPop("token_log");

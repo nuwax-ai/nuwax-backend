@@ -18,6 +18,7 @@ import com.xspaceagi.agent.core.spec.enums.OutputTypeEnum;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
@@ -36,6 +37,9 @@ public class LLMNodeHandler extends AbstractNodeHandler {
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         log.debug("execute LLMNodeHandler,node {}", node);
         LLMNodeConfigDto llmNodeConfigDto = (LLMNodeConfigDto) node.getNodeConfig();
+        if (llmNodeConfigDto.getModelConfig() == null){
+            return Mono.error(new RuntimeException("The workflow model node configuration is empty. Please check if the related models have been taken offline."));
+        }
         Map<String, Object> valueMap = extraBindValueMap(workflowContext, node, llmNodeConfigDto.getInputArgs());
         String systemPrompt = PlaceholderParser.resoleAndReplacePlaceholder(valueMap, llmNodeConfigDto.getSystemPrompt());
         String userPrompt = PlaceholderParser.resoleAndReplacePlaceholder(valueMap, llmNodeConfigDto.getUserPrompt());
@@ -66,6 +70,8 @@ public class LLMNodeHandler extends AbstractNodeHandler {
         modelContext.setModelCallConfig(modelCallConfigDto);
         List<ComponentConfig> componentConfigs = convertToComponentConfig(llmNodeConfigDto.getSkillComponentConfigs(), valueMap);
         modelCallConfigDto.setComponentConfigs(componentConfigs);
+        modelContext.setTraceContext(workflowContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelContext.getModelConfig().getId().toString(),
+                modelContext.getModelConfig().getModel(), modelContext.getModelConfig().getName(), null));
         ModelInvoker modelInvoker = workflowContext.getWorkflowContextServiceHolder().getModelInvoker();
         return modelInvoker.invoke(modelContext).last().map(result -> {
             if (llmNodeConfigDto.getOutputType() == OutputTypeEnum.Text || llmNodeConfigDto.getOutputType() == OutputTypeEnum.Markdown) {

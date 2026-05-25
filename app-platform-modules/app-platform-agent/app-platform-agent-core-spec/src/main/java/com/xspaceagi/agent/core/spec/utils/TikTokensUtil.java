@@ -5,6 +5,7 @@ import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
 import com.knuddels.jtokkit.api.EncodingType;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class TikTokensUtil {
@@ -13,6 +14,9 @@ public class TikTokensUtil {
 
     public static int tikTokensCount(String text) {
         try {
+            if (StringUtils.isBlank(text)) {
+                return 0;
+            }
             Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
             return encoding.countTokens(text);
         } catch (Exception e) {

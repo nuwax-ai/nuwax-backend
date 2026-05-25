@@ -29,6 +29,43 @@ public class CustomPageConversationDomainServiceImpl implements ICustomPageConve
     private SpacePermissionService spacePermissionService;
 
     @Override
+    public ReqResult<Long> saveOrUpdateAssistantConversation(CustomPageConversationModel model, UserContext userContext) {
+        Optional.ofNullable(model.getProjectId()).filter(x -> x > 0)
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
+        Optional.ofNullable(model.getContent()).filter(x -> !x.trim().isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("content is required"));
+        Optional.ofNullable(model.getSessionId()).filter(x -> !x.trim().isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("sessionId is required"));
+
+        try {
+            var configModel = customPageConfigRepository.getById(model.getProjectId());
+            if (configModel == null) {
+                return ReqResult.error("0001", "Project does not exist");
+            }
+            spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
+            model.setSpaceId(configModel.getSpaceId());
+
+            if (model.getId() != null) {
+                CustomPageConversationModel existing = customPageConversationRepository.findById(model.getId());
+                if (existing == null || !"ASSISTANT".equalsIgnoreCase(existing.getRole())
+                        || !model.getProjectId().equals(existing.getProjectId())) {
+                    return ReqResult.error("0001", "Invalid assistant conversation id");
+                }
+                boolean updated = customPageConversationRepository.updateAssistantContent(model.getId(),
+                        model.getContent(), model.getRequestId(), userContext);
+                return updated ? ReqResult.success(model.getId())
+                        : ReqResult.error("0001", "Failed to update assistant conversation");
+            }
+            Long id = customPageConversationRepository.save(model, userContext);
+            return ReqResult.success(id);
+        } catch (Exception e) {
+            log.error("[Domain] save or update assistant conversation failed, project Id={}, sessionId={}",
+                    model.getProjectId(), model.getSessionId(), e);
+            return ReqResult.error("0001", "Failed to save assistant conversation: " + e.getMessage());
+        }
+    }
+
+    @Override
     public ReqResult<Long> saveConversation(CustomPageConversationModel model, UserContext userContext) {
         log.info("[Domain] saveusersession records, project Id={}, topic={}", model.getProjectId(), model.getTopic());
 

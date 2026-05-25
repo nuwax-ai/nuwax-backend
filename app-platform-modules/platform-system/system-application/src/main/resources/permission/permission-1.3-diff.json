@@ -1,0 +1,947 @@
+{
+  "fromVersion": "1.2",
+  "toVersion": "1.3",
+  "resources": {
+    "added": [
+      {
+        "code": "subscription_points",
+        "name": "订阅与积分模块",
+        "description": "订阅与积分模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 24,
+        "status": 1
+      },
+      {
+        "code": "pay_earnings",
+        "name": "支付与收益模块",
+        "description": "支付与收益模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 25,
+        "status": 1
+      },
+      {
+        "code": "pay_earnings_query",
+        "name": "查询",
+        "description": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "pay_earnings",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "subscription_points_query",
+        "name": "查询",
+        "description": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "subscription_points",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "pay_earnings_modify",
+        "name": "编辑",
+        "description": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "pay_earnings",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "subscription_points_modify",
+        "name": "编辑",
+        "description": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "subscription_points",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "merchant_onboarding_audit",
+        "name": "进件审核",
+        "description": "进件审核",
+        "source": 1,
+        "type": 2,
+        "parentCode": "pay_earnings",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "subscription_points_delete",
+        "name": "删除",
+        "description": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "subscription_points",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "withdraw_audit",
+        "name": "提现审核",
+        "description": "提现审核",
+        "source": 1,
+        "type": 2,
+        "parentCode": "pay_earnings",
+        "sortIndex": 4,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "more_page",
+        "code": "my_subscriptions",
+        "name": "我的订阅",
+        "description": "我的订阅",
+        "source": 1,
+        "path": "/more-page/my-subscriptions",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "more_page",
+        "code": "my_orders",
+        "name": "我的订单",
+        "description": "我的订单",
+        "source": 1,
+        "path": "/more-page/my-orders",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "more_page",
+        "code": "my_earnings",
+        "name": "我的收益",
+        "description": "我的收益",
+        "source": 1,
+        "path": "/more-page/my-earnings",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "more_page",
+        "code": "usage_statistics",
+        "name": "用量统计",
+        "description": "用量统计",
+        "source": 1,
+        "path": "/more-page/usage-stats",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "parentCode": "workspace",
+        "code": "resource_pricing",
+        "name": "资源定价",
+        "description": "资源定价",
+        "source": 1,
+        "path": "/space/:spaceId/resource-pricing",
+        "openType": 1,
+        "sortIndex": 6,
+        "status": 1
+      },
+      {
+        "parentCode": "system_manage",
+        "code": "subscription_and_points",
+        "name": "订阅与积分",
+        "description": "订阅与积分",
+        "source": 1,
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 6,
+        "status": 1
+      },
+      {
+        "parentCode": "system_manage",
+        "code": "pay_and_earnings",
+        "name": "支付与收益",
+        "description": "支付与收益",
+        "source": 1,
+        "path": "",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 7,
+        "status": 1
+      },
+      {
+        "parentCode": "model_manage",
+        "code": "model_config",
+        "name": "模型配置",
+        "description": "模型配置",
+        "source": 1,
+        "path": "/system/model/manage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "pay_config",
+        "name": "支付配置",
+        "description": "支付配置",
+        "source": 1,
+        "path": "/system/payment-earnings/config",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "plugin_and_workflow",
+        "name": "插件与工作流",
+        "description": "插件与工作流",
+        "source": 1,
+        "path": "/space/:spaceId/plugin-workflow",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "subscription_and_points",
+        "code": "points_config",
+        "name": "基础配置",
+        "description": "基础配置",
+        "source": 1,
+        "path": "/system/subscription-credits/basic-config",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "knowledge_and_datatable",
+        "name": "知识与数据存储",
+        "description": "知识与数据存储",
+        "source": 1,
+        "path": "/space/:spaceId/knowledge-storage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "merchant_onboarding",
+        "name": "支付进件信息",
+        "description": "支付进件信息",
+        "source": 1,
+        "path": "/system/payment-earnings/merchant-info",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "model_manage",
+        "code": "model_pricing",
+        "name": "模型定价",
+        "description": "模型定价",
+        "source": 1,
+        "path": "/system/model/pricing",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "subscription_and_points",
+        "code": "subscription_packages",
+        "name": "基础订阅套餐",
+        "description": "基础订阅套餐",
+        "source": 1,
+        "path": "/system/subscription-credits/plans",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "developer_account",
+        "name": "开发者付款信息",
+        "description": "开发者付款信息",
+        "source": 1,
+        "path": "/system/payment-earnings/dev-payment",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "model_manage",
+        "code": "model_monitor",
+        "name": "模型监控",
+        "description": "模型监控",
+        "source": 1,
+        "path": "/system/model/monitor",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "subscription_and_points",
+        "code": "points_packages",
+        "name": "积分增购套餐",
+        "description": "积分增购套餐",
+        "source": 1,
+        "path": "/system/subscription-credits/credit-packages",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "space_model_manage",
+        "name": "模型管理",
+        "description": "模型管理",
+        "source": 1,
+        "path": "/space/:spaceId/model-manage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "developer_earnings_stats",
+        "name": "开发者收益统计",
+        "description": "开发者收益统计",
+        "source": 1,
+        "path": "/system/payment-earnings/earnings-stats",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "parentCode": "subscription_and_points",
+        "code": "user_points",
+        "name": "用户积分查询",
+        "description": "用户积分查询",
+        "source": 1,
+        "path": "/system/subscription-credits/user-credits",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "developer_withdrawals",
+        "name": "开发者提现管理",
+        "description": "开发者提现管理",
+        "source": 1,
+        "path": "/system/payment-earnings/withdrawal",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 5,
+        "status": 1
+      },
+      {
+        "parentCode": "subscription_and_points",
+        "code": "business_orders",
+        "name": "业务订单查询",
+        "description": "业务订单查询",
+        "source": 1,
+        "path": "/system/subscription-credits/orders",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 6,
+        "status": 1
+      },
+      {
+        "parentCode": "pay_and_earnings",
+        "code": "pay_orders",
+        "name": "支付订单查询",
+        "description": "支付订单查询",
+        "source": 1,
+        "path": "/system/payment-earnings/orders",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 6,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "component_lib_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件库",
+          "description": "组件库",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件资源",
+          "description": "组件库",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        }
+      },
+      {
+        "key": "api_key",
+        "old": {
+          "parentCode": "more_page",
+          "code": "api_key",
+          "name": "API Key",
+          "source": 1,
+          "path": "/more-page/api-key",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 1,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "more_page",
+          "code": "api_key",
+          "name": "API Key",
+          "source": 1,
+          "path": "/more-page/api-key",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      },
+      {
+        "key": "model_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "model_manage",
+          "name": "公共模型管理",
+          "description": "公共模型管理",
+          "source": 1,
+          "path": "/system/model/manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "model_manage",
+          "name": "模型管理",
+          "description": "模型管理",
+          "source": 1,
+          "path": "",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      },
+      {
+        "key": "im_channel",
+        "old": {
+          "parentCode": "workspace",
+          "code": "im_channel",
+          "name": "IM 机器人",
+          "description": "IM 机器人",
+          "source": 1,
+          "path": "/space/:spaceId/im-channel",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "im_channel",
+          "name": "IM 机器人",
+          "description": "IM 机器人",
+          "source": 1,
+          "path": "/space/:spaceId/im-channel",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        }
+      },
+      {
+        "key": "content_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "content_manage",
+          "name": "内容管理",
+          "description": "内容管理",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "content_manage",
+          "name": "内容管理",
+          "description": "内容管理",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_task_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "name": "任务中心",
+          "description": "任务中心",
+          "source": 1,
+          "path": "/space/:spaceId/task-center",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "name": "任务中心",
+          "description": "任务中心",
+          "source": 1,
+          "path": "/space/:spaceId/task-center",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        }
+      },
+      {
+        "key": "permission_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "permission_manage",
+          "name": "菜单权限",
+          "description": "菜单权限",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "permission_manage",
+          "name": "菜单权限",
+          "description": "菜单权限",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_log_query",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "path": "/space/:spaceId/library-log",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "path": "/space/:spaceId/library-log",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_square",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "name": "空间广场",
+          "description": "空间广场",
+          "source": 1,
+          "path": "/space/:spaceId/space-square?activeKey=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "name": "空间广场",
+          "description": "空间广场",
+          "source": 1,
+          "path": "/space/:spaceId/space-square?activeKey=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_task_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_task_manage",
+          "name": "任务管理",
+          "description": "任务管理",
+          "source": 1,
+          "path": "/system/task-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_task_manage",
+          "name": "任务管理",
+          "description": "任务管理",
+          "source": 1,
+          "path": "/system/task-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        }
+      },
+      {
+        "key": "member_setting",
+        "old": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "name": "成员与设置",
+          "source": 1,
+          "path": "/space/:spaceId/team",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "name": "成员与设置",
+          "source": 1,
+          "path": "/space/:spaceId/team",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_log_query",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_config",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_config",
+          "name": "系统配置",
+          "description": "系统配置",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_config",
+          "name": "系统配置",
+          "description": "系统配置",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 12,
+          "status": 1
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "pay_and_earnings",
+        "resourceCode": "pay_earnings",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "subscription_and_points",
+        "resourceCode": "subscription_points",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "model_config",
+        "resourceCode": "model_manage",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "plugin_and_workflow",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "knowledge_and_datatable",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "space_model_manage",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "resource_pricing",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "model_config",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "model_manage",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "model_pricing",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "model_monitor",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "subscription_and_points",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "subscription_points",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "points_config",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "subscription_packages",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "points_packages",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "user_points",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "business_orders",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "pay_and_earnings",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "pay_earnings",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "pay_config",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "merchant_onboarding",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "developer_account",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "developer_earnings_stats",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "developer_withdrawals",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "pay_orders",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "i18n_lang",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "i18n_lang_manage",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "my_subscriptions",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "my_orders",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "my_earnings",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "usage_statistics",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

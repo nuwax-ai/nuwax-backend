@@ -420,6 +420,117 @@
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
+            <!-- credit -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-spec</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-sdk</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-domain</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-infra</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-application</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-api</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-credit-web</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
+            <!-- subscription -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-api</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-subscription-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
+            <!-- pricing -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-api</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pricing-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
             <!-- im -->
             <dependency>
                 <groupId>com.xspaceagi</groupId>
@@ -446,7 +557,79 @@
                 <artifactId>app-platform-im-wechat</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
+            <!-- pay -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-api</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-pay-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
 
+            <!-- bill -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-api</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-bill-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
             <!-- file -->
             <dependency>
                 <groupId>com.xspaceagi</groupId>
@@ -734,42 +917,6 @@
             <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
     </dependencies>
-
-
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://local-maven.space.com/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <name>Nexus Snapshot Repository</name>
-            <url>http://local-maven.space.com/repository/maven-snapshots//</url>
-        </snapshotRepository>
-    </distributionManagement>
-    <repositories>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <modules>
         <module>app-platform-modules</module>
         <module>app-platform-foundation</module>

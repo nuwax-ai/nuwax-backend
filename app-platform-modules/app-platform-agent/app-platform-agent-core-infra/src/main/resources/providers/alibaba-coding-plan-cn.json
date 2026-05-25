@@ -1,0 +1,257 @@
+{
+  "provider": {
+    "name": "Aliyun Coding Plan",
+    "id": "alibaba-coding-plan-cn",
+    "env": [
+      "ALIBABA_CODING_PLAN_API_KEY"
+    ],
+    "npm": "@ai-sdk/openai-compatible",
+    "doc": "https://help.aliyun.com/zh/model-studio/coding-plan",
+    "api": {
+      "OpenAI": "https://coding.dashscope.aliyuncs.com/v1",
+      "Anthropic": "https://coding.dashscope.aliyuncs.com/apps/anthropic"
+    },
+    "icon": "https://s3.nuwax.com:9443/nuwax-public/providers/bailian.png"
+  },
+  "models": [
+    {
+      "id": "MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "family": "minimax",
+      "release_date": "2026-02-12",
+      "last_updated": "2026-02-12",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 196608,
+        "output": 24576
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "family": "glm",
+      "release_date": "2025-12-22",
+      "last_updated": "2025-12-22",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "knowledge": "2025-04",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 202752,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "family": "glm",
+      "release_date": "2026-02-11",
+      "last_updated": "2026-02-11",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 202752,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "family": "kimi",
+      "release_date": "2026-01-27",
+      "last_updated": "2026-01-27",
+      "attachment": true,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "knowledge": "2025-01",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-next",
+      "name": "Qwen3 Coder Next",
+      "family": "qwen",
+      "release_date": "2026-02-03",
+      "last_updated": "2026-02-03",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "structured_output": true,
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "family": "qwen",
+      "release_date": "2025-07-23",
+      "last_updated": "2025-07-23",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "knowledge": "2025-04",
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-max-2026-01-23",
+      "name": "Qwen3 Max",
+      "family": "qwen",
+      "release_date": "2026-01-23",
+      "last_updated": "2026-01-23",
+      "attachment": false,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "knowledge": "2025-04",
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "family": "qwen",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "knowledge": "2025-04",
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "family": "qwen",
+      "release_date": "2026-04-02",
+      "last_updated": "2026-04-02",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": false,
+      "knowledge": "2025-04",
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

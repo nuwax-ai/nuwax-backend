@@ -1,7 +1,10 @@
 package com.xspaceagi.modelproxy.infra.proxy;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.utils.MD5;
@@ -25,6 +28,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
@@ -40,6 +45,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
     private String currentAccessKey;
     private String currentBackendModel;
     private String currentBackendUrl;
+    private TraceContext traceContext;
     private volatile Map<String, String> requestContext;
     private final ModelProxyServer modelProxyServer;
 
@@ -104,7 +110,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     return;
                 }
 
-                backendModelDto = modelApiProxyConfigService.getBackendModelConfig(apiKey);
+                backendModelDto = modelApiProxyConfigService.getBackendModelConfig(apiKey, extractModelId(request.uri()));
                 if (backendModelDto == null) {
                     sendError(ctx, "Invalid API Key", msg, HttpResponseStatus.FORBIDDEN);
                     return;
@@ -128,6 +134,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 // 存储后端模型信息用于日志记录
                 currentBackendModel = backendModelDto.getModelName();
                 currentBackendUrl = backendModelDto.getBaseUrl();
+                traceContext = backendModelDto.getTraceContext();
 
                 // 临时修改为info打印日志观察
                 URL url = new URL(backendModelDto.getBaseUrl());
@@ -146,7 +153,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 targetIp = ip;
                 targetHost = url.getHost();
                 targetPort = port;
-                request.setUri(url.getPath() + request.uri().replace("/api/proxy/model", ""));
+                request.setUri(url.getPath() + replaceModelPrefix(request.uri(), url.getPath()));
                 request.headers().set("Host", url.getHost());
                 //认证信息替换
                 if (StringUtils.isNotBlank(authorization)) {
@@ -207,6 +214,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                             targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
                             targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
                             targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
+                            targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
 
                             // 添加关闭监听器，当 targetChannel 关闭时自动清理
                             targetChannel.closeFuture().addListener((ChannelFutureListener) closeFuture -> {
@@ -258,6 +266,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
                 targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
                 targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
+                targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
 
                 targetChannel.writeAndFlush(request);
             }
@@ -278,7 +287,19 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 if (msg instanceof LastHttpContent) {
                     if (requestBodyBuffer.size() > 0) {
                         // 统一将字节转换为字符串，确保UTF-8编码正确
-                        logRequestBody(requestBodyBuffer.toString(CharsetUtil.UTF_8));
+                        String requestBody = requestBodyBuffer.toString(CharsetUtil.UTF_8);
+                        logRequestBody(requestBody);
+                        try {
+                            if (JSON.isValidObject(requestBody)) {
+                                JSONObject jsonObject = JSON.parseObject(requestBody);
+                                if (jsonObject.getString("model") != null && !jsonObject.getString("model").equalsIgnoreCase(currentBackendModel)) {
+                                    sendError(ctx, "Invalid model", msg, HttpResponseStatus.BAD_REQUEST);
+                                    return;
+                                }
+                            }
+                        } catch (Exception e) {
+                            //ignore
+                        }
                         ctx.channel().attr(ModelProxyServer.logRequestQueueAttributeKey).get().add(getRequestContext());
                         requestContext = null;
                         requestBodyBuffer.reset(); // 清空buffer
@@ -311,6 +332,9 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 Unpooled.copiedBuffer("{\"error\":{\"message\":\"" + error + "\"}}", CharsetUtil.UTF_8));
         resp.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
         ctx.channel().writeAndFlush(resp).addListener(ChannelFutureListener.CLOSE);
+        if (targetChannel != null && targetChannel.isActive()) {
+            targetChannel.close();
+        }
         ReferenceCountUtil.release(msg);
     }
 
@@ -426,5 +450,62 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             requestContext = new HashMap<>();
         }
         return requestContext;
+    }
+
+    /**
+     * 从URI中提取model后面的数字
+     * 例如: /api/proxy/model/1312321/v1/xxxx → 1312321
+     */
+    public static Long extractModelId(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        Pattern pattern = Pattern.compile("/api/proxy/model/(\\d+)");
+        Matcher matcher = pattern.matcher(uri);
+        if (matcher.find()) {
+            return Long.parseLong(matcher.group(1));
+        }
+        return null;
+    }
+
+    /**
+     * 替换URI中的 /api/proxy/model/{数字} 部分
+     * 例如: /api/proxy/model/1312321/v1/xxxx → /v1/xxxx
+     * /api/proxy/model/v1/xxxx       → /v1/xxxx
+     */
+    public static String replaceModelPrefix(String uri, String targetBaseUrl) {
+        if (hasVersion(targetBaseUrl)) {
+            return uri.replaceAll("/api/proxy/model(/\\d+)?/v1", "").replaceAll("/api/proxy/model", "");
+        }
+        return uri.replaceAll("/api/proxy/model(/\\d+)?", "");
+    }
+
+    public static boolean hasVersion(String url) {
+        String ver = extractVersionFromUrl(url);
+        if (ver != null) {
+            return true;
+        }
+        String regex = "(/([^\\s\\.]*)((-v|_v|version|_ver|-ver)\\d+))";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+
+        if (matcher.find()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static String extractVersionFromUrl(String url) {
+        // Define regex pattern to match version information in URL (e.g., v1, v2, v3)
+        String regex = "/(v\\d+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+
+        if (matcher.find()) {
+            return matcher.group(1); // Return the matched version information
+        } else {
+            return null; // Return null if no match is found
+        }
     }
 }

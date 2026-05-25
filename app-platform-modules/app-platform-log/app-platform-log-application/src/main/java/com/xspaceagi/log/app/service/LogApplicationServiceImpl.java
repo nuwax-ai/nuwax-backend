@@ -7,6 +7,7 @@ import com.xspaceagi.log.sdk.service.ISearchRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.log.sdk.vo.SearchDocument;
 import com.xspaceagi.log.sdk.vo.SearchResult;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.AbstractTaskExecuteService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
@@ -82,6 +83,16 @@ public class LogApplicationServiceImpl extends AbstractTaskExecuteService implem
             return;
         }
         list.forEach(item -> redisUtil.rightPush("log:queue", JSON.toJSONString(item)));
+    }
+
+    @Override
+    public void pushTraceLog(Object traceContext0) {
+        if (traceContext0 == null) {
+            return;
+        }
+        redisUtil.rightPush("log:queue", JSON.toJSONString(((TraceContext) traceContext0).getLog()));
+        ((TraceContext) traceContext0).setLog(null);
+        redisUtil.rightPush("bill:queue", JSON.toJSONString(traceContext0));
     }
 
     public SearchResult search(DocumentSearchRequest documentSearchRequest) {

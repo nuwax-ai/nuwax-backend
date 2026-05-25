@@ -1,5 +1,6 @@
 package com.xspaceagi.mcp.sdk.dto;
 
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,8 @@ public class McpExecuteRequest implements Serializable {
 
     @Schema(description = "是否保持会话，保持会话时需要显示调用结束")
     private boolean keepAlive;
+
+    private TraceContext traceContext;
 
     public enum ExecuteTypeEnum {
         TOOL,

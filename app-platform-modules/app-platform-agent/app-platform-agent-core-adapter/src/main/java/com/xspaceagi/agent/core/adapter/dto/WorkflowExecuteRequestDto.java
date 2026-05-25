@@ -31,6 +31,8 @@ public class WorkflowExecuteRequestDto implements Serializable {
     @Schema(description = "来源")
     private String from;
 
+    private boolean test;
+
     public Map<String, Object> getParams() {
         return params == null ? params = new HashMap<>() : params;
     }

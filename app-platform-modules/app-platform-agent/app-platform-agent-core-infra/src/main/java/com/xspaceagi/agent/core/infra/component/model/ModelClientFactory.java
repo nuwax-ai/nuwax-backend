@@ -1,24 +1,29 @@
 package com.xspaceagi.agent.core.infra.component.model;
 
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
-import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.model.anthropic.AnthropicChatModel;
-import com.xspaceagi.agent.core.infra.component.model.embed.OpenAiEmbeddingModel;
-import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiApi;
+import com.xspaceagi.agent.core.infra.component.model.anthropic.AnthropicChatOptions;
+import com.xspaceagi.agent.core.infra.component.model.anthropic.api.AnthropicApi;
 import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiChatModel;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiChatOptions;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiEmbeddingModel;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiEmbeddingOptions;
+import com.xspaceagi.agent.core.infra.component.model.openai.api.OpenAiApi;
 import com.xspaceagi.agent.core.infra.component.model.strategy.WeightedRoundRobinStrategy;
 import com.xspaceagi.agent.core.infra.rpc.ModelApiProxyRpcService;
 import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.spec.common.RequestContext;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.MetadataMode;
@@ -28,9 +33,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,7 +106,23 @@ public class ModelClientFactory {
     }
 
     public ChatClient createChatClient(ModelConfigDto model) {
-        return createChatClient(null, model, List.of());
+        ModelContext modelContext = new ModelContext();
+        String traceId = UUID.randomUUID().toString().replace("-", "");
+        modelContext.setTraceContext(TraceContext.builder()
+                .userId(-1L)
+                .billUserId(-1L)
+                .conversationId(traceId)
+                .traceId(traceId)
+                .tenantId(RequestContext.get().getTenantId())
+                .enableSubscription(false)
+                .build());
+        if (model.getId() != null) {
+            modelContext.getTraceContext().setTraceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder().targetId(model.getId().toString()).targetType(TraceContext.TraceTargetType.Model).build()));
+        }
+        modelContext.setRequestId(traceId);
+        modelContext.setConversationId(traceId);
+        modelContext.setModelConfig(model);
+        return createChatClient(modelContext, model, List.of());
     }
 
     public EmbeddingModel createEmbeddingModel(ModelConfigDto model) {
@@ -113,16 +132,14 @@ public class ModelClientFactory {
             return null;
         }
         String baseUrl = completeBaseUrl(apiInfo.getUrl());
-        String requestId = UUID.randomUUID().toString().replace("-", "");
-        String traceId = UUID.randomUUID().toString().replace("-", "");
-        OpenAiApi openAiApi = new OpenAiApi(baseUrl, new SimpleApiKey(apiInfo.getKey()),
-                CollectionUtils.toMultiValueMap(Map.of("Request-Id", List.of(requestId), "X-Trace-Id", List.of(traceId))),
-                "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-        return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED,
-                OpenAiEmbeddingOptions.builder()
-                        .model(model.getModel())
-                        .dimensions(model.getDimension())
-                        .build());
+        OpenAiApi openAiApi = new OpenAiApi(baseUrl, new SimpleApiKey(apiInfo.getKey()), CollectionUtils.toMultiValueMap(Map.of()),
+                "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(),
+                RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+        return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, OpenAiEmbeddingOptions.builder()
+                .model(model.getModel())
+                .dimensions(model.getDimension())
+                .build()
+                , RetryUtils.DEFAULT_RETRY_TEMPLATE);
     }
 
     public ChatClient createChatClient(ModelContext modelContext, ModelConfigDto model, List<ToolCallback> functionCallbacks) {
@@ -136,48 +153,39 @@ public class ModelClientFactory {
             return null;
         }
 
+        boolean isReasoningModel = model.getIsReasonModel() != null && model.getIsReasonModel() == 1;
         Double temperature = model.getTemperature() == null || model.getTemperature() > 1 || model.getTemperature() <= 0 ? 1 : model.getTemperature();
         Double topP = model.getTopP() == null || model.getTopP() <= 0 || model.getTopP() > 1 ? 0.7 : model.getTopP();
         ChatModel chatModel = null;
-        Integer isReasonModel = model.getIsReasonModel() == null ? 0 : model.getIsReasonModel();
         String requestId = modelContext == null || modelContext.getRequestId() == null ? "" : modelContext.getRequestId();
-        String traceId = modelContext == null || modelContext.getTraceId() == null ? "" : modelContext.getTraceId();
-
-        // Global model uses proxy mode, generates independent keys for users
-        if (model.getScope() == ModelConfig.ModelScopeEnum.Tenant && modelContext != null) {
-            AgentContext agentContext = modelContext.getAgentContext();
-            BackendModelDto backendModelDto = new BackendModelDto();
-            if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
-                String baseUrl = completeBaseUrl(apiInfo.getUrl());
-                backendModelDto.setBaseUrl(baseUrl);
-            } else {
-                backendModelDto.setBaseUrl(apiInfo.getUrl());
-            }
-            backendModelDto.setApiKey(apiInfo.getKey());
-            backendModelDto.setModelName(model.getModel());
-            backendModelDto.setProtocol(model.getApiProtocol().name());
-            backendModelDto.setScope(model.getScope().name());
-            backendModelDto.setModelId(model.getId());
-            backendModelDto.setUserName(agentContext == null || agentContext.getUser() == null ? "" : agentContext.getUser().getUserName());
-            backendModelDto.setConversationId(modelContext.getConversationId());
-            backendModelDto.setRequestId(requestId);
-            String siteUrl = agentContext == null || agentContext.getTenantConfig() == null ? "" : agentContext.getTenantConfig().getSiteUrl();
-            FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(model.getTenantId(), agentContext == null || agentContext.getUser() == null ? -1L : agentContext.getUser().getId()
-                    , agentContext == null || agentContext.getAgentConfig() == null ? -1L : agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
-            apiInfo = new ModelConfigDto.ApiInfo();
-            apiInfo.setKey(frontendModelDto.getApiKey());
-            apiInfo.setUrl(frontendModelDto.getBaseUrl());
+        AgentContext agentContext = modelContext != null ? modelContext.getAgentContext() : null;
+        BackendModelDto backendModelDto = new BackendModelDto();
+        if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
+            String baseUrl = completeBaseUrl(apiInfo.getUrl());
+            backendModelDto.setBaseUrl(baseUrl);
         } else {
-            String baseUrl = model.getApiProtocol() == ModelApiProtocolEnum.OpenAI
-                    ? completeBaseUrl(apiInfo.getUrl())
-                    : model.getApiProtocol() == ModelApiProtocolEnum.Anthropic
-                    ? normalizeAnthropicBaseUrl(apiInfo.getUrl())
-                    : apiInfo.getUrl();
-            String apiKey = apiInfo.getKey();
-            apiInfo = new ModelConfigDto.ApiInfo();
-            apiInfo.setKey(apiKey);
-            apiInfo.setUrl(baseUrl);
+            backendModelDto.setBaseUrl(apiInfo.getUrl());
         }
+        backendModelDto.setApiKey(apiInfo.getKey());
+        backendModelDto.setModelName(model.getModel());
+        backendModelDto.setProtocol(model.getApiProtocol().name());
+        backendModelDto.setScope(model.getScope().name());
+        backendModelDto.setModelId(model.getId());
+        backendModelDto.setUserName(agentContext == null || agentContext.getUser() == null ? "" : agentContext.getUser().getUserName());
+        backendModelDto.setConversationId(modelContext != null ? modelContext.getConversationId() : "");
+        backendModelDto.setRequestId(requestId);
+        backendModelDto.setTraceContext(modelContext == null ? TraceContext.builder().build() : modelContext.getTraceContext());
+        List<TraceContext.TraceTarget> traceTargets = backendModelDto.getTraceContext() != null ? backendModelDto.getTraceContext().getTraceTargets() : null;
+        if (!CollectionUtils.isEmpty(traceTargets)) {
+            traceTargets.get(traceTargets.size() - 1).setSpaceId(model.getSpaceId());
+        }
+        String siteUrl = agentContext == null || agentContext.getTenantConfig() == null ? "" : agentContext.getTenantConfig().getSiteUrl();
+        FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(model.getTenantId(), agentContext == null || agentContext.getUser() == null ? -1L : agentContext.getUser().getId()
+                , agentContext == null || agentContext.getAgentConfig() == null ? -1L : agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
+        apiInfo = new ModelConfigDto.ApiInfo();
+        apiInfo.setKey(frontendModelDto.getApiKey());
+        apiInfo.setUrl(frontendModelDto.getBaseUrl());
+
 
         if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
             var promptOptions = OpenAiChatOptions.builder()
@@ -186,33 +194,46 @@ public class ModelClientFactory {
                     .maxTokens(model.getMaxTokens())
                     .temperature(temperature)
                     .topP(topP)
+                    .extraBody(buildExtraBody(model))
                     .build();
-            OpenAiApi api = new OpenAiApi(apiInfo.getUrl(), new SimpleApiKey(apiInfo.getKey()),
-                    CollectionUtils.toMultiValueMap(Map.of("X-Reason-Model", List.of(isReasonModel.toString()), "Request-Id", List.of(requestId), "X-Trace-Id", List.of(traceId))),
+            OpenAiApi api = new OpenAiApi(apiInfo.getUrl(), new SimpleApiKey(apiInfo.getKey()), CollectionUtils.toMultiValueMap(Map.of()),
                     "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-            api.isReasonModel = isReasonModel.equals(1);
             chatModel = new OpenAiChatModel(api, promptOptions, DefaultToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
         }
+
         if (model.getApiProtocol() == ModelApiProtocolEnum.Ollama) {
-            OllamaOptions promptOptions = OllamaOptions.builder()
+            OllamaChatOptions promptOptions = OllamaChatOptions.builder()
                     .model(model.getModel())
                     .internalToolExecutionEnabled(withProxyToolCalls)
                     .temperature(temperature)
                     .topP(topP)
                     .build();
             promptOptions.setMaxTokens(model.getMaxTokens());
-            OllamaApi api = new OllamaApi(apiInfo.getUrl(), restClientBuilder.clone().defaultHeader("X-Reason-Model", isReasonModel.toString()).defaultHeader("Request-Id", requestId).defaultHeader("X-Trace-Id", traceId), webClientBuilder.clone());
+            OllamaApi api = OllamaApi.builder()
+                    .baseUrl(apiInfo.getUrl())
+                    .restClientBuilder(restClientBuilder.clone())
+                    .webClientBuilder(cloneWebClientBuilder())
+                    .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+                    .build();//(apiInfo.getUrl(), restClientBuilder.clone(), webClientBuilder.clone(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
             chatModel = OllamaChatModel.builder().defaultOptions(promptOptions).ollamaApi(api).build();
         }
         if (model.getApiProtocol() == ModelApiProtocolEnum.Anthropic) {
+            int budget = Math.min(model.getMaxTokens() / 4, 1024);
             AnthropicChatOptions anthropicChatOptions = AnthropicChatOptions.builder()
                     .model(model.getModel())
                     .internalToolExecutionEnabled(withProxyToolCalls)
                     .temperature(temperature)
                     .topP(topP)
                     .maxTokens(model.getMaxTokens())
+                    .thinking(new AnthropicApi.ChatCompletionRequest.ThinkingConfig(isReasoningModel ? AnthropicApi.ThinkingType.ENABLED : AnthropicApi.ThinkingType.DISABLED, budget))
                     .build();
-            AnthropicApi api = new AnthropicApi(apiInfo.getUrl(), apiInfo.getKey(), "2023-06-01", restClientBuilder.clone().defaultHeader("X-Reason-Model", isReasonModel.toString()).defaultHeader("Request-Id", requestId).defaultHeader("X-Trace-Id", traceId), cloneWebClientBuilder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+            AnthropicApi api = AnthropicApi.builder()
+                    .apiKey(apiInfo.getKey())
+                    .baseUrl(apiInfo.getUrl())
+                    .restClientBuilder(restClientBuilder.clone())
+                    .webClientBuilder(cloneWebClientBuilder())
+                    .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+                    .build();
             chatModel = new AnthropicChatModel(api, anthropicChatOptions, ToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
         }
 
@@ -220,10 +241,22 @@ public class ModelClientFactory {
         ChatClient.Builder builder = ChatClient.builder(chatModel);
         if (functionCallbacks != null) {
             for (ToolCallback functionCallback : functionCallbacks) {
-                builder.defaultTools(functionCallback);
+                builder.defaultToolCallbacks(functionCallback);
             }
         }
         return builder.build();
+    }
+
+    private Map<String, Object> buildExtraBody(ModelConfigDto model) {
+        boolean thinkingModel = (model.getTypes() != null && model.getTypes().contains(ModelCapabilityEnum.Reasoning));
+        if (!thinkingModel) {
+            return null;
+        }
+        boolean thinking = model.getIsReasonModel() != null && model.getIsReasonModel() == 1;
+        if ("alibaba-cn".equals(model.getPid()) || "alibaba-coding-plan-cn".equals(model.getPid()) || "nuwax".equals(model.getPid())) {
+            return Map.of("enable_thinking", thinking);
+        }
+        return Map.of("thinking", Map.of("type", thinking ? "enabled" : "disabled"));
     }
 
     private static String completeBaseUrl(String baseUrl) {

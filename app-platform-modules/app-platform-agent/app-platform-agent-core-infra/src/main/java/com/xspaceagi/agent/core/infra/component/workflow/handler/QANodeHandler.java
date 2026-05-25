@@ -20,6 +20,7 @@ import com.xspaceagi.agent.core.spec.enums.OutputTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.QaKeyEnum;
 import com.xspaceagi.agent.core.spec.enums.SystemArgNameEnum;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -72,7 +73,8 @@ public class QANodeHandler extends AbstractNodeHandler {
                     modelCallConfigDto.setTemperature(qaNodeConfigDto.getTemperature());
                     modelCallConfigDto.setTopP(qaNodeConfigDto.getTopP());
                     modelContext.setModelCallConfig(modelCallConfigDto);
-
+                    modelContext.setTraceContext(workflowContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelContext.getModelConfig().getId().toString(),
+                            modelContext.getModelConfig().getModel(), modelContext.getModelConfig().getName(), null));
                     ModelInvoker modelInvoker = workflowContext.getWorkflowContextServiceHolder().getModelInvoker();
                     return modelInvoker.invoke(modelContext).last().map(result -> {
                         log.info("User response extraction result:{}", modelContext.getModelCallResult().getData());

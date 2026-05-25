@@ -13,7 +13,7 @@ import com.xspaceagi.system.sdk.operate.ActionType;
 import com.xspaceagi.system.sdk.operate.OperationLogReporter;
 import com.xspaceagi.system.sdk.operate.SystemEnum;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;

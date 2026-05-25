@@ -1,7 +1,6 @@
 package com.xspaceagi.agent.core.infra.component;
 
 import com.alibaba.fastjson2.JSON;
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.ModelBindConfigDto;
@@ -18,6 +17,7 @@ import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
 import com.xspaceagi.system.application.dto.EventDto;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -43,8 +43,8 @@ public class AsyncExecuteResponseHandler {
     }
 
     @Autowired
-    public void setChatMemory(ConversationApplicationService conversationApplicationService) {
-        this.chatMemory = (ChatMemory) conversationApplicationService;
+    public void setChatMemory(ChatMemory chatMemory) {
+        this.chatMemory = chatMemory;
     }
 
     @Autowired
@@ -191,6 +191,10 @@ public class AsyncExecuteResponseHandler {
         modelCallConfigDto.setTemperature(modelBindConfigDto.getTemperature());
         modelCallConfigDto.setTopP(modelBindConfigDto.getTopP());
         modelContext.setModelCallConfig(modelCallConfigDto);
+        if (agentContext.getTraceContext() != null && modelContext.getModelConfig() != null) {
+            modelContext.setTraceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelContext.getModelConfig().getId().toString(),
+                    modelContext.getModelConfig().getModel(), modelContext.getModelConfig().getName(), null));
+        }
         return modelContext;
     }
 }

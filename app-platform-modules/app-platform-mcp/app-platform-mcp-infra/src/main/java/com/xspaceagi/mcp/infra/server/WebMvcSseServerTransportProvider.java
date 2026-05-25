@@ -3,6 +3,7 @@ package com.xspaceagi.mcp.infra.server;
 import com.alibaba.fastjson2.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.xspaceagi.mcp.infra.client.McpAsyncClientWrapper;
 import com.xspaceagi.mcp.infra.rpc.McpDeployRpcService;
 import com.xspaceagi.mcp.sdk.IMcpApiService;
@@ -12,14 +13,17 @@ import com.xspaceagi.mcp.sdk.dto.McpImageContent;
 import com.xspaceagi.mcp.sdk.dto.McpLogContent;
 import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpContentTypeEnum;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.TimeWheel;
-import com.xspaceagi.system.application.dto.UserDto;
-import com.xspaceagi.system.application.service.UserApplicationService;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerTransport;
@@ -56,6 +60,9 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
 
     @Resource
     private IMcpApiService mcpApiService;
+
+    @Resource
+    private TenantConfigApplicationService tenantConfigApplicationService;
 
     @Resource
     private UserApplicationService userApplicationService;
@@ -190,6 +197,7 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
 
         //平台组件mcp
         UserDto userDto = userApplicationService.queryById(userAccessKeyDto.getUserId());
+        TenantConfigDto tenantConfigDto = tenantConfigApplicationService.getTenantConfig(userDto.getTenantId());
         McpServer.AsyncSpecification capabilities = McpServer.async(this)
                 .serverInfo(deployedMcp.getServerName() == null ? deployedMcp.getName() : deployedMcp.getServerName(), "1.0.0")
                 .capabilities(McpSchema.ServerCapabilities.builder()
@@ -203,14 +211,42 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
         deployedMcp.getDeployedConfig().getTools().forEach(tool -> {
             var aSyncToolSpecification = new McpServerFeatures.AsyncToolSpecification(new McpSchema.Tool(tool.getName(), tool.getDescription(), tool.getJsonSchema()),
                     (exchange, args) -> {
+                        TraceContext traceContext = userAccessKeyDto.getConfig().getTraceContext();
+                        String traceId;
+                        String conversationId;
+                        if (traceContext == null) {
+                            traceId = UUID.randomUUID().toString().replace("-", "");
+                            conversationId = sessionId;
+                            traceContext = TraceContext.builder()
+                                    .traceId(traceId)
+                                    .tenantId(userDto.getTenantId())
+                                    .userId(userDto.getId())
+                                    .billUserId(userDto.getId())
+                                    .userName(userDto.getUserName())
+                                    .nickName(userDto.getNickName())
+                                    .conversationId(sessionId)
+                                    .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                                            .targetId(deployedMcp.getId().toString())
+                                            .targetType(TraceContext.TraceTargetType.Mcp)
+                                            .icon(deployedMcp.getIcon())
+                                            .description(deployedMcp.getDescription())
+                                            .name(deployedMcp.getName())
+                                            .build()))
+                                    .build();
+                        } else {
+                            traceId = traceContext.getTraceId();
+                            conversationId = traceContext.getConversationId();
+                        }
                         McpExecuteRequest mcpExecuteRequest = McpExecuteRequest.builder()
-                                .requestId(UUID.randomUUID().toString().replace("-", ""))
-                                .sessionId(sessionId)
+                                .requestId(traceId)
+                                .sessionId(conversationId)
                                 .mcpDto(deployedMcp)
                                 .executeType(McpExecuteRequest.ExecuteTypeEnum.TOOL)
                                 .name(tool.getName())
                                 .keepAlive(true)
                                 .user(userDto)
+                                .traceContext(traceContext)
                                 .params(args)
                                 .build();
                         return Mono.create(sink -> mcpApiService.execute(mcpExecuteRequest).doOnNext(mcpExecuteOutput -> {

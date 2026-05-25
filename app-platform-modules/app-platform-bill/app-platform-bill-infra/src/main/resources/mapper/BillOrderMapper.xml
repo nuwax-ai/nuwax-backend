@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.bill.infra.dao.mapper.BillOrderMapper">
+
+    <select id="selectListWithFilters"
+            resultType="com.xspaceagi.bill.infra.dao.entity.BillOrder">
+        SELECT * FROM bill_order
+        <where>
+            <if test="query.orderId != null">AND id = #{query.orderId}</if>
+            <if test="query.userId != null">AND user_id = #{query.userId}</if>
+            <if test="query.bizType != null">AND biz_type = #{query.bizType.code}</if>
+            <if test="query.orderStatus != null and query.orderStatus != ''">AND order_status = #{query.orderStatus}</if>
+            <if test="query.payStatus != null and query.payStatus != ''">AND pay_status = #{query.payStatus}</if>
+            <if test="query.startTime != null and query.startTime != ''">AND created &gt;= #{query.startTime}</if>
+            <if test="query.endTime != null and query.endTime != ''">AND created &lt;= #{query.endTime}</if>
+        </where>
+        ORDER BY created DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countWithFilters" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM bill_order
+        <where>
+            <if test="query.orderId != null">AND id = #{query.orderId}</if>
+            <if test="query.userId != null">AND user_id = #{query.userId}</if>
+            <if test="query.bizType != null">AND biz_type = #{query.bizType.code}</if>
+            <if test="query.orderStatus != null and query.orderStatus != ''">AND order_status = #{query.orderStatus}</if>
+            <if test="query.payStatus != null and query.payStatus != ''">AND pay_status = #{query.payStatus}</if>
+            <if test="query.startTime != null and query.startTime != ''">AND created &gt;= #{query.startTime}</if>
+            <if test="query.endTime != null and query.endTime != ''">AND created &lt;= #{query.endTime}</if>
+        </where>
+    </select>
+
+</mapper>

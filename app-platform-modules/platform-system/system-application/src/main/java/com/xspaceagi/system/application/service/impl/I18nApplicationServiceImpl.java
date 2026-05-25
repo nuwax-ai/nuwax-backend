@@ -343,6 +343,41 @@ public class I18nApplicationServiceImpl implements I18nApplicationService {
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void translateForKeys(Long tenantId, List<String> keys, String sourceLang, String targetLang) {
+        Assert.notEmpty(keys, "The key list cannot be empty.");
+        String sourceCanon = requireCanonicalLang(sourceLang);
+        List<I18nConfigDto> sourceItems = new ArrayList<>();
+        for (String key : keys) {
+            if (StringUtils.isBlank(key)) {
+                continue;
+            }
+            String fieldKey = key.trim();
+            I18nConfig sourceConfig = i18nDomainService.queryByKey(sourceCanon, fieldKey);
+            if (sourceConfig == null) {
+                throw new IllegalArgumentException(
+                        "The source language configuration does not exist for key: " + fieldKey);
+            }
+            if (StringUtils.isBlank(sourceConfig.getFieldValue())) {
+                throw new IllegalArgumentException("The source value is empty for key: " + fieldKey);
+            }
+            sourceItems.add(toI18nConfigDto(sourceConfig));
+        }
+        if (sourceItems.isEmpty()) {
+            return;
+        }
+        translateForKeysBatch(tenantId, sourceItems, sourceLang, targetLang);
+    }
+
+    private I18nConfigDto toI18nConfigDto(I18nConfig i18nConfig) {
+        I18nConfigDto dto = new I18nConfigDto();
+        BeanUtils.copyProperties(i18nConfig, dto);
+        dto.setKey(i18nConfig.getFieldKey());
+        dto.setValue(i18nConfig.getFieldValue());
+        return dto;
+    }
+
     private String validateLang(String lang) {
         List<I18nLang> allLangs = i18nDomainService.queryAllLangs();
         if (CollectionUtils.isEmpty(allLangs)) {

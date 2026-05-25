@@ -1,7 +1,9 @@
 package com.xspaceagi.custompage.domain.threadpool;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -17,62 +19,53 @@ import org.springframework.context.annotation.Configuration;
 public class CustomPageAsyncConfig {
 
     /**
-     * 用于处理聊天流式响应的线程池
+     * 短 IO：Flux 推送、/chat HTTP 调用等，避免被长连接占满。
      */
-    @Bean("aiChatFluxExecutor")
-    public Executor aiChatFluxExecutor() {
+    @Bean("aiChatExecutor")
+    public Executor aiChatExecutor() {
         return new ThreadPoolExecutor(
-                20, // 核心线程数
-                100, // 最大线程数
-                60L, // 线程空闲时间
+                20,
+                100,
+                60L,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(500), // 任务队列
-                new ThreadFactory() {
-                    private final AtomicInteger threadNumber = new AtomicInteger(1);
-                    private final String namePrefix = "ai-chat-flux-";
-
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
-                        t.setDaemon(true); // 设置为守护线程
-                        return t;
-                    }
-                },
-                new ThreadPoolExecutor.AbortPolicy() // 拒绝策略：抛出异常
-        );
+                new LinkedBlockingQueue<>(500),
+                namedThreadFactory("ai-chat-"),
+                new ThreadPoolExecutor.AbortPolicy());
     }
 
-    // 用于异步调用 AI Chat 的线程池
-    // 对于AI调用这种IO密集型任务，线程在执行期间大部分时间在等待网络响应
-    // 
-    // 配置说明：
-    // - 并发执行能力：最多可同时执行 100 个任务（最大线程数）
-    // - 队列缓冲能力：最多可排队等待 500 个任务
-    // - 总接受能力：最多可同时接纳 600 个任务（执行中 + 排队）
-    // 
-    // - 如果平均AI响应时间为10秒，那么每10秒内100个线程可以完成100个任务
-    // - 如果用户平均每100秒发一次请求，理论上可以支持约 1000 个活跃用户
-    // - 如果用户持续快速发请求，可能只能支持约 100 个用户
-    @Bean("aiChatCallExecutor")
-    public Executor aiChatCallExecutor() {
+    /**
+     * 长 IO：Agent 进度 SSE 订阅（阻塞读至流结束）。
+     */
+    @Bean("aiAgentProgressExecutor")
+    public Executor aiAgentProgressExecutor() {
         return new ThreadPoolExecutor(
-            20, // 核心线程数
-            100, // 最大线程数
-            60L, // 线程空闲时间
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(500), // 任务队列
-            new ThreadFactory() {
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-                private final String namePrefix = "ai-chat-call-";
+                20,
+                200,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(100),
+                namedThreadFactory("ai-agent-progress-"),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+    }
 
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
-                    t.setDaemon(true); // 设置为守护线程
-                    return t;
-                }
-            },
-            new ThreadPoolExecutor.AbortPolicy() // 拒绝策略：抛出异常（避免阻塞调用者线程）
-        );
+    /**
+     * DB 轮询回放：定时任务，不占用 aiChatExecutor 工作线程 sleep。
+     */
+    @Bean(name = "aiAgentProgressScheduler", destroyMethod = "shutdown")
+    public ScheduledExecutorService aiAgentProgressScheduler() {
+        return Executors.newScheduledThreadPool(4, namedThreadFactory("ai-agent-progress-sched-"));
+    }
+
+    private static ThreadFactory namedThreadFactory(String namePrefix) {
+        return new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
+                t.setDaemon(true);
+                return t;
+            }
+        };
     }
 }

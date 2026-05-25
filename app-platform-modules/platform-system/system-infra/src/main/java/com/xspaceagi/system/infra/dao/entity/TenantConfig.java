@@ -49,7 +49,7 @@ public class TenantConfig implements Serializable {
     private Integer sort;
 
     public enum ConfigCategory {
-        BaseConfig, ModelSetting, AgentSetting, DomainBind, TemplateConfig
+        BaseConfig, ModelSetting, AgentSetting, DomainBind, TemplateConfig, Payment, Subscription, Credit
     }
 
     public enum DataType {

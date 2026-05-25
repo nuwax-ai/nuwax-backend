@@ -1,5 +1,6 @@
 package com.xspaceagi.knowledge.domain.docparser.impl;
 
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
@@ -14,11 +15,14 @@ import com.xspaceagi.knowledge.domain.docparser.parse.DocParser;
 import com.xspaceagi.knowledge.domain.model.KnowledgeConfigModel;
 import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeConfigRepository;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.KnowledgeException;
-import com.xspaceagi.system.application.dto.UserDto;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +55,9 @@ public class TikaParser implements DocParser {
 
     @Resource
     private WorkflowApplicationService workflowApplicationService;
+
+    @Resource
+    private TenantConfigApplicationService tenantConfigApplicationService;
 
     @Resource
     private WorkflowExecutor workflowExecutor;
@@ -245,6 +252,8 @@ public class TikaParser implements DocParser {
                 );
             }
 
+            TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(userContext.getTenantId());
+
             // 创建用户对象
             UserDto userDto = new UserDto();
             userDto.setTenantId(userContext.getTenantId());
@@ -285,6 +294,23 @@ public class TikaParser implements DocParser {
             workflowContext.setRequestId(requestId);
             workflowContext.setWorkflowConfig(workflowConfigDto);
             workflowContext.setParams(variableParams);
+            workflowContext.setTraceContext(TraceContext.builder()
+                    .userId(RequestContext.get().getUserId())
+                    .userName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName())
+                    .nickName(userDto.getNickName())
+                    .conversationId(requestId)
+                    .tenantId(RequestContext.get().getTenantId())
+                    .traceId(requestId)
+                    .enableSubscription(tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1)
+                    .billUserId(userDto.getId())
+                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                            .targetType(TraceContext.TraceTargetType.Workflow)
+                            .name(workflowConfigDto.getName())
+                            .description(workflowConfigDto.getDescription())
+                            .icon(workflowConfigDto.getIcon())
+                            .targetId(workflowConfigDto.getId().toString())
+                            .build()))
+                    .build());
 
             // 执行工作流
             Object object = workflowExecutor.execute(workflowContext).block();

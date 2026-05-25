@@ -1,11 +1,12 @@
 package com.xspaceagi.system.application.service;
 
-import java.util.List;
-
 import com.xspaceagi.system.infra.dao.entity.SysDataPermission;
+import com.xspaceagi.system.sdk.service.dto.MergedGroupDataPermissionDto;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
+
+import java.util.List;
 
 /**
  * 数据权限应用服务
@@ -31,4 +32,6 @@ public interface SysDataPermissionApplicationService {
      * 构建用户数据权限（不含缓存）
      */
     UserDataPermissionDto buildUserDataPermission(Long userId);
+
+    MergedGroupDataPermissionDto getMergedGroupDataPermission(List<Long> groupIds);
 }

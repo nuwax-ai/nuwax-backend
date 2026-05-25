@@ -1,11 +1,21 @@
 package com.xspaceagi.modelproxy.application.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
+import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import com.xspaceagi.agent.core.sdk.IModelRpcService;
+import com.xspaceagi.agent.core.sdk.dto.ModelInfoDto;
 import com.xspaceagi.modelproxy.infra.rpc.UserAccessKeyRpcService;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.sdk.rpc.IPricingRpcService;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.server.IUserMetricRpcService;
 import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
@@ -23,6 +33,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * 模型API代理配置服务实现
@@ -44,6 +56,18 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
     @Resource
     private IUserDataPermissionRpcService userDataPermissionRpcService;
 
+    @Resource
+    private IPricingRpcService iPricingRpcService;
+
+    @Resource
+    private IModelRpcService iModelRpcService;
+
+    @Resource
+    private ModelApplicationService modelApplicationService;
+
+    @Resource
+    private TenantConfigApplicationService tenantConfigApplicationService;
+
     @Value("${model-api-proxy.base-api-url:}")
     private String baseApiUrl;
 
@@ -51,8 +75,9 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
     private String enableModelProxy;
 
     @Override
-    public BackendModelDto getBackendModelConfig(String userApiKey) {
-        Object val = redisUtil.get(BACKEND_MODEL_KEY_PREFIX + userApiKey);
+    public BackendModelDto getBackendModelConfig(String userApiKey, Long id) {
+        String cacheKey = BACKEND_MODEL_KEY_PREFIX + userApiKey + (id == null ? "-" : id);
+        Object val = redisUtil.get(cacheKey);
         if (val != null) {
             try {
                 BackendModelDto backendModelDto = JSON.parseObject(val.toString(), BackendModelDto.class);
@@ -60,13 +85,57 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                     return backendModelDto;
                 }
             } catch (RuntimeException e) {
-                redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userApiKey, -1);
+                redisUtil.expire(cacheKey, -1);
                 throw e;
             }
         }
         UserAccessKeyDto userAccessKeyDto = userAccessKeyRpcService.queryAccessKey(userApiKey);
-        if (userAccessKeyDto == null || userAccessKeyDto.getTargetType() != UserAccessKeyDto.AKTargetType.AgentModel || userAccessKeyDto.getConfig() == null) {
+        if (userAccessKeyDto == null || (userAccessKeyDto.getTargetType() != UserAccessKeyDto.AKTargetType.AgentModel && userAccessKeyDto.getTargetType() != UserAccessKeyDto.AKTargetType.OpenApi)
+                || userAccessKeyDto.getConfig() == null) {
             return null;
+        }
+        if (id != null) {
+            List<Long> modelIds = userAccessKeyDto.getConfig().getModelIds();
+            if (modelIds == null || !modelIds.contains(id)) {
+                throw new BizException("4030", "API Key do not have permission to access this model.");
+            }
+            List<ModelInfoDto> userModels = iModelRpcService.getUserModels(userAccessKeyDto.getTenantId(), userAccessKeyDto.getUserId());
+            if (userModels == null || userModels.stream().noneMatch(modelInfoDto -> modelInfoDto.getId().equals(id))) {
+                throw new BizException("4030", "You do not have permission to access this model.");
+            }
+            ModelConfigDto modelInfoDto = TenantFunctions.callWithIgnoreCheck(() -> modelApplicationService.queryModelConfigById(id));
+            List<ModelConfigDto.ApiInfo> apiInfoList = modelInfoDto.getApiInfoList();
+            if (apiInfoList == null || apiInfoList.isEmpty()) {
+                throw new BizException("5000", "Model API Key is invalid.");
+            }
+            TenantConfigDto tenantConfigDto = tenantConfigApplicationService.getTenantConfig(userAccessKeyDto.getTenantId());
+            ModelConfigDto.ApiInfo apiInfo = apiInfoList.get(userAccessKeyDto.getUserId().intValue() % apiInfoList.size());
+            userAccessKeyDto.getConfig().setModelId(modelInfoDto.getId());
+            userAccessKeyDto.getConfig().setModelApiKey(apiInfo.getKey());
+            userAccessKeyDto.getConfig().setModelName(modelInfoDto.getModel());
+            userAccessKeyDto.getConfig().setProtocol(modelInfoDto.getApiProtocol().name());
+            userAccessKeyDto.getConfig().setScope(modelInfoDto.getScope().name());
+            userAccessKeyDto.getConfig().setEnabled(modelInfoDto.getEnabled() != null && modelInfoDto.getEnabled() == 1);
+            userAccessKeyDto.getConfig().setUserName("user" + userAccessKeyDto.getUserId());
+            userAccessKeyDto.getConfig().setConversationId(userAccessKeyDto.getUserId().toString());
+            userAccessKeyDto.getConfig().setRequestId(UUID.randomUUID().toString().replace("-", ""));
+            userAccessKeyDto.getConfig().setModelBaseUrl(apiInfo.getUrl());
+            userAccessKeyDto.getConfig().setTraceContext(TraceContext.builder()
+                    .nickName(userAccessKeyDto.getConfig().getUserName())
+                    .tenantId(userAccessKeyDto.getTenantId())
+                    .userId(userAccessKeyDto.getUserId())
+                    .conversationId(userAccessKeyDto.getConfig().getConversationId())
+                    .userName(userAccessKeyDto.getConfig().getUserName())
+                    .billUserId(userAccessKeyDto.getUserId())
+                    .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                    .traceId(userAccessKeyDto.getConfig().getRequestId())
+                    .traceTargets(List.of(TraceContext.TraceTarget.builder()
+                            .targetId(modelInfoDto.getId().toString())
+                            .targetType(TraceContext.TraceTargetType.Model)
+                            .description(modelInfoDto.getName())
+                            .name(modelInfoDto.getModel())
+                            .build()))
+                    .build());
         }
         BackendModelDto backendModelDto = new BackendModelDto();
         backendModelDto.setModelId(userAccessKeyDto.getConfig().getModelId());
@@ -81,9 +150,20 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         backendModelDto.setUserName(userAccessKeyDto.getConfig().getUserName());
         backendModelDto.setConversationId(userAccessKeyDto.getConfig().getConversationId());
         backendModelDto.setRequestId(userAccessKeyDto.getConfig().getRequestId());
+        backendModelDto.setTraceContext(userAccessKeyDto.getConfig().getTraceContext());
         checkTokenLimit(backendModelDto);
+        TraceContext traceContext = userAccessKeyDto.getConfig().getTraceContext();
+        if (traceContext != null && traceContext.isEnableSubscription()) {
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(userAccessKeyDto.getTenantId(), traceContext.getBillUserId(), List.of(PriceEstimate.EstimateTarget.builder()
+                    .targetType(TargetTypeEnum.MODEL)
+                    .targetId(userAccessKeyDto.getConfig().getModelId().toString())
+                    .build()));
+            if (!priceEstimate.isPass()) {
+                throw new BizException("CREDIT_NOT_ENOUGH_PRICE", priceEstimate.getMessage());
+            }
+        }
         // 缓存1分钟，1分钟内如果token超了无法实时体现
-        redisUtil.set(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), JSON.toJSONString(backendModelDto), 60);
+        redisUtil.set(cacheKey, JSON.toJSONString(backendModelDto), 60);
         return backendModelDto;
     }
 
@@ -106,10 +186,13 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
     @Override
     public FrontendModelDto generateUserFrontendModelConfig(Long tenantId, Long userId, Long agentId, BackendModelDto backendModel, String siteUrl) {
         if ("false".equalsIgnoreCase(enableModelProxy) || userId == null || userId == -1L) {
-            FrontendModelDto frontendModelDto = new FrontendModelDto();
-            frontendModelDto.setBaseUrl(backendModel.getBaseUrl());
-            frontendModelDto.setApiKey(backendModel.getApiKey());
-            return frontendModelDto;
+            TraceContext traceContext = backendModel.getTraceContext();
+            if (traceContext == null || !traceContext.isEnableSubscription()) {
+                FrontendModelDto frontendModelDto = new FrontendModelDto();
+                frontendModelDto.setBaseUrl(backendModel.getBaseUrl());
+                frontendModelDto.setApiKey(backendModel.getApiKey());
+                return frontendModelDto;
+            }
         }
         UserAccessKeyDto userAccessKeyDto = userAccessKeyRpcService.queryAgentModelAccessKey(userId, agentId, backendModel.getModelId());
         if (userAccessKeyDto == null) {
@@ -125,6 +208,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                             .userName(backendModel.getUserName())
                             .conversationId(backendModel.getConversationId())
                             .requestId(backendModel.getRequestId())
+                            .traceContext(backendModel.getTraceContext())
                             .build());
         } else {
             userAccessKeyRpcService.updateAccessKey(userAccessKeyDto.getId(), UserAccessKeyDto.UserAccessKeyConfig.builder()
@@ -138,6 +222,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                     .userName(backendModel.getUserName())
                     .conversationId(backendModel.getConversationId())
                     .requestId(backendModel.getRequestId())
+                    .traceContext(backendModel.getTraceContext())
                     .build());
             redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
         }

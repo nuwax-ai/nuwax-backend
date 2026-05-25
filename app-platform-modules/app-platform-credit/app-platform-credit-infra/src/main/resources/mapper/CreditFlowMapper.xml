@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.credit.infra.dao.mapper.CreditFlowMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.credit.infra.dao.entity.CreditFlow">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="credit_type" property="creditType"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="amount" property="amount"/>
+        <result column="before_amount" property="beforeAmount"/>
+        <result column="after_amount" property="afterAmount"/>
+        <result column="biz_no" property="bizNo"/>
+        <result column="created" property="created"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.xspaceagi.credit.infra.dao.entity.CreditFlow" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO credit_flow (user_id, batch_no, credit_type, operation_type, amount, before_amount, after_amount, biz_no, remark)
+        VALUES (#{userId}, #{batchNo}, #{creditType}, #{operationType}, #{amount}, #{beforeAmount}, #{afterAmount}, #{bizNo}, #{remark})
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO credit_flow (user_id, batch_no, credit_type, operation_type, amount, before_amount, after_amount, biz_no, remark)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.batchNo}, #{item.creditType}, #{item.operationType}, #{item.amount}, #{item.beforeAmount}, #{item.afterAmount}, #{item.bizNo}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM credit_flow WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserIdAndType" resultMap="BaseResultMap">
+        SELECT * FROM credit_flow
+        WHERE user_id = #{userId}
+        <if test="creditType != null">AND credit_type = #{creditType}</if>
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByUserIdAndTypeWithOffset" resultMap="BaseResultMap">
+        SELECT * FROM credit_flow
+        WHERE user_id = #{userId}
+        <if test="creditType != null">AND credit_type = #{creditType}</if>
+        AND id &lt; #{lastId}
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectByBizNo" resultMap="BaseResultMap">
+        SELECT * FROM credit_flow WHERE biz_no = #{bizNo} AND operation_type = #{operationType} LIMIT 1
+    </select>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM credit_flow WHERE user_id = #{userId}
+    </select>
+
+    <select id="countByUserIdAndType" resultType="int">
+        SELECT COUNT(*) FROM credit_flow WHERE user_id = #{userId} AND credit_type = #{creditType}
+    </select>
+
+</mapper>

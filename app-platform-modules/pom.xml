@@ -23,6 +23,11 @@
         <module>app-platform-model-proxy</module>
         <module>app-platform-memory</module>
         <module>app-platform-im</module>
+        <module>app-platform-credit</module>
+        <module>app-platform-subscription</module>
+        <module>app-platform-pricing</module>
+        <module>app-platform-pay</module>
+        <module>app-platform-bill</module>
         <module>app-platform-file</module>
     </modules>
     <dependencies>

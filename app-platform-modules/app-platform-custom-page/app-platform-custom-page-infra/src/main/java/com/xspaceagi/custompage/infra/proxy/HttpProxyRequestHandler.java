@@ -12,7 +12,7 @@ import com.xspaceagi.custompage.infra.vo.BackendVo;
 import com.xspaceagi.custompage.infra.vo.ProxyAuthVo;
 import com.xspaceagi.custompage.sdk.dto.ProxyConfig;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;

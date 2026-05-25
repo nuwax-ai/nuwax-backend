@@ -6,6 +6,7 @@ import com.xspaceagi.system.application.dto.*;
 import com.xspaceagi.system.application.constant.I18nLangTagConstraints;
 import com.xspaceagi.system.application.dto.permission.export.I18nConfigExportDto;
 import com.xspaceagi.system.application.service.I18nApplicationService;
+import com.xspaceagi.system.application.service.I18nConfigDiffService;
 import com.xspaceagi.system.application.service.I18nExportService;
 import com.xspaceagi.system.application.service.I18nImportService;
 import com.xspaceagi.system.application.service.I18nLangApplicationService;
@@ -66,6 +67,9 @@ public class I18nManageController {
 
     @Resource
     private I18nImportService i18nImportService;
+
+    @Resource
+    private I18nConfigDiffService i18nConfigDiffService;
 
     @Resource
     private TenantService tenantService;
@@ -291,6 +295,22 @@ public class I18nManageController {
     }
 
     @RequireResource(I18N_LANG_TRANSLATE)
+    @Operation(summary = "批量翻译指定 key 列表")
+    @PostMapping(value = "/config/translateKeys", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ReqResult<Void> translateForKeys(@RequestBody @Valid I18nBatchTranslateDto request) {
+        String sourceCanon = I18nLangTagConstraints.tryNormalizeToStoredForm(request.getSourceLang())
+                .orElseThrow(() -> new IllegalArgumentException(I18nLangTagConstraints.LANG_TAG_MESSAGE_EN));
+        String targetCanon = I18nLangTagConstraints.tryNormalizeToStoredForm(request.getTargetLang())
+                .orElseThrow(() -> new IllegalArgumentException(I18nLangTagConstraints.LANG_TAG_MESSAGE_EN));
+        Assert.isTrue(!I18nLangTagConstraints.sameLanguageTag(sourceCanon, targetCanon),
+                "The source language and target language cannot be the same.");
+
+        Long tenantId = RequestContext.get().getTenantId();
+        i18nApplicationService.translateForKeys(tenantId, request.getKeys(), sourceCanon, targetCanon);
+        return ReqResult.success();
+    }
+
+    @RequireResource(I18N_LANG_TRANSLATE)
     @Operation(summary = "翻译所有key")
     @PostMapping(value = "/config/translateAll", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<ReqResult<Map<String, Object>>>> translateForAll(@RequestParam("sourceLang") String sourceLang, @RequestParam("targetLang") String targetLang) {
@@ -428,6 +448,46 @@ public class I18nManageController {
         Assert.notEmpty(configs, "The configuration list cannot be empty.");
         i18nApplicationService.batchDeleteI18nConfig(configs);
         return ReqResult.success();
+    }
+
+    @SaasAdmin
+    @Operation(hidden = true, summary = "比对两个版本的 i18n 配置并生成新增/变更差异文件")
+    @GetMapping(value = "/config/diff", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ReqResult<String> diffConfig(@RequestParam String fromVersion, @RequestParam String toVersion) {
+        try {
+            var split = i18nConfigDiffService.generateDiff(fromVersion, toVersion);
+            String baseDir = "./" + I18nSyncConstants.I18N_JSON_EXPORT_BASE_PATH + "/";
+
+            String addFileName = I18nSyncConstants.buildI18nConfigAddFileName(toVersion);
+            writeDiffJsonFile(baseDir + addFileName, split.getAddRows());
+
+            String updateFileName = I18nSyncConstants.buildI18nConfigUpdateFileName(toVersion);
+            writeDiffJsonFile(baseDir + updateFileName, split.getUpdateRows());
+
+            return ReqResult.success("已生成差异文件: " + addFileName + "（新增 " + split.getAddRows().size()
+                    + " 条）, " + updateFileName + "（变更 " + split.getUpdateRows().size() + " 条）");
+        } catch (IOException e) {
+            return ReqResult.error(e.getMessage());
+        }
+    }
+
+    private void writeDiffJsonFile(String saveToPath, Object rows) throws IOException {
+        Path path = Paths.get(saveToPath).toAbsolutePath();
+        Files.createDirectories(path.getParent());
+        Files.writeString(path, JsonSerializeUtil.toJSONString(rows), StandardCharsets.UTF_8);
+    }
+
+    @SaasAdmin
+    @Operation(hidden = true, summary = "将指定版本的新增/变更差异配置导入到租户")
+    @GetMapping(value = "/config/import-diff", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ReqResult<String> importDiffConfig(@RequestParam Long tenantId, @RequestParam String version) {
+        Tenant tenant = tenantService.getById(tenantId);
+        if (tenant == null) {
+            return ReqResult.error("租户不存在");
+        }
+        i18nImportService.addConfigToTenant(tenant, version);
+        i18nImportService.updateConfigToTenant(tenant, version);
+        return ReqResult.success("差异配置导入成功（新增 + 变更）");
     }
 
     @SaasAdmin

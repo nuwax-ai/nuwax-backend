@@ -17,7 +17,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -866,6 +869,137 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .value(new ArrayList<>())
                 .sort(150)
                 .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("revenueRatio")
+                .description("开发者分成比例（%）")
+                .notice("开发者收益与平台服务比例，配置时请注意支付平台收取的服务费成本")
+                .placeholder("请输入比例值")
+                .category(TenantConfig.ConfigCategory.Payment)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0.1)
+                .sort(201)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("paymentGateway")
+                .description("支付网关地址")
+                .notice("该地址不要随便改动")
+                .placeholder("请输入支付网关地址")
+                .category(TenantConfig.ConfigCategory.Payment)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.String)
+                .required(true)
+                .value("https://pay.nuwax.com")
+                .sort(202)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("enableSubscription")
+                .description("订阅与积分功能开关")
+                .notice("全局控制订阅计划和积分体系的启用状态")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Subscription)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0)
+                .sort(301)
+                .build());
+
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("creditExchangeRate")
+                .description("积分兑换比例（¥1.00=?积分）")
+                .notice("设置积分与货币的兑换比率，用户可使用积分抵扣金额")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(1000)
+                .sort(401)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("creditExchangeDesc")
+                .description("积分解释")
+                .notice("使用通俗的语言向用户解释积分含义")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Textarea)
+                .dataType(TenantConfig.DataType.String)
+                .required(true)
+                .value("1000积分约可以使用DeepSeek-V4-flash模型100万输入TOKENS")
+                .sort(402)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("enableGiftCredit")
+                .description("新用户注册赠送积分")
+                .notice("用户首次注册完成后，自动获得赠送积分")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0)
+                .sort(403)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("giftCreditAmount")
+                .description("新用户赠送积分数量")
+                .notice("用户首次注册完成后，赠送积分数量")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0)
+                .sort(404)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("giftCreditExpire")
+                .description("赠送积分有效期（天）")
+                .notice("用户首次注册完成后，赠送积分的有效期")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(30)
+                .sort(405)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("enableDailyGiftCredit")
+                .description("启用每日登录赠送积分")
+                .notice("启用用户每日首次登录时自动获得赠送积分")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0)
+                .sort(403)
+                .build());
+
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("dailyGiftCreditAmount")
+                .description("每日登录赠送积分数量")
+                .notice("用户每日首次登录时自动获得赠送积分数量")
+                .placeholder("")
+                .category(TenantConfig.ConfigCategory.Credit)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .required(true)
+                .value(0)
+                .sort(404)
+                .build());
     }
 
     @Resource
@@ -953,9 +1087,7 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
 
     @DSTransactional
     public void updateConfig(Map<String, Object> config) {
-        Iterator<Map.Entry<String, Object>> ite = config.entrySet().iterator();
-        while (ite.hasNext()) {
-            Map.Entry<String, Object> entry = ite.next();
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
             LambdaUpdateWrapper<TenantConfig> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.set(TenantConfig::getValue, JsonSerializeUtil.toJSONStringGeneric(entry.getValue()));
             updateWrapper.eq(TenantConfig::getName, entry.getKey());

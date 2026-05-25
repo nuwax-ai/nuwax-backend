@@ -47,4 +47,6 @@ public interface UserApplicationService {
     List<Long> queryUserIdList(Long lastId, Integer size);
 
     String getUserDynamicCode(Long userId);
+
+    void logicDelete(Long userId);
 }

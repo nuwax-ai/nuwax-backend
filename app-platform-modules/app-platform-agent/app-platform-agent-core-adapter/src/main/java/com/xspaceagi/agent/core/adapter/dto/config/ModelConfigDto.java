@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.adapter.dto.config;
 import com.xspaceagi.agent.core.adapter.dto.CreatorDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
@@ -42,6 +43,15 @@ public class ModelConfigDto implements Serializable {
 
     @Schema(description = "模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other")
     private ModelTypeEnum type; // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
+
+    @Schema(description = "提供商ID")
+    private String pid;
+
+    @Schema(description = "提供商名称")
+    private String providerName;
+
+    @Schema(description = "模型能力类型列表")
+    private List<ModelCapabilityEnum> types;
 
     private Integer isReasonModel;
 
@@ -95,6 +105,9 @@ public class ModelConfigDto implements Serializable {
 
     @Schema(description = "可使用的业务场景")
     private List<UsageScenarioEnum> usageScenarios;
+
+    @Schema(description = "价格信息")
+    private Object pricing;
 
     @Data
     public static class ApiInfo {

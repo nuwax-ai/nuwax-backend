@@ -31,8 +31,8 @@ import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
-import com.xspaceagi.system.spec.enums.YnEnum;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.YnEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
@@ -539,13 +539,16 @@ public class McpConfigApplicationServiceImpl implements McpConfigApplicationServ
 
 
     @Override
-    public String getExportMcpServerConfig(Long userId, Long mcpId) {
+    public String getExportMcpServerConfig(Long userId, Long mcpId, UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig) {
         List<UserAccessKeyDto> userAccessKeyDtos = userAccessKeyApiService.queryAccessKeyList(userId, UserAccessKeyDto.AKTargetType.Mcp, mcpId.toString());
         UserAccessKeyDto userAccessKeyDto;
         if (CollectionUtils.isEmpty(userAccessKeyDtos)) {
             userAccessKeyDto = userAccessKeyApiService.newAccessKey(userId, UserAccessKeyDto.AKTargetType.Mcp, mcpId.toString());
         } else {
             userAccessKeyDto = userAccessKeyDtos.get(0);
+        }
+        if (userAccessKeyConfig != null) {
+            userAccessKeyApiService.updateUserAccessKeyConfig(userAccessKeyDto.getId(), userAccessKeyConfig);
         }
         McpDto mcpDto = getMcp(mcpId);
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
@@ -571,7 +574,7 @@ public class McpConfigApplicationServiceImpl implements McpConfigApplicationServ
         if (CollectionUtils.isNotEmpty(userAccessKeyDtos)) {
             userAccessKeyApiService.refreshAccessKey(userAccessKeyDtos.get(0).getId());
         }
-        return getExportMcpServerConfig(userId, mcpId);
+        return getExportMcpServerConfig(userId, mcpId, null);
     }
 
     public static String convertArgsToSimpleTableStructure(List<TableFieldDefineVo> fieldDefineVos) {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.pricing.infra.dao.mapper.ModelPriceTierMapper">
+
+    <select id="selectByModelId" resultType="com.xspaceagi.pricing.infra.dao.entity.ModelPriceTier">
+        SELECT * FROM model_price_tier
+        WHERE model_id = #{modelId}
+        ORDER BY context_length ASC
+    </select>
+
+</mapper>

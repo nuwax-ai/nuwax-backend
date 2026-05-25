@@ -71,8 +71,8 @@ public enum ResourceEnum {
     PAGE_APP_UPLOAD_FILE(ResourceTypeEnum.OPERATION, "page_app_upload_file", "上传文件", "page_app_dev"),
     PAGE_APP_ROLLBACK_VERSION(ResourceTypeEnum.OPERATION, "page_app_rollback_version", "回滚版本", "page_app_dev"),
 
-    // ================== 组件库开发模块 ==================
-    COMPONENT_LIB_DEV(ResourceTypeEnum.MODULE, "component_lib_dev", "组件库开发模块", "root"),
+    // ================== 组件资源模块 ==================
+    COMPONENT_LIB_DEV(ResourceTypeEnum.MODULE, "component_lib_dev", "组件资源模块", "root"),
 
     COMPONENT_LIB_CREATE(ResourceTypeEnum.OPERATION, "component_lib_create", "创建", "component_lib_dev"),
     COMPONENT_LIB_PUBLISH(ResourceTypeEnum.OPERATION, "component_lib_publish", "发布", "component_lib_dev"),
@@ -83,8 +83,65 @@ public enum ResourceEnum {
     COMPONENT_LIB_COPY(ResourceTypeEnum.OPERATION, "component_lib_copy", "复制", "component_lib_dev"),
     COMPONENT_LIB_IMPORT(ResourceTypeEnum.OPERATION, "component_lib_import", "导入配置", "component_lib_dev"),
     COMPONENT_LIB_EXPORT(ResourceTypeEnum.OPERATION, "component_lib_export", "导出配置", "component_lib_dev"),
-//    COMPONENT_LIB_LOG(ResourceTypeEnum.OPERATION, "component_lib_log", "日志", "component_lib_dev"),
     COMPONENT_LIB_DELETE(ResourceTypeEnum.OPERATION, "component_lib_delete", "删除", "component_lib_dev"),
+
+    /**
+     * 以下注释的插件、工作流、知识库、数据表、模型，暂时不用这么细分的控制，后续如果要区分的时候再放开
+     */
+//    // ================== 插件模块 ==================
+//    PLUGIN_DEV(ResourceTypeEnum.MODULE, "plugin_dev", "插件模块", "root"),
+//
+//    PLUGIN_DEV_CREATE(ResourceTypeEnum.OPERATION, "plugin_dev_create", "创建", "plugin_dev"),
+//    PLUGIN_DEV_PUBLISH(ResourceTypeEnum.OPERATION, "plugin_dev_publish", "发布", "plugin_dev"),
+//    PLUGIN_DEV_QUERY_LIST(ResourceTypeEnum.OPERATION, "plugin_dev_query_list", "查询列表", "plugin_dev"),
+//    PLUGIN_DEV_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "plugin_dev_query_detail", "查询详情", "plugin_dev"),
+//    PLUGIN_DEV_MODIFY(ResourceTypeEnum.OPERATION, "plugin_dev_modify", "编辑", "plugin_dev"),
+//    PLUGIN_DEV_COPY_TO_SPACE(ResourceTypeEnum.OPERATION, "plugin_dev_copy_to_space", "复制到空间", "plugin_dev"),
+//    PLUGIN_DEV_COPY(ResourceTypeEnum.OPERATION, "plugin_dev_copy", "复制", "plugin_dev"),
+//    PLUGIN_DEV_IMPORT(ResourceTypeEnum.OPERATION, "plugin_dev_import", "导入配置", "plugin_dev"),
+//    PLUGIN_DEV_EXPORT(ResourceTypeEnum.OPERATION, "plugin_dev_export", "导出配置", "plugin_dev"),
+//    PLUGIN_DEV_DELETE(ResourceTypeEnum.OPERATION, "plugin_dev_delete", "删除", "plugin_dev"),
+//
+//    // ================== 工作流模块 ==================
+//    WORKFLOW_DEV(ResourceTypeEnum.MODULE, "workflow_dev", "插件模块", "root"),
+//
+//    WORKFLOW_DEV_CREATE(ResourceTypeEnum.OPERATION, "workflow_dev_create", "创建", "workflow_dev"),
+//    WORKFLOW_DEV_PUBLISH(ResourceTypeEnum.OPERATION, "workflow_dev_publish", "发布", "workflow_dev"),
+//    WORKFLOW_DEV_QUERY_LIST(ResourceTypeEnum.OPERATION, "workflow_dev_query_list", "查询列表", "workflow_dev"),
+//    WORKFLOW_DEV_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "workflow_dev_query_detail", "查询详情", "workflow_dev"),
+//    WORKFLOW_DEV_MODIFY(ResourceTypeEnum.OPERATION, "workflow_dev_modify", "编辑", "workflow_dev"),
+//    WORKFLOW_DEV_COPY_TO_SPACE(ResourceTypeEnum.OPERATION, "workflow_dev_copy_to_space", "复制到空间", "workflow_dev"),
+//    WORKFLOW_DEV_COPY(ResourceTypeEnum.OPERATION, "workflow_dev_copy", "复制", "workflow_dev"),
+//    WORKFLOW_DEV_IMPORT(ResourceTypeEnum.OPERATION, "workflow_dev_import", "导入配置", "workflow_dev"),
+//    WORKFLOW_DEV_EXPORT(ResourceTypeEnum.OPERATION, "workflow_dev_export", "导出配置", "workflow_dev"),
+//    WORKFLOW_DEV_DELETE(ResourceTypeEnum.OPERATION, "workflow_dev_delete", "删除", "workflow_dev"),
+//
+//    // ================== 知识库模块 ==================
+//    KNOWLEDGE_DEV(ResourceTypeEnum.MODULE, "knowledge_dev", "知识库模块", "root"),
+//    KNOWLEDGE_DEV_CREATE(ResourceTypeEnum.OPERATION, "knowledge_dev_create", "创建", "knowledge_dev"),
+//    KNOWLEDGE_DEV_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "knowledge_dev_query_detail", "查询详情", "knowledge_dev"),
+//    KNOWLEDGE_DEV_MODIFY(ResourceTypeEnum.OPERATION, "knowledge_dev_modify", "编辑", "knowledge_dev"),
+//    KNOWLEDGE_DEV_IMPORT(ResourceTypeEnum.OPERATION, "knowledge_dev_import", "导入配置", "knowledge_dev"),
+//    KNOWLEDGE_DEV_DELETE(ResourceTypeEnum.OPERATION, "knowledge_dev_delete", "删除", "knowledge_dev"),
+//
+//    // ================== 数据表模块 ==================
+//    DATATABLE_DEV(ResourceTypeEnum.MODULE, "datatable_dev", "数据表模块", "root"),
+//    DATATABLE_DEV_CREATE(ResourceTypeEnum.OPERATION, "datatable_dev_create", "创建", "datatable_dev"),
+//    DATATABLE_DEV_QUERY_LIST(ResourceTypeEnum.OPERATION, "datatable_dev_query_list", "查询列表", "datatable_dev"),
+//    DATATABLE_DEV_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "datatable_dev_query_detail", "查询详情", "datatable_dev"),
+//    DATATABLE_DEV_MODIFY(ResourceTypeEnum.OPERATION, "datatable_dev_modify", "编辑", "datatable_dev"),
+//    DATATABLE_DEV_COPY(ResourceTypeEnum.OPERATION, "datatable_dev_copy", "复制", "datatable_dev"),
+//    DATATABLE_DEV_IMPORT(ResourceTypeEnum.OPERATION, "datatable_dev_import", "导入配置", "datatable_dev"),
+//    DATATABLE_DEV_EXPORT(ResourceTypeEnum.OPERATION, "datatable_dev_export", "导出配置", "datatable_dev"),
+//    DATATABLE_DEV_DELETE(ResourceTypeEnum.OPERATION, "datatable_dev_delete", "删除", "datatable_dev"),
+//
+//    // ================== 模型管理模块 ==================
+//    MODEL_DEV(ResourceTypeEnum.MODULE, "model_dev", "模型管理模块", "root"),
+//    MODEL_DEV_CREATE(ResourceTypeEnum.OPERATION, "model_dev_create", "创建", "model_dev"),
+//    MODEL_DEV_QUERY_LIST(ResourceTypeEnum.OPERATION, "model_dev_query_list", "查询列表", "model_dev"),
+//    MODEL_DEV_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "model_dev_query_detail", "查询详情", "model_dev"),
+//    MODEL_DEV_MODIFY(ResourceTypeEnum.OPERATION, "model_dev_modify", "编辑", "model_dev"),
+//    MODEL_DEV_DELETE(ResourceTypeEnum.OPERATION, "model_dev_delete", "删除", "model_dev"),
 
     // ================== 技能开发模块 ==================
     SKILL_DEV(ResourceTypeEnum.MODULE, "skill_dev", "技能开发模块", "root"),
@@ -361,9 +418,20 @@ public enum ResourceEnum {
     I18N_LANG_ADD(ResourceTypeEnum.OPERATION, "i18n_lang_add", "新增", "i18n_lang_manage"),
     I18N_LANG_MODIFY(ResourceTypeEnum.OPERATION, "i18n_lang_modify", "编辑", "i18n_lang_manage"),
     I18N_LANG_DELETE(ResourceTypeEnum.OPERATION, "i18n_lang_delete", "删除", "i18n_lang_manage"),
-    I18N_LANG_TRANSLATE(ResourceTypeEnum.OPERATION, "i18n_lang_translate", "翻译", "i18n_lang_manage");
+    I18N_LANG_TRANSLATE(ResourceTypeEnum.OPERATION, "i18n_lang_translate", "翻译", "i18n_lang_manage"),
 
+    // ================== 订阅与积分模块 ==================
+    SUBSCRIPTION_POINTS(ResourceTypeEnum.MODULE, "subscription_points", "订阅与积分模块", "root"),
+    SUBSCRIPTION_POINTS_QUERY(ResourceTypeEnum.OPERATION, "subscription_points_query", "查询", "subscription_points"),
+    SUBSCRIPTION_POINTS_MODIFY(ResourceTypeEnum.OPERATION, "subscription_points_modify", "编辑", "subscription_points"),
+    SUBSCRIPTION_POINTS_DELETE(ResourceTypeEnum.OPERATION, "subscription_points_delete", "删除", "subscription_points"),
 
+    // ================== 支付与收益模块 ==================
+    PAY_EARNINGS(ResourceTypeEnum.MODULE, "pay_earnings", "支付与收益模块", "root"),
+    PAY_EARNINGS_QUERY(ResourceTypeEnum.OPERATION, "pay_earnings_query", "查询", "pay_earnings"),
+    PAY_EARNINGS_MODIFY(ResourceTypeEnum.OPERATION, "pay_earnings_modify", "编辑", "pay_earnings"),
+    MERCHANT_ONBOARDING_AUDIT(ResourceTypeEnum.OPERATION, "merchant_onboarding_audit", "进件审核", "pay_earnings"),
+    WITHDRAW_AUDIT(ResourceTypeEnum.OPERATION, "withdraw_audit", "提现审核", "pay_earnings");
 
     private final ResourceTypeEnum type;
     private final String code;

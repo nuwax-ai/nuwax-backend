@@ -32,6 +32,8 @@ public class ModelConfig {
     private String model; // 模型标识
 
     private ModelTypeEnum type; // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
+    private String pid;
+    private String types;
     private Integer isReasonModel;
     private NetworkType networkType;
 

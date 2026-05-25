@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.application.service;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
@@ -26,23 +27,28 @@ import com.xspaceagi.agent.core.infra.converter.ArgConverter;
 import com.xspaceagi.agent.core.infra.rpc.DbTableRpcService;
 import com.xspaceagi.agent.core.infra.rpc.KnowledgeRpcService;
 import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.enums.*;
 import com.xspaceagi.compose.sdk.request.DorisTableDefineRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
 import com.xspaceagi.compose.sdk.vo.define.TableDefineVo;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.knowledge.sdk.request.KnowledgeCreateRequestVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeConfigVo;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
-import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import com.xspaceagi.system.spec.utils.TimeWheel;
@@ -112,6 +118,9 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
 
     @Resource
     private WorkflowExecutor workflowExecutor;
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @Override
     public Long add(WorkflowConfigDto workflowConfigDto) {
@@ -493,6 +502,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         workflowConfigDto.setNodes(nodes);
         workflowConfigDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());
         workflowConfigDto.setScope(publishedDto.getScope());
+        workflowConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(workflowConfigDto.getIcon(), workflowConfigDto.getName(), "workflow"));
         return workflowConfigDto;
     }
 
@@ -2488,6 +2498,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 });
             }
             UserDto userDto = ((UserDto) RequestContext.get().getUser());
+            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
             AgentConfigDto agentConfigDto = new AgentConfigDto();
             agentConfigDto.setId(workflowExecuteRequestDto.getAgentId() == null ? -1L : workflowExecuteRequestDto.getAgentId());
             agentConfigDto.setName("");
@@ -2506,6 +2517,43 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             workflowContext1.setWorkflowConfig(workflowConfigDto);
             workflowContext1.setParams(workflowExecuteRequestDto.getParams());
             workflowContext1.setFrom(workflowExecuteRequestDto.getFrom());
+            workflowContext1.setTraceContext(TraceContext.builder()
+                    .userId(RequestContext.get().getUserId())
+                    .userName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName())
+                    .nickName(userDto.getNickName())
+                    .conversationId(RequestContext.get().getRequestId())
+                    .tenantId(RequestContext.get().getTenantId())
+                    .traceId(RequestContext.get().getRequestId())
+                    .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                    .billUserId(userDto.getId())
+                    .devTest(workflowExecuteRequestDto.isTest())
+                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                            .targetType(TraceContext.TraceTargetType.Workflow)
+                            .name(workflowConfigDto.getName())
+                            .description(workflowConfigDto.getDescription())
+                            .icon(workflowConfigDto.getIcon())
+                            .targetId(workflowConfigDto.getId().toString())
+                            .build()))
+                    .build());
+            if (workflowContext1.getTraceContext().isEnableSubscription()) {
+                List<PriceEstimate.EstimateTarget> estimateTargets = new ArrayList<>();
+                if (!workflowExecuteRequestDto.isTest()) {
+                    estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build());
+                }
+                resourcePricingRpcService.completeWorkflowEstimateTargets(estimateTargets, workflowConfigDto, new HashSet<>());
+                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(),
+                        List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build()));
+                if (!priceEstimate.isPass()) {
+                    WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
+                    workflowExecutingDto.setSuccess(false);
+                    workflowExecutingDto.setRequestId(workflowExecuteRequestDto.getRequestId());
+                    workflowExecutingDto.setMessage(priceEstimate.getMessage());
+                    workflowExecutingDto.setComplete(true);
+                    emitter.next(workflowExecutingDto);
+                    emitter.complete();
+                    return;
+                }
+            }
             workflowContext1.setNodeExecutingConsumer(nodeExecutingDto -> {
                 log.info("Node execution info: {}", nodeExecutingDto);
                 WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();

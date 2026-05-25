@@ -1,5 +1,6 @@
 package com.xspaceagi.interceptor;
 
+import com.xspaceagi.pay.spec.exception.PayGatewayBizException;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
@@ -27,7 +28,12 @@ public class AppExceptionHandler {
     @ResponseBody
     public ReqResult<?> processException(Exception ex) {
         ReqResult<?> responseData;
-        if (ex instanceof BizException bizException) {
+        if (ex instanceof PayGatewayBizException payGatewayBizException) {
+            responseData = ReqResult.error(
+                    payGatewayBizException.getCode(),
+                    payGatewayBizException.getDisplayCode(),
+                    payGatewayBizException.getMessage());
+        } else if (ex instanceof BizException bizException) {
             String message = resolveBizExceptionMessage(bizException);
             responseData = ReqResult.error(bizException.getCode(), message);
         } else {

@@ -96,7 +96,8 @@ public class Published {
         Workflow,
         Knowledge,
         Table,
-        Skill
+        Skill,
+        Model
     }
 
     public enum TargetSubType {

@@ -6,6 +6,7 @@ import com.xspaceagi.agent.core.infra.component.workflow.dto.LoopNodeExecutingDt
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecuteResult;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecutingDto;
 import com.xspaceagi.agent.core.infra.component.workflow.enums.NodeExecuteStatus;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.beans.BeanUtils;
@@ -23,6 +24,8 @@ import java.util.function.Consumer;
 public class WorkflowContext implements Serializable {
 
     private String requestId;
+
+    private TraceContext traceContext;
 
     private AgentContext agentContext;
 

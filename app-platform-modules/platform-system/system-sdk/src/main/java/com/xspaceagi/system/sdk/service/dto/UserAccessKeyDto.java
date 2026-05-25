@@ -1,5 +1,6 @@
 package com.xspaceagi.system.sdk.service.dto;
 
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,9 +62,10 @@ public class UserAccessKeyDto {
         private String scope;
         private String userName;// 用户名临时记录
         private String requestId;
-
+        private TraceContext traceContext;
         @Schema(description = "API 授权配置")
         private List<ApiConfig> apiConfigs;
+        private List<Long> modelIds;
     }
 
     @Data

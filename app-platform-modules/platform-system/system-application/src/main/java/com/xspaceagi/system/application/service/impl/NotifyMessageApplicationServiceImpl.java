@@ -1,13 +1,15 @@
 package com.xspaceagi.system.application.service.impl;
 
 import com.xspaceagi.system.application.dto.*;
-import com.xspaceagi.system.domain.service.NotifyMessageDomainService;
 import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.domain.service.NotifyMessageDomainService;
 import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
 import com.xspaceagi.system.infra.dao.entity.NotifyMessageUser;
+import com.xspaceagi.system.infra.dao.service.NotifyMessageService;
+import com.xspaceagi.system.sdk.service.INotificationRpcService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -21,10 +23,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-public class NotifyMessageApplicationServiceImpl implements NotifyMessageApplicationService {
+public class NotifyMessageApplicationServiceImpl implements NotifyMessageApplicationService, INotificationRpcService {
 
     @Resource
     private NotifyMessageDomainService notifyMessageDomainService;
+
+    @Resource
+    private NotifyMessageService notifyMessageService;
 
     @Resource
     private UserApplicationService userApplicationService;
@@ -46,12 +51,13 @@ public class NotifyMessageApplicationServiceImpl implements NotifyMessageApplica
                 .senderId(sendNotifyMessageDto.getSenderId())
                 .content(sendNotifyMessageDto.getContent())
                 .build();
+        notifyMessageService.save(notifyMessage);
         if (sendNotifyMessageDto.getScope() == NotifyMessage.MessageScope.Broadcast) {
             Long lastUserId = Long.MAX_VALUE;
-            Integer size = 1000;
-            while (size > 0) {
+            int size = 1000;
+            while (true) {
                 List<Long> ids = userApplicationService.queryUserIdList(lastUserId, size);
-                if (ids.size() == 0) {
+                if (ids.isEmpty()) {
                     break;
                 }
                 notifyMessageDomainService.addNotifyMessage(notifyMessage, ids);
@@ -64,6 +70,16 @@ public class NotifyMessageApplicationServiceImpl implements NotifyMessageApplica
             sendNotifyMessageDto.getUserIds().forEach(userId -> publishEvent(userId, EventDto.builder().type(EventDto.EVENT_TYPE_NEW_NOTIFY_MESSAGE).event(notifyMessage).build()));
         }
         return notifyMessage.getId();
+    }
+
+    @Override
+    public void sendNotifyMessage(Long userId, String message) {
+        NotifyMessage notifyMessage = NotifyMessage.builder()
+                .scope(NotifyMessage.MessageScope.System)
+                .senderId(-1L)
+                .content(message)
+                .build();
+        notifyMessageDomainService.addNotifyMessage(notifyMessage, List.of(userId));
     }
 
     @Override

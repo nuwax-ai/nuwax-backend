@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -53,4 +54,10 @@ public class WorkflowDetailDto implements Serializable {
 
     @Schema(description = "是否允许复制, 1 允许")
     private Integer allowCopy;
+
+    @Schema(description = "是否需要付费")
+    private boolean paymentRequired;
+
+    @Schema(description = "价格")
+    private BigDecimal price;
 }

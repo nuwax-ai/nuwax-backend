@@ -27,6 +27,18 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-log-sdk</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-pricing-sdk</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

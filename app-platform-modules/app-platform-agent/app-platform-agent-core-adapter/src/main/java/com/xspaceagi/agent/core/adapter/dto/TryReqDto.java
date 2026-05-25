@@ -45,6 +45,9 @@ public class TryReqDto implements Serializable {
     @Schema(description = "用户选择的模型ID")
     private Long modelId;
 
+    @Schema(description = "请求ID", hidden = true)
+    private String requestId;
+
     @Data
     public static class SelectedComponentDto {
         @Schema(description = "组件ID")

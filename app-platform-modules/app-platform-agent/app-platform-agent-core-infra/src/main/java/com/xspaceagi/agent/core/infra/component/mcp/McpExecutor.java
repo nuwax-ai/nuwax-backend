@@ -56,6 +56,7 @@ public class McpExecutor {
                 .name(mcpContext.getName())
                 .params(params)
                 .keepAlive(true)
+                .traceContext(mcpContext.getTraceContext())
                 .build();
         return mcpRpcService.execute(mcpExecuteRequestDto).onErrorResume(Mono::error);
     }

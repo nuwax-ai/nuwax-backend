@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.infra.component.mcp;
 
 import com.xspaceagi.mcp.sdk.dto.McpDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,8 @@ public class McpContext implements Serializable {
 
     @Schema(description = "MCP工具/资源/提示词名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
+
+    private TraceContext traceContext;
 
     @Schema(description = "参数")
     private Map<String, Object> params;

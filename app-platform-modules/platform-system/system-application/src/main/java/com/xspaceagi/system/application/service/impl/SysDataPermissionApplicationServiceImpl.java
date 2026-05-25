@@ -1,31 +1,15 @@
 package com.xspaceagi.system.application.service.impl;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import com.xspaceagi.system.spec.enums.StatusEnum;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationService;
 import com.xspaceagi.system.application.service.SysDataPermissionApplicationService;
 import com.xspaceagi.system.application.service.SysGroupApplicationService;
 import com.xspaceagi.system.application.service.SysRoleApplicationService;
+import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationService;
 import com.xspaceagi.system.domain.service.SysDataPermissionDomainService;
 import com.xspaceagi.system.infra.dao.entity.SysDataPermission;
 import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.infra.dao.entity.SysRole;
+import com.xspaceagi.system.sdk.service.dto.MergedGroupDataPermissionDto;
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -33,11 +17,21 @@ import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.constants.RedisKeyConstants;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.PermissionTargetTypeEnum;
+import com.xspaceagi.system.spec.enums.StatusEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.PermissionCacheUtil;
-
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * 数据权限应用服务实现
@@ -94,16 +88,17 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         Long tenantId = getTenantId();
         String cacheKey = RedisKeyConstants.buildUserPermissionCacheKey(tenantId, userId);
         HashOperations<String, String, String> hashOps = stringRedisTemplate.opsForHash();
-        
+
         try {
             String dataPermissionJson = hashOps.get(cacheKey, RedisKeyConstants.HASH_FIELD_DATA_PERMISSION);
             String cacheTimeStr = hashOps.get(cacheKey, RedisKeyConstants.HASH_FIELD_CACHE_TIME);
-            
+
             if (dataPermissionJson != null && cacheTimeStr != null && tenantId != null) {
                 // 检查缓存是否有效
                 long cacheTime = Long.parseLong(cacheTimeStr);
                 if (PermissionCacheUtil.isCacheValid(stringRedisTemplate, tenantId, cacheTime)) {
-                    return JsonSerializeUtil.parseObject(dataPermissionJson, new TypeReference<UserDataPermissionDto>() {});
+                    return JsonSerializeUtil.parseObject(dataPermissionJson, new TypeReference<UserDataPermissionDto>() {
+                    });
                 } else {
                     log.debug("用户数据权限缓存已失效, userId={}, cacheTime={}", userId, cacheTime);
                 }
@@ -131,8 +126,7 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         List<SysRole> roleList = sysRoleApplicationService.getRoleListByUserId(userId);
         roleList = CollectionUtils.isEmpty(roleList) ? new ArrayList<>() : roleList.stream().filter(r -> StatusEnum.isEnabled(r.getStatus())).toList();
 
-        List<SysGroup> groupList = sysGroupApplicationService.getGroupListByUserId(userId);
-        groupList = CollectionUtils.isEmpty(groupList) ? new ArrayList<>() : groupList.stream().filter(g -> StatusEnum.isEnabled(g.getStatus())).toList();
+        List<SysGroup> groupList = sysGroupApplicationService.getEffectiveGroupListByUserId(userId);
 
         if (CollectionUtils.isEmpty(roleList) && CollectionUtils.isEmpty(groupList)) {
             return buildNoneDataPermission(userId);
@@ -151,7 +145,7 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
                 .filter(Objects::nonNull)
                 .toList();
         if (allPermissions.isEmpty()) {
-            return buildDefaultDataPermission(userId);
+            return buildNoneDataPermission(userId);
         }
 
         UserDataPermissionDto result = mergeDataPermissions(userId, allPermissions);
@@ -166,32 +160,69 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         return result;
     }
 
-    // 默认数据权限
-    private UserDataPermissionDto buildDefaultDataPermission(Long userId) {
-        UserDataPermissionDto dto = new UserDataPermissionDto();
-        dto.setUserId(userId);
-        dto.setTokenLimit(new TokenLimit(-1L));
-        dto.setMaxSpaceCount(-1);
-        dto.setMaxAgentCount(-1);
-        dto.setMaxPageAppCount(-1);
-        dto.setMaxKnowledgeCount(-1);
-        dto.setKnowledgeStorageLimitGb(BigDecimal.valueOf(-1L));
-        dto.setMaxDataTableCount(-1);
-        dto.setMaxScheduledTaskCount(-1);
-        //dto.setAllowApiExternalCall(-1);
-        dto.setAgentComputerCpuCores(2);
-        dto.setAgentComputerMemoryGb(4);
-        //dto.setAgentComputerSwapGb(8);
-        dto.setAgentFileStorageDays(-1);
-        dto.setAgentDailyPromptLimit(-1);
-        dto.setPageDailyPromptLimit(-1);
+    @Override
+    public MergedGroupDataPermissionDto getMergedGroupDataPermission(List<Long> groupIds) {
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return buildNoneMergedGroupDataPermission();
+        }
 
-        //dto.setModelIds();
-        //dto.setAgentIds();
-        //dto.setPageIds();
-        //dto.setOpenApiConfigs();
-        //dto.setKnowledgeIds();
-        return dto;
+        List<Long> distinctGroupIds = groupIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctGroupIds.isEmpty()) {
+            return buildNoneMergedGroupDataPermission();
+        }
+
+        List<SysGroup> groups = sysGroupApplicationService.listGroupsByIds(distinctGroupIds);
+        List<Long> enabledGroupIds = CollectionUtils.isEmpty(groups)
+                ? List.of()
+                : groups.stream()
+                .filter(g -> StatusEnum.isEnabled(g.getStatus()))
+                .map(SysGroup::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (enabledGroupIds.isEmpty()) {
+            return buildNoneMergedGroupDataPermission();
+        }
+
+        List<SysDataPermission> groupPermissions = sysDataPermissionDomainService.getByTargetList(PermissionTargetTypeEnum.GROUP, enabledGroupIds);
+        MergedGroupDataPermissionDto result = CollectionUtils.isEmpty(groupPermissions)
+                ? buildNoneMergedGroupDataPermission()
+                : toMergedGroupDataPermissionDto(mergeDataPermissions(null, groupPermissions));
+
+        List<Long> emptyRoleIds = List.of();
+        result.setModelIds(mergeSubjectIds(emptyRoleIds, enabledGroupIds, PermissionSubjectTypeEnum.MODEL));
+        result.setAgentIds(mergeSubjectIds(emptyRoleIds, enabledGroupIds, PermissionSubjectTypeEnum.AGENT));
+        result.setPageAgentIds(mergeSubjectIds(emptyRoleIds, enabledGroupIds, PermissionSubjectTypeEnum.PAGE));
+        result.setOpenApiConfigs(toMergedOpenApiConfigs(mergeOpenApiConfigs(emptyRoleIds, enabledGroupIds)));
+        result.setKnowledgeIds(mergeSubjectIds(emptyRoleIds, enabledGroupIds, PermissionSubjectTypeEnum.KNOWLEDGE));
+        return result;
+    }
+
+    private MergedGroupDataPermissionDto buildNoneMergedGroupDataPermission() {
+        return toMergedGroupDataPermissionDto(buildNoneDataPermission(null));
+    }
+
+    private MergedGroupDataPermissionDto toMergedGroupDataPermissionDto(UserDataPermissionDto source) {
+        if (source == null) {
+            return new MergedGroupDataPermissionDto();
+        }
+        MergedGroupDataPermissionDto target = new MergedGroupDataPermissionDto();
+        BeanUtils.copyProperties(source, target);
+        target.setOpenApiConfigs(toMergedOpenApiConfigs(source.getOpenApiConfigs()));
+        return target;
+    }
+
+    private List<MergedGroupDataPermissionDto.OpenApiConfig> toMergedOpenApiConfigs(
+            List<UserDataPermissionDto.OpenApiConfig> openApiConfigs) {
+        if (CollectionUtils.isEmpty(openApiConfigs)) {
+            return List.of();
+        }
+        return openApiConfigs.stream().map(cfg -> {
+            MergedGroupDataPermissionDto.OpenApiConfig merged = new MergedGroupDataPermissionDto.OpenApiConfig();
+            merged.setKey(cfg.getKey());
+            merged.setRpm(cfg.getRpm());
+            merged.setRpd(cfg.getRpd());
+            return merged;
+        }).toList();
     }
 
     // 无任何数据权限
@@ -340,7 +371,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
             if (entry.getValue() != null && !entry.getValue().isBlank()) {
                 try {
                     Map<String, Integer> valueMap = JsonSerializeUtil.parseObject(entry.getValue(),
-                            new TypeReference<Map<String, Integer>>() {});
+                            new TypeReference<Map<String, Integer>>() {
+                            });
                     if (valueMap != null) {
                         rpm = valueMap.get("rpm");
                         rpd = valueMap.get("rpd");

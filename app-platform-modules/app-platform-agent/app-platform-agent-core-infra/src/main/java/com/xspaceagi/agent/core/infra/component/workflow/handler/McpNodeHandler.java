@@ -8,6 +8,7 @@ import com.xspaceagi.agent.core.infra.component.mcp.McpExecutor;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpLogContent;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -23,9 +24,10 @@ public class McpNodeHandler extends AbstractNodeHandler {
     @Override
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         McpNodeConfigDto mcpNodeConfigDto = (McpNodeConfigDto) node.getNodeConfig();
-        if (mcpNodeConfigDto.getMcp() == null){
+        if (mcpNodeConfigDto.getMcp() == null) {
             return Mono.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowMcpReferenceRemoved));
         }
+        McpDto mcpDto = (McpDto) mcpNodeConfigDto.getMcp();
         Map<String, Object> params = extraBindValueMap(workflowContext, node, mcpNodeConfigDto.getInputArgs());
         McpContext mcpContext = McpContext.builder()
                 .requestId(workflowContext.getAgentContext().getRequestId())
@@ -34,6 +36,7 @@ public class McpNodeHandler extends AbstractNodeHandler {
                 .mcpDto((McpDto) mcpNodeConfigDto.getMcp())
                 .params(params)
                 .name(mcpNodeConfigDto.getToolName())
+                .traceContext(workflowContext.getTraceContext().next(TraceContext.TraceTargetType.Mcp, mcpDto.getId().toString(), mcpDto.getName(), mcpDto.getDescription(), mcpDto.getIcon()))
                 .build();
         AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
         return Mono.create(emitter -> {

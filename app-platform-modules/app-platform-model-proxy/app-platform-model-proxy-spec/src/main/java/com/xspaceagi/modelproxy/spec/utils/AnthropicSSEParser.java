@@ -11,7 +11,11 @@ import java.util.regex.Pattern;
 
 public class AnthropicSSEParser {
 
+    //cache_read_input_tokens
+    private static final Pattern CACHE_INPUT_TOKENS_PATTERN = Pattern.compile("\"cache_read_input_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern INPUT_TOKENS_PATTERN = Pattern.compile("\"input_tokens\"\\s*:\\s*(\\d+)");
+    private static final Pattern CACHE_PROMPT_CREATE_TOKENS_PATTERN = Pattern.compile("\"cache_creation_input_tokens\"\\s*:\\s*(\\d+)");
+
     private static final Pattern OUTPUT_TOKENS_PATTERN = Pattern.compile("\"output_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern TEXT_DELTA_PATTERN = Pattern.compile("\"type\"\\s*:\\s*\"text_delta\"");
     private static final Pattern TEXT_PATTERN = Pattern.compile("\"text\"\\s*:\\s*\"([^\"]*)\"");
@@ -32,9 +36,19 @@ public class AnthropicSSEParser {
                     continue;
                 }
 
+                Matcher caheInputMatcher = CACHE_INPUT_TOKENS_PATTERN.matcher(data);
+                if (caheInputMatcher.find()) {
+                    usage.cacheInputTokens = Integer.parseInt(caheInputMatcher.group(1));
+                }
+
                 Matcher inputMatcher = INPUT_TOKENS_PATTERN.matcher(data);
                 if (inputMatcher.find()) {
                     usage.inputTokens = Integer.parseInt(inputMatcher.group(1));
+                }
+
+                Matcher promptCacheCreateMatcher = CACHE_PROMPT_CREATE_TOKENS_PATTERN.matcher(data);
+                if (promptCacheCreateMatcher.find()) {
+                    usage.inputTokens += Integer.parseInt(promptCacheCreateMatcher.group(1));
                 }
 
                 Matcher outputMatcher = OUTPUT_TOKENS_PATTERN.matcher(data);
@@ -76,6 +90,7 @@ public class AnthropicSSEParser {
     }
 
     public static class TokenUsage {
+        public long cacheInputTokens = 0;
         public long inputTokens = 0;
         public long outputTokens = 0;
         public int outputTokensDelta = 0;

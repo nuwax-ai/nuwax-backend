@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.infra.component.plugin;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,4 +46,6 @@ public class PluginContext implements Serializable {
     private boolean asyncExecute;
 
     private String asyncReplyContent;
+
+    private TraceContext traceContext;
 }

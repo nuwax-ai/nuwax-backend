@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.bill.infra.dao.mapper.BillResourceStatMapper">
+
+    <select id="selectSummary" resultType="java.util.HashMap">
+        SELECT
+            type,
+            COALESCE(SUM(input_tokens), 0) AS totalInputTokens,
+            COALESCE(SUM(output_tokens), 0) AS totalOutputTokens,
+            COALESCE(SUM(cache_input_tokens), 0) AS totalCacheInputTokens,
+            COUNT(DISTINCT CASE WHEN target_type IN ('Plugin', 'Workflow') THEN target_id END) AS toolCount,
+            COALESCE(SUM(CASE WHEN target_type IN ('Plugin', 'Workflow') THEN call_count ELSE 0 END), 0) AS toolCallCount,
+            COUNT(DISTINCT CASE WHEN target_type = 'Agent' THEN target_id END) AS agentCount,
+            COALESCE(SUM(CASE WHEN target_type = 'Agent' THEN call_count ELSE 0 END), 0) AS agentCallCount,
+            COALESCE(SUM(CASE WHEN target_type = 'Model' THEN call_count ELSE 0 END), 0) AS modelCallCount,
+            COALESCE(SUM(CASE WHEN target_type = 'Model' THEN call_failed_count ELSE 0 END), 0) AS failedModelCallCount,
+            COALESCE(SUM(CASE WHEN target_type IN ('Plugin', 'Workflow') THEN call_failed_count ELSE 0 END), 0) AS failedToolCallCount,
+            COALESCE(SUM(CASE WHEN target_type = 'Agent' THEN call_failed_count ELSE 0 END), 0) AS failedAgentCallCount,
+            COALESCE(SUM(credit_amount), 0) AS totalCreditAmount,
+            COALESCE(SUM(fee_amount), 0) AS totalAmount
+        FROM bill_resource_stat
+        WHERE 1 = 1
+        <if test="tenantId != null">
+            AND _tenant_id = #{tenantId}
+        </if>
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="dtStart != null">
+            AND dt &gt;= #{dtStart}
+        </if>
+        <if test="dtEnd != null">
+            AND dt &lt;= #{dtEnd}
+        </if>
+        GROUP BY type
+    </select>
+
+</mapper>

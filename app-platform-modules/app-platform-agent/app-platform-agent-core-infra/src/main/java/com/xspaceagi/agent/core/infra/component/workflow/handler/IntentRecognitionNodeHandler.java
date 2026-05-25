@@ -8,6 +8,7 @@ import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
 import com.xspaceagi.agent.core.infra.component.model.dto.ModelCallConfigDto;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.spec.enums.OutputTypeEnum;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -45,7 +46,7 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
         }
         if (intentRecognitionNodeConfigDto.getUseHistory() != null && intentRecognitionNodeConfigDto.getUseHistory()) {
             ChatMemory chatMemory = workflowContext.getWorkflowContextServiceHolder().getChatMemory();
-            List<Message> messages = chatMemory.get(workflowContext.getAgentContext().getConversationId(), 12);
+            List<Message> messages = chatMemory.get(workflowContext.getAgentContext().getConversationId());
             if (CollectionUtils.isNotEmpty(messages)) {
                 stringBuilder.append("Conversation history:\n");
                 messages.forEach(message -> stringBuilder.append(message.getMessageType().name()).append(":").append(message.getText()).append("\n"));
@@ -67,6 +68,8 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
         modelCallConfigDto.setTemperature(intentRecognitionNodeConfigDto.getTemperature());
         modelCallConfigDto.setTopP(intentRecognitionNodeConfigDto.getTopP());
         modelContext.setModelCallConfig(modelCallConfigDto);
+        modelContext.setTraceContext(workflowContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelContext.getModelConfig().getId().toString(),
+                modelContext.getModelConfig().getModel(), modelContext.getModelConfig().getName(), null));
         ModelInvoker modelInvoker = workflowContext.getWorkflowContextServiceHolder().getModelInvoker();
         return modelInvoker.invoke(modelContext).last().map(result -> {
             Set<Long> reachableNextNodeIds = new HashSet<>();

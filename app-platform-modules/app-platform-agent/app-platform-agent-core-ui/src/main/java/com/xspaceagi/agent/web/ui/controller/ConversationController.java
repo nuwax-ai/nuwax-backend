@@ -25,6 +25,7 @@ import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -340,6 +341,7 @@ public class ConversationController {
                 agentConfigDto.getModelComponentConfig().setTargetConfig(modelConfigDto);
             }
         }
+        UserDto userDto = (UserDto) RequestContext.get().getUser();
         AgentContext agentContext = new AgentContext();
         agentContext.setAgentConfig(agentConfigDto);
         agentContext.setConversationId(conversationDto.getId().toString());
@@ -347,6 +349,28 @@ public class ConversationController {
         agentContext.setUserId(RequestContext.get().getUserId());
         agentContext.setTenantConfig((TenantConfigDto) RequestContext.get().getTenantConfig());
         agentContext.setUser((UserDto) RequestContext.get().getUser());
+        agentContext.setRequestId(UUID.randomUUID().toString().replace("-", ""));
+        TraceContext traceContext = TraceContext.builder()
+                .traceId(agentContext.getRequestId())
+                .tenantId(RequestContext.get().getTenantId())
+                .userId(RequestContext.get().getUserId())
+                .conversationId(tryReqDto.getConversationId().toString())
+                .userName(userDto.getUserName())
+                .nickName(userDto.getNickName())
+                .billUserId(agentConfigDto.getCreatorId())
+                .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                .subscriptionId(null)
+                .traceTargets(new ArrayList<>())
+                .build();
+        TraceContext.TraceTarget traceTarget = TraceContext.TraceTarget.builder()
+                .targetType(TraceContext.TraceTargetType.Agent)
+                .targetId(agentConfigDto.getId().toString())
+                .name(agentConfigDto.getName())
+                .description(agentConfigDto.getDescription())
+                .build();
+
+        traceContext.getTraceTargets().add(traceTarget);
+        agentContext.setTraceContext(traceContext);
         try {
             return ReqResult.success(agentExecutor.suggestQuestions(agentContext).timeout(Duration.ofSeconds(30)).block());
         } catch (Exception e) {

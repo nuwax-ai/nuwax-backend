@@ -12,6 +12,7 @@ import com.xspaceagi.system.infra.dao.entity.Tenant;
 import com.xspaceagi.system.infra.dao.service.TenantService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class TenantVersionUpdateServiceImpl {
     @Value("${app.version:1.0.0}")
     private String newVersion;
 
-    private Map<String, Consumer<Tenant>> tenantVersionUpgradeMap = new LinkedHashMap<>();
+    private final Map<String, Consumer<Tenant>> tenantVersionUpgradeMap = new LinkedHashMap<>();
 
     @Resource
     private ModelApplicationService modelApplicationService;
@@ -47,6 +48,9 @@ public class TenantVersionUpdateServiceImpl {
 
     @Resource
     private I18nImportService i18nImportService;
+
+    @Resource
+    private RedisUtil redisUtil;
 
     @PostConstruct
     public void init() {
@@ -90,10 +94,22 @@ public class TenantVersionUpdateServiceImpl {
             permissionImportService.importDiffToTenant(tenant, "1.2");
         });
 
-        tenantVersionUpgradeMap.put("1.0.8.1", (tenant) -> {
-            i18nImportService.importLangToTenant(tenant, "1.0");
-            i18nImportService.importConfigToTenant(tenant, "1.0");
-            i18nImportService.overwriteDiffConfigToTenant(tenant, "1.0");
+        tenantVersionUpgradeMap.put("1.0.8.2", (tenant) -> {
+            // permission
+            permissionImportService.importDiffToTenant(tenant, "1.3");
+            // i18n
+            i18nImportService.importLangToTenant(tenant, "0.0");
+            i18nImportService.importConfigToTenant(tenant, "0.0");
+            i18nImportService.updateConfigToTenant(tenant, "1.0");
+            i18nImportService.updateConfigToTenant(tenant, "1.1");
+        });
+
+        tenantVersionUpgradeMap.put("1.0.8.3", (tenant) -> {
+            // permission
+            permissionImportService.importDiffToTenant(tenant, "1.4");
+            // i18n
+            i18nImportService.addConfigToTenant(tenant, "1.2");
+            i18nImportService.updateConfigToTenant(tenant, "1.2");
         });
 
         new Thread(() -> {
@@ -103,6 +119,7 @@ public class TenantVersionUpdateServiceImpl {
                     tenantService.list().forEach(tenant -> {
                         try {
                             RequestContext.setThreadTenantId(tenant.getId());
+                            redisUtil.expire("tenant_config:" + tenant.getId(), 0);
                             tenantVersionUpgradeMap.forEach((version, upgrade) -> {
                                 if (compareVersion(tenant.getVersion(), version) < 0 && compareVersion(tenant.getVersion(), newVersion) < 0) {
                                     log.info("{} Version upgrade started, tenant ID: {}", version, tenant.getId());

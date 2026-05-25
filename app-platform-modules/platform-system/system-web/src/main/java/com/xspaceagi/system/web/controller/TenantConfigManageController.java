@@ -7,6 +7,7 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.utils.I18nUtil;
+import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -27,12 +28,16 @@ public class TenantConfigManageController {
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
 
+    @Resource
+    private RedisUtil redisUtil;
+
     @RequireResource({SYSTEM_SETTING_BASIC})
     @Operation(summary = "查询配置列表")
     @RequestMapping(path = "/list", method = RequestMethod.POST)
     public ReqResult<List<TenantConfigItemDto>> listQuery() {
         List<TenantConfigItemDto> tenantConfigList = tenantConfigApplicationService.getTenantConfigList();
         I18nUtil.replaceSystemMessage(tenantConfigList);
+        redisUtil.expire("tenant_config:" + RequestContext.get().getTenantId(), 0);
         return ReqResult.success(tenantConfigList);
     }
 
@@ -40,6 +45,15 @@ public class TenantConfigManageController {
     @Operation(summary = "更新配置信息")
     @RequestMapping(path = "/add", method = RequestMethod.POST)
     public ReqResult<Void> update(@RequestBody TenantConfigDto tenantConfigDto) {
+        tenantConfigDto.setTenantId(RequestContext.get().getTenantId());
+        tenantConfigApplicationService.updateConfig(tenantConfigDto);
+        return ReqResult.success();
+    }
+
+    @RequireResource({SYSTEM_SETTING_SAVE})
+    @Operation(summary = "更新配置信息")
+    @RequestMapping(path = "/save", method = RequestMethod.POST)
+    public ReqResult<Void> save(@RequestBody TenantConfigDto tenantConfigDto) {
         tenantConfigDto.setTenantId(RequestContext.get().getTenantId());
         tenantConfigApplicationService.updateConfig(tenantConfigDto);
         return ReqResult.success();

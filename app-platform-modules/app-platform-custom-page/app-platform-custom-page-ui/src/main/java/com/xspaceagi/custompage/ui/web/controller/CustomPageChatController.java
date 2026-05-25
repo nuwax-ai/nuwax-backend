@@ -16,7 +16,7 @@ import com.xspaceagi.custompage.ui.web.dto.ConversationRes;
 import com.xspaceagi.custompage.ui.web.dto.CustomPageModelRes;
 import com.xspaceagi.custompage.ui.web.dto.SaveConversationReq;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.server.IUserMetricRpcService;
 import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
@@ -76,8 +76,8 @@ public class CustomPageChatController extends BaseController {
     @Resource
     private IUserMetricRpcService iUserMetricRpcService;
     @Resource
-    @Qualifier("aiChatFluxExecutor")
-    private Executor aiChatFluxExecutor;
+    @Qualifier("aiChatExecutor")
+    private Executor aiChatExecutor;
 
     @RequireResource(PAGE_APP_AI_CHAT)
     @Operation(summary = "Send chat (streaming)", description = "Reactive AI chat with progress pushed via SSE")
@@ -136,7 +136,7 @@ public class CustomPageChatController extends BaseController {
             //只有调用 subscribe() 时，才会在调用线程中同步执行 Flux.create() 的回调
             // 在异步线程中订阅 Flux 并发送事件
             // 使用 TenantRunnable 在异步线程中传递 RequestContext
-            aiChatFluxExecutor.execute(new TenantRunnable(() -> {
+            aiChatExecutor.execute(new TenantRunnable(() -> {
                 flux.subscribe(
                         data -> {
                             try {
@@ -216,8 +216,10 @@ public class CustomPageChatController extends BaseController {
     @GetMapping(value = "/ai-session-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startSessionSse(@RequestParam("session_id") String sessionId,
                                       @RequestParam("project_id") Long projectId,
+                                      @RequestParam(value = "request_id", required = false) String requestId,
                                       HttpServletResponse response) {
-        log.info("[Web] Session SSE connected, session Id={}, project Id={}", sessionId, projectId);
+        log.info("[Web] Session SSE connected, session Id={}, project Id={}, request Id={}", sessionId, projectId,
+                requestId);
 
         // 设置SSE相关的响应头
         response.setHeader("Cache-Control", "no-cache");
@@ -230,7 +232,8 @@ public class CustomPageChatController extends BaseController {
         response.setHeader("Access-Control-Allow-Credentials", "true");
 
         UserContext userContext = getUser();
-        SseEmitter emitter = customPageChatApplicationService.startAgentSessionSse(sessionId, projectId, userContext);
+        SseEmitter emitter = customPageChatApplicationService.startAgentSessionSse(sessionId, projectId, requestId,
+                userContext);
 
         sseConnectionManager.addConnection(sessionId, emitter);
         Long tenantId = RequestContext.get().getTenantId();

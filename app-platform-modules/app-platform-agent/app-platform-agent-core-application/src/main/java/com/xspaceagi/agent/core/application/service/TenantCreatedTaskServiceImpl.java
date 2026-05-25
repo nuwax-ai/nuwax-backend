@@ -109,8 +109,8 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                 permissionImportService.importToTenant(tenantForPermission, "0.0");
 
                 // i18n update
-                i18nImportService.importLangToTenant(tenantForPermission, "1.0");
-                i18nImportService.importConfigToTenant(tenantForPermission, "1.0");
+                i18nImportService.importLangToTenant(tenantForPermission, "0.0");
+                i18nImportService.importConfigToTenant(tenantForPermission, "0.0");
 
                 // permissionImportService.importToTenant removed the tenant from context, must reset here
                 RequestContext.setThreadTenantId(tenantId);

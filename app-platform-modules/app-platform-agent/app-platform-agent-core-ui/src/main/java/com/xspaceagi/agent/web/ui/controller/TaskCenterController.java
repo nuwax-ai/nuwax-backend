@@ -10,7 +10,7 @@ import com.xspaceagi.agent.web.ui.controller.dto.ScheduleTaskAddDto;
 import com.xspaceagi.agent.web.ui.controller.dto.ScheduleTaskUpdateDto;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;

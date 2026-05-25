@@ -118,7 +118,7 @@ public class ScheduleTaskDomainServiceImpl implements ScheduleTaskDomainService 
         lambdaQueryWrapper.lt(ScheduleTask::getLockTime, new Date());
         lambdaQueryWrapper.in(ScheduleTask::getStatus, List.of(ScheduleTaskDto.Status.CREATE, ScheduleTaskDto.Status.FAIL, ScheduleTaskDto.Status.CONTINUE));
         if (StringUtils.isNotBlank(taskServerInfo)) {
-            lambdaQueryWrapper.eq(ScheduleTask::getServerInfo, taskServerInfo);
+            lambdaQueryWrapper.and(wrapper -> wrapper.eq(ScheduleTask::getServerInfo, taskServerInfo).or().isNull(ScheduleTask::getServerInfo));
         } else {
             lambdaQueryWrapper.isNull(ScheduleTask::getServerInfo);
         }

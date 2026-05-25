@@ -251,29 +251,62 @@
                 <version>4.2.1</version>
             </dependency>
 
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-bom</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-ollama</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-core</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-openai</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-anthropic</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--            </dependency>-->
+
+            <!-- Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-client-chat -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bom</artifactId>
-                <version>1.0.0-M6</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <artifactId>spring-ai-client-chat</artifactId>
+                <version>1.1.6</version>
+                <scope>compile</scope>
             </dependency>
+            <!-- Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-model -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-model</artifactId>
+                <version>1.1.6</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <!-- Source: https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-openai -->
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-openai</artifactId>-->
+<!--                <version>1.1.6</version>-->
+<!--                <scope>compile</scope>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-ollama</artifactId>
-                <version>1.0.0-M6</version>
+                <version>1.1.6</version>
+                <scope>compile</scope>
             </dependency>
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-openai</artifactId>
-                <version>1.0.0-M6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-anthropic</artifactId>
-                <version>1.0.0-M6</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-bom</artifactId>
@@ -535,17 +568,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://local-maven.space.com/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <name>Nexus Snapshot Repository</name>
-            <url>http://local-maven.space.com/repository/maven-snapshots//</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>

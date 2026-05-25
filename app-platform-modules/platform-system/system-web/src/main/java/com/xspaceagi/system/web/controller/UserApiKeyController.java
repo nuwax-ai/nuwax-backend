@@ -1,5 +1,6 @@
 package com.xspaceagi.system.web.controller;
 
+import com.xspaceagi.agent.core.sdk.IModelRpcService;
 import com.xspaceagi.system.application.dto.UpdateApiKeyDto;
 import com.xspaceagi.system.application.service.UserApiKeyApplicationService;
 import com.xspaceagi.system.infra.dao.entity.OpenApiDefinition;
@@ -26,6 +27,9 @@ public class UserApiKeyController {
 
     @Resource
     private UserApiKeyApplicationService userApiKeyApplicationService;
+
+    @Resource
+    private IModelRpcService iModelRpcService;
 
     @Operation(summary = "新增创建APIKEY")
     @PostMapping("/create")

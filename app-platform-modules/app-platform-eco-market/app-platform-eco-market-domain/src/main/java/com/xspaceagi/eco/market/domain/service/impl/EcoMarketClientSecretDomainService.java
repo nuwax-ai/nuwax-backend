@@ -8,6 +8,8 @@ import com.xspaceagi.eco.market.domain.repository.IEcoMarketClientSecretReposito
 import com.xspaceagi.eco.market.domain.service.IEcoMarketClientSecretDomainService;
 import com.xspaceagi.eco.market.sdk.model.ClientSecretDTO;
 import com.xspaceagi.eco.market.spec.util.EcoMarketCaffeineCacheUtil;
+import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictSupport;
+import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictor;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.event.PullMessageEvent;
@@ -15,6 +17,7 @@ import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.EcoMarketException;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,6 +37,9 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
     @Resource
     private EventBus eventBus;
 
+    @Autowired(required = false)
+    private PayGatewayOutboundCacheEvictor payGatewayOutboundCacheEvictor;
+
     @Override
     public EcoMarketClientSecretModel queryOneInfoById(Long id) {
         return this.ecoMarketClientSecretRepository.queryOneInfoById(id);
@@ -47,18 +53,26 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public void deleteById(Long id) {
+        EcoMarketClientSecretModel existing = queryOneInfoById(id);
         this.ecoMarketClientSecretRepository.deleteById(id);
+        if (existing != null) {
+            evictPayGatewayOutboundCache(existing.getTenantId());
+        }
     }
 
     @Override
     public Long updateInfo(EcoMarketClientSecretModel model, UserContext userContext) {
-        return this.ecoMarketClientSecretRepository.updateInfo(model, userContext);
+        Long id = this.ecoMarketClientSecretRepository.updateInfo(model, userContext);
+        evictPayGatewayOutboundCache(model.getTenantId());
+        return id;
     }
 
     @DSTransactional(rollbackFor = Exception.class)
     @Override
     public Long addInfo(EcoMarketClientSecretModel model, UserContext userContext) {
-        return this.ecoMarketClientSecretRepository.addInfo(model, userContext);
+        Long id = this.ecoMarketClientSecretRepository.addInfo(model, userContext);
+        evictPayGatewayOutboundCache(model.getTenantId());
+        return id;
     }
 
     @DSTransactional(rollbackFor = Exception.class)
@@ -95,6 +109,10 @@ public class EcoMarketClientSecretDomainService implements IEcoMarketClientSecre
         }
 
         return id;
+    }
+
+    private void evictPayGatewayOutboundCache(Long tenantId) {
+        PayGatewayOutboundCacheEvictSupport.evictIfPresent(payGatewayOutboundCacheEvictor, tenantId);
     }
 
     @Override

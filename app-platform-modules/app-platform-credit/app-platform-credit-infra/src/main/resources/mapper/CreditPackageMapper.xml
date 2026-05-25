@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.credit.infra.dao.mapper.CreditPackageMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.credit.infra.dao.entity.CreditPackage">
+        <id column="id" property="id"/>
+        <result column="package_name" property="packageName"/>
+        <result column="credit_amount" property="creditAmount"/>
+        <result column="price" property="price"/>
+        <result column="sort" property="sort"/>
+        <result column="status" property="status"/>
+        <result column="period" property="period"/>
+        <result column="created" property="created"/>
+        <result column="modified" property="modified"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.xspaceagi.credit.infra.dao.entity.CreditPackage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO credit_package (package_name, credit_amount, price, sort, status, period, remark)
+        VALUES (#{packageName}, #{creditAmount}, #{price}, #{sort}, #{status}, #{period}, #{remark})
+    </insert>
+
+    <update id="updateById" parameterType="com.xspaceagi.credit.infra.dao.entity.CreditPackage">
+        UPDATE credit_package
+        <set>
+            <if test="packageName != null">package_name = #{packageName},</if>
+            <if test="creditAmount != null">credit_amount = #{creditAmount},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="period != null">period = #{period},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM credit_package WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM credit_package WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT * FROM credit_package
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+        ORDER BY sort ASC, id DESC
+    </select>
+
+</mapper>

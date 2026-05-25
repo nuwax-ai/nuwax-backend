@@ -54,4 +54,10 @@ public class SkillDetailDto implements Serializable {
 
     @Schema(description = "技能分类")
     private String category;
+
+    @Schema(description = "技能付费状态")
+    private boolean paymentRequired;
+
+    @Schema(description = "技能订阅状态")
+    private boolean subscribed;
 }

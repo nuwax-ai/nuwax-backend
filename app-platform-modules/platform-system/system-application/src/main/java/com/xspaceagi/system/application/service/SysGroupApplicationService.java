@@ -72,6 +72,11 @@ public interface SysGroupApplicationService {
     List<SysGroup> getGroupListByUserId(Long userId);
 
     /**
+     * 查询用户有效用户组（数据库绑定 + 当前系统订阅计划关联的用户组，仅启用状态）
+     */
+    List<SysGroup> getEffectiveGroupListByUserId(Long userId);
+
+    /**
      * 用户组绑定用户（全量覆盖）
      */
     void groupBindUser(Long groupId, List<Long> userIds, UserContext userContext);

@@ -15,12 +15,17 @@ import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.PublishedRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.*;
+import com.xspaceagi.agent.core.adapter.util.SkillNameUtil;
 import com.xspaceagi.agent.core.domain.service.*;
 import com.xspaceagi.agent.core.infra.rpc.CustomPageRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.infra.rpc.dto.PageDto;
-import com.xspaceagi.agent.core.adapter.util.SkillNameUtil;
 import com.xspaceagi.agent.core.spec.enums.PluginTypeEnum;
 import com.xspaceagi.agent.core.spec.utils.CopyRelationCacheUtil;
+import com.xspaceagi.file.application.service.FileManagementService;
+import com.xspaceagi.file.domain.model.FileRecordDomain;
+import com.xspaceagi.file.sdk.IFileAccessService;
+import com.xspaceagi.pricing.sdk.dto.PricingConfigDTO;
 import com.xspaceagi.system.application.dto.SendNotifyMessageDto;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
@@ -40,15 +45,11 @@ import com.xspaceagi.system.spec.file.InMemoryMultipartFile;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.utils.I18nUtil;
-import com.xspaceagi.file.application.service.FileManagementService;
-import com.xspaceagi.file.domain.model.FileRecordDomain;
-import com.xspaceagi.file.sdk.IFileAccessService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -111,7 +112,8 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
 
     @Resource
     private CustomPageRpcService customPageRpcService;
-    @Autowired
+
+    @Resource
     private PublishedRepository publishedRepository;
     @Resource
     private FileManagementService fileManagementService;
@@ -120,6 +122,9 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
 
     private static final String TARGET_TYPE_SKILL_PUBLISH_APPLY = "skill_publish_apply";
     private static final String TARGET_TYPE_SKILL_PUBLISHED = "skill_published";
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @Override
     public SuperPage<PublishedDto> queryPublishedList(PublishedQueryDto publishedQueryDto) {
@@ -136,10 +141,17 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         if (CollectionUtils.isEmpty(publishedList)) {
             return new SuperPage<>(publishedPage.getCurrent(), publishedPage.getSize(), publishedPage.getTotal(), null);
         }
-
+        List<Long> targetIds = publishedList.stream().map(Published::getTargetId).collect(Collectors.toList());
+        List<PricingConfigDTO> pricingConfigs = resourcePricingRpcService.listPricingConfigs(publishedQueryDto.getTargetType(), targetIds);
+        Map<String, PricingConfigDTO> pricingConfigMap = pricingConfigs.stream().collect(Collectors.toMap(PricingConfigDTO::getTargetId, pricingConfigDTO -> pricingConfigDTO));
         List<PublishedDto> dtoList = publishedList.stream().map(published -> {
             PublishedDto publishedDto = new PublishedDto();
             BeanUtils.copyProperties(published, publishedDto);
+            PricingConfigDTO pricingConfigDTO = pricingConfigMap.get(published.getTargetId().toString());
+            if (pricingConfigDTO != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                publishedDto.setPaymentRequired(true);
+                publishedDto.setPrice(pricingConfigDTO.getPrice());
+            }
             return publishedDto;
         }).toList();
 
@@ -184,6 +196,9 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
                         (v1, v2) -> v1 // 如果有重复，保留第一个
                 )) : Map.of();
 
+        List<PricingConfigDTO> pricingConfigs = resourcePricingRpcService.listPricingConfigs(targetType, targetIds);
+        //定价管理，增加是否为付费状态
+        Map<String, PricingConfigDTO> pricingConfigMap = pricingConfigs.stream().collect(Collectors.toMap(PricingConfigDTO::getTargetId, pricingConfigDTO -> pricingConfigDTO));
         return publishedList.stream().map(published -> {
             PublishedDto publishedDto = new PublishedDto();
             BeanUtils.copyProperties(published, publishedDto);
@@ -217,6 +232,11 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             }
             // 不返回config
             publishedDto.setConfig(null);
+            PricingConfigDTO pricingConfigDTO = pricingConfigMap.get(published.getTargetId().toString());
+            if (pricingConfigDTO != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                publishedDto.setPaymentRequired(true);
+                publishedDto.setPrice(pricingConfigDTO.getPrice());
+            }
             return publishedDto;
         }).collect(Collectors.toList());
     }

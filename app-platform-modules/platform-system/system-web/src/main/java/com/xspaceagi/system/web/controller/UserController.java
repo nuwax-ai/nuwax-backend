@@ -6,6 +6,7 @@ import com.xspaceagi.system.application.dto.permission.MenuNodeDto;
 import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.service.impl.SysUserPermissionCacheServiceImpl;
+import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.verify.VerifyCodeSendAndCheckService;
 import com.xspaceagi.system.infra.verify.captcha.CaptchaConfig;
 import com.xspaceagi.system.infra.verify.email.SmtpConfig;
@@ -253,6 +254,9 @@ public class UserController {
             userDto.setEmail(null);
             userDto.setStatus(null);
             userDto.setRole(null);
+            if (userDto.getStatus() == User.Status.Deleted) {
+                return ReqResult.success(null);
+            }
         }
         return ReqResult.success(userDto);
     }

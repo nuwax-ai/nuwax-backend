@@ -5,6 +5,9 @@ import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xspaceagi.credit.sdk.dto.CreditAddRequest;
+import com.xspaceagi.credit.sdk.rpc.ICreditRpcService;
+import com.xspaceagi.credit.spec.enums.CreditTypeEnum;
 import com.xspaceagi.system.application.dto.*;
 import com.xspaceagi.system.application.service.*;
 import com.xspaceagi.system.domain.service.UserDomainService;
@@ -29,10 +32,16 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.time.DateUtils.addDays;
 
 @Service
 public class UserApplicationServiceImpl implements UserApplicationService {
@@ -62,6 +71,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
     @Resource
     private I18nLangApplicationService i18nLangApplicationService;
+
+    @Resource
+    private ICreditRpcService iCreditRpcService;
 
     @Override
     @DSTransactional
@@ -128,6 +140,23 @@ public class UserApplicationServiceImpl implements UserApplicationService {
                 UserContext userContext = buildUserContext(userId, userDto);
                 sysGroupApplicationService.userBindGroup(userId, List.of(defaultGroup.getId()), userContext);
             }
+        }
+
+        //注册积分发放
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        if (tenantConfigDto != null && tenantConfigDto.getEnableGiftCredit() != null && tenantConfigDto.getEnableGiftCredit() == 1
+                && tenantConfigDto.getGiftCreditAmount() != null && tenantConfigDto.getGiftCreditAmount() > 0
+                && tenantConfigDto.getGiftCreditExpire() != null && tenantConfigDto.getGiftCreditExpire() > 0) {
+            String bizNo = "REG" + userId + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            CreditAddRequest request = new CreditAddRequest();
+            request.setCreditType(CreditTypeEnum.ACTIVITY);
+            request.setUserId(userId);
+            request.setAmount(BigDecimal.valueOf(tenantConfigDto.getGiftCreditAmount()));
+            request.setTenantId(RequestContext.get().getTenantId());
+            request.setBizNo(bizNo);
+            request.setExpireTime(addDays(new Date(), tenantConfigDto.getGiftCreditExpire()));
+            request.setRemark("注册赠送积分（有效期" + tenantConfigDto.getGiftCreditExpire() + "天）");
+            iCreditRpcService.addCredit(request);
         }
     }
 
@@ -233,9 +262,10 @@ public class UserApplicationServiceImpl implements UserApplicationService {
             }
             user.setUserName(null);
         }
+        queryWrapper.ne(User::getStatus, User.Status.Deleted);
         IPage<User> userPageResult = userService.page(userPage, queryWrapper);
         List<UserDto> userDtoList = userPageResult.getRecords().stream()
-                .map(user1 -> convert(user1))
+                .map(this::convert)
                 .collect(Collectors.toList());
 
         // 创建分页对象，用于返回分页数据
@@ -357,5 +387,16 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         String code = RandomUtil.randomNumbers(6);
         redisUtil.set("user:dynamicCode:" + userId, code, 60 * 5);
         return code;
+    }
+
+    @Override
+    public void logicDelete(Long userId) {
+        User update = new User();
+        update.setId(userId);
+        update.setUserName("--");
+        update.setEmail("--");
+        update.setPhone("--");
+        update.setStatus(User.Status.Deleted);
+        userDomainService.update(update);
     }
 }

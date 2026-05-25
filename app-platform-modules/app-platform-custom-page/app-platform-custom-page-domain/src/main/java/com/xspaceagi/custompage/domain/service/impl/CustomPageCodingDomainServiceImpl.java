@@ -15,7 +15,6 @@ import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.utils.DateUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.groovy.util.Maps;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -142,7 +141,7 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
         // 更新版本信息
         VersionInfoDto newVersionInfo = VersionInfoDto.builder()
                 .action(CustomPageActionEnum.UPLOAD_SINGLE_FILE.getCode())
-                .ext(Maps.of("filePath", filePath))
+                .ext(Map.of("filePath", filePath))
                 .build();
         updateVersion(buildModel, newVersionInfo, userContext);
 
@@ -194,7 +193,7 @@ public class CustomPageCodingDomainServiceImpl implements ICustomPageCodingDomai
         // 更新版本信息
         VersionInfoDto newVersionInfo = VersionInfoDto.builder()
                 .action(CustomPageActionEnum.ROLLBACK_VERSION.getCode())
-                .ext(Maps.of("rollbackTo", String.valueOf(rollbackTo)))
+                .ext(Map.of("rollbackTo", String.valueOf(rollbackTo)))
                 .build();
         updateVersion(buildModel, newVersionInfo, userContext);
 

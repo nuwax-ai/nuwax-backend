@@ -28,7 +28,7 @@ import java.time.Duration;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "storage.type", havingValue = "s3")
+//@ConditionalOnProperty(name = "storage.type", havingValue = "s3")
 public class S3FileStorageStrategy implements FileStorageStrategy {
 
     @Value("${s3.endpoint:}")

@@ -149,8 +149,29 @@ public class TenantConfigDto implements Serializable {
     private String officialPluginIds;
     private String officialWorkflowIds;
     private String officialSkillIds;
-
+    @Schema(description = "收入分成比例")
+    private Double revenueRatio;
+    @Schema(description = "支付网关地址")
+    private String paymentGateway;
+    @Schema(description = "是否开启订阅模式")
+    private Integer enableSubscription;
+    @Schema(description = "积分兑换比例，比如 1000标识1块钱可以兑换1000积分")
+    private Integer creditExchangeRate;
+    @Schema(description = "积分兑换说明")
+    private String creditExchangeDesc;
+    @Schema(description = "是否开启注册积分赠送")
+    private Integer enableGiftCredit;
+    @Schema(description = "注册赠送积分数")
+    private Integer giftCreditAmount;
+    @Schema(description = "注册赠送积分有效期（天）")
+    private Integer giftCreditExpire;
+    @Schema(description = "是否开启每日登录赠送积分")
+    private Integer enableDailyGiftCredit;
+    @Schema(description = "每日登录赠送积分数")
+    private Integer dailyGiftCreditAmount;
     private boolean isCommercialEdition;
+    @Schema(description = "模型API根地址")
+    private String baseModelApiUrl;
 
     public enum AuthTypeEnum {
         PHONE(1, "手机"),

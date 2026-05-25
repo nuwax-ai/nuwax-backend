@@ -1,0 +1,129 @@
+{
+  "provider": {
+    "name": "DeepSeek",
+    "id": "deepseek",
+    "env": [
+      "DEEPSEEK_API_KEY"
+    ],
+    "npm": "@ai-sdk/openai-compatible",
+    "doc": "https://api-docs.deepseek.com/quick_start/pricing",
+    "api": {
+      "OpenAI": "https://api.deepseek.com",
+      "Anthropic": "https://api.deepseek.com/anthropic"
+    },
+    "icon": "https://s3.nuwax.com:9443/nuwax-public/providers/deepseek.png"
+  },
+  "models": [
+    {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "family": "deepseek",
+      "release_date": "2025-12-01",
+      "last_updated": "2026-02-28",
+      "attachment": true,
+      "reasoning": false,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "knowledge": "2025-09",
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "family": "deepseek-thinking",
+      "release_date": "2025-12-01",
+      "last_updated": "2026-02-28",
+      "attachment": true,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "open_weights": true,
+      "knowledge": "2025-09",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "family": "deepseek-flash",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "structured_output": true,
+      "open_weights": true,
+      "knowledge": "2025-05",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "family": "deepseek-thinking",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "attachment": false,
+      "reasoning": true,
+      "temperature": true,
+      "tool_call": true,
+      "structured_output": true,
+      "open_weights": true,
+      "knowledge": "2025-05",
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

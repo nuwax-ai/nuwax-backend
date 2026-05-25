@@ -17,16 +17,18 @@ import com.xspaceagi.agent.web.ui.controller.dto.VerifyCodeSendDto;
 import com.xspaceagi.agent.web.ui.controller.dto.api.ConvCreateDto;
 import com.xspaceagi.system.application.dto.SendNotifyMessageDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
 import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
 import com.xspaceagi.system.infra.verify.VerifyCodeSendAndCheckService;
 import com.xspaceagi.system.infra.verify.sms.SmsConfig;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.CodeTypeEnum;
-import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -182,6 +184,7 @@ public class ApiController {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentOfflineOrNotFound);
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        UserDto userDto = ((UserDto) RequestContext.get().getUser());
         if (tenantConfigDto.getDefaultSuggestModelId() != null) {
             ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(tenantConfigDto.getDefaultSuggestModelId());
             if (modelConfigDto != null) {
@@ -197,6 +200,28 @@ public class ApiController {
         agentContext.setAgentConfig(agentConfigDto);
         agentContext.setConversationId(conversationDto.getId().toString());
         agentContext.setDebug(conversationDto.getDevMode() == 1);
+        TraceContext traceContext = TraceContext.builder()
+                .traceId(agentContext.getRequestId())
+                .tenantId(RequestContext.get().getTenantId())
+                .userId(RequestContext.get().getUserId())
+                .conversationId(conversationId.toString())
+                .userName(userDto.getUserName())
+                .nickName(userDto.getNickName())
+                .billUserId(agentConfigDto.getCreatorId())
+                .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                .subscriptionId(null)
+                .traceTargets(new ArrayList<>())
+                .build();
+
+        TraceContext.TraceTarget traceTarget = TraceContext.TraceTarget.builder()
+                .targetType(TraceContext.TraceTargetType.Agent)
+                .targetId(agentConfigDto.getId().toString())
+                .name(agentConfigDto.getName())
+                .description(agentConfigDto.getDescription())
+                .build();
+        traceContext.getTraceTargets().add(traceTarget);
+        agentContext.setTraceContext(traceContext);
+
         return agentExecutor.suggestQuestions(agentContext).map(ReqResult::success);
     }
 

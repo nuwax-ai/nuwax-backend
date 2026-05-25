@@ -9,7 +9,7 @@ import com.xspaceagi.knowledge.sdk.response.KnowledgeDocumentResponseVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeDocumentVo;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeConfigRpcService;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeDocumentSearchRpcService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;

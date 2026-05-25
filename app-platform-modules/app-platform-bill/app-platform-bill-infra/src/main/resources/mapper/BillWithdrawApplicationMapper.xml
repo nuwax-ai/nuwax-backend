@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.bill.infra.dao.mapper.BillWithdrawApplicationMapper">
+
+    <select id="selectListWithFilters"
+            resultType="com.xspaceagi.bill.infra.dao.entity.BillWithdrawApplication">
+        SELECT * FROM bill_withdraw_application
+        <where>
+            <if test="query.userId != null">AND user_id = #{query.userId}</if>
+            <if test="query.status != null">AND status = #{query.status.code}</if>
+        </where>
+        ORDER BY created DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countWithFilters" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM bill_withdraw_application
+        <where>
+            <if test="query.userId != null">AND user_id = #{query.userId}</if>
+            <if test="query.status != null">AND status = #{query.status.code}</if>
+        </where>
+    </select>
+
+</mapper>

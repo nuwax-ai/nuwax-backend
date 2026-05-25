@@ -11,6 +11,7 @@ import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishedStatistics;
 import com.xspaceagi.agent.core.domain.service.ConversationDomainService;
 import com.xspaceagi.agent.core.infra.rpc.CategoryRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
 import com.xspaceagi.agent.web.ui.controller.dto.PluginDetailDto;
@@ -24,6 +25,11 @@ import com.xspaceagi.compose.sdk.request.QueryDorisTableDefinePageRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
 import com.xspaceagi.knowledge.sdk.request.KnowledgeConfigRequestVo;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeConfigRpcService;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.sdk.dto.PricingConfigDTO;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.subscription.sdk.dto.UserSubscriptionDTO;
+import com.xspaceagi.subscription.spec.enums.BizTypeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
@@ -32,8 +38,8 @@ import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.sdk.operate.ActionType;
 import com.xspaceagi.system.sdk.operate.OperationLogReporter;
 import com.xspaceagi.system.sdk.operate.SystemEnum;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.CategoryTypeEnum;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -56,6 +62,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Tag(name = "已发布的智能体、组件查询及收藏相关接口")
 @RestController
@@ -103,6 +110,9 @@ public class PublishedController extends BaseController {
 
     @Resource
     private IUserDataPermissionRpcService userDataPermissionRpcService;
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @Operation(summary = "广场-智能体与插件分类")
     @RequestMapping(path = "/category/list", method = RequestMethod.GET)
@@ -177,8 +187,15 @@ public class PublishedController extends BaseController {
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
-            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName()));
+            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), "agent", true));
         });
+
+        if (RequestContext.get().getUserId() != null) {
+            UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
+            page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1 && !userDataPermission.getAgentIds().contains(publishedDto.getTargetId()));
+        } else {
+            page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1);
+        }
         if (publishedQueryDto.getUpdateStatics() != null && publishedQueryDto.getUpdateStatics()) {
             page.getRecords().forEach(publishedDto -> {
                 long ct = conversationDomainService.agentUserCount(null, publishedDto.getTargetId());
@@ -188,6 +205,7 @@ public class PublishedController extends BaseController {
                 }
             });
         }
+        setSubscriptionStatus(BizTypeEnum.AGENT, page.getRecords());
         return ReqResult.success(page);
     }
 
@@ -251,7 +269,7 @@ public class PublishedController extends BaseController {
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
-            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Plugin.name()));
+            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Plugin.name(), true));
         });
 
         return ReqResult.success(page);
@@ -306,7 +324,7 @@ public class PublishedController extends BaseController {
             completeOfficialTargetIds(publishedQueryDto);
             pageReqResult = ReqResult.success(publishApplicationService.queryPublishedList(publishedQueryDto));
         }
-        pageReqResult.getData().getRecords().forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), publishedDto.getTargetType().name())));
+        pageReqResult.getData().getRecords().forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), publishedDto.getTargetType().name(), true)));
         return pageReqResult;
     }
 
@@ -321,7 +339,7 @@ public class PublishedController extends BaseController {
         if (!publishedPermissionDto.isView()) {
             return ReqResult.error("无智能体会话权限");
         }
-        agentDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(agentDetailDto.getIcon(), agentDetailDto.getName()));
+        agentDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(agentDetailDto.getIcon(), agentDetailDto.getName(), "agent", true));
 
         if (withConversationId != null && withConversationId && !"PageApp".equals(agentDetailDto.getType())) {
             agentDetailDto.setConversationId(conversationApplicationService.nextConversationId(agentId, agentDetailDto.getSandboxId() == null ? null : agentDetailDto.getSandboxId().toString()));
@@ -334,10 +352,10 @@ public class PublishedController extends BaseController {
     @RequestMapping(path = "/agent/uid/{agentUid}", method = RequestMethod.GET)
     public ReqResult<AgentDetailDto> queryAgentDetailByUid(@PathVariable String agentUid, @RequestParam(required = false) Boolean withConversationId) {
         AgentConfigDto agentConfigDto = agentApplicationService.queryByUid(agentUid);
-        if (agentConfigDto == null){
+        if (agentConfigDto == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishedOffline);
         }
-        return  agentDetail(agentConfigDto.getId(), withConversationId);
+        return agentDetail(agentConfigDto.getId(), withConversationId);
     }
 
     @Operation(summary = "已发布的插件详情接口")
@@ -373,8 +391,17 @@ public class PublishedController extends BaseController {
             pluginDetailDto.setCreated(publishedDto.getCreated());
             pluginDetailDto.setAllowCopy(publishedDto.getAllowCopy());
             pluginDetailDto.setCategory(publishedDto.getCategory());
+            // 是否付费
+            List<PricingConfigDTO> pricingConfigDTOS = resourcePricingRpcService.listPricingConfigs(Published.TargetType.Plugin, List.of(pluginId));
+            if (CollectionUtils.isNotEmpty(pricingConfigDTOS)) {
+                PricingConfigDTO pricingConfigDTO = pricingConfigDTOS.get(0);
+                if (pricingConfigDTO.getStatus() != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                    pluginDetailDto.setPaymentRequired(true);
+                    pluginDetailDto.setPrice(pricingConfigDTO.getPrice());
+                }
+            }
         }
-        pluginDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(pluginDetailDto.getIcon(), pluginDetailDto.getName(), Published.TargetType.Plugin.name()));
+        pluginDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(pluginDetailDto.getIcon(), pluginDetailDto.getName(), Published.TargetType.Plugin.name(), true));
         return ReqResult.success(pluginDetailDto);
     }
 
@@ -405,8 +432,17 @@ public class PublishedController extends BaseController {
             workflowDetailDto.setCreated(publishedDto.getCreated());
             workflowDetailDto.setCategory(publishedDto.getCategory());
             workflowDetailDto.setAllowCopy(publishedDto.getAllowCopy());
+            // 是否付费
+            List<PricingConfigDTO> pricingConfigDTOS = resourcePricingRpcService.listPricingConfigs(Published.TargetType.Workflow, List.of(workflowId));
+            if (CollectionUtils.isNotEmpty(pricingConfigDTOS)) {
+                PricingConfigDTO pricingConfigDTO = pricingConfigDTOS.get(0);
+                if (pricingConfigDTO.getStatus() != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                    workflowDetailDto.setPaymentRequired(true);
+                    workflowDetailDto.setPrice(pricingConfigDTO.getPrice());
+                }
+            }
         }
-        workflowDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(workflowDetailDto.getIcon(), workflowDetailDto.getName(), Published.TargetType.Workflow.name()));
+        workflowDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(workflowDetailDto.getIcon(), workflowDetailDto.getName(), Published.TargetType.Workflow.name(), true));
         return ReqResult.success(workflowDetailDto);
     }
 
@@ -464,7 +500,7 @@ public class PublishedController extends BaseController {
         UserDataPermissionDto userDataPermissionDto = userDataPermissionRpcService.getUserDataPermission(userDto.getId());
         List<Long> knowledgeIds = userDataPermissionDto.getKnowledgeIds();
         //if(knowledgeIds != null && knowledgeIds.size() > 0) {
-            //List<KnowledgeConfigModel> knowledgeConfigs = knowledgeConfigRepository.queryListByIds(knowledgeIds);
+        //List<KnowledgeConfigModel> knowledgeConfigs = knowledgeConfigRepository.queryListByIds(knowledgeIds);
         //}
         //新增的逻辑结束
 
@@ -539,7 +575,7 @@ public class PublishedController extends BaseController {
         }
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
-        page.getRecords().forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), publishedDto.getTargetType().name())));
+        page.getRecords().forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), publishedDto.getTargetType().name(), true)));
         return ReqResult.success(page);
     }
 
@@ -593,10 +629,30 @@ public class PublishedController extends BaseController {
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
-            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
+            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name(), true));
             publishedDto.setUsageScenarios(parseUsageScenariosFromExt(publishedDto.getExt()));
         });
+        setSubscriptionStatus(BizTypeEnum.SKILL, page.getRecords());
         return ReqResult.success(page);
+    }
+
+    private void setSubscriptionStatus(BizTypeEnum bizType, List<PublishedDto> records) {
+        if (RequestContext.get().getUserId() == null) {
+            return;
+        }
+        List<UserSubscriptionDTO> userSubscriptions = resourcePricingRpcService.getUserSubscriptions(RequestContext.get().getUserId(), bizType);
+        Map<String, UserSubscriptionDTO> subscriptionDTOMap = userSubscriptions.stream().collect(Collectors.toMap(UserSubscriptionDTO::getBizId, (v1) -> v1, (v1, v2) -> v1));
+        records.forEach(publishedDto -> {
+            UserSubscriptionDTO userSubscriptionDTO = subscriptionDTOMap.get(publishedDto.getTargetId().toString());
+            publishedDto.setOverCallLimit(true);
+            publishedDto.setSubscribed(userSubscriptionDTO != null);
+            if (userSubscriptionDTO != null && publishedDto.isSubscribed()) {
+                Integer callUsedCount = userSubscriptionDTO.getCallUsedCount();
+                if (callUsedCount != null && userSubscriptionDTO.getPlan() != null && userSubscriptionDTO.getPlan().getCallLimitCount() != null && callUsedCount < userSubscriptionDTO.getPlan().getCallLimitCount()) {
+                    publishedDto.setOverCallLimit(false);
+                }
+            }
+        });
     }
 
     @Operation(summary = "查询技能列表-用于@技能")
@@ -618,9 +674,10 @@ public class PublishedController extends BaseController {
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedListForAt(queryDto);
         if (CollectionUtils.isNotEmpty(page.getRecords())) {
             page.getRecords().forEach(publishedDto -> {
-                publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
+                publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name(), true));
                 publishedDto.setUsageScenarios(parseUsageScenariosFromExt(publishedDto.getExt()));
             });
+            setSubscriptionStatus(BizTypeEnum.SKILL, page.getRecords());
         }
         return ReqResult.success(page);
     }
@@ -656,7 +713,19 @@ public class PublishedController extends BaseController {
         skillDetailDto.setCreated(publishedDto.getCreated());
         skillDetailDto.setAllowCopy(publishedDto.getAllowCopy());
         skillDetailDto.setCategory(publishedDto.getCategory());
-        skillDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(skillDetailDto.getIcon(), skillDetailDto.getName(), Published.TargetType.Skill.name()));
+        skillDetailDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(skillDetailDto.getIcon(), skillDetailDto.getName(), Published.TargetType.Skill.name(), true));
+        // 是否付费
+        List<PricingConfigDTO> pricingConfigDTOS = resourcePricingRpcService.listPricingConfigs(Published.TargetType.Skill, List.of(skillId));
+        if (CollectionUtils.isNotEmpty(pricingConfigDTOS)) {
+            PricingConfigDTO pricingConfigDTO = pricingConfigDTOS.get(0);
+            if (pricingConfigDTO.getStatus() != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                skillDetailDto.setPaymentRequired(true);
+            }
+        }
+        if (RequestContext.get().getUserId() != null) {
+            UserSubscriptionDTO userSubscription = resourcePricingRpcService.getUserSubscription(RequestContext.get().getUserId(), BizTypeEnum.SKILL, skillId.toString());
+            skillDetailDto.setSubscribed(userSubscription != null);
+        }
         return ReqResult.success(skillDetailDto);
     }
 
@@ -675,6 +744,11 @@ public class PublishedController extends BaseController {
         SkillConfigDto skillConfigDto = skillApplicationService.parsePublishedSkillConfig(publishedDto.getConfig(), publishedDto.getExt());
         if (skillConfigDto == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillConfigParseFailed);
+        }
+
+        PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getUserId(), RequestContext.get().getUserId(), List.of(new PriceEstimate.EstimateTarget(TargetTypeEnum.SKILL, skillId.toString())));
+        if (!priceEstimate.isPass()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.permissionDenied);
         }
         SkillExportResultDto exportResult = skillApplicationService.exportSkill(skillConfigDto);
 

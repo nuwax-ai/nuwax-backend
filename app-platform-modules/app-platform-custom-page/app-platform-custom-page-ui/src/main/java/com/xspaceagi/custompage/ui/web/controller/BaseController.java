@@ -22,6 +22,7 @@ public abstract class BaseController {
         }
         return UserContext.builder()
                 .userId(userDto.getId())
+                .uid(userDto.getUid())
                 .userName(userDto.getUserName())
                 .nickName(userDto.getNickName())
                 .avatar(userDto.getAvatar())
@@ -33,6 +34,7 @@ public abstract class BaseController {
                 .orgId(null)
                 .orgName(null)
                 .roleType(userDto.getRole() == User.Role.Admin ? 1 : 2)
+                .tenantConfig(RequestContext.get().getTenantConfig())
                 .build();
     }
 

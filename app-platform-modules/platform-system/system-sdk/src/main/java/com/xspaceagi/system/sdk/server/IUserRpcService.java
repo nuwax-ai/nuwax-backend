@@ -21,5 +21,7 @@ public interface IUserRpcService {
 
     UserDetailDto queryUserDetailByName(String userName);
 
+    UserDetailDto queryUserDetailById(Long userId);
+
     String getUserDynamicCode(Long userId);
 }

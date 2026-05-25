@@ -1,5 +1,6 @@
 package com.xspaceagi.modelproxy.sdk.service.dto;
 
+import com.xspaceagi.system.sdk.common.TraceContext;
 import lombok.Data;
 
 @Data
@@ -16,4 +17,5 @@ public class BackendModelDto {
     private String protocol;
     private String scope;
     private boolean enabled;
+    private TraceContext traceContext;
 }

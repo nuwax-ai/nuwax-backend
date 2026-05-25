@@ -16,21 +16,20 @@ import com.xspaceagi.mcp.ui.web.controller.dto.EnNameDto;
 import com.xspaceagi.mcp.ui.web.controller.dto.McpCreateDto;
 import com.xspaceagi.mcp.ui.web.controller.dto.McpTestDto;
 import com.xspaceagi.mcp.ui.web.controller.dto.McpUpdateDto;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.spec.annotation.RequireResource;
-import com.xspaceagi.system.spec.common.RequestContext;
-import com.xspaceagi.system.spec.dto.ReqResult;
-import com.xspaceagi.system.spec.enums.ResourceEnum;
-import com.xspaceagi.system.spec.enums.YesOrNoEnum;
-import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
-import com.xspaceagi.system.spec.exception.BizException;
-import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
 import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.spec.annotation.RequireResource;
+import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -285,7 +284,7 @@ public class McpController {
             return ReqResult.error("MCP export is currently not allowed");
         }
         spacePermissionService.checkSpaceUserPermission(mcp.getSpaceId());
-        return ReqResult.success(mcpConfigApplicationService.getExportMcpServerConfig(RequestContext.get().getUserId(), id));
+        return ReqResult.success(mcpConfigApplicationService.getExportMcpServerConfig(RequestContext.get().getUserId(), id, null));
     }
 
     @RequireResource(MCP_EXPORT)

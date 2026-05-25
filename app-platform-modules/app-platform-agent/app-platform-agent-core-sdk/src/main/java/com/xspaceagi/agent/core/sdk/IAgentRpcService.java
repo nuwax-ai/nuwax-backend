@@ -61,6 +61,8 @@ public interface IAgentRpcService {
 
     ReqResult<WorkflowInfoDto> getPublishedWorkflowInfo(Long workflowId, Long spaceId);
 
+    ReqResult<SkillInfoDto> getPublishedSkillInfo(Long skillId, Long spaceId);
+
     List<ArgDto> parseWorkflowPluginBindArgs(String bindConfig);
 
     ReqResult<PluginInfoDto> getPublishedPluginInfo(Long pluginId, Long spaceId);

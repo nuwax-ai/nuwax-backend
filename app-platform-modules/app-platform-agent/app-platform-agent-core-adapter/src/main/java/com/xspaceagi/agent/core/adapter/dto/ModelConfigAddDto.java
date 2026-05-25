@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.adapter.dto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
@@ -35,6 +36,12 @@ public class ModelConfigAddDto implements Serializable {
 
     @Schema(description = "模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other", requiredMode = Schema.RequiredMode.REQUIRED)
     private ModelTypeEnum type; // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
+
+    @Schema(description = "提供商ID")
+    private String pid;
+
+    @Schema(description = "模型能力类型列表，可选值：Text-文本生成、Image-图像理解、Audio-语音识别、Video-视频理解、TextEmbedding-文本向量、MultiEmbedding-多模态向量、Reasoning-深度思考")
+    private List<ModelCapabilityEnum> types;
 
     @Schema(description = "最大输出token数")
     private Integer maxTokens; // token上限

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.bill.infra.dao.mapper.BillDailyRevenueMapper">
+
+    <select id="selectStatsByUserId" resultType="java.util.HashMap">
+        SELECT
+            COALESCE(SUM(amount), 0) AS totalRevenue,
+            COALESCE(SUM(CASE WHEN dt = #{today} THEN amount ELSE 0 END), 0) AS todayRevenue,
+            COALESCE(SUM(CASE WHEN dt &gt;= #{monthStart} THEN amount ELSE 0 END), 0) AS monthRevenue,
+            COALESCE(SUM(CASE WHEN status = 'PENDING' THEN amount ELSE 0 END), 0) AS unsettledAmount,
+            COALESCE(SUM(CASE WHEN status = 'PENDING' AND dt &lt; #{today} THEN amount ELSE 0 END), 0) AS pendingAmount,
+            COALESCE(SUM(CASE WHEN status = 'SETTLED' THEN amount ELSE 0 END), 0) AS settledAmount
+        FROM bill_daily_revenue
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectUserRankings" resultType="java.util.HashMap">
+        SELECT user_id AS userId, SUM(amount) AS amount
+        FROM bill_daily_revenue
+        WHERE dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        GROUP BY user_id
+        ORDER BY amount DESC
+    </select>
+
+    <select id="countUserRankings" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT user_id)
+        FROM bill_daily_revenue
+        WHERE dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        LIMIT 20
+    </select>
+
+    <select id="selectAdminStats" resultType="java.util.HashMap">
+        SELECT
+            COALESCE(SUM(amount), 0) AS totalRevenue,
+            COALESCE(SUM(CASE WHEN dt = #{today} THEN amount ELSE 0 END), 0) AS todayRevenue,
+            COALESCE(SUM(CASE WHEN dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd} THEN amount ELSE 0 END), 0) AS monthRevenue,
+            COALESCE(SUM(CASE WHEN status = 'PENDING' THEN amount ELSE 0 END), 0) AS pendingAmount,
+            COALESCE(SUM(CASE WHEN status = 'SETTLED' THEN amount ELSE 0 END), 0) AS settledAmount
+        FROM bill_daily_revenue
+        WHERE dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </select>
+
+    <select id="selectAdminDailyRevenues" resultType="java.util.HashMap">
+        SELECT dt, user_id, amount, status
+        FROM bill_daily_revenue
+        WHERE dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY dt DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAdminDailyRevenues" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM bill_daily_revenue
+        WHERE dt &gt;= #{monthStart} AND dt &lt;= #{monthEnd}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+</mapper>

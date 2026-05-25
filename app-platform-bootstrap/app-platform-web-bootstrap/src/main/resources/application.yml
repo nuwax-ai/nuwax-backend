@@ -119,7 +119,7 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 1.0.8.1
+  version: 1.0.8.3
 
 stt:
   api:

@@ -8,6 +8,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.*;
+import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.*;
 import com.xspaceagi.agent.core.domain.service.AgentDomainService;
 import com.xspaceagi.agent.core.domain.service.ConversationDomainService;
@@ -18,20 +19,25 @@ import com.xspaceagi.agent.core.infra.component.agent.dto.AgentExecuteResult;
 import com.xspaceagi.agent.core.infra.component.workflow.handler.QANodeHandler;
 import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
 import com.xspaceagi.agent.core.infra.rpc.MetricRpcService;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.constant.Prompts;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
 import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.TaskCron;
 import com.xspaceagi.agent.core.spec.utils.TikTokensUtil;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.log.sdk.service.ILogRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.memory.sdk.dto.MemoryMetaData;
 import com.xspaceagi.memory.sdk.service.IMemoryRpcService;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
 import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
+import com.xspaceagi.subscription.sdk.dto.UserSubscriptionDTO;
 import com.xspaceagi.system.application.dto.EventDto;
 import com.xspaceagi.system.application.dto.SendNotifyMessageDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
@@ -39,8 +45,9 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
+import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.AbstractTaskExecuteService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
@@ -52,7 +59,6 @@ import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
-import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import com.xspaceagi.system.spec.utils.TimeWheel;
@@ -61,8 +67,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -84,7 +90,7 @@ import static com.xspaceagi.system.spec.cache.SimpleJvmHashCache.DEFAULT_EXPIRE_
 
 @Slf4j
 @Service("conversationApplicationService")
-public class ConversationApplicationServiceImpl extends AbstractTaskExecuteService implements ConversationApplicationService, ChatMemory {
+public class ConversationApplicationServiceImpl extends AbstractTaskExecuteService implements ConversationApplicationService {
 
     private static final String DEFAULT_TOPIC = "Unnamed conversation";
     private static final int MAX_USER_AGENT_TASK_SIZE = 10;
@@ -163,6 +169,8 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
 
     @Resource
     private SkillApplicationService skillApplicationService;
+    @Autowired
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @PostConstruct
     private void init() {
@@ -612,65 +620,63 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
     }
 
     @Override
-    public void add(String conversationId, List<Message> messages) {
+    public void addRoundMessage(String conversationId, Message message) {
         if (conversationId == null) {
             return;
         }
-        messages.forEach(message -> {
-            String conversationId0 = conversationId;
-            if (conversationId0.startsWith("agent:")) {
-                //主动调用加入的保持
-                if (message instanceof ChatMessageDto) {
-                    conversationId0 = conversationId.replace("agent:", "");
-                } else {
-                    return;
-                }
-            }
-            ChatMessageDto chatMessage;
+        String conversationId0 = conversationId;
+        if (conversationId0.startsWith("agent:")) {
+            //主动调用加入的保持
             if (message instanceof ChatMessageDto) {
-                chatMessage = (ChatMessageDto) message;
+                conversationId0 = conversationId.replace("agent:", "");
             } else {
-                chatMessage = new ChatMessageDto();
-                chatMessage.setType(MessageTypeEnum.CHAT);
-                chatMessage.setRole(ChatMessageDto.Role.valueOf(message.getMessageType().name()));
-                chatMessage.setText(message.getText());
-            }
-            chatMessage.setTime(new Date());
-            chatMessage.setId(generateUid(chatMessage.getId()));
-            if (message.getText() == null) {
-                chatMessage.setText("");
-            } else {
-                //每次自动调用知识库插件工作流数据信息移除不保存
-                String text = message.getText().replaceAll("<query_knowledge_base_result>[\\s\\S]*?</query_knowledge_base_result>", "")
-                        .replaceAll("<tool_auto_call_result>[\\s\\S]*?</tool_auto_call_result>", "");
-                chatMessage.setText(text);
-            }
-            if (chatMessage.getText().contains("</think>") && !chatMessage.getText().contains("<think>")) {
-                chatMessage.setText("<think>" + chatMessage.getText());
-            }
-            ConversationMessage conversationMessage = new ConversationMessage();
-            try {
-                conversationMessage.setConversationId(Long.parseLong(conversationId));
-            } catch (NumberFormatException e) {
                 return;
             }
-            conversationMessage.setContent(JSON.toJSONString(chatMessage));
-            conversationMessage.setMessageId(chatMessage.getId());
-            if (chatMessage.getTenantId() == null) {
-                Conversation conversation = TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.getConversation(conversationMessage.getConversationId()));
-                chatMessage.setTenantId(conversation.getTenantId());
-                chatMessage.setUserId(conversation.getUserId());
-                chatMessage.setAgentId(conversation.getAgentId());
-            }
-            conversationMessage.setTenantId(chatMessage.getTenantId());
-            conversationMessage.setUserId(chatMessage.getUserId());
-            conversationMessage.setAgentId(chatMessage.getAgentId());
-            TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.addConversationMessage(conversationMessage));
-        });
+        }
+        ChatMessageDto chatMessage;
+        if (message instanceof ChatMessageDto) {
+            chatMessage = (ChatMessageDto) message;
+        } else {
+            chatMessage = new ChatMessageDto();
+            chatMessage.setType(MessageTypeEnum.CHAT);
+            chatMessage.setRole(ChatMessageDto.Role.valueOf(message.getMessageType().name()));
+            chatMessage.setText(message.getText());
+        }
+        chatMessage.setTime(new Date());
+        chatMessage.setId(generateUid(chatMessage.getId()));
+        if (message.getText() == null) {
+            chatMessage.setText("");
+        } else {
+            //每次自动调用知识库插件工作流数据信息移除不保存
+            String text = message.getText().replaceAll("<query_knowledge_base_result>[\\s\\S]*?</query_knowledge_base_result>", "")
+                    .replaceAll("<tool_auto_call_result>[\\s\\S]*?</tool_auto_call_result>", "");
+            chatMessage.setText(text);
+        }
+        if (chatMessage.getText().contains("</think>") && !chatMessage.getText().contains("<think>")) {
+            chatMessage.setText("<think>" + chatMessage.getText());
+        }
+        ConversationMessage conversationMessage = new ConversationMessage();
+        try {
+            conversationMessage.setConversationId(Long.parseLong(conversationId));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        conversationMessage.setContent(JSON.toJSONString(chatMessage));
+        conversationMessage.setMessageId(chatMessage.getId());
+        if (chatMessage.getTenantId() == null) {
+            Conversation conversation = TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.getConversation(conversationMessage.getConversationId()));
+            chatMessage.setTenantId(conversation.getTenantId());
+            chatMessage.setUserId(conversation.getUserId());
+            chatMessage.setAgentId(conversation.getAgentId());
+        }
+        conversationMessage.setTenantId(chatMessage.getTenantId());
+        conversationMessage.setUserId(chatMessage.getUserId());
+        conversationMessage.setAgentId(chatMessage.getAgentId());
+        TenantFunctions.callWithIgnoreCheck(() -> conversationDomainService.addConversationMessage(conversationMessage));
     }
 
     @Override
-    public List<Message> get(String conversationId, int lastN) {
+    public List<Message> getRoundMessages(String conversationId, int lastN) {
         if (conversationId.startsWith("agent:")) {
             conversationId = conversationId.replace("agent:", "");
         }
@@ -763,11 +769,6 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             }
             return agentUserDto;
         }).collect(Collectors.toList());
-    }
-
-    @Override
-    public void clear(String conversationId) {
-        redisUtil.expire(generateConversationKey(conversationId), -1);
     }
 
     /**
@@ -920,8 +921,10 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         // 模型变化后是否需要重启智能体（通用智能体需要重启生效）；全局模型在开启代理的情况下无需重启
         String selectedKey = "agent.model.selected:" + RequestContext.get().getUserId() + ":" + agentConfigDto.getId();
         boolean modelChanged = false;
+        boolean isDefaultModel = true;
         // 用户选择了模型
         if (tryReqDto.getModelId() != null && YesOrNoEnum.Y.getKey().equals(agentConfigDto.getAllowOtherModel())) {
+            isDefaultModel = targetConfig instanceof ModelConfigDto modelConfigDto && modelConfigDto.getId().equals(tryReqDto.getModelId());
             Object val = redisUtil.get(selectedKey);
             if (val != null) {
                 try {
@@ -954,6 +957,18 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             } else {
                 modelChanged = false;
             }
+        }
+
+        //付费检查，评估是否可以继续执行，当前只要积分大于零，且订阅过智能体就可以执行
+        PriceEstimate priceEstimate = estimatePrice(agentConfigDto, tryReqDto, Objects.equals(conversationDto.getDevMode(), YesOrNoEnum.Y.getKey()), isDefaultModel);
+        if (!priceEstimate.isPass()) {
+            errorOutput.setError(priceEstimate.getMessage());
+            agentExecuteResult.setError(priceEstimate.getMessage());
+            return errorOutput(errorOutput, conversationDto);
+        }
+
+        if (priceEstimate.getResourceBillUserId() == null) {
+            priceEstimate.setResourceBillUserId(RequestContext.get().getUserId());
         }
 
         //token检测
@@ -1043,7 +1058,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         }
         conversationDomainService.updateConversation(conversationDto.getUserId(), conversationDto.getId(), conversationUpdate);
 
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+        String requestId = tryReqDto.getRequestId() == null ? UUID.randomUUID().toString().replace("-", "") : tryReqDto.getRequestId();
         QaDto qaDto = qaNodeHandler.getConversationQaInfo(redisUtil, conversationDto.getId().toString());
         if (qaDto != null) {
             if (StringUtils.isNotBlank(qaDto.getAnswer())) {
@@ -1070,7 +1085,31 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         }
 
         UserDto userDto = (UserDto) RequestContext.get().getUser();
+        TraceContext traceContext = TraceContext.builder()
+                .traceId(requestId)
+                .tenantId(RequestContext.get().getTenantId())
+                .userId(RequestContext.get().getUserId())
+                .conversationId(tryReqDto.getConversationId().toString())
+                .userName(userDto.getUserName())
+                .nickName(userDto.getNickName())
+                .billUserId(priceEstimate.getResourceBillUserId())
+                .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                .subscriptionId(priceEstimate.getSubscription() != null ? ((UserSubscriptionDTO) priceEstimate.getSubscription()).getId() : null)
+                .traceTargets(new ArrayList<>())
+                .build();
+
+        TraceContext.TraceTarget traceTarget = TraceContext.TraceTarget.builder()
+                .targetType(TraceContext.TraceTargetType.Agent)
+                .targetId(agentConfigDto.getId().toString())
+                .name(agentConfigDto.getName())
+                .description(agentConfigDto.getDescription())
+                .icon(agentConfigDto.getIcon())
+                .build();
+
+        traceContext.getTraceTargets().add(traceTarget);
+
         AgentContext agentContext = new AgentContext();
+        agentContext.setTraceContext(traceContext);
         agentContext.setAgentConfig(agentConfigDto);
         agentContext.setHeaders(headersFromRequest);
         agentContext.setRequestId(requestId);
@@ -1086,6 +1125,7 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         agentContext.setUserName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName());
         agentContext.setAttachments(tryReqDto.getAttachments());
         agentContext.setUserDataPermission(userDataPermission);
+        agentContext.setDefaultModelChanged(!isDefaultModel);
         if (tryReqDto.getFilterSensitive() == null) {
             // 自己开发的智能体不过滤敏感信息
             agentContext.setFilterSensitive(!agentContext.getUserId().equals(agentConfigDto.getCreatorId()));
@@ -1223,7 +1263,15 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 if (extra != null) {
                     try {
                         Long proxyMcpId = Long.parseLong(agentConfigDto.getExtra().get(isDev ? "devProxyMcpId" : "prodProxyMcpId").toString());
-                        String exportMcpServerConfig = mcpRpcService.getExportMcpServerConfig(userDto.getId(), proxyMcpId);
+                        UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig = UserAccessKeyDto.UserAccessKeyConfig.builder()
+                                .isDevMode(isDev ? 1 : 0)
+                                .enabled(true)
+                                .conversationId(tryReqDto.getConversationId().toString())
+                                .requestId(RequestContext.get().getRequestId())
+                                .traceContext(traceContext)
+                                .build();
+
+                        String exportMcpServerConfig = mcpRpcService.getExportMcpServerConfig(userDto.getId(), proxyMcpId, userAccessKeyConfig);
                         agentConfigDto.setProxyMcpServerConfig(exportMcpServerConfig);
                     } catch (NumberFormatException e) {
                         //  ignore
@@ -1458,6 +1506,101 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 });
     }
 
+    private PriceEstimate estimatePrice(AgentConfigDto agentConfigDto, TryReqDto tryReqDto, boolean devMode, boolean isDefaultModel) {
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        if (tenantConfigDto.getEnableSubscription() == null || tenantConfigDto.getEnableSubscription() == 0) {
+            return PriceEstimate.builder().pass(true).build();
+        }
+        //用户额外追加的技能，算在使用者身上
+        if (CollectionUtils.isNotEmpty(tryReqDto.getSkillIds())) {
+            PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), tryReqDto.getSkillIds().stream().map(skillId -> PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.SKILL).targetId(skillId.toString()).build()).collect(Collectors.toList()));
+            if (!priceEstimate.isPass()) {
+                return priceEstimate;
+            }
+        }
+
+        Long resourceBillUserId = RequestContext.get().getUserId();
+        UserSubscriptionDTO subscription = null;
+        if (!devMode) {
+            //检查用户是否订阅，编排模式下不判断是否订阅
+            PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.AGENT).targetId(agentConfigDto.getId().toString()).build()));
+            if (!priceEstimate.isPass()) {
+                return priceEstimate;
+            }
+            subscription = priceEstimate.getSubscription() != null ? (UserSubscriptionDTO) priceEstimate.getSubscription() : null;
+            if (subscription != null && (subscription.getPlan().getFunctionOnly() == null || !subscription.getPlan().getFunctionOnly())) {
+                // 订阅计划为包干订阅，则计费到创建者
+                resourceBillUserId = agentConfigDto.getCreatorId();
+            }
+            //用户未订阅，则试用计费到创建者
+            if (priceEstimate.isTrial()) {
+                resourceBillUserId = agentConfigDto.getCreatorId();
+            }
+        }
+
+        List<PriceEstimate.EstimateTarget> estimateTargets = new ArrayList<>();
+        List<PriceEstimate.EstimateTarget> estimateSkillTargets = new ArrayList<>();
+        Long targetId = agentConfigDto.getModelComponentConfig().getTargetId();
+        if (targetId != null) {
+            if (!isDefaultModel && !resourceBillUserId.equals(RequestContext.get().getUserId())) {
+                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.MODEL).targetId(targetId.toString()).build()));
+                if (!priceEstimate.isPass()) {
+                    return priceEstimate;
+                }
+            } else {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.MODEL).targetId(targetId.toString()).build());
+            }
+        }
+        agentConfigDto.getAgentComponentConfigList().forEach(componentConfigDto -> {
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Skill) {
+                estimateSkillTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.SKILL).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Plugin) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.PLUGIN).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Mcp) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.MCP).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Workflow) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(componentConfigDto.getTargetId().toString()).build());
+                Object targetConfig = componentConfigDto.getTargetConfig();
+                if (targetConfig instanceof WorkflowConfigDto) {
+                    resourcePricingRpcService.completeWorkflowEstimateTargets(estimateTargets, (WorkflowConfigDto) targetConfig, new HashSet<>());
+                }
+            }
+        });
+
+        PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), agentConfigDto.getCreatorId(), estimateSkillTargets);
+        if (!priceEstimate.isPass()) {
+            String message = I18nUtil.systemMessage("Backend.Chat.Error.SkillSubscriptionExpiredContactDeveloper", priceEstimate.getTargetId());
+            if (agentConfigDto.getCreatorId().equals(RequestContext.get().getUserId())) {
+                message = I18nUtil.systemMessage("Backend.Chat.Error.SkillSubscriptionExpiredCheckOwner", priceEstimate.getTargetId());
+            }
+            if (!RequestContext.get().getUserId().equals(agentConfigDto.getCreatorId())) {
+                priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), estimateSkillTargets);
+                if (!priceEstimate.isPass()) {
+                    priceEstimate.setMessage(message);
+                    return priceEstimate;
+                }
+            } else {
+                priceEstimate.setMessage(message);
+                return priceEstimate;
+            }
+        }
+
+        priceEstimate = resourcePricingRpcService.estimatePrice(RequestContext.get().getTenantId(), resourceBillUserId, estimateTargets);
+        if (!priceEstimate.isPass()) {
+            String message = I18nUtil.systemMessage("Backend.Chat.Error.DeveloperCreditInsufficient");
+            if (resourceBillUserId.equals(RequestContext.get().getUserId())) {
+                message = I18nUtil.systemMessage("Backend.Chat.Error.UserCreditInsufficient");
+            }
+            priceEstimate.setMessage(message);
+            return priceEstimate;
+        }
+
+        return PriceEstimate.builder().pass(true).subscription(subscription).resourceBillUserId(resourceBillUserId).build();
+    }
+
     private Flux<AgentOutputDto> errorOutput(AgentOutputDto errorOutput, ConversationDto conversationDto) {
         if (conversationDto != null && conversationDto.getTaskStatus() == Conversation.ConversationTaskStatus.EXECUTING) {
             Conversation conversationUpdate = new Conversation();
@@ -1585,7 +1728,11 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                     .requestId(agentContext.getRequestId())
                     .from(from)
                     .build();
-            iLogRpcService.bulkIndex(List.of(logDocument));
+            agentContext.getTraceContext().setLog(logDocument);
+            agentContext.getTraceContext().setError(errorMsg != null);
+            agentContext.getTraceContext().setErrorMessage(errorMsg);
+            agentContext.getTraceContext().setErrorCode("0001");
+            iLogRpcService.pushTraceLog(agentContext.getTraceContext());
         }
     }
 

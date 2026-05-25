@@ -7,6 +7,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.agent.core.infra.component.model.dto.ModelCallConfigDto;
 import com.xspaceagi.agent.core.infra.component.model.dto.ModelCallResult;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecutingDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -26,6 +27,9 @@ public class ModelContext implements Serializable {
 
     @Schema(description = "智能体上下文")
     private AgentContext agentContext;
+
+    @Schema(description = "链路追踪信息")
+    private TraceContext traceContext;
 
     @Schema(description = "模型配置")
     private ModelConfigDto modelConfig;

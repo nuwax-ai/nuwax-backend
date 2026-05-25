@@ -713,6 +713,9 @@ public class PageFileBuildClient {
                 }
                 RequestContext<?> requestContext = RequestContext.get();
                 tenantId = requestContext == null ? null : requestContext.getTenantId();
+                if (tenantId == null && configModel != null) {
+                    tenantId = configModel.getTenantId();
+                }
                 Long userId = requestContext == null ? null : requestContext.getUserId();
                 SandboxConfigRpcDto sandboxConfig = sandboxConfigRpcService.selectAppDevelopmentSandbox(
                         tenantId,

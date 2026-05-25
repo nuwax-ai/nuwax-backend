@@ -199,6 +199,8 @@ public class SysMenuController extends BaseController {
             rootNode.setChildren(treeList);
             List<MenuNodeDto> result = new ArrayList<>();
             result.add(rootNode);
+
+            I18nUtil.replaceSystemMessage(treeList);
             return ReqResult.success(result);
         }
 

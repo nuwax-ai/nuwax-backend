@@ -501,7 +501,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> loadDiffFromClasspath(String version) {
-        String path = "permission/permission-" + version + "-diff.json";
+        String path = PermissionSyncConstants.buildDiffClasspathPath(version);
         try {
             ClassPathResource resource = new ClassPathResource(path);
             if (!resource.exists()) {

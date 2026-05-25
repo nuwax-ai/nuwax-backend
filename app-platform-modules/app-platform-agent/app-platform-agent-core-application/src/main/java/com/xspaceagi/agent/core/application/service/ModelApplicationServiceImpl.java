@@ -11,20 +11,28 @@ import com.xspaceagi.agent.core.adapter.dto.ModelQueryDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.ModelConfigRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
+import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.infra.component.model.ModelClientFactory;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
+import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.constant.Prompts;
+import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
+import com.xspaceagi.pricing.sdk.dto.PricingConfigDTO;
+import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.dto.permission.BindRestrictionTargetsDto;
+import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -94,16 +102,42 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     @Resource
     private RedisUtil redisUtil;
 
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
+
     @Override
     public void addOrUpdate(ModelConfigDto modelDto) {
         modelDto.setTenantId(RequestContext.get().getTenantId());
         ModelConfig model = new ModelConfig();
         BeanUtils.copyProperties(modelDto, model);
+        if (CollectionUtils.isNotEmpty(modelDto.getTypes())) {
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.Text) || modelDto.getTypes().contains(ModelCapabilityEnum.Reasoning)) {
+                model.setType(ModelTypeEnum.Chat);
+            }
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.Image)) {
+                model.setType(ModelTypeEnum.Multi);
+            }
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.MultiEmbedding) || modelDto.getTypes().contains(ModelCapabilityEnum.TextEmbedding)) {
+                model.setType(ModelTypeEnum.Embeddings);
+            }
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.Audio)) {
+                model.setType(ModelTypeEnum.Audio);
+            }
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.Video)) {
+                model.setType(ModelTypeEnum.Video);
+            }
+        }
         if (modelDto.getApiInfoList() != null && !modelDto.getApiInfoList().isEmpty()) {
             model.setApiInfo(JSONObject.toJSONString(modelDto.getApiInfoList()));
         }
         if (modelDto.getUsageScenarios() != null) {
             model.setUsageScenario(JSONObject.toJSONString(modelDto.getUsageScenarios()));
+        }
+        if (modelDto.getTypes() != null) {
+            model.setTypes(JSONObject.toJSONString(modelDto.getTypes()));
         }
         ModelConfigDto modelConfigDto = null;
         if (modelDto.getId() != null) {
@@ -173,7 +207,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         queryWrapper.setEntity(model);
         if (modelQueryDto.getModelType() == ModelTypeEnum.Chat) {
-            queryWrapper.in(ModelConfig::getType, ModelTypeEnum.Chat, ModelTypeEnum.Multi);
+            queryWrapper.in(ModelConfig::getType, ModelTypeEnum.Chat, ModelTypeEnum.Multi, ModelTypeEnum.Audio, ModelTypeEnum.Video);
         } else {
             model.setType(modelQueryDto.getModelType());
         }
@@ -222,6 +256,12 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         if (model == null) {
             return null;
         }
+        ModelConfigDto modelDto = convertToModelDto(model);
+        completeCreator(List.of(modelDto));
+        return modelDto;
+    }
+
+    private ModelConfigDto convertToModelDto(ModelConfig model) {
         ModelConfigDto modelDto = new ModelConfigDto();
         BeanUtils.copyProperties(model, modelDto);
         if (model.getUsageScenario() != null && JSON.isValidArray(model.getUsageScenario())) {
@@ -229,10 +269,42 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         } else {
             modelDto.setUsageScenarios(List.of(UsageScenarioEnum.Workflow, UsageScenarioEnum.TaskAgent, UsageScenarioEnum.PageApp, UsageScenarioEnum.ChatBot, UsageScenarioEnum.OpenApi));
         }
+        if (model.getTypes() != null && JSON.isValidArray(model.getTypes())) {
+            modelDto.setTypes(JSON.parseArray(model.getTypes(), ModelCapabilityEnum.class));
+            if (modelDto.getTypes().contains(ModelCapabilityEnum.Image) || modelDto.getTypes().contains(ModelCapabilityEnum.Video) || modelDto.getTypes().contains(ModelCapabilityEnum.Audio)) {
+                model.setType(ModelTypeEnum.Multi);
+            } else if (modelDto.getTypes().contains(ModelCapabilityEnum.Text)) {
+                model.setType(ModelTypeEnum.Chat);
+            } else if (modelDto.getTypes().contains(ModelCapabilityEnum.TextEmbedding)) {
+                model.setType(ModelTypeEnum.Embeddings);
+            }
+
+            if (!modelDto.getTypes().contains(ModelCapabilityEnum.Reasoning) && model.getIsReasonModel() != null && model.getIsReasonModel() == 1) {
+                modelDto.getTypes().add(ModelCapabilityEnum.Reasoning);
+            }
+        } else if (model.getType() == ModelTypeEnum.Chat) {
+            modelDto.setTypes(List.of(ModelCapabilityEnum.Text));
+        } else if (model.getType() == ModelTypeEnum.Multi) {
+            modelDto.setTypes(List.of(ModelCapabilityEnum.Image));
+        } else if (model.getType() == ModelTypeEnum.Embeddings) {
+            modelDto.setTypes(List.of(ModelCapabilityEnum.TextEmbedding));
+        }
+        if (modelDto.getFunctionCall() == ModelFunctionCallEnum.CallSupported) {
+            modelDto.setFunctionCall(ModelFunctionCallEnum.StreamCallSupported);
+        }
         modelDto.setApiInfoList(convert(model.getApiInfo()));
         modelDto.setNatInfoList(convertNatInfo(model.getNatInfo()));
-        completeCreator(List.of(modelDto));
         return modelDto;
+    }
+
+    @Override
+    public List<ModelConfigDto> queryModelConfigListByIds(List<Long> modelIds) {
+        if (CollectionUtils.isEmpty(modelIds)) {
+            return List.of();
+        }
+        LambdaQueryWrapper<ModelConfig> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ModelConfig::getId, modelIds);
+        return queryModelConfigList(queryWrapper);
     }
 
     @Override
@@ -289,19 +361,10 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     private List<ModelConfigDto> queryModelConfigList(LambdaQueryWrapper<ModelConfig> queryWrapper) {
         List<ModelConfigDto> modelDtos = new ArrayList<>();
-        modelRepository.list(queryWrapper).forEach(model1 -> {
-            ModelConfigDto modelDto = new ModelConfigDto();
-            BeanUtils.copyProperties(model1, modelDto);
-            modelDto.setApiInfoList(null);
-            if (model1.getUsageScenario() != null && JSON.isValidArray(model1.getUsageScenario())) {
-                modelDto.setUsageScenarios(JSON.parseArray(model1.getUsageScenario(), UsageScenarioEnum.class));
-            } else {
-                modelDto.setUsageScenarios(List.of(UsageScenarioEnum.Workflow, UsageScenarioEnum.TaskAgent, UsageScenarioEnum.PageApp, UsageScenarioEnum.ChatBot, UsageScenarioEnum.OpenApi));
-            }
-            modelDtos.add(modelDto);
-        });
+        modelRepository.list(queryWrapper).forEach(model1 -> modelDtos.add(convertToModelDto(model1)));
         // creatorIdList in modelDtos
         completeCreator(modelDtos);
+        modelDtos.forEach(modelDto -> modelDto.setApiInfoList(null));
         return modelDtos;
     }
 
@@ -390,6 +453,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             log.warn("Model returned JSON format is incorrect, please check prompt\nOriginal content {}", prompt);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelJsonInvalid);
         }
+        modelConfig.setIsReasonModel(0);
         ChatClient.StreamResponseSpec stream = modelClientFactory.createChatClient(modelConfig)
                 .prompt(new Prompt(new SystemMessage(sysPrompt), new UserMessage(prompt))).stream();
         StringBuilder responseStr = new StringBuilder();
@@ -521,7 +585,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         try {
             // Vector model, call vectorization interface for testing
-            if (modelConfig.getType() == ModelTypeEnum.Embeddings) {
+            if (modelConfig.getType() == ModelTypeEnum.Embeddings || modelConfig.getTypes().contains(ModelCapabilityEnum.TextEmbedding)) {
                 EmbeddingModel embeddingModel = modelClientFactory.createEmbeddingModel(modelConfig);
                 List<float[]> embeddings = embeddingModel.embed(List.of(testPrompt));
                 log.info("Vector model connectivity test name={}, return vector dimension: {}", modelConfig.getName(),
@@ -564,5 +628,32 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             log.error("Model connectivity test exception", e);
             return e.getMessage() == null ? "No response" : e.getMessage();
         }
+    }
+
+    @Override
+    public List<ModelConfigDto> getMySystemModels(Long userId, String tab) {
+        List<ModelConfigDto> modelConfigs;
+        if (tab.equalsIgnoreCase("system")) {
+            ModelQueryDto modelQueryDto = new ModelQueryDto();
+            modelQueryDto.setScope(ModelConfig.ModelScopeEnum.Tenant);
+            modelQueryDto.setEnabled(YesOrNoEnum.Y.getKey());
+            modelConfigs = queryModelConfigList(modelQueryDto);
+        } else {
+            SpaceDto spaceDto = spaceApplicationService.queryListByUserId(userId).stream().filter(space -> space.getType() == Space.Type.Personal).findFirst().orElse(null);
+            if (spaceDto == null) {
+                return List.of();
+            }
+            modelConfigs = queryModelConfigLisBySpaceId(spaceDto.getId());
+            modelConfigs.removeIf(modelConfig -> modelConfig.getEnabled() != null && modelConfig.getEnabled().equals(YesOrNoEnum.N.getKey()));
+        }
+        Map<String, PricingConfigDTO> pricingConfigDTOMap = resourcePricingRpcService.listPricingConfigs(Published.TargetType.Model, modelConfigs.stream().map(ModelConfigDto::getId).collect(Collectors.toList()))
+                .stream().collect(Collectors.toMap(PricingConfigDTO::getTargetId, pricingConfigDTO -> pricingConfigDTO, (k1, k2) -> k1));
+        modelConfigs.forEach(modelConfig -> {
+            PricingConfigDTO pricingConfigDTO = pricingConfigDTOMap.get(modelConfig.getId().toString());
+            if (pricingConfigDTO != null && pricingConfigDTO.getStatus().equals(YesOrNoEnum.Y.getKey())) {
+                modelConfig.setPricing(pricingConfigDTO);
+            }
+        });
+        return modelConfigs;
     }
 }

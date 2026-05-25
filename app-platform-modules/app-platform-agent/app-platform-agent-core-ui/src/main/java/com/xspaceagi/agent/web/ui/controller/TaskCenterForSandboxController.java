@@ -5,29 +5,22 @@ import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.PublishedDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
-import com.xspaceagi.agent.core.spec.enums.TaskCron;
 import com.xspaceagi.agent.web.ui.controller.dto.*;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
-import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.infra.dao.entity.Space;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
-import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
-import com.xspaceagi.system.spec.exception.BizException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
 
 @Tag(name = "沙盒Agent任务管理相关接口")
 @RestController

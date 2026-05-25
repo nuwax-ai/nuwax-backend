@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.*;
@@ -25,10 +26,7 @@ import com.xspaceagi.agent.core.infra.component.plugin.PluginExecutor;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowExecutor;
 import com.xspaceagi.agent.core.infra.converter.ArgConverter;
-import com.xspaceagi.agent.core.infra.rpc.CustomPageRpcService;
-import com.xspaceagi.agent.core.infra.rpc.DbTableRpcService;
-import com.xspaceagi.agent.core.infra.rpc.KnowledgeRpcService;
-import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
+import com.xspaceagi.agent.core.infra.rpc.*;
 import com.xspaceagi.agent.core.infra.rpc.dto.PageDto;
 import com.xspaceagi.agent.core.spec.enums.*;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
@@ -43,6 +41,12 @@ import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
 import com.xspaceagi.mcp.sdk.enums.InstallTypeEnum;
 import com.xspaceagi.mcp.sdk.enums.McpComponentTypeEnum;
+import com.xspaceagi.pricing.sdk.dto.PricingConfigDTO;
+import com.xspaceagi.pricing.sdk.dto.TrialRecordDTO;
+import com.xspaceagi.pricing.sdk.dto.UpdateTrialCountRequest;
+import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
+import com.xspaceagi.subscription.sdk.dto.UserSubscriptionDTO;
+import com.xspaceagi.subscription.spec.enums.BizTypeEnum;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
@@ -53,7 +57,8 @@ import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.infra.dao.entity.Space;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -153,6 +158,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
 
     @Resource
     private RedisUtil redisUtil;
+
+    @Resource
+    private ResourcePricingRpcService resourcePricingRpcService;
 
     @Override
     @DSTransactional
@@ -1105,6 +1113,38 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             siteUrl = siteUrl.endsWith("/") ? siteUrl.substring(0, siteUrl.length() - 1) : siteUrl;
             agentDetailDto.setShareLink(siteUrl + "/agent/" + agentId);
         }
+
+        // 是否付费
+        agentDetailDto.setOverCallLimit(true);
+        List<PricingConfigDTO> pricingConfigDTOS = resourcePricingRpcService.listPricingConfigs(Published.TargetType.Agent, List.of(agentId));
+        if (CollectionUtils.isNotEmpty(pricingConfigDTOS)) {
+            PricingConfigDTO pricingConfigDTO = pricingConfigDTOS.get(0);
+            if (pricingConfigDTO.getStatus() != null && YesOrNoEnum.Y.getKey().equals(pricingConfigDTO.getStatus())) {
+                agentDetailDto.setPaymentRequired(true);
+                agentDetailDto.setTrialCount(pricingConfigDTO.getTrialCount());
+            }
+            if (RequestContext.get().getUserId() != null) {
+                UserSubscriptionDTO userSubscription = resourcePricingRpcService.getUserSubscription(RequestContext.get().getUserId(), BizTypeEnum.AGENT, agentId.toString());
+                agentDetailDto.setSubscribed(userSubscription != null);
+                if (userSubscription != null && agentDetailDto.isSubscribed()) {
+                    Integer callUsedCount = userSubscription.getCallUsedCount();
+                    if (callUsedCount != null && userSubscription.getPlan() != null && userSubscription.getPlan().getCallLimitCount() != null && callUsedCount < userSubscription.getPlan().getCallLimitCount()) {
+                        agentDetailDto.setOverCallLimit(false);
+                    }
+                } else if (agentDetailDto.getTrialCount() != null && agentDetailDto.getTrialCount() > 0) {
+                    UpdateTrialCountRequest request = new UpdateTrialCountRequest();
+                    request.setTenantId(RequestContext.get().getTenantId());
+                    request.setUserId(RequestContext.get().getUserId());
+                    request.setTargetType(TargetTypeEnum.AGENT);
+                    request.setTargetId(agentId.toString());
+                    TrialRecordDTO trialRecordDTO = resourcePricingRpcService.getTrialCount(request);
+                    if (trialRecordDTO != null) {
+                        agentDetailDto.setCalledTrialCount(trialRecordDTO.getUsedCount());
+                    }
+                }
+            }
+        }
+
         return agentDetailDto;
     }
 
@@ -1132,6 +1172,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 if (variable.getSelectConfig() == null || variable.getSelectConfig().getDataSourceType() != SelectConfig.DataSourceTypeEnum.BINDING) {
                     return;
                 }
+                TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+                UserDto userDto = ((UserDto) RequestContext.get().getUser());
                 if (variable.getSelectConfig().getTargetType() == Published.TargetType.Workflow) {
                     //执行工作流获取数据
                     WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(variable.getSelectConfig().getTargetId(), spaceId, true);
@@ -1139,7 +1181,6 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                         //引用的工作流不存在
                         return;
                     }
-                    UserDto userDto = ((UserDto) RequestContext.get().getUser());
                     WorkflowContext workflowContext = new WorkflowContext();
                     workflowContext.setWorkflowConfig(workflowConfigDto);
                     AgentContext agentContext = new AgentContext();
@@ -1155,6 +1196,21 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     workflowContext.setRequestId(RequestContext.get().getRequestId());
                     workflowContext.setWorkflowConfig(workflowConfigDto);
                     workflowContext.setParams(new HashMap<>());
+                    workflowContext.setTraceContext(TraceContext.builder()
+                            .userId(RequestContext.get().getUserId())
+                            .tenantId(RequestContext.get().getTenantId())
+                            .conversationId(RequestContext.get().getRequestId())
+                            .traceId(RequestContext.get().getRequestId())
+                            .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                            .billUserId(userDto.getId())
+                            .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                                    .targetType(TraceContext.TraceTargetType.Workflow)
+                                    .name(workflowConfigDto.getName())
+                                    .description(workflowConfigDto.getDescription())
+                                    .icon(workflowConfigDto.getIcon())
+                                    .targetId(workflowConfigDto.getId().toString())
+                                    .build()))
+                            .build());
                     Object value = workflowExecutor.execute(workflowContext).timeout(Duration.ofSeconds(10)).block();
                     if (value != null) {
                         JSONObject jsonObject = JSONObject.parseObject(JSONObject.toJSONString(value));
@@ -1178,6 +1234,21 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                             .userId(RequestContext.get().getUserId())
                             .test(false)
                             .agentContext(agentContext)
+                            .traceContext(TraceContext.builder()
+                                    .userId(RequestContext.get().getUserId())
+                                    .tenantId(RequestContext.get().getTenantId())
+                                    .conversationId(RequestContext.get().getRequestId())
+                                    .traceId(RequestContext.get().getRequestId())
+                                    .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
+                                    .billUserId(userDto.getId())
+                                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                                            .targetType(TraceContext.TraceTargetType.Plugin)
+                                            .name(pluginDto.getName())
+                                            .description(pluginDto.getDescription())
+                                            .icon(pluginDto.getIcon())
+                                            .targetId(pluginDto.getId().toString())
+                                            .build()))
+                                    .build())
                             .build();
                     Object value = pluginExecutor.execute(pluginContext).block().getResult();
                     if (value != null) {

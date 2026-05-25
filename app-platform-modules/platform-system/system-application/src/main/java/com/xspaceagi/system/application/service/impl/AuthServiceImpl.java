@@ -66,7 +66,7 @@ public class AuthServiceImpl implements AuthService {
             userDto.setEmail(email);
             userApplicationService.add(userDto);
         }
-        if (userDto.getStatus() == User.Status.Disabled) {
+        if (userDto.getStatus() == User.Status.Disabled || userDto.getStatus() == User.Status.Deleted) {
             throw new BizException(I18nUtil.systemMessage("Backend.Auth.Login.AccountDisabled"));
         }
         updateLastLoginTime(userDto);

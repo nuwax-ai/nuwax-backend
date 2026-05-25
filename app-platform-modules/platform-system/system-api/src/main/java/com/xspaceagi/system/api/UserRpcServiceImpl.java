@@ -60,6 +60,16 @@ public class UserRpcServiceImpl implements IUserRpcService {
         return null;
     }
 
+    @Override
+    public UserDetailDto queryUserDetailById(Long userId) {
+        User user = userDomainService.queryById(userId);
+        if (user != null) {
+            UserDetailDto userDetailDto = new UserDetailDto();
+            BeanUtils.copyProperties(user, userDetailDto);
+            return userDetailDto;
+        }
+        return null;
+    }
 
     private UserContext convertFromUser(User user) {
 

@@ -28,7 +28,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
@@ -114,6 +113,7 @@ public class UserManageController {
         userUpdate.setPhone(userUpdateDto.getPhone());
         userUpdate.setEmail(userUpdateDto.getEmail());
         userUpdate.setRole(userUpdateDto.getRole());
+        userUpdate.setPassword(userUpdateDto.getPassword());
         userApplicationService.update(userUpdate);
         return ReqResult.success();
     }
@@ -139,6 +139,15 @@ public class UserManageController {
         userUpdate.setId(id);
         userUpdate.setStatus(User.Status.Enabled);
         userApplicationService.update(userUpdate);
+        return ReqResult.success();
+    }
+
+    @RequireResource(USER_MANAGE_DISABLE)
+    @Operation(summary = "删除用户")
+    @RequestMapping(path = "/delete/{id}", method = RequestMethod.POST)
+    public ReqResult<Void> deleteUserById(@PathVariable Long id) {
+        checkAdmin();
+        userApplicationService.logicDelete(id);
         return ReqResult.success();
     }
 

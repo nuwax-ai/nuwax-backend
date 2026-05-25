@@ -18,6 +18,11 @@ public interface ICustomPageConversationDomainService {
     ReqResult<Long> saveConversation(CustomPageConversationModel model, UserContext userContext);
 
     /**
+     * 保存或更新助手会话记录（有 id 更新本轮；无 id 插入新行，每轮问答独立一条）
+     */
+    ReqResult<Long> saveOrUpdateAssistantConversation(CustomPageConversationModel model, UserContext userContext);
+
+    /**
      * 根据项目ID查询会话记录列表
      */
     List<CustomPageConversationModel> listByProjectId(Long projectId, Long userId);

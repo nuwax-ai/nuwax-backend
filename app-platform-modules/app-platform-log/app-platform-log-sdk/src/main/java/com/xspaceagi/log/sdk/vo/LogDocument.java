@@ -66,6 +66,9 @@ public class LogDocument extends SearchDocument {
     @SearchField(store = true)
     private String processData;
 
+    @Schema(description = "缓存输入token数量")
+    private Integer cacheInputToken;
+
     @Schema(description = "输入token数量")
     private Integer inputToken;
 

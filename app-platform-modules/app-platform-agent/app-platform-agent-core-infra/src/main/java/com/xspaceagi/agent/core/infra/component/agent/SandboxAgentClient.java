@@ -8,7 +8,6 @@ import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
-import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.infra.component.agent.dto.AgentRequest;
 import com.xspaceagi.agent.core.infra.component.model.dto.CallMessage;
 import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecuteResult;
@@ -33,6 +32,7 @@ import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.exception.AgentException;
@@ -435,26 +435,32 @@ public class SandboxAgentClient {
         String systemPrompt = Prompts.ANTI_CLAUDE_SYSTEM_PROMPT + "\n" + agentContext.getAgentConfig().getSystemPrompt() + "\n" + Prompts.DEPENDENCY_INSTALLATION_PROMPT + "\n" + Prompts.TASK_AGENT_OUTPUT_PROMPT;
         String userPrompt = contextPromptBuilder + agentContext.getMessage();
         // 全局模型走代理模式，为用户生成独立的key
-        if (modelConfig.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
-            BackendModelDto backendModelDto = new BackendModelDto();
-            backendModelDto.setBaseUrl(apiInfo.getUrl());
-            backendModelDto.setApiKey(apiInfo.getKey());
-            backendModelDto.setModelName(modelConfig.getModel());
-            backendModelDto.setProtocol(modelConfig.getApiProtocol().name());
-            backendModelDto.setScope(modelConfig.getScope().name());
-            backendModelDto.setModelId(modelConfig.getId());
-            backendModelDto.setUserName(agentContext.getUserName());
-            backendModelDto.setConversationId(agentContext.getConversationId());
-            backendModelDto.setRequestId(agentContext.getRequestId());
-            String siteUrl = agentContext.getTenantConfig() != null ? agentContext.getTenantConfig().getSiteUrl() : "";
-            FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(agentContext.getUser().getTenantId(), agentContext.getUser().getId()
-                    , agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
-            apiInfo = new ModelConfigDto.ApiInfo();
-            apiInfo.setKey(frontendModelDto.getApiKey());
-            apiInfo.setUrl(frontendModelDto.getBaseUrl());
+        BackendModelDto backendModelDto = new BackendModelDto();
+        backendModelDto.setBaseUrl(apiInfo.getUrl());
+        backendModelDto.setApiKey(apiInfo.getKey());
+        backendModelDto.setModelName(modelConfig.getModel());
+        backendModelDto.setProtocol(modelConfig.getApiProtocol().name());
+        backendModelDto.setScope(modelConfig.getScope().name());
+        backendModelDto.setModelId(modelConfig.getId());
+        backendModelDto.setUserName(agentContext.getUserName());
+        backendModelDto.setConversationId(agentContext.getConversationId());
+        backendModelDto.setRequestId(agentContext.getRequestId());
+        backendModelDto.setTraceContext(agentContext.getTraceContext().next(TraceContext.TraceTargetType.Model, modelConfig.getId().toString(), modelConfig.getModel(), modelConfig.getName(), null, agentContext.isDefaultModelChanged() ? agentContext.getUserId() : null));
+        List<TraceContext.TraceTarget> traceTargets = backendModelDto.getTraceContext().getTraceTargets();
+        traceTargets.get(traceTargets.size() - 1).setSpaceId(modelConfig.getSpaceId());
+        String siteUrl = agentContext.getTenantConfig() != null ? agentContext.getTenantConfig().getSiteUrl() : "";
+        FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(agentContext.getUser().getTenantId(), agentContext.getUser().getId()
+                , agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
+        apiInfo = new ModelConfigDto.ApiInfo();
+        apiInfo.setKey(frontendModelDto.getApiKey());
+        apiInfo.setUrl(frontendModelDto.getBaseUrl());
+
+        String sessionId = null;
+        if (conversation != null && StringUtils.isNotBlank(conversation.getSandboxSessionId())) {
+            sessionId = conversation.getSandboxSessionId();
         }
 
-        AgentRequest agentRequest = AgentRequest.builder().user_id(agentContext.getUserId().toString()).project_id(agentContext.getConversationId()).prompt(userPrompt).original_user_prompt(agentContext.getOriginalMessage()).open_long_memory(false).request_id(agentContext.getRequestId())
+        AgentRequest agentRequest = AgentRequest.builder().user_id(agentContext.getUserId().toString()).project_id(agentContext.getConversationId()).session_id(sessionId).prompt(userPrompt).original_user_prompt(agentContext.getOriginalMessage()).open_long_memory(false).request_id(agentContext.getRequestId())
                 .attachments(null).data_source_attachments(null).model_provider(null).system_prompt(systemPrompt).user_prompt(null).model_provider(AgentRequest.ModelProvider.builder().id(modelConfig.getId().toString()).default_model(modelConfig.getModel()).name(modelConfig.getName()).requires_openai_auth(true).base_url(apiInfo.getUrl().replace("SESSION_ID", agentContext.getConversationId()))// 官方代理接口通过这个id做上下文保持在一个后端key
                         .api_key(apiInfo.getKey())
                         .api_protocol(modelConfig.getApiProtocol().name().toLowerCase()).build())
@@ -584,6 +590,12 @@ public class SandboxAgentClient {
                                 if (isInternalError) {
                                     callMessage.setText("\n```\n" + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ModelExecutionError") + "\n```");
                                     agentStop(agentContext.getConversationId());
+                                    // 异常会话无法恢复时清除之前关联的会话
+                                    if (conversation != null && agentContext.getSandboxSessionCreatedConsumer() != null) {
+                                        conversation.setSandboxSessionId("");
+                                        conversation.setSandboxServerId(sandboxServer.getServerId());
+                                        agentContext.getSandboxSessionCreatedConsumer().accept(conversation);
+                                    }
                                 }
                                 sink.next(callMessage);
                                 sink.error(new AgentException("ERROR", message));
@@ -762,9 +774,6 @@ public class SandboxAgentClient {
                 contextPromptBuilder.append(message.getMessageType()).append(": ").append(text).append("\n");
             });
             contextPromptBuilder.append("\n</context-message>\n");
-            contextPromptBuilder.append("<system-reminder>");
-            contextPromptBuilder.append("Please read the working directory before starting the task");
-            contextPromptBuilder.append("</system-reminder>\n");
         }
     }
 
@@ -797,6 +806,7 @@ public class SandboxAgentClient {
             return;
         }
         String resultFileText = """
+                
                 <task-result>
                     <description>{description}</description>
                     <file>{file}</file>

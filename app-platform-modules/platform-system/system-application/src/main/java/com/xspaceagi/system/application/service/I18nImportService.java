@@ -18,8 +18,13 @@ public interface I18nImportService {
     void importLangToTenant(Tenant tenant, String version);
 
     /**
-     * 将指定版本的配置项进行覆盖，不存在则插入
+     * 将指定版本的新增差异配置导入到目标租户（仅插入，已存在则跳过）
      */
-    void overwriteDiffConfigToTenant(Tenant tenant, String version);
+    void addConfigToTenant(Tenant tenant, String version);
+
+    /**
+     * 将指定版本的变更差异配置更新到目标租户（仅更新，不存在则跳过）
+     */
+    void updateConfigToTenant(Tenant tenant, String version);
 
 }

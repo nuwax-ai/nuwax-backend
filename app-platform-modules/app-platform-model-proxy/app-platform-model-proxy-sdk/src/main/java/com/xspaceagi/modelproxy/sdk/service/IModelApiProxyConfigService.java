@@ -8,7 +8,7 @@ import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
  */
 public interface IModelApiProxyConfigService {
 
-    BackendModelDto getBackendModelConfig(String userApiKey);
+    BackendModelDto getBackendModelConfig(String userApiKey, Long id);
 
     FrontendModelDto generateUserFrontendModelConfig(Long tenantId, Long userId, Long agentId, BackendModelDto backendModel, String siteUrl);
 }

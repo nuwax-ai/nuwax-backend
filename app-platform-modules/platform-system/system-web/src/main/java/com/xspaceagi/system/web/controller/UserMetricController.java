@@ -3,7 +3,7 @@ package com.xspaceagi.system.web.controller;
 import com.xspaceagi.system.application.dto.UsageDto;
 import com.xspaceagi.system.application.dto.UserMetricDto;
 import com.xspaceagi.system.application.service.UserMetricApplicationService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
 import com.xspaceagi.system.sdk.service.dto.PeriodUtils;

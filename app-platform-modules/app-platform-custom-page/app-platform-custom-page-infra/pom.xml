@@ -45,6 +45,10 @@
         </dependency>
         <dependency>
             <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-pricing-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-agent-core-application</artifactId>
         </dependency>
     </dependencies>

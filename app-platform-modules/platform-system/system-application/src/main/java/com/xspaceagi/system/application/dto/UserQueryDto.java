@@ -9,6 +9,9 @@ import java.io.Serializable;
 @Data
 public class UserQueryDto implements Serializable {
 
+    @Schema(description = "用户ID")
+    private Long id;
+
     @Schema(description = "用户姓名")
     private String userName;
 

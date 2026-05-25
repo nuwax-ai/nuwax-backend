@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "storage.type", havingValue = "oss")
+//@ConditionalOnProperty(name = "storage.type", havingValue = "oss")
 public class OssFileStorageStrategy implements FileStorageStrategy {
 
     @Value("${oss.endpoint:}")

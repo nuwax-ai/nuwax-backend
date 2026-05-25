@@ -2,8 +2,10 @@ package com.xspaceagi.agent.core.adapter.application;
 
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.Conversation;
+import org.springframework.ai.chat.messages.Message;
 import reactor.core.publisher.Flux;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -131,4 +133,8 @@ public interface ConversationApplicationService {
     List<AgentUserDto> queryAgentUserList(Long agentId, Long cursorUserId);
 
     Long nextConversationId(Long agentId, String sandboxServerId);
+
+    Collection<? extends Message> getRoundMessages(String conversationId, int i);
+
+    void addRoundMessage(String conversationId, Message message);
 }

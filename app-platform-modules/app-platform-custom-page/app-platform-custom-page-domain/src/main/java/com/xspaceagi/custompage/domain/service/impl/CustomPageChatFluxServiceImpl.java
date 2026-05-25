@@ -7,14 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.constant.SkillFileFormatConstants;
-import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
-import com.xspaceagi.agent.core.adapter.dto.PublishedDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillConfigDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillFileDto;
-import com.xspaceagi.agent.core.adapter.dto.SkillPublishedConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
-import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.adapter.util.SkillNameUtil;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.model.ModelContext;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
@@ -24,9 +20,9 @@ import com.xspaceagi.agent.core.infra.rpc.ModelApiProxyRpcService;
 import com.xspaceagi.agent.core.sdk.IAgentRpcService;
 import com.xspaceagi.agent.core.sdk.enums.TargetTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.OutputTypeEnum;
-import com.xspaceagi.agent.core.adapter.util.SkillNameUtil;
 import com.xspaceagi.agent.core.spec.utils.FileTypeUtils;
 import com.xspaceagi.agent.core.spec.utils.UrlFile;
 import com.xspaceagi.custompage.domain.constant.CustomPagePromptConstants;
@@ -37,6 +33,7 @@ import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.domain.model.CustomPageConversationModel;
 import com.xspaceagi.custompage.domain.repository.ICustomPageBuildRepository;
 import com.xspaceagi.custompage.domain.repository.ICustomPageConfigRepository;
+import com.xspaceagi.custompage.domain.service.AgentProgressSessionCoordinator;
 import com.xspaceagi.custompage.domain.service.CustomPageChatSessionManager;
 import com.xspaceagi.custompage.domain.service.ICustomPageChatFluxService;
 import com.xspaceagi.custompage.domain.service.ICustomPageConversationDomainService;
@@ -45,9 +42,14 @@ import com.xspaceagi.custompage.sdk.dto.VersionInfoDto;
 import com.xspaceagi.custompage.sdk.enums.CustomPageActionEnum;
 import com.xspaceagi.eco.market.sdk.reponse.ClientSecretResponse;
 import com.xspaceagi.eco.market.sdk.request.ClientSecretRequest;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
 import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
+import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
+import com.xspaceagi.pricing.sdk.rpc.IPricingRpcService;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -57,7 +59,6 @@ import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.file.FileSystemMultipartFile;
 import com.xspaceagi.system.spec.file.InMemoryMultipartFile;
 import com.xspaceagi.system.spec.utils.DateUtil;
-import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.TimeWheel;
 import jakarta.annotation.Resource;
@@ -78,9 +79,11 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.CancellationException;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static com.xspaceagi.custompage.domain.constant.CustomPagePromptConstants.*;
 
 @Slf4j
 @Service
@@ -109,10 +112,12 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     @Resource
     private CustomPageChatSessionManager sessionManager;
     @Resource
+    private AgentProgressSessionCoordinator agentProgressSessionCoordinator;
+    @Resource
     private MarketClientRpcService marketClientRpcService;
     @Resource
-    @Qualifier("aiChatCallExecutor")
-    private Executor aiChatCallExecutor;
+    @Qualifier("aiChatExecutor")
+    private Executor aiChatExecutor;
 
     @Resource
     private ModelInvoker modelInvoker;
@@ -124,6 +129,9 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
     private final static ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    @Resource
+    private IPricingRpcService iPricingRpcService;
 
 
     @Override
@@ -154,8 +162,8 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         }
         spacePermissionService.checkSpaceUserPermission(buildModel.getSpaceId());
 
-        // 生成会话ID
-        String sessionId = UUID.randomUUID().toString().replace("-", "");
+        // 平台临时会话 ID：仅用于本 Flux 流终止、USER 落库占位，不可传给 Agent，不可用于 ai-session-sse
+        String platformFluxSessionId = UUID.randomUUID().toString().replace("-", "");
         String requestId = UUID.randomUUID().toString().replace("-", "");
         chatBody.put("request_id", requestId);
 
@@ -163,14 +171,13 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             AtomicBoolean watcherStopped = new AtomicBoolean(false);
             AtomicBoolean stopRequested = new AtomicBoolean(false);
             try {
-                // 注册会话
-                sessionManager.registerSession(sessionId, sink);
-                scheduleSessionStopWatcher(sessionId, sink, watcherStopped, stopRequested);
+                sessionManager.registerSession(platformFluxSessionId, sink);
+                scheduleSessionStopWatcher(platformFluxSessionId, sink, watcherStopped, stopRequested);
 
-                // 发送会话ID
-                sendSessionIdFlux(sink, sessionId);
+                sendSessionIdFlux(sink, platformFluxSessionId);
 
-                executeChatFlux(chatBody, userContext, sink, buildModel, promptObj, sessionId, requestId, stopRequested);
+                executeChatFlux(chatBody, userContext, sink, buildModel, promptObj, platformFluxSessionId, requestId,
+                        stopRequested);
             } catch (Exception e) {
                 log.error("[Flux Service] chat exception", e);
                 sink.error(e);
@@ -182,7 +189,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 } catch (Exception e) {
                     log.debug("[Flux Service] sink already completed, ignore duplicate call", e);
                 }
-                sessionManager.removeSession(sessionId);
+                sessionManager.removeSession(platformFluxSessionId);
             }
         }).onErrorResume(error -> {
             Map<String, Object> errorMap = new HashMap<>();
@@ -195,15 +202,17 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
     private void executeChatFlux(Map<String, Object> chatBody, UserContext userContext,
                                  FluxSink<Map<String, Object>> sink, CustomPageBuildModel buildModel,
-                                 Object promptObj, String sessionId, String requestId, AtomicBoolean stopRequested) {
+                                 Object promptObj, String platformFluxSessionId, String requestId,
+                                 AtomicBoolean stopRequested) {
         try {
             Long projectId = buildModel.getProjectId();
-            saveConversationSafely(projectId, buildTopic(String.valueOf(promptObj)), "USER", sessionId, requestId,
+            saveConversationSafely(projectId, buildTopic(String.valueOf(promptObj)), "USER", platformFluxSessionId,
+                    requestId,
                     buildUserContent(chatBody, promptObj), userContext);
             throwIfStopRequested(stopRequested);
 
             // 1: 处理原型图片
-            Long multiModelId = processPrototypeImagesFlux(chatBody, projectId, sink);
+            Long multiModelId = processPrototypeImagesFlux(userContext, chatBody, projectId, sink);
             throwIfStopRequested(stopRequested);
 
             // 2: 处理附件文件
@@ -219,7 +228,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             throwIfStopRequested(stopRequested);
 
             // 5: 处理技能列表并推送到网页应用开发工作空间
-            processSkillsFlux(chatBody, projectId, sink);
+            processSkillsFlux(chatBody, projectId, userContext, sink);
             throwIfStopRequested(stopRequested);
 
             // 6: 备份当前版本
@@ -269,7 +278,9 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
             // 异步调用 sendChat，并在等待期间发送心跳
             //Map<String, Object> chatResp = callSendChatWithHeartbeat(chatBody, sink);
-            Map<String, Object> chatResp = callSendChatSync(chatBody, projectId, userContext, stopRequested);
+            prepareAgentChatBody(chatBody, platformFluxSessionId);
+            Map<String, Object> chatResp = callSendChatSync(chatBody, projectId, userContext, stopRequested,
+                    platformFluxSessionId);
             if (chatResp == null) {
                 sendErrorFlux(sink, "9999", "AI Agent 无响应");
                 return;
@@ -288,6 +299,10 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             sendHeartbeatFlux(sink, "AI returned result...100%");
 
             Map<String, Object> dataMap = parseResponseData(chatResp);
+            if (dataMap != null) {
+                dataMap.put("request_id", requestId);
+            }
+            afterAgentChatAccepted(projectId, requestId, userContext);
             updateUserSessionIdBySuccess(projectId, requestId, dataMap, userContext);
             sendSuccessFlux(sink, dataMap);
         } catch (CancellationException e) {
@@ -298,7 +313,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         }
     }
 
-    private Long processPrototypeImagesFlux(Map<String, Object> chatBody, Long projectId,
+    private Long processPrototypeImagesFlux(UserContext userContext, Map<String, Object> chatBody, Long projectId,
                                             FluxSink<Map<String, Object>> sink) {
         Long multiModelId = null;
         Object multiModelIdObj = chatBody.get("multi_model_id");
@@ -322,6 +337,8 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         if (!(prototypeImages instanceof List<?>) || ((List<?>) prototypeImages).isEmpty()) {
             return multiModelId;
         }
+
+
         try {
             modelApplicationService.checkModelUsePermission(multiModelId);
         } catch (Exception e) {
@@ -333,6 +350,19 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         if (modelConfig.getType() != ModelTypeEnum.Multi) {
             log.warn("[Flux Service] unsupported , parse , id={}", multiModelId);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageModelNotMultimodal, multiModelId);
+        }
+
+        TenantConfigDto tenantConfig = (TenantConfigDto) userContext.getTenantConfig();
+        // 付费校验
+        if (tenantConfig != null && tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1) {
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(userContext.getTenantId(), userContext.getUserId(), List.of(PriceEstimate.EstimateTarget.builder()
+                    .targetType(com.xspaceagi.pricing.spec.enums.TargetTypeEnum.MODEL)
+                    .targetId(modelConfig.getId().toString())
+                    .build()));
+            if (!priceEstimate.isPass()) {
+                log.warn("[Flux Service] priceEstimate: {}", priceEstimate.getMessage());
+                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), priceEstimate.getMessage());
+            }
         }
 
         log.info("[Flux Service] send chat message,project Id={},prototype Images={}", projectId, JSON.toJSONString(prototypeImages));
@@ -364,21 +394,28 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 AgentContext agentContext = new AgentContext();
                 agentContext.setAttachments(List.of(attachmentDto));
                 agentContext.setRequestId(UUID.randomUUID().toString());
+                agentContext.setUserId(userContext.getUserId());
+                agentContext.setTenantConfig(tenantConfig);
+                agentContext.setConversationId(String.valueOf(projectId));
+                UserDto userDto = new UserDto();
+                userDto.setUserName(userContext.getUserName());
+                userDto.setNickName(userContext.getNickName());
+                userDto.setId(userContext.getUserId());
+                userDto.setUid(userContext.getUid());
+                agentContext.setUser(userDto);
 
                 ModelContext modelContext = new ModelContext();
                 modelContext.setAgentContext(agentContext);
                 modelContext.setRequestId(agentContext.getRequestId());
+                modelContext.setConversationId(agentContext.getConversationId());
                 modelContext.setModelConfig(modelConfig);
 
                 ModelCallConfigDto modelCallConfig = new ModelCallConfigDto();
-                modelCallConfig.setSystemPrompt(
-                        "你是一个专业的原型图分析助手，专门将UI原型图转换为结构化的Markdown描述，供AI编码工具生成网页代码。你的任务是准确识别页面布局、UI组件、样式和交互元素，并用清晰、结构化的Markdown格式输出。");
-                modelCallConfig.setUserPrompt(
-                        "请分析这张UI原型图，识别并描述以下内容，使用Markdown格式输出：\n\n## 页面整体布局\n- 描述页面的整体布局结构（如：顶部导航栏、侧边栏、主内容区等）\n- 说明各组件的层级关系和位置关系\n\n## UI组件详情\n对于每个重要的UI组件，请描述：\n- 组件类型（如：按钮、输入框、表格、卡片、列表等）\n- 组件位置和尺寸\n- 组件内容（文字、图标等）\n- 组件样式（颜色、字体大小、边框、圆角等）\n\n## 样式信息\n- 主色调和辅助色\n- 字体大小和字重\n- 间距和边距\n- 圆角、阴影等视觉效果\n\n## 交互说明\n- 按钮点击效果\n- 表单输入说明\n- 其他交互提示\n\n请确保输出清晰、准确、结构完整，便于编码工具理解并生成对应的网页代码。");
+                modelCallConfig.setSystemPrompt(CustomPagePromptConstants.resolvePromptText(prototypeImagesSystemPrompt));
+                modelCallConfig.setUserPrompt(CustomPagePromptConstants.resolvePromptText(prototypeImagesUserPrompt));
                 modelCallConfig.setOutputType(OutputTypeEnum.Markdown);
                 modelCallConfig.setStreamCall(true);
                 modelContext.setModelCallConfig(modelCallConfig);
-
                 // 调用多模态模型
                 CountDownLatch latch = new CountDownLatch(1);
                 AtomicReference<Throwable> throwableAtomicReference = new AtomicReference<>();
@@ -477,6 +514,19 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
 
         ModelConfigDto modelConfigDto = modelApplicationService.queryModelConfigById(chatModelId);
 
+        TenantConfigDto tenantConfig = (TenantConfigDto) userContext.getTenantConfig();
+        // 付费校验
+        if (tenantConfig != null && tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1) {
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(userContext.getTenantId(), userContext.getUserId(), List.of(PriceEstimate.EstimateTarget.builder()
+                    .targetType(com.xspaceagi.pricing.spec.enums.TargetTypeEnum.MODEL)
+                    .targetId(modelConfigDto.getId().toString())
+                    .build()));
+            if (!priceEstimate.isPass()) {
+                log.warn("[Flux Service] Agent model priceEstimate: {}", priceEstimate.getMessage());
+                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), priceEstimate.getMessage());
+            }
+        }
+
         // 按照权重随机选择一个 ApiInfo
         ModelConfigDto.ApiInfo selectedApiInfo = modelConfigDto.getApiInfoList().get((int) (projectId % modelConfigDto.getApiInfoList().size()));//selectByWeight(modelConfigDto.getApiInfoList());
 
@@ -487,26 +537,48 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             selectedApiInfo.setKey(selectedApiInfo.getKey().replace("TENANT_SECRET", clientSecretResponse.getClientSecret()));
         }
 
-        // 全局模型走代理模式，为用户生成独立的key
-        if (modelConfigDto.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
-            BackendModelDto backendModelDto = new BackendModelDto();
-            backendModelDto.setBaseUrl(selectedApiInfo.getUrl());
-            backendModelDto.setApiKey(selectedApiInfo.getKey());
-            backendModelDto.setModelName(modelConfigDto.getModel());
-            backendModelDto.setProtocol(modelConfigDto.getApiProtocol().name());
-            backendModelDto.setScope(modelConfigDto.getScope().name());
-            backendModelDto.setModelId(modelConfigDto.getId());
-            backendModelDto.setUserName(userContext.getUserName());
-            backendModelDto.setConversationId(projectId.toString());
-            backendModelDto.setRequestId(UUID.randomUUID().toString().replace("-", ""));
-            String siteUrl = userContext.getTenantConfig() != null ? ((TenantConfigDto) userContext.getTenantConfig()).getSiteUrl() : "";
-            FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(userContext.getTenantId(), userContext.getUserId()
-                    , -1L, backendModelDto, siteUrl);
-            selectedApiInfo = new ModelConfigDto.ApiInfo();
-            selectedApiInfo.setKey(frontendModelDto.getApiKey());
-            selectedApiInfo.setUrl(frontendModelDto.getBaseUrl());
+        BackendModelDto backendModelDto = new BackendModelDto();
+        backendModelDto.setBaseUrl(selectedApiInfo.getUrl());
+        backendModelDto.setApiKey(selectedApiInfo.getKey());
+        backendModelDto.setModelName(modelConfigDto.getModel());
+        backendModelDto.setProtocol(modelConfigDto.getApiProtocol().name());
+        backendModelDto.setScope(modelConfigDto.getScope().name());
+        backendModelDto.setModelId(modelConfigDto.getId());
+        backendModelDto.setUserName(userContext.getUserName());
+        backendModelDto.setConversationId(projectId.toString());
+        backendModelDto.setRequestId(UUID.randomUUID().toString().replace("-", ""));
+        String siteUrl = userContext.getTenantConfig() != null ? ((TenantConfigDto) userContext.getTenantConfig()).getSiteUrl() : "";
+        TraceContext traceContext = TraceContext.builder()
+                .traceId(backendModelDto.getRequestId())
+                .tenantId(userContext.getTenantId())
+                .userId(userContext.getUserId())
+                .conversationId(projectId.toString())
+                .userName(userContext.getUserName())
+                .nickName(userContext.getNickName())
+                .billUserId(userContext.getUserId())
+                .traceTargets(new ArrayList<>())
+                .build();
+        if (tenantConfig != null) {
+            traceContext.setEnableSubscription(tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1);
+        } else {
+            traceContext.setEnableSubscription(true);
         }
 
+        TraceContext.TraceTarget traceTarget = TraceContext.TraceTarget.builder()
+                .targetType(TraceContext.TraceTargetType.Model)
+                .targetId(modelConfigDto.getId().toString())
+                .name(modelConfigDto.getModel())
+                .description(modelConfigDto.getName())
+                .spaceId(modelConfigDto.getSpaceId())
+                .build();
+        traceContext.getTraceTargets().add(traceTarget);
+        backendModelDto.setTraceContext(traceContext);
+
+        FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(userContext.getTenantId(), userContext.getUserId()
+                , -1L, backendModelDto, siteUrl);
+        selectedApiInfo = new ModelConfigDto.ApiInfo();
+        selectedApiInfo.setKey(frontendModelDto.getApiKey());
+        selectedApiInfo.setUrl(frontendModelDto.getBaseUrl());
 
         Map<String, Object> modelProvider = new HashMap<>();
         modelProvider.put("api_key", selectedApiInfo.getKey());
@@ -518,7 +590,46 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         modelProvider.put("name", modelConfigDto.getName());
         modelProvider.put("requires_openai_auth", true);
         chatBody.put("model_provider", modelProvider);
+        chatBody.put("agent_config", Map.of(
+                "agent_server", buildAgentServer(modelConfigDto)
+        ));
         return chatModelId;
+    }
+
+    private static Map<String, Object> buildAgentServer(ModelConfigDto modelConfig) {
+        Map<String, String> env = new HashMap<>();
+        // 不支持claudecode的模型直接使用opencode
+        if (modelConfig.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
+            env.put("OPENCODE_LOG_DIR", "/app/container-logs");
+            env.put("OPENCODE_MAX_TOKENS", String.valueOf(modelConfig.getMaxTokens()));
+            env.put("OPENCODE_MAX_CONTEXT_TOKENS", String.valueOf(modelConfig.getMaxContextTokens()));
+            env.put("OPENAI_API_KEY", "{MODEL_PROVIDER_API_KEY}");
+            env.put("OPENAI_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
+            env.put("OPENCODE_MODEL", "openai-compatible/" + modelConfig.getModel());
+            return Map.of(
+                    "agent_id", "nuwaxcode",
+                    "command", "nuwaxcode",
+                    "args", List.of("acp"),
+                    "env", env
+            );
+        } else {
+            env.put("ANTHROPIC_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
+            env.put("ANTHROPIC_API_KEY", "{MODEL_PROVIDER_API_KEY}");
+            env.put("ANTHROPIC_MODEL", modelConfig.getModel());
+            env.put("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1");
+            if (modelConfig.getIsReasonModel() != null && modelConfig.getIsReasonModel() == 1) {
+                int maxThinkingTokens = modelConfig.getMaxTokens() == null ? 2048 : modelConfig.getMaxTokens() / 2;
+                env.put("MAX_THINKING_TOKENS", maxThinkingTokens > 4096 ? "4096" : Integer.toString(maxThinkingTokens));//最大值暂时支持4096
+            } else {
+                env.put("CLAUDE_CODE_DISABLE_THINKING", "1");
+            }
+        }
+        return Map.of(
+                "agent_id", "claude-code-acp-ts",
+                "command", "claude-code-acp-ts",
+                "args", List.of(),
+                "env", env
+        );
     }
 
     private ModelConfigDto.ApiInfo selectByWeight(List<ModelConfigDto.ApiInfo> apiInfoList) {
@@ -637,10 +748,24 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         }
     }
 
-    private void processSkillsFlux(Map<String, Object> chatBody, Long projectId, FluxSink<Map<String, Object>> sink) {
+    private void processSkillsFlux(Map<String, Object> chatBody, Long projectId, UserContext userContext, FluxSink<Map<String, Object>> sink) {
         List<Long> skillIds = parseSkillIds(chatBody.get("skill_ids"));
         if (skillIds.isEmpty()) {
             return;
+        }
+
+        TenantConfigDto tenantConfig = (TenantConfigDto) userContext.getTenantConfig();
+        // 付费校验
+        if (tenantConfig != null && tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1) {
+            List<PriceEstimate.EstimateTarget> estimateTargets = skillIds.stream().map(skillId -> PriceEstimate.EstimateTarget.builder()
+                    .targetType(com.xspaceagi.pricing.spec.enums.TargetTypeEnum.SKILL)
+                    .targetId(skillId.toString())
+                    .build()).collect(Collectors.toList());
+            PriceEstimate priceEstimate = iPricingRpcService.estimatePrice(userContext.getTenantId(), userContext.getUserId(), estimateTargets);
+            if (!priceEstimate.isPass()) {
+                log.warn("[Flux Service] Skills priceEstimate: {}", priceEstimate.getMessage());
+                throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), priceEstimate.getMessage());
+            }
         }
 
         sendHeartbeatFlux(sink);
@@ -703,7 +828,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         Object originPromptObj = chatBody.get("prompt");
         String originPrompt = originPromptObj == null ? "" : String.valueOf(originPromptObj);
         StringBuilder userPromptBuilder = new StringBuilder();
-        userPromptBuilder.append("\nPlease use the following skills to complete user tasks. The following skills may be newly added. If there are no relevant definitions in the context, please load them from the working directory.\n");
+        userPromptBuilder.append("\n" + CustomPagePromptConstants.resolvePromptText(skillUserPrompt) + "\n");
         skillNamesForPrompt.forEach(skillName -> userPromptBuilder.append("- ").append(skillName).append("\n"));
         if (StringUtils.isNotBlank(originPrompt)) {
             userPromptBuilder.append("\n").append(originPrompt);
@@ -911,12 +1036,16 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         log.info("[Flux Service] Flux : {}", message);
     }
 
-    private void sendSessionIdFlux(FluxSink<Map<String, Object>> sink, String sessionId) {
+    /**
+     * 下发平台临时会话 ID（与 Agent session 无关，前端协议保持不变）。
+     * Agent 会话 ID 仅来自后续 {@code success} 的 {@code data.session_id}。
+     */
+    private void sendSessionIdFlux(FluxSink<Map<String, Object>> sink, String platformFluxSessionId) {
         Map<String, Object> data = new HashMap<>();
         data.put("type", "session_id");
-        data.put("session_id", sessionId);
+        data.put("session_id", platformFluxSessionId);
         sink.next(data);
-        log.info("[Flux Service] Flux session ID: {}", sessionId);
+        log.info("[Flux Service] Flux session ID (platform temporary): {}", platformFluxSessionId);
     }
 
     private void sendHeartbeatFlux(FluxSink<Map<String, Object>> sink) {
@@ -940,7 +1069,8 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
     private Map<String, Object> callSendChatSync(Map<String, Object> chatBody,
                                                  Long projectId,
                                                  UserContext userContext,
-                                                 AtomicBoolean stopRequested) {
+                                                 AtomicBoolean stopRequested,
+                                                 String platformFluxSessionId) {
         try {
             Object systemPromptObj = chatBody.get("system_prompt");
             String systemPrompt = systemPromptObj == null ? null : StringUtils.trimToNull(systemPromptObj.toString());
@@ -953,7 +1083,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 systemPrompt = I18nUtil.systemMessage("Backend.CustomPage.Chat.SystemPrompt");
             }
             if ("Backend.CustomPage.Chat.SystemPrompt".equals(systemPrompt)) {
-                systemPrompt = CustomPagePromptConstants.DEFAULT_SYSTEM_PROMPT;
+                systemPrompt = CustomPagePromptConstants.resolvePromptText(CustomPagePromptConstants.baseSystemPrompt);
             }
             chatBody.put("system_prompt", systemPrompt);
             RequestContext<Object> parentContext = RequestContext.get();
@@ -966,11 +1096,12 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                     asyncContext.setTenantId(tenantId);
                     asyncContext.setUserId(userId);
                     RequestContext.set(asyncContext);
+                    prepareAgentChatBody(chatBody, platformFluxSessionId);
                     return aiAgentClient.sendChat(chatBody, projectId, userContext);
                 } finally {
                     RequestContext.remove();
                 }
-            }, aiChatCallExecutor);
+            }, aiChatExecutor);
 
             long deadline = System.currentTimeMillis() + 65000;
             while (true) {
@@ -1148,6 +1279,64 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         return Collections.emptyList();
     }
 
+    /**
+     * 准备 Agent /chat 请求体中的 session_id：
+     * <ul>
+     * <li>平台临时 id（本 Flux 推送给前端的 32 位无横线 id）→ 剥离，不传给 Agent</li>
+     * <li>前端传入的 Agent sessionId（/chat 曾返回）→ 原样传给 Agent 复用</li>
+     * <li>未传 → 不带 session_id，由 Agent 创建</li>
+     * </ul>
+     * Agent 无终态概念；平台 DB 终态仅用于 ai-session-sse 历史回放，不影响是否传给 Agent。
+     *
+     * @return 实际传给 Agent 的 session_id，未传则为 null
+     */
+    private String prepareAgentChatBody(Map<String, Object> chatBody, String platformFluxSessionId) {
+        String requestedSessionId = extractAndRemoveSessionId(chatBody);
+        if (StringUtils.isBlank(requestedSessionId)) {
+            return null;
+        }
+        if (isPlatformTemporarySessionId(requestedSessionId, platformFluxSessionId)) {
+            log.info("[Flux Service] strip platform flux session_id from Agent /chat, value={}", requestedSessionId);
+            return null;
+        }
+        chatBody.put("session_id", requestedSessionId);
+        log.info("[Flux Service] pass client agent session_id to Agent /chat, session Id={}", requestedSessionId);
+        return requestedSessionId;
+    }
+
+    private boolean isPlatformTemporarySessionId(String sessionId, String platformFluxSessionId) {
+        if (StringUtils.isBlank(sessionId)) {
+            return false;
+        }
+        if (sessionId.equals(platformFluxSessionId)) {
+            return true;
+        }
+        return !sessionId.contains("-") && sessionId.length() == 32;
+    }
+
+
+    private void afterAgentChatAccepted(Long projectId, String fluxRequestId, UserContext userContext) {
+        if (projectId == null || StringUtils.isBlank(fluxRequestId)) {
+            return;
+        }
+        agentProgressSessionCoordinator.prepareForNewTurn(projectId, fluxRequestId);
+    }
+
+    private String extractAndRemoveSessionId(Map<String, Object> chatBody) {
+        String lastRemoved = null;
+        for (String key : new String[]{"session_id", "sessionId"}) {
+            Object sessionIdObj = chatBody.remove(key);
+            if (sessionIdObj == null) {
+                continue;
+            }
+            String sessionId = String.valueOf(sessionIdObj).trim();
+            if (!sessionId.isEmpty()) {
+                lastRemoved = sessionId;
+            }
+        }
+        return lastRemoved;
+    }
+
     private void updateUserSessionIdBySuccess(Long projectId, String requestId, Map<String, Object> dataMap,
                                               UserContext userContext) {
         if (projectId == null || StringUtils.isBlank(requestId) || dataMap == null) {
@@ -1222,7 +1411,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                         log.info("[Flux Service] project Id={} startupload , url={}", projectId, url);
                         File tempFile = downloadUrlToTempFile(projectId, url, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "image/*", "图片附件", false);
-                        output += "\n请将使用到的图片放置到资源目录(src/assets/)下使用，使用相对路径引用图片。";
+                        output += "\n" + CustomPagePromptConstants.resolvePromptText(fileImagesUserPrompt);
                     } catch (Exception e) {
                         log.warn("[Flux Service] project Id={} uploadfailed, url={}", projectId, url, e);
                         output = "";
@@ -1233,7 +1422,8 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                         log.info("[Flux Service] project Id={} startupload SVG, url={}", projectId, url);
                         File tempFile = downloadUrlToTempFile(projectId, url, fileName);
                         output = uploadFileAndGeneratePrompt(projectId, tempFile, fileName, "image/svg+xml", "SVG附件", false);
-                        output += "\n请将使用到的图片放置到资源目录下使用，使用相对路径引用图片。";
+                        output += "\n" + CustomPagePromptConstants.resolvePromptText(fileImagesUserPrompt);
+                        ;
                     } catch (Exception e) {
                         log.warn("[Flux Service] project Id={} SVGuploadfailed, url={}", projectId, url, e);
                         output = "";
@@ -1291,7 +1481,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                         : uploadFileName;
                 String relativePath = resp.get("relativePath") != null ? String.valueOf(resp.get("relativePath"))
                         : ("./attachments/" + finalFileName);
-                return String.format("【%s】已上传文件：%s,在项目中的路径是%s。您可以使用此文件进行处理。", attachmentType, finalFileName,
+                return String.format(CustomPagePromptConstants.resolvePromptText(fileGeneralUserPrompt), attachmentType, finalFileName,
                         relativePath);
             }
             return "";

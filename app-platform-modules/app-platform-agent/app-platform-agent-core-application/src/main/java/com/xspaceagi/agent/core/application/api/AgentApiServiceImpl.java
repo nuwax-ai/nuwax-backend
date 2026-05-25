@@ -57,15 +57,17 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.infra.dao.entity.Space;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
-import com.xspaceagi.system.spec.utils.IPUtil;
 import com.xspaceagi.system.spec.utils.I18nUtil;
+import com.xspaceagi.system.spec.utils.IPUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -175,13 +177,14 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         }
         AgentInfoDto agentInfoDto = new AgentInfoDto();
         if (agentDetailDto.getVariables() != null) {
-            agentInfoDto.setVariables(agentDetailDto.getVariables().stream().map(arg -> convertToArgDto(arg)).collect(Collectors.toList()));
+            agentInfoDto.setVariables(agentDetailDto.getVariables().stream().map(this::convertToArgDto).collect(Collectors.toList()));
         }
         agentInfoDto.setId(agentDetailDto.getAgentId());
         agentInfoDto.setName(agentDetailDto.getName());
         agentInfoDto.setDescription(agentDetailDto.getDescription());
         agentInfoDto.setIcon(agentDetailDto.getIcon());
         agentInfoDto.setSpaceId(agentDetailDto.getSpaceId());
+        agentInfoDto.setCreatorId(agentDetailDto.getCreatorId());
         return ReqResult.success(agentInfoDto);
     }
 
@@ -1050,14 +1053,31 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         WorkflowInfoDto workflowInfoDto = new WorkflowInfoDto();
         BeanUtils.copyProperties(workflowConfigDto, workflowInfoDto);
         if (workflowConfigDto.getOutputArgs() != null) {
-            workflowInfoDto.setOutputArgs(workflowConfigDto.getOutputArgs().stream().map(arg -> convertToArgDto(arg)).collect(Collectors.toList()));
+            workflowInfoDto.setOutputArgs(workflowConfigDto.getOutputArgs().stream().map(this::convertToArgDto).collect(Collectors.toList()));
         }
         if (workflowConfigDto.getInputArgs() != null) {
-            workflowInfoDto.setInputArgs(workflowConfigDto.getInputArgs().stream().map(arg -> convertToArgDto(arg)).collect(Collectors.toList()));
+            workflowInfoDto.setInputArgs(workflowConfigDto.getInputArgs().stream().map(this::convertToArgDto).collect(Collectors.toList()));
         }
 
         workflowInfoDto.setConfig(JsonSerializeUtil.toJSONStringGeneric(workflowConfigDto));
         return ReqResult.success(workflowInfoDto);
+    }
+
+    @Override
+    public ReqResult<SkillInfoDto> getPublishedSkillInfo(Long skillId, Long spaceId) {
+        SkillConfigDto skillDto = skillApplicationService.queryPublishedSkillConfig(skillId, spaceId, false);
+        if (skillDto != null) {
+            SkillConfigDto skillConfigDto = skillApplicationService.queryById(skillId);
+            SkillInfoDto skillInfoDto = new SkillInfoDto();
+            skillInfoDto.setId(skillDto.getId());
+            skillInfoDto.setSpaceId(skillDto.getSpaceId());
+            skillInfoDto.setCreatorId(skillConfigDto.getCreatorId());
+            skillInfoDto.setName(skillDto.getName());
+            skillInfoDto.setDescription(skillDto.getDescription());
+            skillInfoDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(skillDto.getIcon(), skillDto.getName()));
+            return ReqResult.success(skillInfoDto);
+        }
+        return ReqResult.success(null);
     }
 
     @Override
@@ -1137,6 +1157,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         agentContext.setUser(userDto);
         agentContext.setUserId(pluginExecuteRequest.getUserId());
         agentContext.setRequestId(pluginExecuteRequest.getRequestId());
+        agentContext.setTraceContext(pluginExecuteRequest.getTraceContext());
         if (userDto != null) {
             agentContext.setUid(userDto.getUid());
             agentContext.setUserName(userDto.getNickName() != null ? userDto.getNickName() : userDto.getUserName());
@@ -1157,6 +1178,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 .userId(pluginExecuteRequest.getUserId())
                 .agentContext(agentContext)
                 .test(pluginExecuteRequest.isTest())
+                .traceContext(pluginExecuteRequest.getTraceContext().next(TraceContext.TraceTargetType.Plugin, pluginDto.getId().toString(), pluginDto.getName(), pluginDto.getDescription(), pluginDto.getIcon()))
                 .build();
         return Mono.create(emitter -> pluginExecutor.execute(pluginContext).doOnSuccess(result -> {
             if (result.isSuccess()) {
@@ -1215,6 +1237,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             agentContext.setRequestId(workflowExecuteRequest.getRequestId());
             agentContext.setConversationId(workflowExecuteRequest.getConversationId());
             agentContext.setMessage(JSON.toJSONString(workflowExecuteRequest.getParams()));
+            agentContext.setTraceContext(workflowExecuteRequest.getTraceContext());
 
             agentContext.setOutputConsumer(outputDto -> {
                 WorkflowExecuteResultDto workflowExecutingDto = new WorkflowExecuteResultDto();
@@ -1233,6 +1256,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
             WorkflowContext workflowContext1 = new WorkflowContext();
             workflowContext1.setAgentContext(agentContext);
+            workflowContext1.setTraceContext(workflowExecuteRequest.getTraceContext().next(TraceContext.TraceTargetType.Workflow, workflowConfigDto.getId().toString(), workflowConfigDto.getName(), workflowConfigDto.getDescription(), workflowConfigDto.getIcon()));
             workflowContext1.setRequestId(workflowExecuteRequest.getRequestId());
             workflowContext1.setWorkflowConfig(workflowConfigDto);
             workflowContext1.setParams(workflowExecuteRequest.getParams());
@@ -1304,6 +1328,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             tryReqDto.setConversationId(conversationId);
             tryReqDto.setMessage(agentExecuteRequestDto.getMessage());
             tryReqDto.setVariableParams(agentExecuteRequestDto.getVariables());
+            tryReqDto.setRequestId(agentExecuteRequestDto.getTraceContext() != null ? agentExecuteRequestDto.getTraceContext().getTraceId() : null);
             return conversationApplicationService.chat(tryReqDto, null, false).map(agentOutputDto -> {
                 AgentOutputDto agentOutputDto0 = new AgentOutputDto();
                 agentOutputDto0.setCompleted(agentOutputDto.isCompleted());

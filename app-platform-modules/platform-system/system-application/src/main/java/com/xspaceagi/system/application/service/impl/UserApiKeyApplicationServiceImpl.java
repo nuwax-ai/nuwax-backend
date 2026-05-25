@@ -7,7 +7,7 @@ import com.xspaceagi.system.infra.dao.entity.OpenApiDefinition;
 import com.xspaceagi.system.infra.dao.entity.UserAccessKey;
 import com.xspaceagi.system.infra.dao.service.OpenApiDefinitionService;
 import com.xspaceagi.system.infra.dao.service.UserAccessKeyService;
-import com.xspaceagi.system.sdk.server.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
@@ -74,7 +74,10 @@ public class UserApiKeyApplicationServiceImpl implements UserApiKeyApplicationSe
         updateWrapper.set(updateApiKeyDto.getStatus() != null, UserAccessKey::getStatus, updateApiKeyDto.getStatus());
         updateWrapper.set(UserAccessKey::getExpire, updateApiKeyDto.getExpire());
         if (updateApiKeyDto.getApiConfigs() != null) {
-            updateWrapper.set(UserAccessKey::getConfig, JsonSerializeUtil.toJSONStringGeneric(UserAccessKeyDto.UserAccessKeyConfig.builder().apiConfigs(updateApiKeyDto.getApiConfigs()).build()));
+            updateWrapper.set(UserAccessKey::getConfig, JsonSerializeUtil.toJSONStringGeneric(UserAccessKeyDto.UserAccessKeyConfig.builder()
+                    .apiConfigs(updateApiKeyDto.getApiConfigs())
+                    .modelIds(updateApiKeyDto.getModelIds())
+                    .build()));
         }
         userAccessKeyService.update(updateWrapper);
     }

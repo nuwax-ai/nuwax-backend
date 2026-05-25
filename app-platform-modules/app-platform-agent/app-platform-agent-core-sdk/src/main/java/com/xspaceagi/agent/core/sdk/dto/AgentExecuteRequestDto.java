@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.core.sdk.dto;
 
+import com.xspaceagi.system.sdk.common.TraceContext;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -15,4 +16,7 @@ public class AgentExecuteRequestDto {
     private String sessionId;
     private String message;
     private Map<String, Object> variables;
+
+    @Schema(description = "调用轨迹")
+    private TraceContext traceContext;
 }

@@ -2,6 +2,7 @@ package com.xspaceagi.agent.core.infra.component.model;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.google.common.collect.Lists;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
 import com.xspaceagi.agent.core.adapter.dto.KnowledgeSearchConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.PluginExecuteResultDto;
@@ -21,7 +22,6 @@ import com.xspaceagi.agent.core.infra.component.knowledge.SearchContext;
 import com.xspaceagi.agent.core.infra.component.mcp.McpContext;
 import com.xspaceagi.agent.core.infra.component.mcp.McpExecutor;
 import com.xspaceagi.agent.core.infra.component.model.dto.*;
-import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiApi;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginContext;
 import com.xspaceagi.agent.core.infra.component.plugin.PluginExecutor;
 import com.xspaceagi.agent.core.infra.component.table.TableExecutor;
@@ -38,6 +38,7 @@ import com.xspaceagi.compose.sdk.vo.define.TableDefineVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeQaVo;
 import com.xspaceagi.mcp.sdk.dto.McpDto;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
@@ -50,8 +51,9 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.metadata.DefaultToolMetadata;
@@ -141,6 +143,29 @@ public class ModelInvoker extends BaseComponent {
             return Flux.error(new IllegalArgumentException("The model is not configured or has been deleted."));
         }
         log.info("invoke id {}, model: {}, call config: {}", modelContext.getModelConfig().getId(), modelContext.getModelConfig().getName(), modelContext.getModelCallConfig());
+        if (modelContext.getTraceContext() == null) {
+            boolean enableSubscription = false;
+            if (modelContext.getAgentContext() != null && modelContext.getAgentContext().getTenantConfig() != null) {
+                enableSubscription = modelContext.getAgentContext().getTenantConfig().getEnableSubscription() != null && modelContext.getAgentContext().getTenantConfig().getEnableSubscription() == 1;
+            }
+            modelContext.setTraceContext(TraceContext.builder()
+                    .traceId(modelContext.getRequestId())
+                    .billUserId(modelContext.getAgentContext() == null ? null : modelContext.getAgentContext().getUserId())
+                    .userId(modelContext.getAgentContext() == null ? null : modelContext.getAgentContext().getUserId())
+                    .userName(modelContext.getAgentContext() == null ? null : modelContext.getAgentContext().getUserName())
+                    .nickName(modelContext.getAgentContext() != null && modelContext.getAgentContext().getUser() != null ? modelContext.getAgentContext().getUser().getNickName() : null)
+                    .tenantId(modelContext.getModelConfig().getTenantId())
+                    .conversationId(modelContext.getAgentContext() != null ? modelContext.getAgentContext().getConversationId() : modelContext.getRequestId())
+                    .enableSubscription(enableSubscription)
+                    .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
+                            .targetId(modelContext.getModelConfig().getId().toString())
+                            .targetType(TraceContext.TraceTargetType.Model)
+                            .name(modelContext.getModelConfig().getModel())
+                            .description(modelContext.getModelConfig().getName())
+                            .spaceId(modelContext.getModelConfig().getSpaceId())
+                            .build()))
+                    .build());
+        }
         // Reset tool block
         try {
             String systemPrompt = resetToolBlock(modelContext.getModelCallConfig().getComponentConfigs(), modelContext.getModelCallConfig().getSystemPrompt());
@@ -244,7 +269,6 @@ public class ModelInvoker extends BaseComponent {
         String messageId = modelContext.getRequestId();
         StringBuilder tempMessageSb = new StringBuilder();
         AtomicBoolean thinking = new AtomicBoolean(false);
-        AtomicBoolean addThinkTag = new AtomicBoolean(false);
         AtomicBoolean finished = new AtomicBoolean(false);
         AtomicBoolean waitingForToolCallInfo = new AtomicBoolean(false);
         Disposable disposable = chatClientRequestSpec.stream().chatResponse().onErrorResume(throwable -> {
@@ -263,16 +287,17 @@ public class ModelInvoker extends BaseComponent {
                 handleFinish(modelContext, sink, messageId, finalMsgSb.toString(), "stop");
             }
         }).subscribe(chatResponse -> {
-            if (chatResponse.getResult() == null) {
+            Generation result = chatResponse.getResult();
+            if (result == null) {
                 return;
             }
-            AssistantMessage assistantMessage = chatResponse.getResult().getOutput();
+            AssistantMessage assistantMessage = result.getOutput();
             String text = assistantMessage.getText();
             if (text != null) {
                 if (waitingForToolCallInfo.get()) {
                     tempMessageSb.append(text);
                     Object finishReason = assistantMessage.getMetadata().get("finishReason");
-                    if (OpenAiApi.ChatCompletionFinishReason.value(finishReason) != null) {
+                    if (finishReason != null) {
                         customToolCalls(modelContext, sink, functionCallbacks, tempMessages, thinking, finished, tempMessageSb, finalMsgSb, finalMsgSb, messageId, atomicReference);
                         waitingForToolCallInfo.set(false);
                     }
@@ -404,9 +429,13 @@ public class ModelInvoker extends BaseComponent {
         }
         // Thinking
         boolean isReasoning = reasoningContent != null && StringUtils.isNotBlank(reasoningContent.toString());
+        if (!isReasoning) {
+            isReasoning = assistantMessage.getMetadata().containsKey("signature");
+            reasoningContent = isReasoning ? text : null;
+        }
         if (modelContext.getModelCallResult().getFirstResponseTime() == null) {
             modelContext.getModelCallResult().setFirstResponseTime(System.currentTimeMillis());
-            if (StringUtils.isBlank(text) && !isReasoning && assistantMessage.getMetadata() != null) {
+            if (StringUtils.isBlank(text) && !isReasoning) {
                 // deepseek function call exception finishReason=TOOL_CALLS
                 Object finishReason = assistantMessage.getMetadata().get("finishReason");
                 if (finishReason != null && finishReason.toString().equals("TOOL_CALLS")
@@ -427,9 +456,6 @@ public class ModelInvoker extends BaseComponent {
         }
 
         modelContext.setHasReasoningContent(isReasoning);
-        // Configuration only for models that do not support the reasoning_content field
-        boolean isReasoningModel = modelContext.getModelConfig().getIsReasonModel() != null && modelContext.getModelConfig().getIsReasonModel() == 1;
-        // Models that normally support the reasoning_content field
         if (modelContext.isHasReasoningContent()) {
             if (isReasoning && !thinking.get()) {
                 thinking.set(true);
@@ -440,27 +466,8 @@ public class ModelInvoker extends BaseComponent {
                 text = "</think>" + (text == null ? "" : text);
             } else if (!isReasoning) {
                 textContent = text;
-            } else if (isReasoning) {
-                text = reasoningContent.toString();
-            }
-        } else if (isReasoningModel) {
-            // Do not handle the case where start and end tags are together for now
-            if (text != null && text.contains("<think>") && !thinking.get()) {
-                // Start tag processing
-                // Models without reasoning_content field but with think tags
-                thinking.set(true);
-                textContent = text.substring(0, text.indexOf("<think>"));
-                reasoningContent = text.substring(text.indexOf("<think>") + 7);
-            } else if (text != null && text.contains("</think>")) {
-                // End tag processing
-                thinking.set(false);
-                textContent = text.substring(text.indexOf("</think>") + 8);
-                reasoningContent = text.substring(0, text.indexOf("</think>"));
-            } else if (thinking.get()) {
-                // Models without reasoning_content field, output thinking content
-                reasoningContent = text;
             } else {
-                textContent = text;
+                text = reasoningContent != null ? reasoningContent.toString() : "";
             }
         } else {
             textContent = text;
@@ -490,8 +497,8 @@ public class ModelInvoker extends BaseComponent {
         }
 
         if (assistantMessage.getMetadata() != null && (waitingForToolCallInfo == null || !waitingForToolCallInfo.get())) {
-            OpenAiApi.ChatCompletionFinishReason finishReason = OpenAiApi.ChatCompletionFinishReason.value(assistantMessage.getMetadata().get("finishReason"));
-            if (finishReason != null && finishReason != OpenAiApi.ChatCompletionFinishReason.TOOL_CALL && finishReason != OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS) {
+            Object finishReason = assistantMessage.getMetadata().get("finishReason");
+            if (finishReason != null && !"".equals(finishReason.toString()) && !finishReason.equals("tool_call") && !finishReason.equals("tool_calls")) {
                 handleFinish(modelContext, sink, messageId, msgSb.toString(), finishReason.toString());
                 finished.set(true);
             }
@@ -938,6 +945,7 @@ public class ModelInvoker extends BaseComponent {
         if (componentConfig.getBindConfig() != null) {
             componentExecutingDto.setCardBindConfig(mcpBindConfigDto.getCardBindConfig());
         }
+        McpDto mcpDto = (McpDto) componentConfig.getTargetConfig();
         McpContext mcpContext = McpContext.builder()
                 .requestId(modelContext.getAgentContext().getRequestId())
                 .conversationId(modelContext.getAgentContext().getConversationId())
@@ -945,6 +953,7 @@ public class ModelInvoker extends BaseComponent {
                 .mcpDto((McpDto) componentConfig.getTargetConfig())
                 .params((Map<String, Object>) input)
                 .name(componentConfig.getFunctionName())
+                .traceContext(modelContext.getTraceContext().next(TraceContext.TraceTargetType.Mcp, mcpDto.getId().toString(), mcpDto.getName(), mcpDto.getDescription(), mcpDto.getIcon()))
                 .build();
         return mcpExecutor.execute(mcpContext).blockLast();
     }
@@ -1031,6 +1040,7 @@ public class ModelInvoker extends BaseComponent {
         workflowContext1.setParams((Map<String, Object>) input);
         workflowContext1.setAsyncExecute(componentConfig.isAsyncExecute());
         workflowContext1.setAsyncReplyContent(componentConfig.getAsyncReplyContent());
+        workflowContext1.setTraceContext(modelContext.getTraceContext().next(TraceContext.TraceTargetType.Workflow, workflowConfigDto.getId().toString(), workflowConfigDto.getName(), workflowConfigDto.getDescription(), workflowConfigDto.getIcon()));
         Object res = workflowExecutor.execute(workflowContext1).block();
         EndNodeConfigDto endNodeConfigDto = (EndNodeConfigDto) workflowConfigDto.getEndNode().getNodeConfig();
         if (endNodeConfigDto.getReturnType() == EndNodeConfigDto.ReturnType.TEXT && StringUtils.isNotBlank(workflowContext1.getEndNodeContent())) {
@@ -1057,8 +1067,9 @@ public class ModelInvoker extends BaseComponent {
                 .userId(modelContext.getAgentContext().getUserId())
                 .asyncExecute(componentConfig.isAsyncExecute())
                 .asyncReplyContent(componentConfig.getAsyncReplyContent())
+                .traceContext(modelContext.getTraceContext().next(TraceContext.TraceTargetType.Plugin, pluginDto.getId().toString(), pluginDto.getName(), pluginDto.getDescription(), pluginDto.getIcon()))
                 .build();
-        PluginExecuteResultDto pluginExecuteResultDto = pluginExecutor.execute(pluginContext).timeout(Duration.ofSeconds(60)).block();
+        PluginExecuteResultDto pluginExecuteResultDto = pluginExecutor.execute(pluginContext).timeout(Duration.ofSeconds(180)).block();
         if (pluginExecuteResultDto != null) {
             componentExecutingDto.getResult().setSuccess(pluginExecuteResultDto.isSuccess());
             componentExecutingDto.getResult().setError(pluginExecuteResultDto.getError());
@@ -1098,6 +1109,7 @@ public class ModelInvoker extends BaseComponent {
             agentContext.setDebug(modelContext.getAgentContext().isDebug());
             agentContext.setMessage(message.toString());
             agentContext.setIfInterrupted(modelContext.getAgentContext().getIfInterrupted());
+            agentContext.setTraceContext(modelContext.getTraceContext().next(TraceContext.TraceTargetType.Agent, agentContext.getAgentConfig().getId().toString(), agentContext.getAgentConfig().getName(), agentContext.getAgentConfig().getDescription(), agentContext.getAgentConfig().getIcon()));
             agentExecutor.execute(agentContext).blockLast();
             return agentContext.getAgentExecuteResult().getOutputText();
         } finally {
@@ -1119,7 +1131,7 @@ public class ModelInvoker extends BaseComponent {
 
     private static UserMessage buildUserMessage(ModelContext modelContext) {
         List<Media> mediaList = new ArrayList<>();
-        if (modelContext.getModelConfig().getType() == ModelTypeEnum.Multi && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
+        if ((modelContext.getModelConfig().getType() == ModelTypeEnum.Multi || modelContext.getModelConfig().getTypes().stream().anyMatch(t -> t == ModelCapabilityEnum.Image)) && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
             modelContext.getAgentContext().getAttachments().forEach(attachment -> {
                 try {
                     String[] split = attachment.getMimeType().split("/");
@@ -1138,7 +1150,7 @@ public class ModelInvoker extends BaseComponent {
                 }
             });
         }
-        if (modelContext.getModelConfig().getType() == ModelTypeEnum.Audio && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
+        if (modelContext.getModelConfig().getTypes().stream().anyMatch(t -> t == ModelCapabilityEnum.Audio) && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
             modelContext.getAgentContext().getAttachments().forEach(attachment -> {
                 try {
                     String[] split = attachment.getMimeType().split("/");
@@ -1147,7 +1159,7 @@ public class ModelInvoker extends BaseComponent {
                     }
                     Media media = Media.builder()
                             .mimeType(new MimeType(split[0], split[1]))
-                            .data(UrlFile.urlToBytes(attachment.getFileUrl()))
+                            .data(attachment.getFileUrl())
                             .id(attachment.getFileKey())
                             .name(attachment.getFileName())
                             .build();
@@ -1157,16 +1169,16 @@ public class ModelInvoker extends BaseComponent {
                 }
             });
         }
-        if (modelContext.getModelConfig().getType() == ModelTypeEnum.Video && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
+        if (modelContext.getModelConfig().getTypes().stream().anyMatch(t -> t == ModelCapabilityEnum.Video) && CollectionUtils.isNotEmpty(modelContext.getAgentContext().getAttachments())) {
             modelContext.getAgentContext().getAttachments().forEach(attachment -> {
                 try {
                     String[] split = attachment.getMimeType().split("/");
-                    if (split.length != 2 || !split[0].equals("video")) {
+                    if (split.length != 2 || !split[0].equals("video") || !split[1].equals("mp4")) {
                         return;
                     }
                     Media media = Media.builder()
+                            .data(attachment.getFileUrl())
                             .mimeType(new MimeType(split[0], split[1]))
-                            .data(UrlFile.urlToBytes(attachment.getFileUrl()))
                             .id(attachment.getFileKey())
                             .name(attachment.getFileName())
                             .build();
@@ -1183,18 +1195,23 @@ public class ModelInvoker extends BaseComponent {
             map.put("$schema", "https://json-schema.org/draft/2020-12/schema");
             String jsonSchema = JSON.toJSONString(map);
             modelContext.getModelCallConfig().setJsonSchema(jsonSchema);
-            return new UserMessage(userPrompt + Prompts.JSON_FORMAT_PROMPT.replace("${schema}", jsonSchema), mediaList);
-        }
-
-        if (modelContext.getModelCallConfig().getOutputType() == OutputTypeEnum.Markdown) {
-            return new UserMessage(userPrompt, mediaList);
+            return UserMessage.builder()
+                    .media(mediaList)
+                    .text(userPrompt + Prompts.JSON_FORMAT_PROMPT.replace("${schema}", jsonSchema))
+                    .build();
         }
 
         if (modelContext.getModelCallConfig().getOutputType() == OutputTypeEnum.Text) {
-            return new UserMessage(userPrompt + Prompts.TEXT_FORMAT_PROMPT, mediaList);
+            return UserMessage.builder()
+                    .media(mediaList)
+                    .text(userPrompt + Prompts.TEXT_FORMAT_PROMPT)
+                    .build();
         }
 
-        return new UserMessage(userPrompt, mediaList);
+        return UserMessage.builder()
+                .media(mediaList)
+                .text(userPrompt)
+                .build();
     }
 
     private static List<Arg> convertToArgList(List<Arg> outputArgs) {

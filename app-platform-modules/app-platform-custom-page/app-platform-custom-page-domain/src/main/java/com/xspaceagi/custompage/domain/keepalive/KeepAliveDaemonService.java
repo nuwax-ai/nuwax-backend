@@ -245,57 +245,63 @@ public class KeepAliveDaemonService {
      * 停止开发服务器（如果正在运行）
      */
     private void stopDevServerIfRunning(Long projectId, CustomPageBuildModel model) {
+        boolean contextInstalled = false;
         try {
-            if (model.getDevRunning() != null && model.getDevRunning() == 1 && model.getDevPid() != null) {
-                log.info("[Keep Alive-daemon] project Id={},pid={},startstop service",
-                        projectId, model.getDevPid());
-
-                // 调用停止开发服务器的逻辑
-                if (model.getDevPid() != null) {
-                    Map<String, Object> resp = pageFileBuildClient.stopDev(projectId, model.getDevPid());
-
-                    if (resp == null) {
-                        log.error("[Keep Alive-daemon] project Id={},stop servicefailed,serverno response", projectId);
-                        return;
-                    }
-                    boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
-                    String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
-                    if (!success) {
-                        log.error("[Keep Alive-daemon] project Id={},stop servicefailed,serverreturned error,message={}", projectId, message);
-                        return;
-                    }
-                    log.info("[Keep Alive-daemon] project Id={},stop servicesucceeded,start updating status", projectId);
-
-                    Long tenantId = model.getTenantId();
-                    if (tenantId == null) {
-                        CustomPageBuildModel dbModel = customPageBuildRepository.getByProjectId(projectId);
-                        tenantId = dbModel.getTenantId();
-                    }
-
-                    RequestContext requestContext = RequestContext.get();
-                    if (requestContext == null) {
-                        requestContext = new RequestContext<>();
-                        requestContext.setTenantId(tenantId);
-                        RequestContext.set(requestContext);
-                    }
-
-                    // 从Redis缓存中移除
-                    removeKeepAliveCache(projectId);
-                    // 更新数据库状态
-                    customPageBuildRepository.updateStopDevStatus(projectId, null);
-
-                    log.info("[Keep Alive-daemon] project Id={}, dev server stopped", projectId);
-                }
-            } else {
-                // 从Redis缓存中移除
+            if (model.getDevRunning() == null || model.getDevRunning() != 1 || model.getDevPid() == null) {
                 removeKeepAliveCache(projectId);
-                log.info("[Keep Alive-daemon] project Id={}, dev server stopped", projectId);
+                log.info("[Keep Alive-daemon] project Id={}, dev server not running, cleared keep-alive cache", projectId);
+                return;
             }
+
+            Long tenantId = resolveTenantId(projectId, model);
+            if (tenantId == null) {
+                log.error("[Keep Alive-daemon] project Id={}, cannot stop dev server: tenantId missing", projectId);
+                return;
+            }
+            contextInstalled = installRequestContext(tenantId);
+
+            log.info("[Keep Alive-daemon] project Id={}, pid={}, start stop dev service", projectId, model.getDevPid());
+            Map<String, Object> resp = pageFileBuildClient.stopDev(projectId, model.getDevPid());
+            if (resp == null) {
+                log.error("[Keep Alive-daemon] project Id={}, stop dev failed, no response", projectId);
+                return;
+            }
+            boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
+            String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
+            if (!success) {
+                log.error("[Keep Alive-daemon] project Id={}, stop dev failed, message={}", projectId, message);
+                return;
+            }
+
+            removeKeepAliveCache(projectId);
+            customPageBuildRepository.updateStopDevStatus(projectId, null);
+            log.info("[Keep Alive-daemon] project Id={}, dev server stopped", projectId);
         } catch (Exception e) {
-            log.error("[Keep Alive-daemon] project Id={}stop serviceexception", projectId, e);
+            log.error("[Keep Alive-daemon] project Id={} stop dev exception", projectId, e);
         } finally {
-            RequestContext.remove();
+            if (contextInstalled) {
+                RequestContext.remove();
+            }
         }
+    }
+
+    private Long resolveTenantId(Long projectId, CustomPageBuildModel model) {
+        if (model != null && model.getTenantId() != null) {
+            return model.getTenantId();
+        }
+        CustomPageBuildModel dbModel = customPageBuildRepository.getByProjectId(projectId);
+        return dbModel == null ? null : dbModel.getTenantId();
+    }
+
+    private boolean installRequestContext(Long tenantId) {
+        RequestContext<?> existing = RequestContext.get();
+        if (existing != null && tenantId.equals(existing.getTenantId())) {
+            return false;
+        }
+        RequestContext<?> requestContext = new RequestContext<>();
+        requestContext.setTenantId(tenantId);
+        RequestContext.set(requestContext);
+        return true;
     }
 
     /**

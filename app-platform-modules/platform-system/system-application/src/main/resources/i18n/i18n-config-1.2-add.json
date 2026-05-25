@@ -1,0 +1,4112 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.CreditPurchaseRemark",
+    "fieldValue": "Credit Purchase - %s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Error.OrderNotFound",
+    "fieldValue": "Order does not exist",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Error.UserNotMatch",
+    "fieldValue": "Order does not match the current user",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Status.PayIncomplete",
+    "fieldValue": "Payment incomplete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Status.PaySuccess",
+    "fieldValue": "Payment successful",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Status.SyncingPayment",
+    "fieldValue": "Syncing payment result...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Validate.ItemsEmpty",
+    "fieldValue": "Order items cannot be empty",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Order.Validate.OrderIdRequired",
+    "fieldValue": "Order ID is required",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ApplicationNotFound",
+    "fieldValue": "Withdrawal application does not exist",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.BelowMinAmount",
+    "fieldValue": "Withdrawal amount is below the minimum withdrawal amount",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ConfigNotFound",
+    "fieldValue": "Withdrawal configuration not found",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DailyLimitExceeded",
+    "fieldValue": "Daily withdrawal limit exceeded",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DeveloperAccountIncomplete",
+    "fieldValue": "Please complete your developer information in the Personal Center first",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.MonthlyLimitExceeded",
+    "fieldValue": "Monthly withdrawal limit exceeded",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Error.NoPendingRevenue",
+    "fieldValue": "No withdrawable revenue",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Approved",
+    "fieldValue": "Withdrawal application approved, please wait for payment",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Paid",
+    "fieldValue": "Withdrawal payment completed, please check the withdrawal record",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Rejected",
+    "fieldValue": "Withdrawal application rejected, reason: %s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.InvalidAction",
+    "fieldValue": "Invalid action type",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.RejectReasonRequired",
+    "fieldValue": "Rejection reason cannot be empty",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Chat.Error.DeveloperCreditInsufficient",
+    "fieldValue": "The agent contains paid models or tools, and the developer's credit balance is insufficient to complete the deduction. Please contact the developer.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredCheckOwner",
+    "fieldValue": "The agent contains a skill subscription that has expired or is unavailable. Please check. [%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredContactDeveloper",
+    "fieldValue": "The agent contains a skill subscription that has expired or is unavailable. Please contact the developer or purchase it yourself. [%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Chat.Error.UserCreditInsufficient",
+    "fieldValue": "The agent contains paid models or tools, and your credit balance is insufficient to complete the deduction. Please purchase additional credits to continue.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Credit.DailyGift.Remark",
+    "fieldValue": "Daily credit gift (valid on the day)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Credit.Order.Description",
+    "fieldValue": "Credit purchase [%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Credit.Package.Error.NotFound",
+    "fieldValue": "Package does not exist",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.alibaba-cn.name",
+    "fieldValue": "Alibaba Cloud",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.alibaba-coding-plan-cn.name",
+    "fieldValue": "Alibaba Cloud Coding Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.anthropic.name",
+    "fieldValue": "Anthropic",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.custom.name",
+    "fieldValue": "Custom",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.deepseek.name",
+    "fieldValue": "DeepSeek",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.kimi-for-coding.name",
+    "fieldValue": "Kimi Coding Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.minimax-cn-coding-plan.name",
+    "fieldValue": "MiniMax Coding Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.minimax-cn.name",
+    "fieldValue": "MiniMax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.moonshotai-cn.name",
+    "fieldValue": "Moonshot AI",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.nuwax.name",
+    "fieldValue": "Nuwax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.openai.name",
+    "fieldValue": "OpenAI",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.openrouter.name",
+    "fieldValue": "OpenRouter",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.siliconflow-cn.name",
+    "fieldValue": "SiliconFlow",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.zhipuai-coding-plan.name",
+    "fieldValue": "Zhipu AI Coding Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.ModelProvider.zhipuai.name",
+    "fieldValue": "Zhipu AI",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.description",
+    "fieldValue": "Model Permissions",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.name",
+    "fieldValue": "Model Permissions",
+    "remark": ""
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Pricing.Estimate.AgentCallLimitExceeded",
+    "fieldValue": "The allocated call quota for this agent package has been used up",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Pricing.Estimate.AgentNotSubscribed",
+    "fieldValue": "Agent is not subscribed or has expired",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Pricing.Estimate.CreditExhausted",
+    "fieldValue": "Your credits have been exhausted. Please purchase additional credits first",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Pricing.Estimate.SkillCallLimitExceeded",
+    "fieldValue": "The allocated usage quota for this skill package has been used up",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Pricing.Estimate.SkillNotSubscribed",
+    "fieldValue": "Skill is not subscribed or has expired",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.continuousMonthly",
+    "fieldValue": "Continuous Monthly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.continuousQuarterly",
+    "fieldValue": "Continuous Quarterly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.continuousYearly",
+    "fieldValue": "Continuous Yearly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.currentPlanButton",
+    "fieldValue": "Current Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payFailed",
+    "fieldValue": "Payment failed",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payPending",
+    "fieldValue": "Payment processing",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.paySuccess",
+    "fieldValue": "Payment successful",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrentRenew",
+    "fieldValue": "Current Plan (Renew)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnExpiredRenew",
+    "fieldValue": "Plan Expired (Renew)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut",
+    "fieldValue": "One-time Purchase Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan",
+    "fieldValue": "Subscribe to One-time Purchase Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribePlan",
+    "fieldValue": "Subscribe to Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnUpgrade",
+    "fieldValue": "Upgrade",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callCountLabel",
+    "fieldValue": "Available Calls: {0}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitPerMonth",
+    "fieldValue": "{0} times/month",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitUnlimited",
+    "fieldValue": "Unlimited",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.emptyNoPlans",
+    "fieldValue": "No plans available",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.monthlyCredits",
+    "fieldValue": "{0} credits per month",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.originalPrice",
+    "fieldValue": "Original Price {0}{1}/{2}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodForever",
+    "fieldValue": "Forever",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodMonth",
+    "fieldValue": "Month",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodQuarter",
+    "fieldValue": "Quarter",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodYear",
+    "fieldValue": "Year",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleSelectPlan",
+    "fieldValue": "Select Subscription Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleWithTrialCount",
+    "fieldValue": "Select Subscription Plan (Trial Count: {0}/{1})",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Hooks.UseSubscription.createOrderFailed",
+    "fieldValue": "Failed to create subscription order",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Hooks.UseSubscription.getCashierUrlFailed",
+    "fieldValue": "Failed to get cashier URL",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colApiProtocol",
+    "fieldValue": "API Protocol",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCall",
+    "fieldValue": "External Call",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCallTip",
+    "fieldValue": "Whether the model supports being called in other external systems",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colModalities",
+    "fieldValue": "Supported Modalities",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelId",
+    "fieldValue": "Model Identifier",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelIdTip",
+    "fieldValue": "Fill in this value for external calls",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelName",
+    "fieldValue": "Model Name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.colPrice",
+    "fieldValue": "Price",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.copyInterface",
+    "fieldValue": "Copy Interface",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddress",
+    "fieldValue": "Interface Address",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddressCopied",
+    "fieldValue": "Interface address copied",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.modelIdCopied",
+    "fieldValue": "Model identifier copied",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.notSupported",
+    "fieldValue": "Not supported",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSpace",
+    "fieldValue": "Personal Space Models",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSystem",
+    "fieldValue": "System Models",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.apiPermission",
+    "fieldValue": "API Permissions",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.modelPermission",
+    "fieldValue": "System Models",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noModelDefs",
+    "fieldValue": "No model definitions available",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs",
+    "fieldValue": "No space model definitions available",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission",
+    "fieldValue": "Personal Space Models",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousMonthly",
+    "fieldValue": "Continuous Monthly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousQuarterly",
+    "fieldValue": "Continuous Quarterly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousYearly",
+    "fieldValue": "Continuous Yearly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.currentPlanButton",
+    "fieldValue": "Current Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payFailed",
+    "fieldValue": "Payment failed, please try again",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payPending",
+    "fieldValue": "Payment confirmation in progress, please check later",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.paySuccess",
+    "fieldValue": "Payment successful",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.upgradeTo",
+    "fieldValue": "Upgrade to",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc",
+    "fieldValue": "Conversion Description",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductCredit",
+    "fieldValue": "Deduct Credits",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductModalTitle",
+    "fieldValue": "Deduct Credits",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductSuccess",
+    "fieldValue": "Credits deducted successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAllowNegative",
+    "fieldValue": "Allow Overdraft",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmount",
+    "fieldValue": "Credit Amount",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountMin",
+    "fieldValue": "Credit amount must be greater than 0",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountPlaceholder",
+    "fieldValue": "Please enter credit amount",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNo",
+    "fieldValue": "Business Order Number",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNoPlaceholder",
+    "fieldValue": "Please enter business order number (optional)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldCreditType",
+    "fieldValue": "Credit Type",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTime",
+    "fieldValue": "Expiration Time",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTimePlaceholder",
+    "fieldValue": "Please select expiration time (leave blank for no expiration)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemark",
+    "fieldValue": "Remark",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemarkPlaceholder",
+    "fieldValue": "Please enter remark (optional)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantCredit",
+    "fieldValue": "Grant Credits",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantModalTitle",
+    "fieldValue": "Grant Credits",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantSuccess",
+    "fieldValue": "Credits granted successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.Index.delete",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.Index.deleteSuccess",
+    "fieldValue": "Deleted successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.Index.placeholderUserId",
+    "fieldValue": "Please enter User ID (integers only)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.Index.resetPassword",
+    "fieldValue": "Reset Password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.Index.userId",
+    "fieldValue": "User ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPassword",
+    "fieldValue": "Confirm Password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPasswordRequired",
+    "fieldValue": "Please confirm new password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputConfirmPassword",
+    "fieldValue": "Please enter new password again",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputNewPassword",
+    "fieldValue": "Please enter new password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPassword",
+    "fieldValue": "New Password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPasswordRequired",
+    "fieldValue": "Please enter new password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.passwordMismatch",
+    "fieldValue": "Passwords do not match",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.resetSuccess",
+    "fieldValue": "Password changed successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.title",
+    "fieldValue": "Reset Password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Routes",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Routes.modelPermissions",
+    "fieldValue": "Model Permissions",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.CreditPurchaseRemark",
+    "fieldValue": "积分增购-%s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Error.OrderNotFound",
+    "fieldValue": "订单不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Error.UserNotMatch",
+    "fieldValue": "订单与当前用户不匹配",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Status.PayIncomplete",
+    "fieldValue": "支付未完成",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Status.PaySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Status.SyncingPayment",
+    "fieldValue": "正在同步支付结果…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Validate.ItemsEmpty",
+    "fieldValue": "订单项不能为空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Order.Validate.OrderIdRequired",
+    "fieldValue": "订单ID不能为空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ApplicationNotFound",
+    "fieldValue": "提现申请不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.BelowMinAmount",
+    "fieldValue": "提现金额低于最低提现金额",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ConfigNotFound",
+    "fieldValue": "提现配置不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DailyLimitExceeded",
+    "fieldValue": "超过每日提现次数限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DeveloperAccountIncomplete",
+    "fieldValue": "请先在个人中心完善开发者信息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.MonthlyLimitExceeded",
+    "fieldValue": "超过每月提现次数限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Error.NoPendingRevenue",
+    "fieldValue": "没有可提现的收益",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Approved",
+    "fieldValue": "提现申请通过，请等待打款",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Paid",
+    "fieldValue": "提现打款完成，请查看提现记录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Rejected",
+    "fieldValue": "提现申请被驳回，原因：%s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.InvalidAction",
+    "fieldValue": "无效的操作类型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.RejectReasonRequired",
+    "fieldValue": "驳回原因不能为空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Chat.Error.DeveloperCreditInsufficient",
+    "fieldValue": "智能体中包含付费模型或工具，开发者持有积分不足以完成扣减，请联系开发者。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredCheckOwner",
+    "fieldValue": "智能体中包含技能订阅已过期或不可用，请检查。[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredContactDeveloper",
+    "fieldValue": "智能体中包含技能订阅已过期或不可用，请联系开发者或自己购买。[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Chat.Error.UserCreditInsufficient",
+    "fieldValue": "智能体中包含付费模型或工具，你的积分不足以完成扣减，请增购积分后继续。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Credit.DailyGift.Remark",
+    "fieldValue": "每日赠积分（当天有效）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Credit.Order.Description",
+    "fieldValue": "积分增购[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Credit.Package.Error.NotFound",
+    "fieldValue": "套餐不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.alibaba-cn.name",
+    "fieldValue": "阿里云",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.alibaba-coding-plan-cn.name",
+    "fieldValue": "阿里云编程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.anthropic.name",
+    "fieldValue": "Anthropic",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.custom.name",
+    "fieldValue": "自定义",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.deepseek.name",
+    "fieldValue": "DeepSeek",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.kimi-for-coding.name",
+    "fieldValue": "Kimi编程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.minimax-cn-coding-plan.name",
+    "fieldValue": "MiniMax编程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.minimax-cn.name",
+    "fieldValue": "MiniMax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.moonshotai-cn.name",
+    "fieldValue": "月之暗面",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.nuwax.name",
+    "fieldValue": "Nuwax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.openai.name",
+    "fieldValue": "OpenAI",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.openrouter.name",
+    "fieldValue": "OpenRouter",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.siliconflow-cn.name",
+    "fieldValue": "硅基流动",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.zhipuai-coding-plan.name",
+    "fieldValue": "智谱编码套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.ModelProvider.zhipuai.name",
+    "fieldValue": "智谱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.description",
+    "fieldValue": "模型权限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.name",
+    "fieldValue": "模型权限",
+    "remark": ""
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Pricing.Estimate.AgentCallLimitExceeded",
+    "fieldValue": "已用完该智能体套餐内分配的调用次数",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Pricing.Estimate.AgentNotSubscribed",
+    "fieldValue": "智能体未订阅或已过期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Pricing.Estimate.CreditExhausted",
+    "fieldValue": "您的积分已用完，请先增购积分",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Pricing.Estimate.SkillCallLimitExceeded",
+    "fieldValue": "已用完该技能套餐内分配的使用次数",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Pricing.Estimate.SkillNotSubscribed",
+    "fieldValue": "技能未订阅或已过期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.continuousMonthly",
+    "fieldValue": "连续包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.continuousQuarterly",
+    "fieldValue": "连续包季",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.continuousYearly",
+    "fieldValue": "连续包年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.currentPlanButton",
+    "fieldValue": "当前套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payFailed",
+    "fieldValue": "支付失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payPending",
+    "fieldValue": "支付处理中",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.paySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrentRenew",
+    "fieldValue": "当前套餐(续订)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnExpiredRenew",
+    "fieldValue": "套餐已过期(续订)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut",
+    "fieldValue": "已买断套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan",
+    "fieldValue": "订阅买断套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribePlan",
+    "fieldValue": "订阅套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnUpgrade",
+    "fieldValue": "升级",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callCountLabel",
+    "fieldValue": "可调用次数：{0}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitPerMonth",
+    "fieldValue": "{0} 次/月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitUnlimited",
+    "fieldValue": "不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.emptyNoPlans",
+    "fieldValue": "暂无可用套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.monthlyCredits",
+    "fieldValue": "每月 {0} 积分",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.originalPrice",
+    "fieldValue": "原价{0}{1}/{2}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodForever",
+    "fieldValue": "永久",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodMonth",
+    "fieldValue": "月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodQuarter",
+    "fieldValue": "季度",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodYear",
+    "fieldValue": "年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleSelectPlan",
+    "fieldValue": "选择订阅套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleWithTrialCount",
+    "fieldValue": "选择订阅套餐（试用次数：{0}/{1}）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Hooks.UseSubscription.createOrderFailed",
+    "fieldValue": "创建订阅订单失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Hooks.UseSubscription.getCashierUrlFailed",
+    "fieldValue": "获取收银台地址失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colApiProtocol",
+    "fieldValue": "接口协议",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCall",
+    "fieldValue": "外部调用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCallTip",
+    "fieldValue": "是否支持在其他外部系统调用该模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colModalities",
+    "fieldValue": "支持模态",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelId",
+    "fieldValue": "模型标识",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelIdTip",
+    "fieldValue": "外部调用时填写该值",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelName",
+    "fieldValue": "模型名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.colPrice",
+    "fieldValue": "价格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.copyInterface",
+    "fieldValue": "复制接口",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddress",
+    "fieldValue": "接口地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddressCopied",
+    "fieldValue": "接口地址已复制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.modelIdCopied",
+    "fieldValue": "模型标识已复制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.notSupported",
+    "fieldValue": "不支持",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSpace",
+    "fieldValue": "个人空间模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSystem",
+    "fieldValue": "系统模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.apiPermission",
+    "fieldValue": "接口权限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.modelPermission",
+    "fieldValue": "系统模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noModelDefs",
+    "fieldValue": "暂无模型定义",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs",
+    "fieldValue": "暂无空间模型定义",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission",
+    "fieldValue": "个人空间模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousMonthly",
+    "fieldValue": "连续包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousQuarterly",
+    "fieldValue": "连续包季",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousYearly",
+    "fieldValue": "连续包年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.currentPlanButton",
+    "fieldValue": "当前套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payFailed",
+    "fieldValue": "支付失败，请重新尝试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payPending",
+    "fieldValue": "支付确认中，请稍后查看",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.paySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.upgradeTo",
+    "fieldValue": "升级为",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc",
+    "fieldValue": "换算描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductCredit",
+    "fieldValue": "积分扣减",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductModalTitle",
+    "fieldValue": "积分扣减",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductSuccess",
+    "fieldValue": "积分扣减成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAllowNegative",
+    "fieldValue": "允许透支",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmount",
+    "fieldValue": "积分数量",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountMin",
+    "fieldValue": "积分数量须大于 0",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountPlaceholder",
+    "fieldValue": "请输入积分数量",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNo",
+    "fieldValue": "业务单号",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNoPlaceholder",
+    "fieldValue": "请输入业务单号（选填）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldCreditType",
+    "fieldValue": "积分类型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTime",
+    "fieldValue": "过期时间",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTimePlaceholder",
+    "fieldValue": "请选择过期时间（不填则永不过期）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemark",
+    "fieldValue": "备注",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemarkPlaceholder",
+    "fieldValue": "请输入备注（选填）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantCredit",
+    "fieldValue": "积分发放",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantModalTitle",
+    "fieldValue": "积分发放",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantSuccess",
+    "fieldValue": "积分发放成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.Index.delete",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.Index.deleteSuccess",
+    "fieldValue": "删除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.Index.placeholderUserId",
+    "fieldValue": "请输入用户ID，仅支持输入整数",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.Index.resetPassword",
+    "fieldValue": "密码重置",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.Index.userId",
+    "fieldValue": "用户ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPassword",
+    "fieldValue": "确认密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPasswordRequired",
+    "fieldValue": "请确认新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputConfirmPassword",
+    "fieldValue": "请再次输入新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputNewPassword",
+    "fieldValue": "请输入新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPassword",
+    "fieldValue": "新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPasswordRequired",
+    "fieldValue": "请输入新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.passwordMismatch",
+    "fieldValue": "两次输入的密码不一致",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.resetSuccess",
+    "fieldValue": "密码修改成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.title",
+    "fieldValue": "重置密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Routes",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Routes.modelPermissions",
+    "fieldValue": "模型权限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.CreditPurchaseRemark",
+    "fieldValue": "積分增購-%s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Error.OrderNotFound",
+    "fieldValue": "訂單不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Error.UserNotMatch",
+    "fieldValue": "訂單與當前用戶不匹配",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Status.PayIncomplete",
+    "fieldValue": "支付未完成",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Status.PaySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Status.SyncingPayment",
+    "fieldValue": "正在同步支付結果…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Validate.ItemsEmpty",
+    "fieldValue": "訂單項不能為空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Order.Validate.OrderIdRequired",
+    "fieldValue": "訂單ID不能為空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ApplicationNotFound",
+    "fieldValue": "提現申請不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.BelowMinAmount",
+    "fieldValue": "提現金額低於最低提現金額",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.ConfigNotFound",
+    "fieldValue": "提現配置不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DailyLimitExceeded",
+    "fieldValue": "超過每日提現次數限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.DeveloperAccountIncomplete",
+    "fieldValue": "請先在個人中心完善開發者信息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.MonthlyLimitExceeded",
+    "fieldValue": "超過每月提現次數限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Error.NoPendingRevenue",
+    "fieldValue": "沒有可提現的收益",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Approved",
+    "fieldValue": "提現申請通過，請等待打款",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Paid",
+    "fieldValue": "提現打款完成，請查看提現記錄",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Notify.Rejected",
+    "fieldValue": "提現申請被駁回，原因：%s",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.InvalidAction",
+    "fieldValue": "無效的操作類型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Bill",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Bill.Withdraw.Validate.RejectReasonRequired",
+    "fieldValue": "駁回原因不能為空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Chat.Error.DeveloperCreditInsufficient",
+    "fieldValue": "智能體中包含付費模型或工具，開發者持有積分不足以完成扣減，請聯繫開發者。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredCheckOwner",
+    "fieldValue": "智能體中包含技能訂閱已過期或不可用，請檢查。[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Chat.Error.SkillSubscriptionExpiredContactDeveloper",
+    "fieldValue": "智能體中包含技能訂閱已過期或不可用，請聯繫開發者或自己購買。[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Chat.Error.UserCreditInsufficient",
+    "fieldValue": "智能體中包含付費模型或工具，你的積分不足以完成扣減，請增購積分後繼續。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Credit.DailyGift.Remark",
+    "fieldValue": "每日贈積分（當天有效）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Credit.Order.Description",
+    "fieldValue": "積分增購[%s]",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Credit",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Credit.Package.Error.NotFound",
+    "fieldValue": "套餐不存在",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.alibaba-cn.name",
+    "fieldValue": "阿里雲",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.alibaba-coding-plan-cn.name",
+    "fieldValue": "阿里雲編程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.anthropic.name",
+    "fieldValue": "Anthropic",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.custom.name",
+    "fieldValue": "自定義",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.deepseek.name",
+    "fieldValue": "DeepSeek",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.kimi-for-coding.name",
+    "fieldValue": "Kimi編程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.minimax-cn-coding-plan.name",
+    "fieldValue": "MiniMax編程套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.minimax-cn.name",
+    "fieldValue": "MiniMax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.moonshotai-cn.name",
+    "fieldValue": "月之暗面",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.nuwax.name",
+    "fieldValue": "Nuwax",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.openai.name",
+    "fieldValue": "OpenAI",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.openrouter.name",
+    "fieldValue": "OpenRouter",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.siliconflow-cn.name",
+    "fieldValue": "矽基流動",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.zhipuai-coding-plan.name",
+    "fieldValue": "智譜編碼套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "ModelProvider",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.ModelProvider.zhipuai.name",
+    "fieldValue": "智譜",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.description",
+    "fieldValue": "模型權限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.model_permissions.name",
+    "fieldValue": "模型權限",
+    "remark": ""
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Pricing.Estimate.AgentCallLimitExceeded",
+    "fieldValue": "已用完該智能體套餐內分配的調用次數",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Pricing.Estimate.AgentNotSubscribed",
+    "fieldValue": "智能體未訂閱或已過期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Pricing.Estimate.CreditExhausted",
+    "fieldValue": "您的積分已用完，請先增購積分",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Pricing.Estimate.SkillCallLimitExceeded",
+    "fieldValue": "已用完該技能套餐內分配的使用次數",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Pricing",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Pricing.Estimate.SkillNotSubscribed",
+    "fieldValue": "技能未訂閱或已過期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.continuousMonthly",
+    "fieldValue": "連續包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.continuousQuarterly",
+    "fieldValue": "連續包季",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.continuousYearly",
+    "fieldValue": "連續包年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.currentPlanButton",
+    "fieldValue": "目前方案",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payFailed",
+    "fieldValue": "支付失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payPending",
+    "fieldValue": "支付處理中",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.paySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrentRenew",
+    "fieldValue": "當前套餐(續訂)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnExpiredRenew",
+    "fieldValue": "套餐已過期(續訂)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut",
+    "fieldValue": "已買斷套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan",
+    "fieldValue": "訂閱買斷套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnSubscribePlan",
+    "fieldValue": "訂閱套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnUpgrade",
+    "fieldValue": "升級",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callCountLabel",
+    "fieldValue": "可調用次數：{0}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitPerMonth",
+    "fieldValue": "{0} 次/月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.callLimitUnlimited",
+    "fieldValue": "不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.emptyNoPlans",
+    "fieldValue": "暫無可用套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.monthlyCredits",
+    "fieldValue": "每月 {0} 積分",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.originalPrice",
+    "fieldValue": "原價{0}{1}/{2}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodForever",
+    "fieldValue": "永久",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodMonth",
+    "fieldValue": "月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodQuarter",
+    "fieldValue": "季度",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.periodYear",
+    "fieldValue": "年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleSelectPlan",
+    "fieldValue": "選擇訂閱套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.titleWithTrialCount",
+    "fieldValue": "選擇訂閱套餐（試用次數：{0}/{1}）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Hooks.UseSubscription.createOrderFailed",
+    "fieldValue": "創建訂閱訂單失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Hooks",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Hooks.UseSubscription.getCashierUrlFailed",
+    "fieldValue": "獲取收銀台地址失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colApiProtocol",
+    "fieldValue": "接口協議",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCall",
+    "fieldValue": "外部呼叫",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colExternalCallTip",
+    "fieldValue": "是否支援在其他外部系统呼叫该模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colModalities",
+    "fieldValue": "支援模态",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelId",
+    "fieldValue": "模型标识",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelIdTip",
+    "fieldValue": "外部呼叫时填写该值",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colModelName",
+    "fieldValue": "模型名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.colPrice",
+    "fieldValue": "价格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.copyInterface",
+    "fieldValue": "复制接口",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddress",
+    "fieldValue": "接口地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.interfaceAddressCopied",
+    "fieldValue": "接口地址已复制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.modelIdCopied",
+    "fieldValue": "模型标识已复制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.notSupported",
+    "fieldValue": "不支援",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSpace",
+    "fieldValue": "个人空间模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ModelPermissions.tabSystem",
+    "fieldValue": "系统模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.apiPermission",
+    "fieldValue": "介面權限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.modelPermission",
+    "fieldValue": "系統模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noModelDefs",
+    "fieldValue": "暫無模型定義",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs",
+    "fieldValue": "暂无空间模型定义",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission",
+    "fieldValue": "个人空间模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousMonthly",
+    "fieldValue": "連續包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousQuarterly",
+    "fieldValue": "連續包季",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.continuousYearly",
+    "fieldValue": "連續包年",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.currentPlanButton",
+    "fieldValue": "當前套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payFailed",
+    "fieldValue": "支付失败，请重新尝试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.payPending",
+    "fieldValue": "支付确认中，请稍后查看",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.paySuccess",
+    "fieldValue": "支付成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.upgradeTo",
+    "fieldValue": "升級為",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc",
+    "fieldValue": "換算描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductCredit",
+    "fieldValue": "積分扣減",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductModalTitle",
+    "fieldValue": "積分扣減",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.deductSuccess",
+    "fieldValue": "積分扣減成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAllowNegative",
+    "fieldValue": "允許透支",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmount",
+    "fieldValue": "積分數量",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountMin",
+    "fieldValue": "積分數量須大於 0",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldAmountPlaceholder",
+    "fieldValue": "請輸入積分數量",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNo",
+    "fieldValue": "業務單號",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldBizNoPlaceholder",
+    "fieldValue": "請輸入業務單號（選填）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldCreditType",
+    "fieldValue": "積分類型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTime",
+    "fieldValue": "過期時間",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldExpireTimePlaceholder",
+    "fieldValue": "請選擇過期時間（不填則永不過期）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemark",
+    "fieldValue": "備註",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.fieldRemarkPlaceholder",
+    "fieldValue": "請輸入備註（選填）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantCredit",
+    "fieldValue": "積分發放",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantModalTitle",
+    "fieldValue": "積分發放",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.grantSuccess",
+    "fieldValue": "積分發放成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.Index.delete",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.Index.deleteSuccess",
+    "fieldValue": "刪除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.Index.placeholderUserId",
+    "fieldValue": "請輸入使用者ID，僅支援輸入整數",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.Index.resetPassword",
+    "fieldValue": "密碼重設",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.Index.userId",
+    "fieldValue": "使用者ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPassword",
+    "fieldValue": "確認密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.confirmPasswordRequired",
+    "fieldValue": "請確認新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputConfirmPassword",
+    "fieldValue": "請再次輸入新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.inputNewPassword",
+    "fieldValue": "請輸入新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPassword",
+    "fieldValue": "新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.newPasswordRequired",
+    "fieldValue": "請輸入新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.passwordMismatch",
+    "fieldValue": "兩次輸入的密碼不一致",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.resetSuccess",
+    "fieldValue": "密碼修改成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.UserManage.ResetPasswordModal.title",
+    "fieldValue": "重設密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Routes",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Routes.modelPermissions",
+    "fieldValue": "模型權限",
+    "remark": null
+  }
+]

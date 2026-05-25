@@ -7,6 +7,7 @@ import com.xspaceagi.mcp.sdk.dto.McpExecuteOutput;
 import com.xspaceagi.mcp.sdk.dto.McpExecuteRequest;
 import com.xspaceagi.mcp.sdk.dto.McpToolDto;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
@@ -78,10 +79,10 @@ public class McpRpcService {
         return iMcpApiService.deployProxyMcp(mcpDto);
     }
 
-    public String getExportMcpServerConfig(Long userId, Long mcpId) {
+    public String getExportMcpServerConfig(Long userId, Long mcpId, UserAccessKeyDto.UserAccessKeyConfig userAccessKeyConfig) {
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         String siteUrl = tenantConfigDto.getSiteUrl().trim().endsWith("/") ? tenantConfigDto.getSiteUrl() : tenantConfigDto.getSiteUrl() + "/";
-        String exportMcpServerConfig = iMcpApiService.getExportMcpServerConfig(userId, mcpId);
+        String exportMcpServerConfig = iMcpApiService.getExportMcpServerConfig(userId, mcpId, userAccessKeyConfig);
         if (StringUtils.isNotBlank(platformBaseUrl)) {
             platformBaseUrl = platformBaseUrl.trim().endsWith("/") ? platformBaseUrl : platformBaseUrl + "/";
             exportMcpServerConfig = exportMcpServerConfig.replace(siteUrl, platformBaseUrl);

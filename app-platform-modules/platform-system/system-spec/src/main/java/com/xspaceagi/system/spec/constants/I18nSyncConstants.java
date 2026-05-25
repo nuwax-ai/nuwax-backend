@@ -27,4 +27,39 @@ public final class I18nSyncConstants {
     public static String buildI18nConfigExportFileName(String version) {
         return "i18n-config-" + version + ".json";
     }
+
+    /**
+     * classpath 配置项：{@code i18n/i18n-config-{version}.json}
+     */
+    public static String buildI18nConfigClasspathPath(String version) {
+        return "i18n/" + buildI18nConfigExportFileName(version);
+    }
+
+    /**
+     * 新增差异文件名：{@code i18n-config-{version}-add.json}
+     */
+    public static String buildI18nConfigAddFileName(String version) {
+        return "i18n-config-" + version + "-add.json";
+    }
+
+    /**
+     * classpath 新增差异配置：{@code i18n/i18n-config-{version}-add.json}
+     */
+    public static String buildI18nConfigAddClasspathPath(String version) {
+        return "i18n/" + buildI18nConfigAddFileName(version);
+    }
+
+    /**
+     * 变更差异文件名：{@code i18n-config-{version}-update.json}
+     */
+    public static String buildI18nConfigUpdateFileName(String version) {
+        return "i18n-config-" + version + "-update.json";
+    }
+
+    /**
+     * classpath 变更差异配置：{@code i18n/i18n-config-{version}-update.json}
+     */
+    public static String buildI18nConfigUpdateClasspathPath(String version) {
+        return "i18n/" + buildI18nConfigUpdateFileName(version);
+    }
 }

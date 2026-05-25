@@ -39,5 +39,10 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-custom-page-application</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-pay-spec</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>

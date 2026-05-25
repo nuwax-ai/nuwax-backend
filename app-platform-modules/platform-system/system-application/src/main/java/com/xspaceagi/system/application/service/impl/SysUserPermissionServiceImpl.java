@@ -52,7 +52,7 @@ public class SysUserPermissionServiceImpl implements SysUserPermissionService {
                 ? Collections.emptyList()
                 : sysRoleApplicationService.getRoleListByUserId(userId);
 
-        List<SysGroup> groupList = sysGroupApplicationService.getGroupListByUserId(userId);
+        List<SysGroup> groupList = sysGroupApplicationService.getEffectiveGroupListByUserId(userId);
 
         if (CollectionUtils.isEmpty(roleList) && CollectionUtils.isEmpty(groupList)) {
             return new ArrayList<>();
