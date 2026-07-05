@@ -6,7 +6,7 @@
       "DASHSCOPE_API_KEY"
     ],
     "npm": "@ai-sdk/openai-compatible",
-    "doc": "https://eco.nuwax.com/models.html",
+    "doc": "https://eco.nuwax.com/#/models",
     "api": {
       "OpenAI": "https://api.nuwax.com/v1",
       "Anthropic": "https://api.nuwax.com/anthropic"

@@ -116,7 +116,7 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         queryWrapper.eq(Conversation::getUserId, userId);
         queryWrapper.eq(Conversation::getDevMode, 0);
         queryWrapper.eq(Conversation::getTopicUpdated, 1);
-        queryWrapper.eq(Conversation::getType, Conversation.ConversationType.Chat);
+        queryWrapper.and(wrapper -> wrapper.eq(Conversation::getType, Conversation.ConversationType.Chat).or().in(Conversation::getDevTargetType, List.of("Agent", "PageApp")));
         if (StringUtils.isNotBlank(topic)) {
             queryWrapper.like(Conversation::getTopic, topic);
         }
@@ -129,6 +129,7 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         }
         queryWrapper.orderByDesc(Conversation::getModified);
         queryWrapper.last("LIMIT " + size);
+        queryWrapper.select(Conversation.class, info -> !"variables".equals(info.getColumn()));
         return conversationRepository.list(queryWrapper);
     }
 
@@ -143,6 +144,7 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         queryWrapper.eq(Conversation::getType, Conversation.ConversationType.TASK);
         queryWrapper.orderByDesc(Conversation::getId);
         queryWrapper.last("LIMIT " + size);
+        queryWrapper.select(Conversation.class, info -> !"variables".equals(info.getColumn()));
         return conversationRepository.list(queryWrapper);
     }
 
@@ -152,6 +154,7 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         queryWrapper.eq(Conversation::getSandboxServerId, sandboxServerId);
         //最近25小时的会话
         queryWrapper.ge(Conversation::getCreated, DateUtils.addHours(new Date(), -25));
+        queryWrapper.select(Conversation.class, info -> !"variables".equals(info.getColumn()));
         return conversationRepository.list(queryWrapper);
     }
 
@@ -254,6 +257,15 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
             lastId = Long.MAX_VALUE;
         }
         queryWrapper.lt(ConversationMessage::getId, lastId);
+        return conversationMessageRepository.list(queryWrapper);
+    }
+
+    @Override
+    public List<ConversationMessage> queryConversationMessageList(Long conversationId, Long minId) {
+        LambdaQueryWrapper<ConversationMessage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ConversationMessage::getConversationId, conversationId);
+        queryWrapper.orderByDesc(ConversationMessage::getId);
+        queryWrapper.gt(ConversationMessage::getId, minId);
         return conversationMessageRepository.list(queryWrapper);
     }
 

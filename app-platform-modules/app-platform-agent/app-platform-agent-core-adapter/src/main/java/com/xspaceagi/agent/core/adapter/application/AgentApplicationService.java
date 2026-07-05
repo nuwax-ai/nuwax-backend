@@ -1,12 +1,11 @@
 package com.xspaceagi.agent.core.adapter.application;
 
-import com.xspaceagi.agent.core.adapter.dto.AgentDetailDto;
-import com.xspaceagi.agent.core.adapter.dto.CardDto;
-import com.xspaceagi.agent.core.adapter.dto.UserAgentDto;
+import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
 
 import java.util.List;
 
@@ -121,6 +120,8 @@ public interface AgentApplicationService {
      */
     AgentComponentConfigDto queryComponentConfig(Long id);
 
+    List<AgentComponentConfigDto> queryComponentConfigListByAgentIdAndType(Long agentId, AgentComponentConfig.Type type);
+
     List<Arg> getAgentNoneSystemVariables(Long agentId, Long spaceId);
 
     /**
@@ -232,10 +233,17 @@ public interface AgentApplicationService {
     /**
      * 获取用户可选择的模型列表
      *
-     * @param userId 用户ID
+     * @param userId  用户ID
      * @param agentId 智能体ID
      * @return 模型列表
      */
     List<ModelConfigDto> queryUserCanSelectModelListForAgent(Long userId, Long agentId);
+
+    /**
+     * AI生成项目信息（名称、描述、图标）
+     */
+    GenerateInfoResultDto generateInfo(GenerateInfoReqDto req);
+
+    String uploadSvgIcon(String svgIcon, String fileName);
 }
 

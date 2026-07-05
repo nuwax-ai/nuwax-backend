@@ -18,6 +18,7 @@ public class AgentRequest {
     private String user_id;
     private String session_id;
     private String project_id;
+    private String agent_work_dir;
     private String request_id;
     private List<Attachment> attachments;
     private List<String> data_source_attachments;
@@ -107,6 +108,10 @@ public class AgentRequest {
         private List<String> args;
         private Map<String, String> env;
         private Metadata metadata;
+        private String agent_mode;
+        private Map<String, Map<String, String>> platforms;
+        private List<Map<String, Object>> tool_approval_rules;
+        private String version;
     }
 
     @Builder

@@ -170,7 +170,7 @@ eco-market:
   # 服务端配置
   server:
     # 远程server端的 ip端口配置
-    base-url: ${ECO_MARKET_SERVER_URL:https://test-agent-market-api.xspaceagi.com}
+    base-url: ${ECO_MARKET_SERVER_URL:https://market-api.nuwax.com}
   client:
     # 客户端配置
     retry:

@@ -25,6 +25,7 @@ public class AgentOutputDto implements Serializable {
         PROCESSING_MESSAGE,
         // 输出消息
         MESSAGE,
+        STATE,
         // 最终统计等消息
         FINAL_RESULT,
 

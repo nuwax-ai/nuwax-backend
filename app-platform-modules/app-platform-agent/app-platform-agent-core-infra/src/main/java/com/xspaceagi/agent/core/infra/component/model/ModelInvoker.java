@@ -435,24 +435,6 @@ public class ModelInvoker extends BaseComponent {
         }
         if (modelContext.getModelCallResult().getFirstResponseTime() == null) {
             modelContext.getModelCallResult().setFirstResponseTime(System.currentTimeMillis());
-            if (StringUtils.isBlank(text) && !isReasoning) {
-                // deepseek function call exception finishReason=TOOL_CALLS
-                Object finishReason = assistantMessage.getMetadata().get("finishReason");
-                if (finishReason != null && finishReason.toString().equals("TOOL_CALLS")
-                        && CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-                    CallMessage callMessage = new CallMessage();
-                    callMessage.setText(text);
-                    callMessage.setType(MessageTypeEnum.CHAT);
-                    callMessage.setRole(ChatMessageDto.Role.ASSISTANT);
-                    callMessage.setId(messageId);
-                    callMessage.setFinished(false);
-                    callMessage.setText("The model is not working properly😒 please resend your message～");
-                    sink.tryEmitNext(callMessage);
-                    modelContext.getAgentContext().getAgentExecuteResult().setSuccess(false);
-                    modelContext.getAgentContext().getAgentExecuteResult().setError(callMessage.getText());
-                }
-                return;
-            }
         }
 
         modelContext.setHasReasoningContent(isReasoning);
@@ -524,12 +506,14 @@ public class ModelInvoker extends BaseComponent {
 
     private void handleFinish(ModelContext modelContext, Sinks.Many<CallMessage> sink, String messageId, String text, String finishReason) {
         if (modelContext.getModelCallConfig().getOutputType() == OutputTypeEnum.JSON) {
-            String text0 = getJSONText(text == null ? "" : text);
-            if (!JSON.isValid(text0) && modelContext.getRetryCount() < 3) {
-                modelContext.setRetryCount(modelContext.getRetryCount() + 1);
-                log.warn("The JSON format returned by the model is incorrect, please check the prompt. Returned content: {}", text);
-                streamCall(modelContext, sink);
-                return;
+            if (!JSON.isValid(text)) {
+                String text0 = getJSONText(text == null ? "" : text);
+                if (!JSON.isValid(text0) && modelContext.getRetryCount() < 3) {
+                    modelContext.setRetryCount(modelContext.getRetryCount() + 1);
+                    log.warn("The JSON format returned by the model is incorrect, please check the prompt. Returned content: {}", text);
+                    streamCall(modelContext, sink);
+                    return;
+                }
             }
         }
         setModelCallResult(modelContext, text);
@@ -720,6 +704,7 @@ public class ModelInvoker extends BaseComponent {
     }
 
     public static String getJSONText(String text) {
+        String originalText = text;
         if (text.trim().startsWith("<think>")) {
             text = text.replaceAll("<think>[\\s\\S]*?</think>", "").trim();
         }
@@ -737,16 +722,35 @@ public class ModelInvoker extends BaseComponent {
             // Trim again to remove any potential whitespace
             text = text.trim();
         }
+        if (!JSON.isValid(text)) {
+            text = JsonExtractor.extractLast(originalText);
+        }
         return text;
     }
 
     private List<ToolCallback> buildFunctionCallbacks(ModelContext modelContext) {
+        ToolCallback jsonOutputToolCallback = null;
+        ModelCallConfigDto modelCallConfig = modelContext.getModelCallConfig();
+        if (modelCallConfig.getOutputType() == OutputTypeEnum.JSON && modelContext.getModelConfig().getFunctionCall() == ModelFunctionCallEnum.StreamCallSupported) {
+            Map<String, Object> inputSchema = buildFunctionParams(modelCallConfig.getOutputArgs());
+            jsonOutputToolCallback = FunctionToolCallback
+                    .builder("json_output", (input, context) -> JSON.toJSONString(input))
+                    .description("Generate JSON based on the context. When this tool appears, it indicates that the user intends to invoke it to extract JSON content; please invoke it finally")
+                    .inputSchema(ModelOptionsUtils.toJsonString(inputSchema))
+                    .inputType(HashMap.class)
+                    .toolMetadata(DefaultToolMetadata.builder().returnDirect(true).build())
+                    .toolCallResultConverter((res, returnType) -> (res instanceof String) ? (String) res : JSON.toJSONString(res))
+                    .build();
+        }
         if (modelContext.getModelCallConfig().getComponentConfigs() == null) {
+            if (jsonOutputToolCallback != null) {
+                return Collections.singletonList(jsonOutputToolCallback);
+            }
             return new ArrayList<>();
         }
         // Remove duplicates
         Set<String> functionNames = new HashSet<>();
-        return modelContext.getModelCallConfig().getComponentConfigs().stream().map(componentConfig -> {
+        List<ToolCallback> toolCallbacks = modelContext.getModelCallConfig().getComponentConfigs().stream().map(componentConfig -> {
             if (componentConfig.getType() == null) {
                 return null;
             }
@@ -821,6 +825,10 @@ public class ModelInvoker extends BaseComponent {
                     .toolCallResultConverter((res, returnType) -> (res instanceof String) ? (String) res : JSON.toJSONString(res))
                     .build();
         }).filter(Objects::nonNull).collect(Collectors.toList());
+        if (jsonOutputToolCallback != null) {
+            toolCallbacks.add(jsonOutputToolCallback);
+        }
+        return toolCallbacks;
     }
 
     private Object componentExecute(ModelContext modelContext, ComponentConfig componentConfig, Object input) {
@@ -1126,7 +1134,7 @@ public class ModelInvoker extends BaseComponent {
             return new SystemMessage(Prompts.TIME_PROMPT.replace("${time}", new Date().toString()));
         }
 
-        return new SystemMessage(Prompts.TIME_PROMPT.replace("${time}", new Date().toString()) + modelContext.getModelCallConfig().getSystemPrompt());
+        return new SystemMessage(modelContext.getModelCallConfig().getSystemPrompt());
     }
 
     private static UserMessage buildUserMessage(ModelContext modelContext) {

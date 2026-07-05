@@ -178,7 +178,7 @@ public class PermissionImportServiceImpl implements PermissionImportService {
     }
 
     /**
-     * 基于差异 JSON 导入：只对差异中的新增 / 修改记录做 upsert，不处理删除
+     * 基于差异 JSON 导入：对差异中的新增/修改记录做 upsert，对 removed 记录做物理删除
      */
     @SuppressWarnings("unchecked")
     private void doImportDiff(Tenant tenant, String version) {
@@ -243,6 +243,16 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     }
                 }
             }
+            List<Map<String, Object>> removedResources = (List<Map<String, Object>>) resources.get("removed");
+            if (CollectionUtils.isNotEmpty(removedResources)) {
+                for (Map<String, Object> m : removedResources) {
+                    String code = (String) m.get("code");
+                    if (StringUtils.isBlank(code)) continue;
+                    sysResourceService.remove(Wrappers.<SysResource>lambdaQuery()
+                            .eq(SysResource::getTenantId, tenantId)
+                            .eq(SysResource::getCode, code));
+                }
+            }
         }
 
         // 2. Menu
@@ -270,6 +280,16 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (entity != null) {
                         menuCodeToId.put(dto.getCode(), entity.getId());
                     }
+                }
+            }
+            List<Map<String, Object>> removedMenus = (List<Map<String, Object>>) menus.get("removed");
+            if (CollectionUtils.isNotEmpty(removedMenus)) {
+                for (Map<String, Object> m : removedMenus) {
+                    String code = (String) m.get("code");
+                    if (StringUtils.isBlank(code)) continue;
+                    sysMenuService.remove(Wrappers.<SysMenu>lambdaQuery()
+                            .eq(SysMenu::getTenantId, tenantId)
+                            .eq(SysMenu::getCode, code));
                 }
             }
         }
@@ -301,6 +321,16 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     }
                 }
             }
+            List<Map<String, Object>> removedRoles = (List<Map<String, Object>>) roles.get("removed");
+            if (CollectionUtils.isNotEmpty(removedRoles)) {
+                for (Map<String, Object> m : removedRoles) {
+                    String code = (String) m.get("code");
+                    if (StringUtils.isBlank(code)) continue;
+                    sysRoleService.remove(Wrappers.<SysRole>lambdaQuery()
+                            .eq(SysRole::getTenantId, tenantId)
+                            .eq(SysRole::getCode, code));
+                }
+            }
         }
 
         // 4. Group
@@ -328,6 +358,16 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     if (entity != null) {
                         groupCodeToId.put(dto.getCode(), entity.getId());
                     }
+                }
+            }
+            List<Map<String, Object>> removedGroups = (List<Map<String, Object>>) groups.get("removed");
+            if (CollectionUtils.isNotEmpty(removedGroups)) {
+                for (Map<String, Object> m : removedGroups) {
+                    String code = (String) m.get("code");
+                    if (StringUtils.isBlank(code)) continue;
+                    sysGroupService.remove(Wrappers.<SysGroup>lambdaQuery()
+                            .eq(SysGroup::getTenantId, tenantId)
+                            .eq(SysGroup::getCode, code));
                 }
             }
         }
@@ -361,6 +401,19 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                         continue;
                     }
                     resolveOrCreateMenuResource(tenantId, menuId, resourceId, dto);
+                }
+            }
+            List<Map<String, Object>> removedMenuResources = (List<Map<String, Object>>) menuResources.get("removed");
+            if (CollectionUtils.isNotEmpty(removedMenuResources)) {
+                for (Map<String, Object> m : removedMenuResources) {
+                    MenuResourceExportDto mrDto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), MenuResourceExportDto.class);
+                    Long menuId = menuCodeToId.get(mrDto.getMenuCode());
+                    Long resourceId = resourceCodeToId.get(mrDto.getResourceCode());
+                    if (menuId == null || resourceId == null) continue;
+                    sysMenuResourceService.remove(Wrappers.<SysMenuResource>lambdaQuery()
+                            .eq(SysMenuResource::getTenantId, tenantId)
+                            .eq(SysMenuResource::getMenuId, menuId)
+                            .eq(SysMenuResource::getResourceId, resourceId));
                 }
             }
         }
@@ -398,6 +451,19 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     resolveOrCreateRoleMenu(tenantId, roleId, menuId, dto, resourceTreeJson);
                 }
             }
+            List<Map<String, Object>> removedRoleMenus = (List<Map<String, Object>>) roleMenus.get("removed");
+            if (CollectionUtils.isNotEmpty(removedRoleMenus)) {
+                for (Map<String, Object> m : removedRoleMenus) {
+                    RoleMenuExportDto rmDto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), RoleMenuExportDto.class);
+                    Long roleId = roleCodeToId.get(rmDto.getRoleCode());
+                    Long menuId = menuCodeToId.get(rmDto.getMenuCode());
+                    if (roleId == null || menuId == null) continue;
+                    sysRoleMenuService.remove(Wrappers.<SysRoleMenu>lambdaQuery()
+                            .eq(SysRoleMenu::getTenantId, tenantId)
+                            .eq(SysRoleMenu::getRoleId, roleId)
+                            .eq(SysRoleMenu::getMenuId, menuId));
+                }
+            }
         }
 
         // 7. GroupMenu
@@ -433,6 +499,19 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                     resolveOrCreateGroupMenu(tenantId, groupId, menuId, dto, resourceTreeJson);
                 }
             }
+            List<Map<String, Object>> removedGroupMenus = (List<Map<String, Object>>) groupMenus.get("removed");
+            if (CollectionUtils.isNotEmpty(removedGroupMenus)) {
+                for (Map<String, Object> m : removedGroupMenus) {
+                    GroupMenuExportDto gmDto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), GroupMenuExportDto.class);
+                    Long groupId = groupCodeToId.get(gmDto.getGroupCode());
+                    Long menuId = menuCodeToId.get(gmDto.getMenuCode());
+                    if (groupId == null || menuId == null) continue;
+                    sysGroupMenuService.remove(Wrappers.<SysGroupMenu>lambdaQuery()
+                            .eq(SysGroupMenu::getTenantId, tenantId)
+                            .eq(SysGroupMenu::getGroupId, groupId)
+                            .eq(SysGroupMenu::getMenuId, menuId));
+                }
+            }
         }
 
         // 8. DataPermission
@@ -462,6 +541,18 @@ public class PermissionImportServiceImpl implements PermissionImportService {
                         continue;
                     }
                     resolveOrCreateDataPermission(tenantId, dto, targetId);
+                }
+            }
+            List<Map<String, Object>> removedDataPermissions = (List<Map<String, Object>>) dataPermissions.get("removed");
+            if (CollectionUtils.isNotEmpty(removedDataPermissions)) {
+                for (Map<String, Object> m : removedDataPermissions) {
+                    DataPermissionExportDto dpDto = JsonSerializeUtil.parseObject(JsonSerializeUtil.toJSONString(m), DataPermissionExportDto.class);
+                    Long targetId = resolveTargetId(dpDto, roleCodeToId, groupCodeToId);
+                    if (targetId == null) continue;
+                    sysDataPermissionService.remove(Wrappers.<SysDataPermission>lambdaQuery()
+                            .eq(SysDataPermission::getTenantId, tenantId)
+                            .eq(SysDataPermission::getTargetType, dpDto.getTargetType())
+                            .eq(SysDataPermission::getTargetId, targetId));
                 }
             }
         }

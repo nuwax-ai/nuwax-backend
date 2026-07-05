@@ -13,6 +13,7 @@ import com.xspaceagi.subscription.app.service.UserSubscriptionAppService;
 import com.xspaceagi.subscription.sdk.dto.*;
 import com.xspaceagi.subscription.spec.enums.BizTypeEnum;
 import com.xspaceagi.subscription.web.controller.dto.MySubscriptionDTO;
+import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
@@ -52,7 +53,8 @@ public class SubscriptionController {
 
     @PostMapping("/order/create")
     @Operation(summary = "创建订阅订单")
-    public ReqResult<OrderDTO> createOrder(@RequestParam Long planId) {
+    public ReqResult<OrderDTO> createOrder(
+            @RequestParam Long planId, @RequestParam(required = false) PayMode payMode) {
         PlanDTO planDTO = subscriptionPlanAppService.getPlanById(planId);
         if (planDTO == null) {
             return ReqResult.error("Invalid planId");
@@ -81,6 +83,7 @@ public class SubscriptionController {
         item.setCount(1);
         item.setSnapshot(Map.of("plan", planDTO));
         request.setItems(List.of(item));
+        request.setPayMode(payMode);
         OrderDTO order = iBillRpcService.createOrder(request);
         return ReqResult.success(order);
     }

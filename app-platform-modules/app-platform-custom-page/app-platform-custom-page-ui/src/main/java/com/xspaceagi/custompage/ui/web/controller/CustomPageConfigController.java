@@ -4,6 +4,7 @@ import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.PublishedPermissionDto;
+import com.xspaceagi.agent.core.adapter.repository.CopyIndexRecordRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.custompage.application.service.ICustomPageBuildApplicationService;
 import com.xspaceagi.custompage.application.service.ICustomPageConfigApplicationService;
@@ -63,6 +64,8 @@ public class CustomPageConfigController extends BaseController {
     private ICustomPageProxyPathService customPageProxyPathApplicationService;
     @Resource
     private ICustomPageBuildApplicationService customPageBuildApplicationService;
+    @Resource
+    private CopyIndexRecordRepository copyIndexRecordRepository;
 
     @RequireResource(PAGE_APP_CREATE)
     @Operation(summary = "Create project", description = "Create a new project")
@@ -87,7 +90,7 @@ public class CustomPageConfigController extends BaseController {
             if (!result.isSuccess()) {
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
-            log.info("[Web] createprojectsucceeded,startinitialize,project Id={}", result.getData().getId());
+            log.info("[Web] create project succeeded,start initialize,project Id={}", result.getData().getId());
 
             // 初始化项目
             ReqResult<Map<String, Object>> initResult = customPageBuildApplicationService
@@ -96,7 +99,7 @@ public class CustomPageConfigController extends BaseController {
                     result.getData().getId(), initResult.getCode(), initResult.getMessage(), initResult.getData());
 
             if (!initResult.isSuccess()) {
-                log.warn("[Web] project Id={},initializeprojectfailed,startdelete project",
+                log.warn("[Web] project Id={},initialize project failed,start delete project",
                         result.getData().getId());
                 customPageConfigApplicationService.deleteProject(result.getData().getId(), userContext);
                 return ReqResult.error("9999", initResult.getMessage());
@@ -117,7 +120,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Upload project", description = "Upload a zip to create or update a project")
     @PostMapping(value = "/upload-and-start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> uploadProject(@ModelAttribute CustomPageCreateReq req) {
-        log.info("[Web] upload projectrequest, project Name={}, project Id={}", req.getProjectName(), req.getProjectId());
+        log.info("[Web] upload project request, project Name={}, project Id={}", req.getProjectName(), req.getProjectId());
         try {
             UserContext userContext = getUser();
             CustomPageConfigModel configModel = null;
@@ -153,7 +156,7 @@ public class CustomPageConfigController extends BaseController {
                     userContext);
             if (!result.isSuccess()) {
                 if (isInitProject) {
-                    log.warn("[Web] project Id={},upload projectfailed,startdelete project", configModel.getId());
+                    log.warn("[Web] project Id={},upload project failed,start delete project", configModel.getId());
                     customPageConfigApplicationService.deleteProject(configModel.getId(), userContext);
                 }
                 return ReqResult.error("9999", "Upload project failed: " + result.getMessage());
@@ -170,11 +173,11 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] upload projectfailed, project Name={}, project Id={}, {}", req.getProjectName(), req.getProjectId(),
+            log.error("[Web] upload project failed, project Name={}, project Id={}, {}", req.getProjectName(), req.getProjectId(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] upload projectexception, project Name={}, project Id={}", req.getProjectName(), req.getProjectId(), e);
+            log.error("[Web] upload project exception, project Name={}, project Id={}", req.getProjectName(), req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -183,7 +186,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Update project", description = "Update basic project information")
     @PostMapping(value = "/update-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> updateProject(@RequestBody CustomPageUpdateReq req) {
-        log.info("[Web] modify projectrequest, project Id={}, project Name={}", req.getProjectId(), req.getProjectName());
+        log.info("[Web] modify project request, project Id={}, project Name={}", req.getProjectId(), req.getProjectName());
         try {
             UserContext userContext = getUser();
 
@@ -199,17 +202,17 @@ public class CustomPageConfigController extends BaseController {
 
             var result = customPageConfigApplicationService.updateProject(model, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},modify projectfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},modify project failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] modify projectfailed, project Id={}, project Name={}, {}", req.getProjectId(), req.getProjectName(),
+            log.error("[Web] modify project failed, project Id={}, project Name={}, {}", req.getProjectId(), req.getProjectName(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] modify projectfailed, project Id={}, project Name={}", req.getProjectId(), req.getProjectName(), e);
+            log.error("[Web] modify project failed, project Id={}, project Name={}", req.getProjectId(), req.getProjectName(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -218,13 +221,13 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Delete project", description = "Delete a project")
     @PostMapping(value = "/delete-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> deleteProject(@RequestBody CustomPageDeleteReq req) {
-        log.info("[Web] delete projectrequest, project Id={}", req.getProjectId());
+        log.info("[Web] delete project request, project Id={}", req.getProjectId());
         try {
             UserContext userContext = getUser();
 
             var result = customPageConfigApplicationService.deleteProject(req.getProjectId(), userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},delete projectfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},delete project failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -238,10 +241,10 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] delete projectfailed, project Id={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] delete project failed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] delete projectfailed, project Id={}", req.getProjectId(), e);
+            log.error("[Web] delete project failed, project Id={}", req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -250,7 +253,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Copy project", description = "Copy project to target space")
     @PostMapping(value = "/copy-project", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> copyProject(@RequestBody CustomPageCopyReq req) {
-        log.info("[Web] copyprojectrequest, project Id={}, target Space Id={}", req.getProjectId(), req.getTargetSpaceId());
+        log.info("[Web] copy project request, project Id={}, target Space Id={}", req.getProjectId(), req.getTargetSpaceId());
         Long projectId = req.getProjectId();
         try {
             UserContext userContext = getUser();
@@ -282,7 +285,7 @@ public class CustomPageConfigController extends BaseController {
 
             // 创建新项目
             CustomPageConfigModel newConfigModel = new CustomPageConfigModel();
-            newConfigModel.setName(sourceConfig.getName());
+            newConfigModel.setName(copyIndexRecordRepository.newCopyName("pageApp", targetSpaceId, sourceConfig.getName()));
             newConfigModel.setDescription(sourceConfig.getDescription());
             newConfigModel.setIcon(sourceConfig.getIcon());
             newConfigModel.setCoverImg(sourceConfig.getCoverImg());
@@ -297,7 +300,7 @@ public class CustomPageConfigController extends BaseController {
 
             ReqResult<CustomPageConfigModel> createResult = customPageConfigApplicationService.create(newConfigModel, userContext);
             if (!createResult.isSuccess()) {
-                log.error("[copy Project] copyprojectfailed, message={}", createResult.getMessage());
+                log.error("[copy Project] copy project failed, message={}", createResult.getMessage());
                 return ReqResult.error("0001", createResult.getMessage());
             }
             CustomPageConfigModel targetConfig = createResult.getData();
@@ -318,7 +321,7 @@ public class CustomPageConfigController extends BaseController {
             //删除项目
             var deleteResult = customPageConfigApplicationService.deleteProject(targetConfig.getId(), userContext);
             if (!deleteResult.isSuccess()) {
-                log.warn("[copy Project] target Project Id={},after copy project artifacts failed,delete projectfailed,message={}", targetConfig.getId(), deleteResult.getMessage());
+                log.warn("[copy Project] target Project Id={},after copy project artifacts failed,delete project failed,message={}", targetConfig.getId(), deleteResult.getMessage());
             }
             //删除数据源
             if (newCreateDataSources != null && !newCreateDataSources.isEmpty()) {
@@ -332,7 +335,7 @@ public class CustomPageConfigController extends BaseController {
                             workflowApplicationService.delete(id);
                         }
                     } catch (Exception e) {
-                        log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={},delete component failed: type={}, id={}",
+                        log.error("[copy Project] copy project failed, project Id={}, target Space Id={},delete component failed: type={}, id={}",
                                 req.getProjectId(), req.getTargetSpaceId(), type, id, e);
                     }
                 });
@@ -340,11 +343,11 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.error(copyResult.getCode(), copyResult.getMessage());
         } catch (SpacePermissionException e) {
-            log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={}, {}",
+            log.error("[copy Project] copy project failed, project Id={}, target Space Id={}, {}",
                     req.getProjectId(), req.getTargetSpaceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[copy Project] copyprojectfailed, project Id={}, target Space Id={}",
+            log.error("[copy Project] copy project failed, project Id={}, target Space Id={}",
                     req.getProjectId(), req.getTargetSpaceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
@@ -354,7 +357,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Create reverse-proxy project", description = "Create a reverse-proxy type project")
     @PostMapping(value = "/create-reverse-proxy", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<CustomPageCreateRes> createReverseProxy(@RequestBody CustomPageCreateReq req) {
-        log.info("[Web] create reverse proxy projectrequest, project Name={}", req.getProjectName());
+        log.info("[Web] create reverse proxy project request, project Name={}", req.getProjectName());
         try {
             UserContext userContext = getUser();
             CustomPageConfigModel model = new CustomPageConfigModel();
@@ -366,17 +369,17 @@ public class CustomPageConfigController extends BaseController {
 
             var result = customPageConfigApplicationService.createReverseProxyProject(model, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] create reverse proxy projectfailed,message={}", result.getMessage());
+                log.warn("[Web] create reverse proxy project failed,message={}", result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             CustomPageCreateRes res = CustomPageCreateRes.builder().projectId(result.getData().getId()).build();
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] create reverse proxy projectfailed, project Name={}, {}", req.getProjectName(), e.getMessage());
+            log.error("[Web] create reverse proxy project failed, project Name={}, {}", req.getProjectName(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] create reverse proxy projectfailed, project Name={}", req.getProjectName(), e);
+            log.error("[Web] create reverse proxy project failed, project Name={}", req.getProjectName(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -385,12 +388,12 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "List projects", description = "Query project list")
     @GetMapping(value = "/list-projects", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<CustomPageDto>> listProjects(CustomPageQueryReq req) {
-        log.info("[Web] queryprojectlistrequest, req={}", req);
+        log.info("[Web] query project list request, req={}", req);
         try {
             List<CustomPageDto> listData = iCustomPageRpcService.list(req);
             return ReqResult.success(listData);
         } catch (Exception e) {
-            log.error("[Web] queryprojectlistfailed", e);
+            log.error("[Web] query project list failed", e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -400,7 +403,7 @@ public class CustomPageConfigController extends BaseController {
     @GetMapping(value = "/page-query-projects", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<SuperPage<CustomPageDto>> pageQueryProjects(
             @RequestBody PageQueryVo<CustomPageQueryReq> pageQueryVo) {
-        log.info("[Web] pagedqueryprojectrequest, page Query Vo={}", pageQueryVo);
+        log.info("[Web] paged query project request, page Query Vo={}", pageQueryVo);
         try {
             CustomPageQueryReq req = pageQueryVo.getQueryFilter();
             if (req == null) {
@@ -414,7 +417,7 @@ public class CustomPageConfigController extends BaseController {
             SuperPage<CustomPageDto> page = iCustomPageRpcService.pageQuery(pageQueryVo);
             return ReqResult.success(page);
         } catch (Exception e) {
-            log.error("[Web] pagedqueryprojectfailed", e);
+            log.error("[Web] paged query project failed", e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -439,7 +442,7 @@ public class CustomPageConfigController extends BaseController {
             log.error("[Web] query project detail, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] query project detailexception, project Id={}", projectId, e);
+            log.error("[Web] query project detail exception, project Id={}", projectId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -464,7 +467,7 @@ public class CustomPageConfigController extends BaseController {
             log.error("[Web] query project detail, agent Id={}, {}", agentId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] query project detailexception, agent Id={}", agentId, e);
+            log.error("[Web] query project detail exception, agent Id={}", agentId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -473,12 +476,12 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Get project file content", description = "Query project workspace file content")
     @GetMapping(value = "/get-project-content", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<ProjectContentRes> getProjectContent(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] query project file contentrequest, project Id={}", projectId);
+        log.info("[Web] query project file content request, project Id={}", projectId);
         try {
             String proxyPath = "/page/static/" + projectId;
             var result = customPageConfigApplicationService.queryProjectContent(projectId, proxyPath);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},query project file contentfailed,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},query project file content failed,message={}", projectId, result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -496,10 +499,10 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] query project file contentfailed, project Id={}, {}", projectId, e.getMessage());
+            log.error("[Web] query project file content failed, project Id={}, {}", projectId, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] query project file contentfailed, project Id={}", projectId, e);
+            log.error("[Web] query project file content failed, project Id={}", projectId, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -509,7 +512,7 @@ public class CustomPageConfigController extends BaseController {
     @GetMapping(value = "/get-project-content-by-version", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<ProjectContentRes> getProjectContentByVersion(@RequestParam("projectId") Long projectId,
                                                                    @RequestParam("codeVersion") Integer codeVersion) {
-        log.info("[Web] queryprojecthistorical version contentrequest, project Id={}, code Version={}", projectId, codeVersion);
+        log.info("[Web] query project historical version content request, project Id={}, code Version={}", projectId, codeVersion);
         try {
             if (projectId == null || projectId <= 0) {
                 return ReqResult.error("0001", "projectId is required or invalid");
@@ -520,7 +523,7 @@ public class CustomPageConfigController extends BaseController {
             String proxyPath = "/page/static/_his/" + projectId;
             var result = customPageConfigApplicationService.queryProjectContentByVersion(projectId, codeVersion, proxyPath);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},queryprojecthistorical version contentfailed,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},query project historical version content failed,message={}", projectId, result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
@@ -529,10 +532,10 @@ public class CustomPageConfigController extends BaseController {
 
             return ReqResult.success(res);
         } catch (SpacePermissionException e) {
-            log.error("[Web] queryprojecthistorical version contentfailed, project Id={}, code Version={}, {}", projectId, codeVersion, e.getMessage());
+            log.error("[Web] query project historical version content failed, project Id={}, code Version={}, {}", projectId, codeVersion, e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] queryprojecthistorical version contentfailed, project Id={}, code Version={}", projectId, codeVersion, e);
+            log.error("[Web] query project historical version content failed, project Id={}, code Version={}", projectId, codeVersion, e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -541,7 +544,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Export project", description = "Export project as a zip file")
     @GetMapping(value = "/export-project")
     public ResponseEntity<byte[]> exportProject(@RequestParam("projectId") Long projectId) {
-        log.info("[Web] exportprojectrequest, project Id={}", projectId);
+        log.info("[Web] export project request, project Id={}", projectId);
         try {
             if (projectId == null || projectId <= 0) {
                 return ResponseEntity.badRequest().build();
@@ -550,7 +553,7 @@ public class CustomPageConfigController extends BaseController {
             UserContext userContext = getUser();
             var result = customPageConfigApplicationService.exportProjectLatest(projectId, userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},exportprojectfailed,message={}", projectId, result.getMessage());
+                log.warn("[Web] project Id={},export project failed,message={}", projectId, result.getMessage());
                 return ResponseEntity.badRequest().build();
             }
 
@@ -577,7 +580,7 @@ public class CustomPageConfigController extends BaseController {
             log.error("[Web] Export project error, project Id={}", projectId, e);
             return ResponseEntity.internalServerError().build();
         } catch (SpacePermissionException e) {
-            log.error("[Web] exportprojectfailed, project Id={}, {}", projectId, e.getMessage());
+            log.error("[Web] export project failed, project Id={}, {}", projectId, e.getMessage());
             return ResponseEntity.internalServerError().build();
         } catch (Exception e) {
             log.error("[Web] Export project error, project Id={}", projectId, e);
@@ -589,7 +592,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Batch configure reverse proxy", description = "Replace reverse-proxy configuration entirely")
     @PostMapping(value = "/batch-config-proxy", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> batchConfigProxy(@RequestBody ProxyConfigBatchReq req) {
-        log.info("[Web] batch configure reverse proxyrequest, project Id={}, config Count={}",
+        log.info("[Web] batch configure reverse proxy request, project Id={}, config Count={}",
                 req.getProjectId(), req.getProxyConfigs() != null ? req.getProxyConfigs().size() : 0);
         try {
             UserContext userContext = getUser();
@@ -611,16 +614,16 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.batchConfigProxy(req.getProjectId(), proxyConfigs,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},batch configure reverse proxyfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},batch configure reverse proxy failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] batch configure reverse proxyfailed, project Id={}, {}", req.getProjectId(), e.getMessage());
+            log.error("[Web] batch configure reverse proxy failed, project Id={}, {}", req.getProjectId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] batch configure reverse proxyfailed, project Id={}", req.getProjectId(), e);
+            log.error("[Web] batch configure reverse proxy failed, project Id={}", req.getProjectId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -629,7 +632,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Save path arguments", description = "Save path argument schema for a page URI")
     @PostMapping(value = "/save-path-args", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> savePathArgs(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] savepath request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] save path request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -672,17 +675,17 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.savePathArgs(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},savepath failed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},save path failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] savepath failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] save path failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] savepath failed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] save path failed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -691,7 +694,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Add path config", description = "Add path config; fails if pageUri already exists")
     @PostMapping(value = "/add-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> addPath(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] add path configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] add path config request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -704,17 +707,17 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.addPath(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},add path configfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},add path config failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] add path configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] add path config failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] add path configfailed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] add path config failed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -723,7 +726,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Edit path config", description = "Edit path config; fails if path does not exist")
     @PostMapping(value = "/edit-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> editPath(@RequestBody PageArgConfigReq req) {
-        log.info("[Web] editpath configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] edit path config request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
@@ -735,17 +738,17 @@ public class CustomPageConfigController extends BaseController {
             var result = customPageConfigApplicationService.editPath(req.getProjectId(), pageArgConfig,
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},editpath configfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},edit path config failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] editpath configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] edit path config failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] editpath configexception, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] edit path config exception, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -754,24 +757,24 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Delete path config", description = "Delete path config; fails if path does not exist")
     @PostMapping(value = "/delete-path", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> deletePath(@RequestBody DeletePathReq req) {
-        log.info("[Web] delete path configrequest, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
+        log.info("[Web] delete path config request, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri());
         try {
             UserContext userContext = getUser();
 
             var result = customPageConfigApplicationService.deletePath(req.getProjectId(), req.getPageUri(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},delete path configfailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},delete path config failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] delete path configfailed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
+            log.error("[Web] delete path config failed, project Id={}, page Uri={}, {}", req.getProjectId(), req.getPageUri(),
                     e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] delete path configfailed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
+            log.error("[Web] delete path config failed, project Id={}, page Uri={}", req.getProjectId(), req.getPageUri(), e);
             return ReqResult.error("0001", e.getMessage());
         }
     }
@@ -780,7 +783,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Bind data source", description = "Bind plugin or workflow data source")
     @PostMapping(value = "/bind-data-source", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> bindDataSource(@RequestBody BindDataSourceReq req) {
-        log.info("[Web] binddata sourcerequest, project Id={}, type={}, data Source Id={}",
+        log.info("[Web] bind data source request, project Id={}, type={}, data Source Id={}",
                 req.getProjectId(), req.getType(), req.getDataSourceId());
         try {
             UserContext userContext = getUser();
@@ -791,17 +794,17 @@ public class CustomPageConfigController extends BaseController {
                     req.getDataSourceId(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},binddata sourcefailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},bind data source failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] binddata sourcefailed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
+            log.error("[Web] bind data source failed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
                     req.getDataSourceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] binddata sourcefailed, project Id={}, type={}, data Source Id={}",
+            log.error("[Web] bind data source failed, project Id={}, type={}, data Source Id={}",
                     req.getProjectId(), req.getType(), req.getDataSourceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }
@@ -811,7 +814,7 @@ public class CustomPageConfigController extends BaseController {
     @Operation(summary = "Unbind data source", description = "Unbind a data source from the project")
     @PostMapping(value = "/unbind-data-source", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> unbindDataSource(@RequestBody BindDataSourceReq req) {
-        log.info("[Web] unbinddata sourcerequest, project Id={}, type={}, data Source Id={}",
+        log.info("[Web] unbind data source request, project Id={}, type={}, data Source Id={}",
                 req.getProjectId(), req.getType(), req.getDataSourceId());
         try {
             UserContext userContext = getUser();
@@ -822,17 +825,17 @@ public class CustomPageConfigController extends BaseController {
                     req.getDataSourceId(),
                     userContext);
             if (!result.isSuccess()) {
-                log.warn("[Web] project Id={},unbinddata sourcefailed,message={}", req.getProjectId(), result.getMessage());
+                log.warn("[Web] project Id={},unbind data source failed,message={}", req.getProjectId(), result.getMessage());
                 return ReqResult.create(result.getCode(), result.getMessage(), null);
             }
 
             return ReqResult.success();
         } catch (SpacePermissionException e) {
-            log.error("[Web] unbinddata sourcefailed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
+            log.error("[Web] unbind data source failed, project Id={}, type={}, data Source Id={}, {}", req.getProjectId(), req.getType(),
                     req.getDataSourceId(), e.getMessage());
             return ReqResult.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("[Web] unbinddata sourcefailed, project Id={}, type={}, data Source Id={}",
+            log.error("[Web] unbind data source failed, project Id={}, type={}, data Source Id={}",
                     req.getProjectId(), req.getType(), req.getDataSourceId(), e);
             return ReqResult.error("0001", e.getMessage());
         }

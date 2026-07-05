@@ -5,20 +5,24 @@ import com.xspaceagi.bill.app.service.BillRevenueAppService;
 import com.xspaceagi.bill.app.service.BillWithdrawAppService;
 import com.xspaceagi.bill.app.service.ResourceStatAppService;
 import com.xspaceagi.bill.sdk.dto.*;
-import com.xspaceagi.bill.spec.enums.PayStatusEnum;
 import com.xspaceagi.bill.spec.enums.ResourceStatTypeEnum;
 import com.xspaceagi.bill.spec.enums.RevenueTargetTypeEnum;
 import com.xspaceagi.bill.spec.enums.RevenueTypeEnum;
-import com.xspaceagi.pay.sdk.dto.CashierSessionCreateRequest;
 import com.xspaceagi.pay.sdk.dto.CashierSessionCreateResponse;
-import com.xspaceagi.pay.sdk.service.IPaymentRpcService;
+import com.xspaceagi.pay.sdk.dto.OrderAndTransactionCreateResponse;
+import com.xspaceagi.pay.sdk.support.PayAppWebViewDetector;
+import com.xspaceagi.pay.spec.support.PayAppNativeInAppGuard;
+import com.xspaceagi.pay.spec.support.PayH5InAppGuard;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.utils.IPUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -41,9 +45,6 @@ public class BillController {
 
     @Resource
     private BillWithdrawAppService billWithdrawAppService;
-
-    @Resource
-    private IPaymentRpcService iPaymentRpcService;
 
     @Resource
     private ResourceStatAppService resourceStatAppService;
@@ -143,24 +144,86 @@ public class BillController {
             @RequestParam Long orderId, @RequestParam String returnUrl) {
         Assert.notNull(orderId, "orderId can not be null");
         Assert.hasText(returnUrl, "returnUrl can not be blank");
-        OrderDTO orderDTO = billOrderAppService.queryOrder(orderId);
-        if (orderDTO == null) {
-            throw new IllegalArgumentException("order not found");
-        }
-        if (!RequestContext.get().getUserId().equals(orderDTO.getUserId())) {
-            throw new BizException("USER_NOT_MATCH", "The order data does not match the current user.");
-        }
-        if (orderDTO.getPayStatus() != PayStatusEnum.PENDING) {
-            throw new BizException("ORDER_NOT_PENDING", "The order status is incorrect.");
-        }
-        if (orderDTO.getExtra().get("gatewayPaymentOrderNo") == null) {
-            throw new BizException("The order data is incomplete.");
-        }
-        CashierSessionCreateRequest paymentCreateCashierSessionRequest = new CashierSessionCreateRequest();
-        paymentCreateCashierSessionRequest.setGatewayPaymentOrderNo(String.valueOf(orderDTO.getExtra().get("gatewayPaymentOrderNo")));
-        paymentCreateCashierSessionRequest.setBizRedirectUrl(validateSettlementPageUrl(returnUrl.trim()));
-        CashierSessionCreateResponse cashierSession = iPaymentRpcService.createCashierSession(paymentCreateCashierSessionRequest);
+        CashierSessionCreateResponse cashierSession = billOrderAppService.invokeScanCashier(
+                RequestContext.get().getUserId(),
+                orderId,
+                validateSettlementPageUrl(returnUrl.trim()));
         return ReqResult.success(cashierSession);
+    }
+
+    @PostMapping("/order/pay/minipay")
+    @Operation(
+            summary = "小程序调起支付",
+            description = "调起微信/支付宝小程序支付，返回 wx.requestPayment / my.tradePay 所需参数")
+    public ReqResult<OrderAndTransactionCreateResponse> invokeMiniPay(
+            @RequestBody MiniPayInvokeRequest request, HttpServletRequest httpServletRequest) {
+        Assert.notNull(request, "request cannot be null");
+        Assert.notNull(request.getOrderId(), "orderId can not be null");
+        String clientIp = IPUtil.getIpAddr(httpServletRequest);
+        return ReqResult.success(
+                billOrderAppService.invokeMiniPay(RequestContext.get().getUserId(), request, clientIp));
+    }
+
+    @PostMapping("/order/pay/wechat-jsapi")
+    @Operation(
+            summary = "微信内 H5 JSAPI 调起支付",
+            description = "仅微信内置浏览器：先 GET /api/system/wechat/oa/oauth-url 完成 snsapi_base 授权，"
+                    + "再传 wxOAuthCode；返回 wxPayParams 供 WeixinJSBridge.getBrandWCPayRequest；"
+                    + "付后须轮询 GET /api/bill/order/settlement-status")
+    public ReqResult<OrderAndTransactionCreateResponse> invokeWeChatJsapi(
+            @RequestBody WeChatJsapiInvokeRequest request, HttpServletRequest httpServletRequest) {
+        Assert.notNull(request, "request cannot be null");
+        Assert.notNull(request.getOrderId(), "orderId can not be null");
+        String clientIp = IPUtil.getIpAddr(httpServletRequest);
+        return ReqResult.success(
+                billOrderAppService.invokeWeChatJsapi(RequestContext.get().getUserId(), request, clientIp));
+    }
+
+    @PostMapping("/order/pay/h5-web")
+    @Operation(
+            summary = "系统浏览器 H5 调起支付",
+            description = "调起 h5 支付，返回 invokeType + formHtml/redirectUrl；支付后轮询 settlement-status。"
+                    + "App WebView 内禁止调用")
+    public ReqResult<OrderAndTransactionCreateResponse> invokeH5Web(
+            @RequestBody H5WebInvokeRequest request, HttpServletRequest httpServletRequest) {
+        Assert.notNull(request, "request cannot be null");
+        Assert.notNull(request.getOrderId(), "orderId can not be null");
+        PayH5InAppGuard.assertH5PayAllowed(
+                httpServletRequest.getHeader(PayAppWebViewDetector.HEADER_CLIENT_TYPE),
+                httpServletRequest.getHeader("User-Agent"));
+        String clientIp = IPUtil.getIpAddr(httpServletRequest);
+        return ReqResult.success(
+                billOrderAppService.invokeH5Web(RequestContext.get().getUserId(), request, clientIp));
+    }
+
+    @PostMapping("/order/pay/app-native")
+    @Operation(
+            summary = "App 原生 SDK 调起支付",
+            description = "WebView/App 壳内调起支付。支付后轮询 settlement-status。"
+                    + "仅限 App WebView 内调用")
+    public ReqResult<OrderAndTransactionCreateResponse> invokeAppNative(
+            @RequestBody AppNativeInvokeRequest request, HttpServletRequest httpServletRequest) {
+        Assert.notNull(request, "request cannot be null");
+        Assert.notNull(request.getOrderId(), "orderId can not be null");
+        PayAppNativeInAppGuard.assertAppNativePayRequired(
+                httpServletRequest.getHeader(PayAppWebViewDetector.HEADER_CLIENT_TYPE),
+                httpServletRequest.getHeader("User-Agent"));
+        String clientIp = IPUtil.getIpAddr(httpServletRequest);
+        return ReqResult.success(
+                billOrderAppService.invokeAppNative(RequestContext.get().getUserId(), request, clientIp));
+    }
+
+    @RequestMapping(value = "/order/pay/front-notify", method = {RequestMethod.GET, RequestMethod.POST})
+    @Operation(
+            summary = "H5 渠道前台回跳中转",
+            description = "接收渠道前台回调（GET/POST），统一 302 到前端结算页")
+    public void handleH5FrontNotify(
+            @RequestParam(required = false) Long orderId,
+            @RequestParam String returnUrl,
+            HttpServletResponse response) {
+        String target = validateSettlementPageUrl(returnUrl.trim());
+        response.setStatus(HttpServletResponse.SC_FOUND);
+        response.setHeader("Location", target);
     }
 
     /** 校验前端传入的结算页 URL（http/https）。 */

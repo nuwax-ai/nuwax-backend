@@ -90,6 +90,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
         pluginConfig.setIcon(pluginUpdateDto.getIcon());
         pluginConfig.setDescription(pluginUpdateDto.getDescription());
         pluginConfig.setName(pluginUpdateDto.getName());
+        pluginConfig.setDevAgentConversationId(pluginUpdateDto.getDevAgentConversationId());
         if (pluginUpdateDto.getConfig() != null) {
             pluginConfig.setConfig(JSON.toJSONString(pluginUpdateDto.getConfig()));
         }
@@ -380,6 +381,7 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
                         .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
                         .billUserId(RequestContext.get().getUserId())
                         .devTest(pluginExecuteRequestDto.isTest())
+                        .apiKey(pluginExecuteRequestDto.getApiKey())
                         .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
                                 .targetType(TraceContext.TraceTargetType.Plugin)
                                 .name(pluginDto.getName())

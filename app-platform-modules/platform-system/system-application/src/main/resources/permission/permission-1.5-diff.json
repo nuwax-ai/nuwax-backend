@@ -1,0 +1,249 @@
+{
+  "fromVersion": "1.4",
+  "toVersion": "1.5",
+  "resources": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "component_lib_dev",
+        "code": "plugin",
+        "name": "插件",
+        "description": "插件",
+        "source": 1,
+        "path": "/space/:spaceId/plugin",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "workflow",
+        "name": "工作流",
+        "description": "工作流",
+        "source": 1,
+        "path": "/space/:spaceId/workflow",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "knowledge",
+        "name": "知识库",
+        "description": "知识库",
+        "source": 1,
+        "path": "/space/:spaceId/knowledge",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "datatable",
+        "name": "数据表",
+        "description": "数据表",
+        "source": 1,
+        "path": "/space/:spaceId/storage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 4,
+        "status": 1
+      }
+    ],
+    "removed": [
+      {
+        "parentCode": "component_lib_dev",
+        "code": "plugin_and_workflow",
+        "name": "插件与工作流",
+        "description": "插件与工作流",
+        "source": 1,
+        "path": "/space/:spaceId/plugin-workflow",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "component_lib_dev",
+        "code": "knowledge_and_datatable",
+        "name": "知识与数据存储",
+        "description": "知识与数据存储",
+        "source": 1,
+        "path": "/space/:spaceId/knowledge-storage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      }
+    ],
+    "modified": [
+      {
+        "key": "component_lib_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件资源",
+          "description": "组件库",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件资源",
+          "description": "组件资源",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_model_manage",
+        "old": {
+          "parentCode": "component_lib_dev",
+          "code": "space_model_manage",
+          "name": "模型管理",
+          "description": "模型管理",
+          "source": 1,
+          "path": "/space/:spaceId/model-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "component_lib_dev",
+          "code": "space_model_manage",
+          "name": "模型管理",
+          "description": "模型管理",
+          "source": 1,
+          "path": "/space/:spaceId/model-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "plugin",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "workflow",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "knowledge",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "datatable",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "plugin_and_workflow",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "knowledge_and_datatable",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "plugin",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "workflow",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "knowledge",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "datatable",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "plugin_and_workflow",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "knowledge_and_datatable",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

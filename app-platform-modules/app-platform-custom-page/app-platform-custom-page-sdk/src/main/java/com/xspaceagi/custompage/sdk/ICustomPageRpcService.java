@@ -3,6 +3,8 @@ package com.xspaceagi.custompage.sdk;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
 import com.xspaceagi.custompage.sdk.dto.CustomPageQueryReq;
+import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
 
@@ -12,6 +14,11 @@ import java.util.List;
  * 用户页面RPC服务接口
  */
 public interface ICustomPageRpcService {
+
+    /**
+     * 创建项目
+     */
+    String create(Long userId, Long spaceId, String name);
 
     /**
      * 查询项目列表
@@ -74,4 +81,6 @@ public interface ICustomPageRpcService {
      * 管理端根据ids批量查询网页应用列表
      */
     List<CustomPageDto> listByIds(List<Long> pageIds, List<Long> agentIds);
+
+    void bindDataSource(Long userId, Long projectId, String type, Long dataSourceId);
 }

@@ -29,4 +29,10 @@ public class ManageQueryRequest {
 
     @Schema(description = "管控条件")
     private Integer accessControl;
+
+    @Schema(description = "推荐类型：Home、Official、ChatBoxNav")
+    private String recType;
+
+    @Schema(description = "目标类型：Agent、PageApp、Skill、Plugin、Workflow")
+    private String targetType;
 }

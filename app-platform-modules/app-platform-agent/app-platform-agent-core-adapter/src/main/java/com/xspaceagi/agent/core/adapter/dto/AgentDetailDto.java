@@ -27,6 +27,9 @@ public class AgentDetailDto implements Serializable {
     @Schema(description = "智能体类型，ChatBot 对话智能体；PageApp 网页应用智能体")
     private String type;
 
+    @Schema(description = "子类型,ChatBot->ChatBot、PageApp->PageApp, TaskAgent -> General、Custom、Flow、Group")
+    private String subType;
+
     @Schema(description = "智能体名称")
     private String name;
 
@@ -107,6 +110,12 @@ public class AgentDetailDto implements Serializable {
     @Schema(description = "是否允许用户在对话框中选择自己的电脑， 1 允许，其他不允许")
     private Integer allowPrivateSandbox;
 
+    @Schema(description = "是否允许用户在对话框中选择模式， 1 允许，其他不允许")
+    private Integer allowChooseMode;
+
+    @Schema(description = "是否开启版本控制， 1 允许，其他不允许")
+    private Integer enableVersionControl;
+
     @Schema(description = "扩展页面首页")
     private String pageHomeIndex;
 
@@ -130,4 +139,7 @@ public class AgentDetailDto implements Serializable {
 
     @Schema(description = "超出调用限制提示")
     private boolean overCallLimit;
+
+    @Schema(description = "是否显示发布按钮")
+    private boolean showPublishBtn;
 }

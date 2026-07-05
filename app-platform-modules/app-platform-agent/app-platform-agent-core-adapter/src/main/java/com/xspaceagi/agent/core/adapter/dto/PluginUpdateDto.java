@@ -24,4 +24,7 @@ public class PluginUpdateDto<T> implements Serializable {
 
     @Schema(description =  "插件配置")
     private T config;
+
+    @Schema(description =  "开发智能体的会话ID")
+    private Long devAgentConversationId;
 }

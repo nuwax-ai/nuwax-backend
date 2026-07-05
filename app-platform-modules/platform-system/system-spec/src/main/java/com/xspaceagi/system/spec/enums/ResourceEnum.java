@@ -431,7 +431,13 @@ public enum ResourceEnum {
     PAY_EARNINGS_QUERY(ResourceTypeEnum.OPERATION, "pay_earnings_query", "查询", "pay_earnings"),
     PAY_EARNINGS_MODIFY(ResourceTypeEnum.OPERATION, "pay_earnings_modify", "编辑", "pay_earnings"),
     MERCHANT_ONBOARDING_AUDIT(ResourceTypeEnum.OPERATION, "merchant_onboarding_audit", "进件审核", "pay_earnings"),
-    WITHDRAW_AUDIT(ResourceTypeEnum.OPERATION, "withdraw_audit", "提现审核", "pay_earnings");
+    WITHDRAW_AUDIT(ResourceTypeEnum.OPERATION, "withdraw_audit", "提现审核", "pay_earnings"),
+
+    // ================== 展示推荐管理模块 ==================
+    DISPLAY_RECOMMEND_MANAGE(ResourceTypeEnum.MODULE, "display_recommend_manage", "展示推荐管理模块", "root"),
+    DISPLAY_RECOMMEND_QUERY(ResourceTypeEnum.OPERATION, "display_recommend_query", "查询", "display_recommend_manage"),
+    DISPLAY_RECOMMEND_SAVE(ResourceTypeEnum.OPERATION, "display_recommend_save", "保存", "display_recommend_manage"),
+    DISPLAY_RECOMMEND_DELETE(ResourceTypeEnum.OPERATION, "display_recommend_delete", "删除", "display_recommend_manage");
 
     private final ResourceTypeEnum type;
     private final String code;

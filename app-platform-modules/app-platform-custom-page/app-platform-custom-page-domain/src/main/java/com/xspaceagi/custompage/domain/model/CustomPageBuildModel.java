@@ -13,8 +13,6 @@ public class CustomPageBuildModel {
     // 项目ID
     private Long id;
 
-    private Long agentId;
-
     private Long projectId;
 
     // 1:运行中

@@ -3,11 +3,18 @@ package com.xspaceagi.agent.core.infra.component.agent;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.xspaceagi.agent.core.adapter.dto.AgentPublishVersionDto;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.bind.McpBindConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.bind.PluginBindConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.bind.WorkflowBindConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
+import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
+import com.xspaceagi.agent.core.adapter.repository.entity.Conversation;
 import com.xspaceagi.agent.core.infra.component.agent.dto.AgentRequest;
 import com.xspaceagi.agent.core.infra.component.model.dto.CallMessage;
 import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecuteResult;
@@ -35,6 +42,7 @@ import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
+import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.AgentException;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.utils.I18nUtil;
@@ -107,6 +115,13 @@ public class SandboxAgentClient {
             }
             """);
 
+    private static final JSONObject askQuestionMcp = JSON.parseObject("""
+            {
+              "command": "npx",
+              "args": ["-y", "nuwax-ask-question-mcp@latest"]
+            }
+            """);
+
     /**
      * Pattern to extract the data content from SSE data field lines. Matches lines
      * starting with "data:" and captures the remaining content.
@@ -172,9 +187,15 @@ public class SandboxAgentClient {
         Flux<CallMessage> sseFlux = Flux.create(sink -> {
             // Get sandbox service
             SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(agentContext.getTenantConfig(), agentContext.getUserId(), agentContext.getConversation().getSandboxServerId());
+            sandboxServer.setCurrentConversation(agentContext.getConversation());
+            String projectId = agentContext.getConversationId();
+            if (agentContext.isUseSate()) {
+                projectId = agentContext.getConversationId() + "_" + agentContext.getAgentConfig().getId();
+            }
+            final String projectId0 = projectId;
             // Start sandbox service
             if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
-                checkAgentIfAlive(agentContext, sandboxServer)
+                checkAgentIfAlive0(sandboxServer, projectId)
                         .doOnSuccess(res0 -> {
                             // agent not started, append prompt
                             try {
@@ -196,7 +217,7 @@ public class SandboxAgentClient {
                                 }
                                 return;
                             }
-                            checkAgentIfAlive(agentContext, sandboxServer)
+                            checkAgentIfAlive0(sandboxServer, projectId0)
                                     .doOnSuccess(res0 -> {
                                         // agent not started, append prompt
                                         try {
@@ -232,18 +253,37 @@ public class SandboxAgentClient {
         return sseFlux;
     }
 
-    private static Mono<Boolean> checkAgentIfAlive(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer) {
+    private Mono<Boolean> checkAgentIfAlive(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer) {
+        return Mono.create(sink -> {
+            Map<String, String> sessionMap = createSessionMap(sandboxServer);
+            if (!sessionMap.isEmpty()) {
+                for (Map.Entry<String, String> entry : sessionMap.entrySet()) {
+                    Boolean block = checkAgentIfAlive0(sandboxServer, entry.getKey()).timeout(Duration.ofSeconds(10)).block();
+                    if (block != null && block) {
+                        sink.success(true);
+                        return;
+                    }
+                }
+            }
+            Boolean block = checkAgentIfAlive0(sandboxServer, agentContext.getConversationId()).timeout(Duration.ofSeconds(10)).block();
+            sink.success(block != null && block);
+        });
+    }
+
+    private Mono<Boolean> checkAgentIfAlive0(SandboxServerConfig.SandboxServer sandboxServer, String projectId) {
         return Mono.create(sink -> {
             //Query agent startup status/computer/agent/status
-            log.info("Checking if session Agent status is started, userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/agent/status"))
+            Long userId = sandboxServer.getCurrentConversation().getUserId();
+            log.info("Checking if session Agent status is started, userId {}, projectId {}", userId, projectId);
+            String apiUrl = sandboxServer.getServerAgentUrl() + "/computer/agent/status";
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(rewriteComputerBaseUrl(sandboxServer.getCurrentConversation(), apiUrl)))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of("user_id", agentContext.getUserId().toString(), "project_id", agentContext.getConversationId()))))
+                    .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of("user_id", userId.toString(), "project_id", projectId))))
                     .timeout(java.time.Duration.ofSeconds(10))
                     .build();
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
                 String body = response.body();
-                log.info("Query Agent status result, userId {}, conversationId {}, body {}", agentContext.getUserId(), agentContext.getConversationId(), body);
+                log.info("Query Agent status result, userId {}, projectId {}, body {}", userId, projectId, body);
                 if (JSON.isValidObject(body)) {
                     JSONObject data = JSON.parseObject(body).getJSONObject("data");
                     if (data == null) {
@@ -456,24 +496,63 @@ public class SandboxAgentClient {
         apiInfo.setUrl(frontendModelDto.getBaseUrl());
 
         String sessionId = null;
-        if (conversation != null && StringUtils.isNotBlank(conversation.getSandboxSessionId())) {
+        if (agentContext.isUseSate()) {
+            Map<String, Object> sessionState = agentContext.getSessionState();
+            Object o = sessionState.get("sandboxSessionId");
+            if (o != null) {
+                sessionId = o.toString();
+            }
+        } else if (conversation != null && StringUtils.isNotBlank(conversation.getSandboxSessionId()) && !agentContext.isDebug()) {
             sessionId = conversation.getSandboxSessionId();
         }
 
-        AgentRequest agentRequest = AgentRequest.builder().user_id(agentContext.getUserId().toString()).project_id(agentContext.getConversationId()).session_id(sessionId).prompt(userPrompt).original_user_prompt(agentContext.getOriginalMessage()).open_long_memory(false).request_id(agentContext.getRequestId())
-                .attachments(null).data_source_attachments(null).model_provider(null).system_prompt(systemPrompt).user_prompt(null).model_provider(AgentRequest.ModelProvider.builder().id(modelConfig.getId().toString()).default_model(modelConfig.getModel()).name(modelConfig.getName()).requires_openai_auth(true).base_url(apiInfo.getUrl().replace("SESSION_ID", agentContext.getConversationId()))// 官方代理接口通过这个id做上下文保持在一个后端key
+
+        String projectId = agentContext.getConversationId();
+        if (agentContext.isUseSate()) {
+            projectId = agentContext.getConversationId() + "_" + agentContext.getAgentConfig().getId();
+        }
+        AgentRequest agentRequest = AgentRequest.builder()
+                .user_id(agentContext.getUserId().toString())
+                .project_id(projectId)
+                .agent_work_dir(agentContext.getConversationId())
+                .session_id(sessionId).prompt(userPrompt)
+                .original_user_prompt(agentContext.getOriginalMessage())
+                .open_long_memory(false)
+                .request_id(agentContext.getRequestId())
+                .attachments(null)
+                .data_source_attachments(null)
+                .model_provider(null)
+                .system_prompt(systemPrompt)
+                .user_prompt(null)
+                .model_provider(AgentRequest.ModelProvider.builder()
+                        .id(modelConfig.getId().toString())
+                        .default_model(modelConfig.getModel())
+                        .name(modelConfig.getName())
+                        .requires_openai_auth(true)
+                        .base_url(apiInfo.getUrl().replace("SESSION_ID", agentContext.getConversationId()))// 官方代理接口通过这个id做上下文保持在一个后端key
                         .api_key(apiInfo.getKey())
-                        .api_protocol(modelConfig.getApiProtocol().name().toLowerCase()).build())
-                .agent_config(AgentRequest.AgentConfig.builder().agent_server(buildAgentServer(agentContext, sandboxServer, modelConfig)).context_servers(buildContextServers(agentContext)).resource_limits(AgentRequest.ResourceLimits.builder().cpu_limit(sandboxServer.getPerUserCpuCores()).memory_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024)).swap_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024) * 2).build()).build()).build();
+                        .api_protocol(modelConfig.getApiProtocol().name().toLowerCase())
+                        .build())
+                .agent_config(AgentRequest.AgentConfig.builder()
+                        .agent_server(buildAgentServer(agentContext, sandboxServer, modelConfig))
+                        .context_servers(buildContextServers(agentContext))
+                        .resource_limits(AgentRequest.ResourceLimits.builder()
+                                .cpu_limit(sandboxServer.getPerUserCpuCores())
+                                .memory_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024))
+                                .swap_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024) * 2)
+                                .build())
+                        .build())
+                .build();
         String requestBody = JSON.toJSONString(agentRequest);
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/chat")).header("Content-Type", "application/json")
+        String apiUrl = sandboxServer.getServerAgentUrl() + "/computer/chat";
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(rewriteComputerBaseUrl(agentContext.getConversation(), apiUrl))).header("Content-Type", "application/json")
                 .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
                 .timeout(Duration.ofSeconds(180))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8)).build();
         log.info("Initiate conversation request, agentId {}, conversationId {}, requestBody {}", agentContext.getAgentConfig().getId(), agentContext.getConversationId(), requestBody);
         try {
             CompletableFuture<HttpResponse<String>> httpResponseCompletableFuture = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-            httpResponseCompletableFuture.orTimeout(180, TimeUnit.SECONDS).thenAccept(httpResponse -> {
+            httpResponseCompletableFuture.thenAccept(httpResponse -> {
                 int status = httpResponse.statusCode();
                 if (status != 200 && status != 201 && status != 202 && status != 206) {
                     sink.error(new RuntimeException("Failed to connect to SSE stream. Unexpected status code: " + status));
@@ -510,15 +589,19 @@ public class SandboxAgentClient {
                     sink.error(new AgentException("0001", "session_id is null"));
                     return;
                 }
-                if (conversation != null && agentContext.getSandboxSessionCreatedConsumer() != null) {
+
+                if (agentContext.isUseSate()) {
+                    agentContext.getSessionState().put("sandboxSessionId", sessionId0);
+                } else if (conversation != null && agentContext.getSandboxSessionCreatedConsumer() != null) {
                     conversation.setSandboxSessionId(sessionId0);
                     conversation.setSandboxServerId(sandboxServer.getServerId());
                     agentContext.getSandboxSessionCreatedConsumer().accept(conversation);
                 }
                 Map<String, ComponentExecutingDto> componentExecutingDtoMap = new LinkedHashMap<>();
                 Set<ComponentExecutingDto.SubEventTypeEnum> subEventTypeEnumSet = new HashSet<>();
-                AtomicBoolean compeleted = new AtomicBoolean(false);
-                SseSubscription subscription = subscribe(sandboxServer, sandboxServer.getServerAgentUrl() + "/computer/progress/" + sessionId0, new SseEventHandler() {
+                AtomicBoolean completed = new AtomicBoolean(false);
+                String apiUrl0 = sandboxServer.getServerAgentUrl() + "/computer/progress/" + sessionId0;
+                SseSubscription subscription = subscribe(sandboxServer, rewriteComputerBaseUrl(agentContext.getConversation(), apiUrl0), new SseEventHandler() {
                     @Override
                     public void onEvent(SseEvent event) {
                         log.debug("sse event, cid {}, type: {}, data: {}", agentContext.getConversationId(), event.type, event.data);
@@ -538,28 +621,27 @@ public class SandboxAgentClient {
                         if (event.type.equals("end_turn") || "end_turn".equals(jsonObject.getString("subType"))) {
                             checkUnfinishedToolCall(agentContext, componentExecutingDtoMap);
                             checkAndCompleteFinalResultFile(agentContext, componentExecutingDtoMap, finalText, sink);
-                            if (sseSubscriptionAtomicReference.get() != null) {
-                                sseSubscriptionAtomicReference.get().cancel();
-                            }
-
                             String reason = "EndTurn";
                             if (data != null && data.getString("reason") != null) {
                                 reason = data.getString("reason");
                             }
                             sink.next(buildChatFinishedMessage(agentContext, reason));
-                            compeleted.set(true);
+                            completed.set(true);
                             sink.complete();
+                            if (sseSubscriptionAtomicReference.get() != null) {
+                                sseSubscriptionAtomicReference.get().cancel();
+                            }
                             return;
                         }
                         if ("sessionPromptEnd".equals(jsonObject.getString("messageType"))) {
                             checkUnfinishedToolCall(agentContext, componentExecutingDtoMap);
                             checkAndCompleteFinalResultFile(agentContext, componentExecutingDtoMap, finalText, sink);
-                            if (sseSubscriptionAtomicReference.get() != null) {
-                                sseSubscriptionAtomicReference.get().cancel();
-                            }
                             if (data == null) {
-                                compeleted.set(true);
+                                completed.set(true);
                                 sink.complete();
+                                if (sseSubscriptionAtomicReference.get() != null) {
+                                    sseSubscriptionAtomicReference.get().cancel();
+                                }
                                 return;
                             }
                             if ("error".equals(event.type) || "error".equals(jsonObject.getString("sub_type")) || "error".equals(jsonObject.getString("subType"))) {
@@ -591,7 +673,9 @@ public class SandboxAgentClient {
                                     callMessage.setText("\n```\n" + I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Error.ModelExecutionError") + "\n```");
                                     agentStop(agentContext.getConversationId());
                                     // 异常会话无法恢复时清除之前关联的会话
-                                    if (conversation != null && agentContext.getSandboxSessionCreatedConsumer() != null) {
+                                    if (agentContext.isUseSate()) {
+                                        agentContext.getSessionState().remove("sandboxSessionId");
+                                    } else if (conversation != null && agentContext.getSandboxSessionCreatedConsumer() != null) {
                                         conversation.setSandboxSessionId("");
                                         conversation.setSandboxServerId(sandboxServer.getServerId());
                                         agentContext.getSandboxSessionCreatedConsumer().accept(conversation);
@@ -600,10 +684,16 @@ public class SandboxAgentClient {
                                 sink.next(callMessage);
                                 sink.error(new AgentException("ERROR", message));
                             } else if ("cancelled".equals(event.type)) {
-                                sink.error(new AgentException("0001", data.containsKey("error_message") ? data.getString("error_message") : "cancelled"));
-                            } else {
-                                compeleted.set(true);
+                                //sink.error(new AgentException("0001", data.containsKey("error_message") ? data.getString("error_message") : "cancelled"));
+                                agentContext.setInterrupted(true);
+                                completed.set(true);
                                 sink.complete();
+                            } else {
+                                completed.set(true);
+                                sink.complete();
+                            }
+                            if (sseSubscriptionAtomicReference.get() != null) {
+                                sseSubscriptionAtomicReference.get().cancel();
                             }
                             return;
                         }
@@ -641,16 +731,36 @@ public class SandboxAgentClient {
                             Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
                             if (componentExecutingConsumer != null && data.getString("toolCallId") != null) {
                                 ComponentExecutingDto componentExecutingDto = buildComponentExecutingDto(data, componentExecutingDtoMap, agentContext.getUser().getLangMap());
-                                componentExecutingConsumer.accept(componentExecutingDto);
+                                if (data.getString("title") != null && data.getString("title").contains("nuwax_ask_question")) {
+                                    Object input = data.get("rawInput");
+                                    componentExecutingDto = buildExecutingEvent(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Event.AskQuestion"), ComponentExecutingDto.SubEventTypeEnum.ASK_QUESTION, input, data.getString("toolCallId"));
+                                    componentExecutingConsumer.accept(componentExecutingDto);
+                                } else {
+                                    componentExecutingConsumer.accept(componentExecutingDto);
+                                }
                                 // 添加桌面打开事件
                                 if (agentContext.getAgentConfig().getHideDesktop() == null || agentContext.getAgentConfig().getHideDesktop() != 1) {
                                     if (data.getString("title") != null && (data.getString("title").contains("mcp__chrome") || data.getString("title").contains("chrome-tools") || data.getString("title").contains("navigate_page")) && !subEventTypeEnumSet.contains(ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP)) {
                                         subEventTypeEnumSet.add(ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP);
-                                        componentExecutingDto = buildExecutingEvent(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Event.OpenDesktop"), ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP, null);
+                                        componentExecutingDto = buildExecutingEvent(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Event.OpenDesktop"), ComponentExecutingDto.SubEventTypeEnum.OPEN_DESKTOP, null, null);
                                         componentExecutingConsumer.accept(componentExecutingDto);
                                     }
                                 }
                             }
+                        }
+                        if (event.type.equals("acpRequestPermission") || "request_permission".equals(jsonObject.getString("subType"))) {
+                            Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
+                            String toolCallId = data.getString("tool_call_id");
+                            ComponentExecutingDto componentExecutingDto = buildExecutingEvent(I18nUtil.systemMessage(agentContext.getUser().getLangMap(), "Backend.Sandbox.Event.RequestPermission"), ComponentExecutingDto.SubEventTypeEnum.REQUEST_PERMISSION, data, toolCallId);
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> permissionRequests = (List<Map<String, Object>>) agentContext.getVariableParams().computeIfAbsent("permissionRequests", k -> new ArrayList<>());
+                            permissionRequests.add(Map.of(
+                                    "toolCallId", toolCallId,
+                                    "agentId", agentContext.getAgentConfig().getId().toString(),
+                                    "useState", agentContext.isUseSate(),
+                                    "data", data
+                            ));
+                            componentExecutingConsumer.accept(componentExecutingDto);
                         }
                         if (event.type.equals("plan") || "plan".equals(jsonObject.getString("subType"))) {
                             Consumer<ComponentExecutingDto> componentExecutingConsumer = agentContext.getComponentExecutingConsumer();
@@ -666,13 +776,17 @@ public class SandboxAgentClient {
 
                     @Override
                     public void onError(Throwable error) {
-                        sink.error(error);
-                        log.error("subscribe error", error);
+                        if (!completed.get()) {
+                            sink.error(error);
+                            log.error("subscribe error", error);
+                        } else {
+                            log.info("subscribe complete, onError");
+                        }
                     }
 
                     @Override
                     public void onComplete() {
-                        if (!compeleted.get()) {
+                        if (!completed.get()) {
                             sink.complete();
                         }
                     }
@@ -697,8 +811,43 @@ public class SandboxAgentClient {
     }
 
     private static AgentRequest.AgentServer buildAgentServer(AgentContext agentContext, SandboxServerConfig.SandboxServer sandboxServer, ModelConfigDto modelConfig) {
+        //需要审批的工具汇总
+        List<Map<String, Object>> toolApprovalRules = new ArrayList<>();
+        List<String> patterns = new ArrayList<>();
+        toolApprovalRules.add(Map.of("action", "ask", "patterns", patterns));
+        toolApprovalRules.add(Map.of("action", "allow", "patterns", List.of("*ask_question*")));
+        agentContext.getAgentConfig().getAgentComponentConfigList().forEach(agentComponentConfigDto -> {
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Mcp && agentComponentConfigDto.getBindConfig() instanceof McpBindConfigDto mcpBindConfig) {
+                if (YesOrNoEnum.Y.getKey().equals(mcpBindConfig.getCallApproval())) {
+                    patterns.add("*" + mcpBindConfig.getToolName());
+                }
+            } else if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Plugin && agentComponentConfigDto.getTargetConfig() instanceof PluginDto plugin
+                    && agentComponentConfigDto.getBindConfig() instanceof PluginBindConfigDto pluginBindConfig) {
+                if (YesOrNoEnum.Y.getKey().equals(pluginBindConfig.getCallApproval())) {
+                    String functionName = plugin.getFunctionName();
+                    if (StringUtils.isBlank(functionName)) {
+                        functionName = "plugin" + plugin.getId();
+                    }
+                    patterns.add("*" + functionName);
+                }
+            } else if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow && agentComponentConfigDto.getTargetConfig() instanceof WorkflowConfigDto workflowConfig
+                    && agentComponentConfigDto.getBindConfig() instanceof WorkflowBindConfigDto workflowBindConfig) {
+                if (YesOrNoEnum.Y.getKey().equals(workflowBindConfig.getCallApproval())) {
+                    String functionName = workflowConfig.getFunctionName();
+                    if (StringUtils.isBlank(functionName)) {
+                        functionName = "workflow" + workflowConfig.getId();
+                    }
+                    patterns.add("*" + functionName);
+                }
+            }
+        });
+
         Map<String, String> env = new HashMap<>();
         //追加环境变量
+        String logPath = "{PREFIX_WORKSPACE_DIR}/" + agentContext.getConversationId() + "/logs";
+        if (agentContext.getConversation().getType() == Conversation.ConversationType.DevDebug) {
+            logPath = "{PREFIX_WORKSPACE_DIR}/" + agentContext.getAgentConfig().getDevAgentConversationId() + "/.logs";
+        }
         TenantConfigDto tenantConfig = agentContext.getTenantConfig();
         String siteUrl = tenantConfig.getSiteUrl();
         siteUrl = siteUrl.endsWith("/") ? siteUrl.substring(0, siteUrl.length() - 1) : siteUrl;
@@ -711,11 +860,89 @@ public class SandboxAgentClient {
         if (agentContext.getVariableParams().containsKey("SANDBOX_ACCESS_KEY")) {
             env.put("SANDBOX_ACCESS_KEY", agentContext.getVariableParams().get("SANDBOX_ACCESS_KEY").toString());
         }
+        //Agent开发项目时，将对应的环境变量添加到容器中
+        ConversationDto conversation = agentContext.getConversation();
+        if (conversation.getDevTargetType() != null) {
+            if (conversation.getDevTargetType().equalsIgnoreCase("Agent")) {
+                env.put("DEV_AGENT_ID", String.valueOf(conversation.getDevTargetId()));
+            }
+            if (conversation.getDevTargetType().equalsIgnoreCase("Skill")) {
+                env.put("DEV_SKILL_ID", String.valueOf(conversation.getDevTargetId()));
+            }
+            if (conversation.getDevTargetType().equalsIgnoreCase("Plugin")) {
+                env.put("DEV_PLUGIN_ID", String.valueOf(conversation.getDevTargetId()));
+            }
+            env.put("DEV_SPACE_ID", String.valueOf(conversation.getDevSpaceId()));
+        }
+
+        Map<String, Object> extra = agentContext.getAgentConfig().getExtra();
+        if (extra != null && extra.containsKey("createdFrom") && "VibeCoding".equalsIgnoreCase(extra.get("createdFrom").toString())) {
+            Map<String, Map<String, String>> platforms = null;
+            AgentPublishVersionDto latestVersion = null;
+            String workspacePrefix = "/home/user/";
+            if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
+                workspacePrefix = "{PREFIX_WORKSPACE_DIR}/";
+            }
+            String cmd = workspacePrefix + agentContext.getAgentConfig().getDevAgentConversationId() + "/node_modules/.bin/tsx";
+            String arg = workspacePrefix + agentContext.getAgentConfig().getDevAgentConversationId() + "/src/index.ts";
+            if (agentContext.getConversation().getType() != Conversation.ConversationType.DevDebug) {
+                List<AgentPublishVersionDto> publishVersion = agentContext.getAgentConfig().getPublishVersion();
+                if (publishVersion == null || publishVersion.isEmpty()) {
+                    throw new RuntimeException("Missing agent installation package");
+                }
+                latestVersion = publishVersion.stream().filter(agentPublishVersionDto -> agentPublishVersionDto.getLatest() != null && agentPublishVersionDto.getLatest()).findFirst().orElse(publishVersion.get(0));
+                platforms = new HashMap<>();
+                for (AgentPublishVersionDto.PackageArtifact packageArtifact : latestVersion.getPackages()) {
+                    platforms.put(packageArtifact.getPlatform(), Map.of("url", packageArtifact.getUrl()));
+                }
+                arg = workspacePrefix + "acp-agent/" + agentContext.getAgentConfig().getId() + "/" + latestVersion.getVersion() + "/dist/bundle.mjs";
+                cmd = "node";
+            }
+
+            env.put("MAX_TOKENS", String.valueOf(modelConfig.getMaxTokens()));
+            env.put("MAX_CONTEXT_TOKENS", String.valueOf(modelConfig.getMaxContextTokens()));
+            env.put("API_PROTOCOL", modelConfig.getApiProtocol().name());//OpenAI、Anthropic
+            if (modelConfig.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
+                env.put("OPENAI_API_KEY", "{MODEL_PROVIDER_API_KEY}");
+                env.put("OPENAI_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
+                env.put("OPENAI_MODEL", modelConfig.getModel());
+            } else if (modelConfig.getApiProtocol() == ModelApiProtocolEnum.Anthropic) {
+                env.put("ANTHROPIC_API_KEY", "{MODEL_PROVIDER_API_KEY}");
+                if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
+                    env.put("ANTHROPIC_AUTH_TOKEN", "{MODEL_PROVIDER_API_KEY}");
+                }
+                env.put("ANTHROPIC_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
+                env.put("ANTHROPIC_MODEL", modelConfig.getModel());
+            }
+
+            if (modelConfig.getIsReasonModel() != null && modelConfig.getIsReasonModel() == 1) {
+                int maxThinkingTokens = modelConfig.getMaxTokens() == null ? 2048 : modelConfig.getMaxTokens() / 2;
+                env.put("MAX_THINKING_TOKENS", maxThinkingTokens > 4096 ? "4096" : Integer.toString(maxThinkingTokens));
+                env.put("DISABLE_THINKING", "0");
+            } else {
+                env.put("DISABLE_THINKING", "1");
+            }
+            env.put("LOG_LEVEL", agentContext.getConversation().getType() == Conversation.ConversationType.DevDebug ? "debug" : "info");
+            env.put("LOG_DIR", logPath);
+
+            return AgentRequest.AgentServer.builder()
+                    .agent_id(agentContext.getAgentConfig().getId().toString())
+                    .command(cmd)
+                    .args(List.of(arg))
+                    .env(env)
+                    .agent_mode(agentContext.getAgentMode())
+                    .version(latestVersion == null ? null : latestVersion.getVersion())
+                    .platforms(platforms)
+                    .tool_approval_rules(toolApprovalRules)
+                    .build();
+        }
+
         // 不支持claudecode的模型直接使用opencode
         if (!isClaudeCodeSupport(modelConfig)) {
-            env.put("OPENCODE_LOG_DIR", "/app/container-logs");
+            env.put("OPENCODE_LOG_DIR", logPath);
             env.put("OPENCODE_MAX_TOKENS", String.valueOf(modelConfig.getMaxTokens()));
             env.put("OPENCODE_MAX_CONTEXT_TOKENS", String.valueOf(modelConfig.getMaxContextTokens()));
+            env.put("OPENCODE_PERMISSION", "{\"bash\":\"ask\",\"edit\":\"ask\",\"question\":\"deny\"}");
             if (modelConfig.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
                 env.put("OPENAI_API_KEY", "{MODEL_PROVIDER_API_KEY}");
                 env.put("OPENAI_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
@@ -729,7 +956,14 @@ public class SandboxAgentClient {
                 env.put("ANTHROPIC_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
                 env.put("OPENCODE_MODEL", "anthropic-compatible/" + modelConfig.getModel());
             }
-            return AgentRequest.AgentServer.builder().agent_id("nuwaxcode").command("nuwaxcode").args(List.of("acp")).env(env).build();
+            return AgentRequest.AgentServer.builder()
+                    .agent_id("nuwaxcode")
+                    .command("nuwaxcode")
+                    .args(List.of("acp"))
+                    .env(env)
+                    .agent_mode(agentContext.getAgentMode())
+                    .tool_approval_rules(toolApprovalRules)
+                    .build();
         } else {
             env.put("ANTHROPIC_API_KEY", "{MODEL_PROVIDER_API_KEY}");
             // 用户个人电脑运行时增加ANTHROPIC_AUTH_TOKEN
@@ -746,7 +980,14 @@ public class SandboxAgentClient {
                 env.put("CLAUDE_CODE_DISABLE_THINKING", "1");
             }
         }
-        return AgentRequest.AgentServer.builder().agent_id("claude-code-acp-ts").command("claude-code-acp-ts").args(List.of()).env(env).build();
+        return AgentRequest.AgentServer.builder()
+                .agent_id("claude-code-acp-ts")
+                .command("claude-code-acp-ts")
+                .args(List.of())
+                .env(env)
+                .agent_mode(agentContext.getAgentMode())
+                .tool_approval_rules(toolApprovalRules)
+                .build();
     }
 
     private static boolean isClaudeCodeSupport(ModelConfigDto modelConfig) {
@@ -766,7 +1007,8 @@ public class SandboxAgentClient {
             agentContext.getContextMessages().forEach(message -> {
                 String text = message.getText();
                 if (message.getMessageType() == MessageType.USER) {
-                    text = message.getText().replaceAll("<user-prompt>[\\s\\S]*?</user-prompt>", "").trim();
+                    text = message.getText().replaceAll("<user-prompt>[\\s\\S]*?</user-prompt>", "")
+                            .replaceAll("<user-reminder>[\\s\\S]*?</user-reminder>", "").trim();
                     if (text.contains("<user-message>") && text.contains("</user-message>")) {
                         text = text.replace("<user-message>", "").replace("</user-message>", "").trim();
                     }
@@ -799,13 +1041,18 @@ public class SandboxAgentClient {
         if (finalComponentExecutingDto == null) {
             return;
         }
+
         // 检查finalText中是否包含 <task-result> 标签
         String finalTextString = finalText.toString();
         if (finalTextString.contains("<task-result>") && finalTextString.contains("</task-result>")) {
             // 已经有结果文件输出，不再追加
             return;
         }
+        if (agentContext.getConversation().getType() == Conversation.ConversationType.Development) {
+            return;
+        }
         String resultFileText = """
+                
                 
                 <task-result>
                     <description>{description}</description>
@@ -910,6 +1157,9 @@ public class SandboxAgentClient {
         Map<String, JSONObject> contextServers = new HashMap<>();
         //添加chrome-tools
         contextServers.put("chrome-tools", chromeMcp);
+        if (YesOrNoEnum.Y.getKey().equals(agentContext.getAgentConfig().getEnableAskQuestion())) {
+            contextServers.put("ask-question", askQuestionMcp);
+        }
 
         //添加mcp
         List<AgentComponentConfigDto> mcpComponentConfigs = agentContext.getAgentConfig().getAgentComponentConfigList().stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Mcp).toList();
@@ -1254,7 +1504,7 @@ public class SandboxAgentClient {
         return title;
     }
 
-    private static ComponentExecutingDto buildExecutingEvent(String title, ComponentExecutingDto.SubEventTypeEnum subEventType, Object input) {
+    private static ComponentExecutingDto buildExecutingEvent(String title, ComponentExecutingDto.SubEventTypeEnum subEventType, Object input, String toolCallId) {
         ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
         componentExecuteResult.setStartTime(System.currentTimeMillis());
         componentExecuteResult.setEndTime(componentExecuteResult.getStartTime());
@@ -1262,7 +1512,7 @@ public class SandboxAgentClient {
         componentExecuteResult.setName(title);
         componentExecuteResult.setType(ComponentTypeEnum.Event);
         componentExecuteResult.setInput(input);
-        componentExecuteResult.setExecuteId(UUID.randomUUID().toString().replace("-", ""));
+        componentExecuteResult.setExecuteId(toolCallId == null ? UUID.randomUUID().toString().replace("-", "") : toolCallId);
         ComponentExecutingDto componentExecutingDto = new ComponentExecutingDto();
         componentExecutingDto.setTargetId(-1L);
         componentExecutingDto.setName(title);
@@ -1325,12 +1575,47 @@ public class SandboxAgentClient {
         SimpleJvmHashCache.putHash(agentContext.getRequestId(), "modelExecuteInfos", modelExecuteInfoMap, 600);
     }
 
-    public boolean chatCancel(String conversationId) {
-        SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
-        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null || sandboxServer.getCurrentConversation().getSandboxSessionId() == null) {
-            return false;
+    private String rewriteComputerBaseUrl(ConversationDto conversation, String apiUrl) {
+        if (conversation.getType() == Conversation.ConversationType.DevDebug) {
+            return apiUrl.replace("/computer/", "/devcomputer/");
         }
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/agent/session/cancel?project_id=" + conversationId + "&session_id=" + sandboxServer.getCurrentConversation().getSandboxSessionId() + "&user_id=" + sandboxServer.getCurrentConversation().getUserId()))
+        return apiUrl;
+    }
+
+    public void chatCancel(String conversationId) {
+        SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
+        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null) {
+            return;
+        }
+        Map<String, String> sessionMap = createSessionMap(sandboxServer);
+        if (!sessionMap.isEmpty()) {
+            sessionMap.forEach((key, value) -> chatCancel0(sandboxServer, key, value));
+            return;
+        }
+        if (sandboxServer.getCurrentConversation().getSandboxSessionId() == null) {
+            return;
+        }
+        chatCancel0(sandboxServer, conversationId, sandboxServer.getCurrentConversation().getSandboxSessionId());
+    }
+
+    //针对AgentGroup和AgentFlow下的多个会话进行处理
+    private Map<String, String> createSessionMap(SandboxServerConfig.SandboxServer sandboxServer) {
+        Map<String, Object> variables = sandboxServer.getCurrentConversation().getVariables();
+        Map<String, String> sesssionMap = new HashMap<>();
+        if (variables != null) {
+            variables.forEach((key, value) -> {
+                if (key.startsWith("_agent") && value instanceof Map<?, ?> && ((Map<?, ?>) value).containsKey("sandboxSessionId")) {
+                    sesssionMap.put(key.replace("_agent", sandboxServer.getCurrentConversation().getId() + "_"), (String) ((Map<?, ?>) value).get("sandboxSessionId"));
+                }
+            });
+        }
+        return sesssionMap;
+    }
+
+    private void chatCancel0(SandboxServerConfig.SandboxServer sandboxServer, String projectId, String sandboxSessionId) {
+        ConversationDto conversation = sandboxServer.getCurrentConversation();
+        String apiUrl = sandboxServer.getServerAgentUrl() + "/computer/agent/session/cancel?project_id=" + projectId + "&session_id=" + sandboxSessionId + "&user_id=" + conversation.getUserId();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(rewriteComputerBaseUrl(conversation, apiUrl)))
                 .header("Content-Type", "application/json")
                 .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
                 .timeout(Duration.ofSeconds(60)).POST(HttpRequest.BodyPublishers.noBody()).build();
@@ -1338,23 +1623,45 @@ public class SandboxAgentClient {
         try {
             send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             log.info("chat cancel response: {}", send.body());
-            return true;
         } catch (Throwable e) {
             //  ignore
             log.error("chat cancel error", e);
         }
-        return false;
     }
 
     public void agentStop(String conversationId) {
-        SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
-        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null || sandboxServer.getCurrentConversation().getSandboxSessionId() == null) {
+        SandboxServerConfig.SandboxServer sandboxServer;
+        try {
+            sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
+        } catch (Exception e) {
+            // ignore
+            log.error("agentStop error", e);
             return;
         }
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sandboxServer.getServerAgentUrl() + "/computer/agent/stop"))
+        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null) {
+            return;
+        }
+        Map<String, String> sessionMap = createSessionMap(sandboxServer);
+        if (!sessionMap.isEmpty()) {
+            sessionMap.forEach((key, value) -> agentStop0(sandboxServer, key, value));
+            return;
+        }
+        try {
+            agentStop0(sandboxServer, conversationId, sandboxServer.getCurrentConversation().getSandboxSessionId());
+        } catch (Exception e) {
+            //  ignore
+        }
+    }
+
+    public void agentStop0(SandboxServerConfig.SandboxServer sandboxServer, String projectId, String sandboxSessionId) {
+        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null || sandboxSessionId == null) {
+            return;
+        }
+        String apiUrl = sandboxServer.getServerAgentUrl() + "/computer/agent/stop";
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(rewriteComputerBaseUrl(sandboxServer.getCurrentConversation(), apiUrl)))
                 .header("Content-Type", "application/json")
                 .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
-                .timeout(Duration.ofSeconds(60)).POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of("user_id", sandboxServer.getCurrentConversation().getUserId().toString(), "session_id", sandboxServer.getCurrentConversation().getSandboxSessionId(), "project_id", conversationId)))).build();
+                .timeout(Duration.ofSeconds(60)).POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of("user_id", sandboxServer.getCurrentConversation().getUserId().toString(), "session_id", sandboxSessionId, "project_id", projectId)))).build();
         HttpResponse<String> send;
         try {
             send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -1365,9 +1672,74 @@ public class SandboxAgentClient {
         }
     }
 
+    public void notifyResolved(String conversationId, String toolCallId, Map<String, String> outcome) {
+        SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
+        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null) {
+            return;
+        }
+        String projectId = conversationId;
+        AtomicReference<String> sessionId = new AtomicReference<>();
+        if (sandboxServer.getCurrentConversation().getSandboxSessionId() != null) {
+            sessionId.set(sandboxServer.getCurrentConversation().getSandboxSessionId());
+        }
+        Map<String, Object> variables = sandboxServer.getCurrentConversation().getVariables();
+        if (variables != null) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> permissionRequests = (List<Map<String, Object>>) variables.computeIfAbsent("permissionRequests", k -> new ArrayList<>());
+            for (Map<String, Object> permissionRequest : permissionRequests) {
+                if (permissionRequest.get("toolCallId").equals(toolCallId) && permissionRequest.get("useState") != null && (Boolean) permissionRequest.get("useState")) {
+                    projectId = conversationId + "_" + permissionRequest.get("agentId");
+                    String agentId = permissionRequest.get("agentId").toString();
+                    variables.forEach((key, value) -> {
+                        if (key.startsWith("_agent" + agentId) && value instanceof Map<?, ?> && ((Map<?, ?>) value).containsKey("sandboxSessionId")) {
+                            sessionId.set((String) ((Map<?, ?>) value).get("sandboxSessionId"));
+                        }
+                    });
+                }
+            }
+        }
+        if (sessionId.get() == null) {
+            return;
+        }
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("user_id", sandboxServer.getCurrentConversation().getUserId().toString());
+        requestBody.put("project_id", projectId);
+        Map<String, Object> permissionResolveRequest = new HashMap<>();
+        Map<String, Object> requestPermissionResponse = new HashMap<>();
+        requestPermissionResponse.put("outcome", outcome);
+        permissionResolveRequest.put("request_permission_response", requestPermissionResponse);
+        permissionResolveRequest.put("session_id", sessionId.get());
+        permissionResolveRequest.put("tool_call_id", toolCallId);
+        requestBody.put("permission_resolve_request", permissionResolveRequest);
+
+        String apiUrl = sandboxServer.getServerAgentUrl() + "/computer/notify-resolved";
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(rewriteComputerBaseUrl(sandboxServer.getCurrentConversation(), apiUrl)))
+                .header("Content-Type", "application/json")
+                .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
+                .timeout(Duration.ofSeconds(30))
+                .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(requestBody)))
+                .build();
+        try {
+            HttpResponse<String> send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            String body = send.body();
+            log.info("notify resolved response: {}", body);
+            if (JSON.isValid(body)) {
+                JSONObject res = JSON.parseObject(body);
+                if (!"0000".equals(res.getString("code"))) {
+                    throw new BizException(res.getString("message") != null ? res.getString("message") : "Permission failed");
+                }
+            }
+        } catch (BizException e) {
+            throw e;
+        } catch (Throwable e) {
+            log.error("notify resolved error", e);
+            throw new BizException("Permission failed: " + e.getMessage());
+        }
+    }
+
     public boolean checkAgentIfAlive(String conversationId) {
         SandboxServerConfig.SandboxServer sandboxServer = sandboxServerConfigService.selectServer(Long.parseLong(conversationId));
-        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null || sandboxServer.getCurrentConversation().getSandboxSessionId() == null) {
+        if (sandboxServer == null || sandboxServer.getCurrentConversation() == null) {
             return false;
         }
         AgentContext agentContext = new AgentContext();
@@ -1377,7 +1749,10 @@ public class SandboxAgentClient {
     }
 
     public static SseSubscription subscribe(SandboxServerConfig.SandboxServer sandboxServer, String url, SseEventHandler eventHandler) {
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "text/event-stream").header("Cache-Control", "no-cache")
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "text/event-stream")
+                .header("Cache-Control", "no-cache")
                 .header("x-api-key", sandboxServer.getServerApiKey() == null ? "" : sandboxServer.getServerApiKey())
                 .GET().build();
         StringBuilder eventBuilder = new StringBuilder();
@@ -1509,11 +1884,18 @@ public class SandboxAgentClient {
                                   AtomicReference<Flow.Subscription> subscription, Disposable heartbeatDisposable) {
 
         public void cancel() {
+            if (future != null) {
+                try {
+                    future.cancel(true);
+                } catch (Exception e) {
+                    log.warn("Cancel SSE subscription failed", e);
+                    // Ignore
+                }
+            }
             if (subscription.get() != null) {
                 subscription.get().cancel();
             }
             heartbeatDisposable.dispose();
-//            future.cancel(true);
         }
     }
 }

@@ -19,31 +19,41 @@ public interface IComputerFileApplicationService {
     /**
      * 查询文件列表
      */
-    Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext);
+    Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir);
 
     /**
      * 更新文件
      */
-    Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext);
+    Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir);
 
     /**
      * 上传文件
      */
-    Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext);
+    Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir);
 
     /**
      * 批量上传文件
      */
-    Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext);
+    Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir);
+
+    /**
+     * 导入项目（zip 替换工作空间，保留白名单目录）
+     */
+    Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir);
 
     /**
      * 获取静态文件
      */
-    ResponseEntity<StreamingResponseBody> getStaticFile(Long cId, HttpServletRequest request);
+    ResponseEntity<StreamingResponseBody> getStaticFile(Long cId, HttpServletRequest request, String customTargetDir);
 
     /**
      * 下载全部文件（zip）
      */
-    ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext);
+    ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext, String customTargetDir);
+
+    /**
+     * 获取沙盒日志
+     */
+    Map<String, Object> getLogs(Long userId, Long cId, int tailLines);
 
 }

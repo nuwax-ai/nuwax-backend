@@ -47,6 +47,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -78,8 +82,10 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     @Resource
     private IFileAccessService iFileAccessService;
 
+    public static final Long MAX_SKILL_FILE_SIZE = 100L * 1024 * 1024;
+
     // 单个文件最大大小100M
-    private final static long MAX_SINGLE_FILE_SIZE = 100 * 1024 * 1024L;
+    public final static Long MAX_SINGLE_FILE_SIZE = 100 * 1024 * 1024L;
     private static final String TARGET_TYPE_SKILL_DEV = "skill_dev";
     private static final String TARGET_TYPE_SKILL_PUBLISH_APPLY = "skill_publish_apply";
     private static final String TARGET_TYPE_SKILL_PUBLISHED = "skill_published";
@@ -614,6 +620,98 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     }
 
     @Override
+    public Long importSkill(String url, MultipartFile file, Long targetSkillId, Long targetSpaceId, List<UsageScenarioEnum> usageScenarios) {
+        // file 和 url 二选一
+        if ((file == null || file.isEmpty()) && (url == null || url.isBlank())) {
+            throw new IllegalArgumentException("Please provide either a file or a URL to import");
+        }
+        if (file != null && !file.isEmpty() && url != null && !url.isBlank()) {
+            throw new IllegalArgumentException("Please provide either a file or a URL, not both");
+        }
+
+        // 如果提供了 url，下载文件
+        if ((file == null || file.isEmpty()) && url != null && !url.isBlank()) {
+            file = downloadFromUrl(url);
+        }
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Please select a file to upload");
+        }
+
+        // 检查文件大小
+        if (file.getSize() > MAX_SKILL_FILE_SIZE) {
+            throw new IllegalArgumentException("Import file must be smaller than 20 MB");
+        }
+
+        // 查询已有技能
+        SkillConfigDto existSkill = null;
+        if (targetSkillId != null) {
+            existSkill = this.queryById(targetSkillId, true);
+            if (existSkill == null) {
+                throw new IllegalArgumentException("Skill does not exist");
+            }
+        } else {
+            if (targetSpaceId == null) {
+                throw new IllegalArgumentException("Please select a target space");
+            }
+        }
+
+        // 转换 usageScenarios 为 SkillExtDto
+        SkillExtDto ext = convertUsageScenariosToExt(usageScenarios);
+
+        return this.importSkill(file, existSkill, targetSpaceId, ext);
+    }
+
+    /**
+     * 从 URL 下载技能文件，返回 MultipartFile
+     */
+    private MultipartFile downloadFromUrl(String url) {
+        try {
+            String decodedUrl = URLDecoder.decode(url.trim(), StandardCharsets.UTF_8);
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(decodedUrl))
+                    .GET()
+                    .build();
+            HttpClient httpClient = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            HttpResponse<byte[]> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 200) {
+                throw new IllegalArgumentException("Failed to download skill file from URL, HTTP status: " + response.statusCode());
+            }
+            byte[] body = response.body();
+            if (body == null || body.length == 0) {
+                throw new IllegalArgumentException("Downloaded file is empty");
+            }
+            // 从 URL 路径中提取文件名
+            String path = URI.create(decodedUrl).getPath();
+            String fileName = path.substring(path.lastIndexOf('/') + 1);
+            if (fileName.isBlank()) {
+                fileName = "skill.zip";
+            }
+            return new InMemoryMultipartFile("file", fileName, "application/octet-stream", body);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to download skill file from URL: {}", url, e);
+            throw new IllegalArgumentException("Failed to download skill file from URL: " + e.getMessage());
+        }
+    }
+
+    private SkillExtDto convertUsageScenariosToExt(List<UsageScenarioEnum> usageScenarios) {
+        if (usageScenarios == null || usageScenarios.isEmpty()) {
+            SkillExtDto ext = new SkillExtDto();
+            ext.setSupportTaskAgent(1);
+            ext.setSupportPageApp(0);
+            return ext;
+        }
+        SkillExtDto ext = new SkillExtDto();
+        ext.setSupportTaskAgent(usageScenarios.contains(UsageScenarioEnum.TaskAgent) ? 1 : 0);
+        ext.setSupportPageApp(usageScenarios.contains(UsageScenarioEnum.PageApp) ? 1 : 0);
+        return ext;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Long copySkill(SkillConfigDto skillConfigDto, Long targetSpaceId) {
         String newName = copyIndexRecordRepository.newCopyName("skill", skillConfigDto.getSpaceId(), skillConfigDto.getName());
@@ -648,6 +746,21 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             log.error("Failed to read skill template", e);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillTemplateReadFailed,
                     e.getMessage());
+        }
+    }
+
+    @Override
+    public SkillConfigDto getSkillTemplate() {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("templates/skill-template.json")) {
+            if (inputStream == null) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillTemplateReadFailed,
+                        "skill template not found");
+            }
+            return getSkillTemplate(inputStream);
+        } catch (BizException e) {
+            throw e;
+        } catch (IOException e) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillTemplateReadFailed, e.getMessage());
         }
     }
 
@@ -896,7 +1009,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         if (idx >= 0 && idx < path.length() - 1) {
             fileName = path.substring(idx + 1);
         }
-        String contentType = FileTypeUtils.isTextFile(path) ? "text/plain" : "application/octet-stream";
+        String contentType = FileTypeUtils.getContentTypeByFileName(fileName).toString();
         InMemoryMultipartFile multipartFile = new InMemoryMultipartFile("file", fileName, contentType, bytes);
         Long tenantId = RequestContext.get() != null ? RequestContext.get().getTenantId() : null;
         Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
@@ -1073,6 +1186,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                 }
                 dto.setFiles(normalizeSkillFiles(publishedConfig.getFiles()));
                 dto.setZipFileUrl(publishedConfig.getZipFileUrl());
+                dto.setDevAgentConversationId(publishedConfig.getDevAgentConversationId());
                 return dto;
             }
         } catch (Exception e) {

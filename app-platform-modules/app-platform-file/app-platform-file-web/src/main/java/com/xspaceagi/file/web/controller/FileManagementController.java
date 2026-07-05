@@ -2,22 +2,28 @@ package com.xspaceagi.file.web.controller;
 
 import com.xspaceagi.file.application.service.FileManagementService;
 import com.xspaceagi.file.domain.model.FileRecordDomain;
+import com.xspaceagi.file.infra.storage.FileKeyGenerator;
 import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.file.web.dto.FileRecordVO;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.HttpStatusEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.RedisUtil;
 import com.xspaceagi.system.web.controller.ChatKeyCheck;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -28,8 +34,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +57,16 @@ public class FileManagementController {
 
     private final IFileAccessService iFileAccessService;
 
+    @Resource
+    private RedisUtil redisUtil;
+
+    @Value("${s3.proxy:}")
+    private String proxyBaseUrl;
+
+    @Value("${s3.shortUrlKey:}")
+    private String shortUrlKey;
+
+
     @PostMapping("/file/upload")
     @Operation(summary = "Upload file")
     public ReqResult<FileRecordVO> uploadFile(HttpServletRequest request, @RequestParam("file") MultipartFile file,
@@ -56,7 +74,8 @@ public class FileManagementController {
                                               @RequestParam(value = "targetId", required = false, defaultValue = "-1") Long targetId,
                                               @RequestParam(value = "metadata", required = false) String metadata) {
         if (!RequestContext.get().isLogin()) {
-            ChatKeyCheck.check(request, userAccessKeyApiService);
+            UserAccessKeyDto userAccessKeyDto = ChatKeyCheck.check(request, userAccessKeyApiService);
+            RequestContext.get().setUserId(userAccessKeyDto.getUserId());
         }
         boolean isAuthRequired = true;
         // If targetType or targetId not provided, try to parse from Referer
@@ -300,9 +319,11 @@ public class FileManagementController {
         }
         String fullPath = request.getRequestURI();
         String fileKey = fullPath.substring("/api/f/".length());
-
         log.info("Accessing file: {}", fileKey);
+        return response(fileKey, download);
+    }
 
+    private ResponseEntity<?> response(String fileKey, Integer download) {
         try {
             // Extract storage type from fileKey (format: /storageType/businessType/date/uuid.ext)
             String storageType = extractStorageTypeFromFileKey(fileKey);
@@ -351,6 +372,37 @@ public class FileManagementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/f1/{key}")
+    @Operation(summary = "Access file by fileKey")
+    public ResponseEntity<?> redirectOriginalUrl(@PathVariable String key) {
+        Object o = redisUtil.get("s3p:" + key);
+        if (o == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(o.toString()))
+                .header("X-S3-Url", o.toString())
+                .build();
+    }
+
+    @GetMapping("/file/url/short")
+    @Operation(summary = "Get file short url")
+    public ReqResult<String> getShortUrl(@RequestParam String url, @RequestParam String ak, @RequestParam(required = false) Integer expireSeconds) {
+        if (StringUtils.isBlank(shortUrlKey) || shortUrlKey.equals(ak)) {
+            return ReqResult.error("Invalid ak");
+        }
+        String decode = URLDecoder.decode(url, StandardCharsets.UTF_8);
+        if (decode == null) {
+            return ReqResult.error("Invalid url");
+        }
+        String ext = FileKeyGenerator.extractExtension(decode);
+        ext = ext.contains("?") ? ext.substring(0, ext.indexOf("?")) : ext;
+        String key = UUID.randomUUID().toString().replace("-", "") + ext;
+        redisUtil.set("s3p:" + key, decode, expireSeconds == null ? 3600 : expireSeconds);
+        return ReqResult.success(proxyBaseUrl + "/" + key);
+    }
+
 
     /**
      * Extract storage type from fileKey

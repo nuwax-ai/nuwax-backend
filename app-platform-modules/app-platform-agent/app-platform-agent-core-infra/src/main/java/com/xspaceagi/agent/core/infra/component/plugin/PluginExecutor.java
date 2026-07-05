@@ -16,6 +16,7 @@ import com.xspaceagi.eco.market.sdk.request.ClientSecretRequest;
 import com.xspaceagi.log.sdk.service.ILogRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -148,6 +149,55 @@ public class PluginExecutor {
             logDocument.setResultCode("0000");
             logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
+
+            Object result1 = result.getResult();
+            if (result1 instanceof Map<?, ?>) {
+                Object o = ((Map<?, ?>) result1).get("usage");
+                if (o instanceof Map<?, ?>) {
+                    TraceContext.TokenUsage tokenUsage = new TraceContext.TokenUsage();
+                    Object o1 = ((Map<?, ?>) o).get("inputTokens");
+                    if (o1 instanceof Number) {
+                        tokenUsage.inputTokens = ((Number) o1).longValue();
+                    }
+
+                    o1 = ((Map<?, ?>) o).get("input_tokens");
+                    if (o1 instanceof Number) {
+                        tokenUsage.inputTokens = ((Number) o1).longValue();
+                    }
+
+                    Object o2 = ((Map<?, ?>) o).get("outputTokens");
+                    if (o2 instanceof Number) {
+                        tokenUsage.outputTokens = ((Number) o2).longValue();
+                        pluginContext.getTraceContext().setTokenUsage(tokenUsage);
+                    }
+
+                    o2 = ((Map<?, ?>) o).get("output_tokens");
+                    if (o2 instanceof Number) {
+                        tokenUsage.outputTokens = ((Number) o2).longValue();
+                        pluginContext.getTraceContext().setTokenUsage(tokenUsage);
+                    }
+
+                    Object o3 = ((Map<?, ?>) o).get("completionTokens");
+                    if (o3 instanceof Number) {
+                        tokenUsage.outputTokens = ((Number) o3).longValue();
+                        pluginContext.getTraceContext().setTokenUsage(tokenUsage);
+                    }
+
+                    o3 = ((Map<?, ?>) o).get("completion_tokens");
+                    if (o3 instanceof Number) {
+                        tokenUsage.outputTokens = ((Number) o3).longValue();
+                        pluginContext.getTraceContext().setTokenUsage(tokenUsage);
+                    }
+
+                    TraceContext.DurationUsage durationUsage = new TraceContext.DurationUsage();
+                    Object o4 = ((Map<?, ?>) o).get("duration");
+                    if (o4 instanceof Number) {
+                        durationUsage.duration = ((Number) o4).longValue();
+                        pluginContext.getTraceContext().setDurationUsage(durationUsage);
+                    }
+                }
+            }
+
             iLogRpcService.pushTraceLog(pluginContext.getTraceContext());
         } catch (Exception e) {
             // Ignore

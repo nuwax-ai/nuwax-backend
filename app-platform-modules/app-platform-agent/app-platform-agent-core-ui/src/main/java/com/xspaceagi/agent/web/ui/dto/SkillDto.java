@@ -77,4 +77,7 @@ public class SkillDto implements Serializable {
 
     @Schema(description = "权限列表")
     private List<String> permissions;
+
+    @Schema(description = "开发时使用的会话ID")
+    private Long devAgentConversationId;
 }

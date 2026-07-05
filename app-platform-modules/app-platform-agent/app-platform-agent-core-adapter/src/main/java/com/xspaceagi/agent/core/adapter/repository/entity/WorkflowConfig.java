@@ -36,6 +36,10 @@ public class WorkflowConfig {
 
     private String icon;
 
+    private String type;
+
+    private Long agentId;
+
     @TableField("start_node_id")
     private Long startNodeId;
 

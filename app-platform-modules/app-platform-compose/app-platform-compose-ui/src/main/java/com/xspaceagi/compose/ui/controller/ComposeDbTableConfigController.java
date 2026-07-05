@@ -6,6 +6,8 @@ import com.xspaceagi.compose.domain.model.CustomTableDefinitionModel;
 import com.xspaceagi.compose.domain.repository.ICustomTableDefinitionRepository;
 import com.xspaceagi.compose.ui.base.BaseController;
 import com.xspaceagi.compose.ui.dto.*;
+import com.xspaceagi.sandbox.SandboxUtils;
+import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.domain.log.LogPrint;
 import com.xspaceagi.system.infra.service.QueryVoListDelegateService;
@@ -26,6 +28,7 @@ import com.xspaceagi.system.spec.page.SuperPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,24 +46,32 @@ public class ComposeDbTableConfigController extends BaseController {
     @Resource
     private QueryVoListDelegateService queryVoListDelegateService;
 
-
     @Resource
     private IUserDataPermissionRpcService userDataPermissionRpcService;
 
     @Resource
     private SpacePermissionService spacePermissionService;
 
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
+
     @RequireResource(ResourceEnum.COMPONENT_LIB_CREATE)
     @OperationLogReporter(actionType = ActionType.ADD, action = "新增表定义", objectName = "表定义配置", systemCode = SystemEnum.DB_TABLE)
     @LogPrint(step = "表定义配置-新增表定义")
     @Operation(summary = "新增表定义")
     @PostMapping("/add")
-    public ReqResult<Long> addTableDefinition(@RequestBody CustomTableAddRequest request) {
+    public ReqResult<Long> addTableDefinition(@RequestBody CustomTableAddRequest addRequest, HttpServletRequest request) {
+        if (SandboxUtils.isSandboxRequest(request)) {
+            if (addRequest.getSpaceId() == null) {
+                Long personalSpaceId = spaceApplicationService.getPersonalSpaceId(RequestContext.get().getUserId());
+                addRequest.setSpaceId(personalSpaceId);
+            }
+        }
         UserContext userContext = this.getUser();
         UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(userContext.getUserId());
         Long ct = customTableDefinitionApplicationService.countUserTotalTable(userContext.getUserId());
         userDataPermission.checkMaxDataTableCount(ct.intValue());
-        var model = CustomTableAddRequest.convert2Model(request);
+        var model = CustomTableAddRequest.convert2Model(addRequest);
 
         var data = customTableDefinitionApplicationService
                 .addInfo(model, userContext);
@@ -114,7 +125,16 @@ public class ComposeDbTableConfigController extends BaseController {
     @Operation(summary = "查询表定义列表")
     @RequestMapping(path = "/list", method = RequestMethod.POST)
     public ReqResult<IPage<CustomTableDefinitionModel>> list(
-            @RequestBody PageQueryVo<CustomTableQueryRequest> pageQueryVo) {
+            @RequestBody PageQueryVo<CustomTableQueryRequest> pageQueryVo, HttpServletRequest request) {
+        if (SandboxUtils.isSandboxRequest(request)) {
+            if (pageQueryVo.getQueryFilter() == null) {
+                pageQueryVo.setQueryFilter(new CustomTableQueryRequest());
+            }
+            if (pageQueryVo.getQueryFilter().getSpaceId() == null) {
+                Long personalSpaceId = spaceApplicationService.getPersonalSpaceId(RequestContext.get().getUserId());
+                pageQueryVo.getQueryFilter().setSpaceId(personalSpaceId);
+            }
+        }
         Assert.notNull(pageQueryVo, "pageQueryVo is null");
         Assert.notNull(pageQueryVo.getQueryFilter(), "queryFilter is null");
         Assert.notNull(pageQueryVo.getQueryFilter().getSpaceId(), "spaceId is null");

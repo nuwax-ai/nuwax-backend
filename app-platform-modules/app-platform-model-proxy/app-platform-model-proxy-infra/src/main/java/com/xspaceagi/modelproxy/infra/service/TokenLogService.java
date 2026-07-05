@@ -87,10 +87,12 @@ public class TokenLogService implements TaskExecuteService {
                 long cacheInputTokens = 0L;
                 long inputTokens = 0L;
                 long outputTokens = 0L;
+                long cacheCreationInputTokens = 0L;
                 String content = null;
                 if ("Anthropic".equalsIgnoreCase(apiProtocol)) {
                     AnthropicSSEParser.TokenUsage tokenUsage = AnthropicSSEParser.extractTokenUsage(responseBody);
-                    inputTokens = tokenUsage.inputTokens;
+                    cacheCreationInputTokens = tokenUsage.cacheCreationInputTokens;
+                    inputTokens = (long) (tokenUsage.inputTokens + (tokenUsage.cacheCreationInputTokens * 1.25));//一般厂商缓存创建输入的价格比正常输入的要贵25%
                     outputTokens = tokenUsage.outputTokens;
                     cacheInputTokens = tokenUsage.cacheInputTokens;
                     content = tokenUsage.text;
@@ -105,7 +107,8 @@ public class TokenLogService implements TaskExecuteService {
                 } else if ("OpenAi".equalsIgnoreCase(apiProtocol)) {
                     OpenAISSEParser.TokenUsage tokenUsage = OpenAISSEParser.extractTokenUsage(responseBody);
                     cacheInputTokens = tokenUsage.cachedTokens;
-                    inputTokens = tokenUsage.promptTokens;
+                    cacheCreationInputTokens = tokenUsage.cacheCreationInputTokens;
+                    inputTokens = (long) (tokenUsage.promptTokens - cacheInputTokens + tokenUsage.cacheCreationInputTokens * 1.25);
                     outputTokens = tokenUsage.completionTokens;
                     content = tokenUsage.content;
                 }
@@ -143,8 +146,13 @@ public class TokenLogService implements TaskExecuteService {
                             .conversationId(conversationId)
                             .targetName(model)
                             .cacheInputToken((int) cacheInputTokens)
+                            .cacheCreationInputToken((int) cacheCreationInputTokens)
                             .inputToken((int) inputTokens)
                             .outputToken((int) outputTokens)
+                            .apiKey(traceContext != null && traceContext.getApiKey() != null ? TraceContext.maskApiKey(traceContext.getApiKey()) : "")
+                            .resultCode(traceContext != null && traceContext.isError() ? traceContext.getErrorCode() : "0000")
+                            .resultMsg(traceContext != null && traceContext.isError() ? traceContext.getErrorMessage() : "success")
+                            .apiKey(traceContext != null && traceContext.getApiKey() != null ? traceContext.getApiKey() : "")
                             .build());
                 }
                 if (traceContext != null) {

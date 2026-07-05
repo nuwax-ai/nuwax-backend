@@ -33,6 +33,8 @@ public class WorkflowExecuteRequestDto implements Serializable {
 
     private boolean test;
 
+    private String apiKey;
+
     public Map<String, Object> getParams() {
         return params == null ? params = new HashMap<>() : params;
     }

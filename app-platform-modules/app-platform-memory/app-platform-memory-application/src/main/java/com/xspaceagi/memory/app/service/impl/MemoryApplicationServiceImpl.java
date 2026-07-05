@@ -21,16 +21,14 @@ import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -329,7 +327,9 @@ public class MemoryApplicationServiceImpl implements MemoryApplicationService {
     }
 
     public List<MemoryExtractDto> createMemory0(MemoryMetaData memoryData) {
-
+        if(StringUtils.isBlank(memoryData.getContext())){
+            return Collections.emptyList();
+        }
         String userPrompt = MEMORY_EXTRACT_PROMPT.replace("{{user_input}}", memoryData.getUserInput()).replace("{{conversation_context}}", memoryData.getContext());
         List<MemoryExtractDto> memoryExtractResults = iModelRpcService.call("当前时间: " + (new Date()), userPrompt, new ParameterizedTypeReference<List<MemoryExtractDto>>() {
         });

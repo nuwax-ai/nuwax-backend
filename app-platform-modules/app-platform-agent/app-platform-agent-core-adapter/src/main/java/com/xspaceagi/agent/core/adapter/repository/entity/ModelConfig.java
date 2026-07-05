@@ -59,6 +59,8 @@ public class ModelConfig {
     private Integer enabled; // 是否启用，0-否，1-是
     private Integer accessControl;
     private String usageScenario;
+    private Integer sort;
+
     public enum ModelScopeEnum {
         Space,
         Tenant,

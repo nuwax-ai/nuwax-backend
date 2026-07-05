@@ -56,4 +56,7 @@ public class SkillConfigDto implements Serializable {
 
     @Schema(description = "技能发布zip代理下载地址")
     private String zipFileUrl;
+
+    @Schema(description = "技能开发智能体的关联的会话ID")
+    private Long devAgentConversationId;
 }

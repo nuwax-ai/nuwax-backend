@@ -16,20 +16,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class EcoMarketRpcService implements IEcoMarketRpcService {
 
-
     @Resource
     private IEcoMarketClientSecretDomainService ecoMarketClientSecretDomainService;
-
 
     @LogRecordPrint(content = "查询客户端密钥")
     @Override
     public ClientSecretResponse queryClientSecret(ClientSecretRequest request) {
-
-
         var tenantId = request.getTenantId();
-
         var clientSecret = ecoMarketClientSecretDomainService.queryByTenantId(tenantId);
-
+        if (clientSecret == null) {
+            return null;
+        }
         return clientSecret.toClientSecretResponse();
     }
 

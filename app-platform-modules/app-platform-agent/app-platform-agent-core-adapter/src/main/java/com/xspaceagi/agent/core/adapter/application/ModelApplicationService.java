@@ -2,6 +2,7 @@ package com.xspaceagi.agent.core.adapter.application;
 
 import com.xspaceagi.agent.core.adapter.dto.CodeCheckResultDto;
 import com.xspaceagi.agent.core.adapter.dto.ModelQueryDto;
+import com.xspaceagi.agent.core.adapter.dto.SortUpdateDTO;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -142,4 +143,6 @@ public interface ModelApplicationService {
     String testModelConnectivity(ModelConfigDto modelConfig, String testPrompt);
 
     List<ModelConfigDto> getMySystemModels(Long userId, String tab);
+
+    void updateModelSort(List<SortUpdateDTO> updateDTOS);
 }

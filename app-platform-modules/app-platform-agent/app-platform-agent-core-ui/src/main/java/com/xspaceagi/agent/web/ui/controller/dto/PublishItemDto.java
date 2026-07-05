@@ -36,4 +36,7 @@ public class PublishItemDto {
 
     @Schema(description = "发布者信息")
     private PublishUserDto publishUser;
+
+    @Schema(description = "分类")
+    private String category;
 }

@@ -1,5 +1,6 @@
 package com.xspaceagi.eco.market.spec.api;
 
+import com.xspaceagi.eco.market.domain.service.IEcoMarketClientSecretDomainService;
 import com.xspaceagi.eco.market.domain.specification.EcoMarkerSecretWrapper;
 import com.xspaceagi.eco.market.sdk.model.ClientSecretDTO;
 import com.xspaceagi.eco.market.sdk.service.IEcoMarketSecretRpcService;
@@ -7,6 +8,7 @@ import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.EcoMarketException;
 import com.xspaceagi.system.domain.log.LogRecordPrint;
 import jakarta.annotation.Resource;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -17,6 +19,8 @@ public class EcoMarketSecretRpcService implements IEcoMarketSecretRpcService {
     @Resource
     private EcoMarkerSecretWrapper ecoMarkerSecretWrapper;
 
+    @Resource
+    private IEcoMarketClientSecretDomainService ecoMarketClientSecretDomainService;
 
     @LogRecordPrint(content = "注册生态市场的密钥")
     @Override
@@ -28,4 +32,11 @@ public class EcoMarketSecretRpcService implements IEcoMarketSecretRpcService {
         return ecoMarkerSecretWrapper.registerClientSecret(tenantId, name, description);
     }
 
+    @Override
+    public ClientSecretDTO getByTenantId(Long tenantId) {
+        if (Objects.isNull(tenantId)) {
+            throw EcoMarketException.build(BizExceptionCodeEnum.fieldRequiredButEmpty, "租户ID");
+        }
+        return ecoMarketClientSecretDomainService.getByTenantId(tenantId);
+    }
 }

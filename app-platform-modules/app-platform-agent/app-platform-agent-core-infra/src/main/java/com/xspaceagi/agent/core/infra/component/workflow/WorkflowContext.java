@@ -2,6 +2,7 @@ package com.xspaceagi.agent.core.infra.component.workflow;
 
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
+import com.xspaceagi.agent.core.infra.component.workflow.dto.FlowChatMessage;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.LoopNodeExecutingDto;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecuteResult;
 import com.xspaceagi.agent.core.infra.component.workflow.dto.NodeExecutingDto;
@@ -9,6 +10,7 @@ import com.xspaceagi.agent.core.infra.component.workflow.enums.NodeExecuteStatus
 import com.xspaceagi.system.sdk.common.TraceContext;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+@Slf4j
 @Data
 @ToString
 public class WorkflowContext implements Serializable {
@@ -57,6 +60,8 @@ public class WorkflowContext implements Serializable {
 
     private Consumer<NodeExecutingDto> nodeExecutingConsumer;
 
+    private Consumer<FlowChatMessage> flowChatMessageConsumer;
+
     //结束节点最终输出的内容（可选）
     private String endNodeContent;
 
@@ -80,7 +85,10 @@ public class WorkflowContext implements Serializable {
 
     private String from;
 
+    private Map<String, Object> resultStorage;
+
     private WorkflowContextServiceHolder workflowContextServiceHolder;
+    private boolean restored;
 
     public Map<String, List<Map<String, Object>>> getNodeExecuteInputMap() {
         if (nodeExecuteInputMap == null) {
@@ -109,10 +117,42 @@ public class WorkflowContext implements Serializable {
         return executingLoopNodeMap == null ? executingLoopNodeMap = Collections.synchronizedMap(new LinkedHashMap<>()) : executingLoopNodeMap;
     }
 
+    public Map<String, Object> getResultStorage() {
+        if (resultStorage == null) {
+            resultStorage = new ConcurrentHashMap<>();
+        }
+        return resultStorage;
+    }
+
+    public void saveResultStorage() {
+        if (workflowContextServiceHolder != null) {
+            workflowContextServiceHolder.getRedisUtil().hashPutAll("workflow_result_storage:" + requestId, resultStorage);
+            workflowContextServiceHolder.getRedisUtil().expire("workflow_result_storage:" + requestId, 86400);
+            log.debug("saveResultStorage, workflowId {}, result {}", workflowConfig.getId(), resultStorage);
+        }
+    }
+
+    public void restoreResultStorage() {
+        if (workflowContextServiceHolder != null && !restored) {
+            synchronized (this) {
+                if (restored) {
+                    return;
+                }
+                restored = true;
+                Map<String, Object> resultStorage = workflowContextServiceHolder.getRedisUtil().hashGetAll("workflow_result_storage:" + requestId);
+                if (resultStorage != null) {
+                    this.getResultStorage().putAll(resultStorage);
+                }
+            }
+            log.debug("restoreResultStorage, workflowId {}, result {}", workflowConfig.getId(), resultStorage);
+        }
+    }
+
     public AgentContext getCopiedAgentContext() {
         AgentContext agentContext0 = new AgentContext();
         BeanUtils.copyProperties(this.agentContext, agentContext0);
         agentContext0.setContextMessages(null);
         return agentContext0;
     }
+
 }

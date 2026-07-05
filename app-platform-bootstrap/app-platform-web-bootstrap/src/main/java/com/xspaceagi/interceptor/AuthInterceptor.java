@@ -129,12 +129,6 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
         }
         if (tenantId == null) {
-            // 对于无需鉴权的路径（如飞书/钉钉 webhook），使用默认租户，不要求登录
-            if (isExcludedPath(originalRequestUri)) {
-                tenantId = 1L;
-            } else if (domainName.contains("nuwax.com")) {
-                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl, "https://nuwax.com");
-            }
             String headerTenantId = request.getHeader("x-tenant-id");
             if (StringUtils.isNotBlank(headerTenantId)) {
                 try {
@@ -142,6 +136,14 @@ public class AuthInterceptor implements HandlerInterceptor {
                 } catch (NumberFormatException e) {
                     //  ignore
                 }
+            }
+        }
+        if (tenantId == null) {
+            // 对于无需鉴权的路径（如飞书/钉钉 webhook），使用默认租户，不要求登录
+            if (isExcludedPath(originalRequestUri)) {
+                tenantId = 1L;
+            } else if (domainName.contains("nuwax.com")) {
+                throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl, "https://nuwax.com");
             }
             if (tenantId == null) {
                 tenantId = 1L;

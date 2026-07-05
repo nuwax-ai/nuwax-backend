@@ -1,6 +1,8 @@
 package com.xspaceagi.agent.core.infra.rpc;
 
+import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.*;
+import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.WorkflowNodeConfig;
 import com.xspaceagi.pricing.sdk.dto.*;
@@ -88,11 +90,40 @@ public class ResourcePricingRpcService {
         return iPricingRpcService.estimatePrice(tenantId, userId, estimateTargets);
     }
 
+    public void completeAgentEstimate(AgentConfigDto agentConfigDto, List<PriceEstimate.EstimateTarget> estimateTargets, List<PriceEstimate.EstimateTarget> estimateSkillTargets, Set<Long> workflowIds) {
+        agentConfigDto.getAgentComponentConfigList().forEach(componentConfigDto -> {
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Skill) {
+                estimateSkillTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.SKILL).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Plugin) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.PLUGIN).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Mcp) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.MCP).targetId(componentConfigDto.getTargetId().toString()).build());
+            }
+            if (componentConfigDto.getType() == AgentComponentConfig.Type.Workflow) {
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(componentConfigDto.getTargetId().toString()).build());
+                Object targetConfig = componentConfigDto.getTargetConfig();
+                if (targetConfig instanceof WorkflowConfigDto) {
+                    completeWorkflowEstimateTargets(estimateTargets, (WorkflowConfigDto) targetConfig, workflowIds, estimateSkillTargets);
+                }
+            }
+        });
+    }
+
+    private void completeWorkflowEstimateTargets(List<PriceEstimate.EstimateTarget> estimateTargets, WorkflowConfigDto targetConfig, Set<Long> workflowIds, List<PriceEstimate.EstimateTarget> estimateSkillTargets) {
+        targetConfig.getNodes().forEach(node -> completeWorkflowNodeEstimateTargets(estimateTargets, node, workflowIds, estimateSkillTargets));
+    }
+
     public void completeWorkflowEstimateTargets(List<PriceEstimate.EstimateTarget> estimateTargets, WorkflowConfigDto targetConfig, Set<Long> workflowIds) {
         targetConfig.getNodes().forEach(node -> completeWorkflowNodeEstimateTargets(estimateTargets, node, workflowIds));
     }
 
     public void completeWorkflowNodeEstimateTargets(List<PriceEstimate.EstimateTarget> estimateTargets, WorkflowNodeDto node, Set<Long> workflowIds) {
+        completeWorkflowNodeEstimateTargets(estimateTargets, node, workflowIds, null);
+    }
+
+    private void completeWorkflowNodeEstimateTargets(List<PriceEstimate.EstimateTarget> estimateTargets, WorkflowNodeDto node, Set<Long> workflowIds, List<PriceEstimate.EstimateTarget> estimateSkillTargets) {
         if (node.getType() == WorkflowNodeConfig.NodeType.Workflow) {
             WorkflowAsNodeConfigDto workflowAsNodeConfigDto = (WorkflowAsNodeConfigDto) node.getNodeConfig();
             if (workflowAsNodeConfigDto.getWorkflowConfig() != null && !workflowIds.contains(workflowAsNodeConfigDto.getWorkflowId())) {
@@ -117,6 +148,12 @@ public class ResourcePricingRpcService {
                         completeWorkflowEstimateTargets(estimateTargets, (WorkflowConfigDto) skillComponentConfigDto.getTargetConfig(), workflowIds);
                     }
                 });
+            }
+        }
+        if (node.getType() == WorkflowNodeConfig.NodeType.Agent) {
+            AgentNodeConfigDto nodeConfigDto = (AgentNodeConfigDto) node.getNodeConfig();
+            if (nodeConfigDto.getAgentConfigDto() != null) {
+                completeAgentEstimate(nodeConfigDto.getAgentConfigDto(), estimateTargets, estimateSkillTargets, workflowIds);
             }
         }
     }

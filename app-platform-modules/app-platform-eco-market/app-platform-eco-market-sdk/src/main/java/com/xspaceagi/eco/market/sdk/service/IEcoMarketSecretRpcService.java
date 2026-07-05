@@ -17,4 +17,6 @@ public interface IEcoMarketSecretRpcService {
      */
     ClientSecretDTO registerClient(Long tenantId, String name, String description);
 
+    ClientSecretDTO getByTenantId(Long tenantId);
+
 }

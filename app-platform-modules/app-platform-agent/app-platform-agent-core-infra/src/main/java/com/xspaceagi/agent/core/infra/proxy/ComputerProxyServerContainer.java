@@ -2,23 +2,26 @@ package com.xspaceagi.agent.core.infra.proxy;
 
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
+import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
+import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.AttributeKey;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -27,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import com.xspaceagi.system.application.service.AuthService;
 
 import javax.net.ssl.SSLException;
 
@@ -69,6 +71,12 @@ public class ComputerProxyServerContainer {
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
 
+    @Resource
+    private ICustomPageRpcService iCustomPageRpcService;
+
+    @Resource
+    private SpacePermissionService spacePermissionService;
+
     // 连接超时（毫秒），超过该时间还未连上目标，就判定超时失败并返回 502，不再等待
     private int connectTimeoutMs = 5000;
 
@@ -101,7 +109,7 @@ public class ComputerProxyServerContainer {
                         pipeline.addLast("httpServerCodec", new HttpServerCodec());
                         pipeline.addLast("computerProxyRequestHandler",
                                 new ComputerProxyRequestHandler(sandboxServerConfigService, userShareRpcService, authService,
-                                        tenantConfigApplicationService, httpClientBootstrap, httpsClientBootstrap, pendingMax));
+                                        tenantConfigApplicationService, iCustomPageRpcService, spacePermissionService, httpClientBootstrap, httpsClientBootstrap, pendingMax));
                     }
                 });
 

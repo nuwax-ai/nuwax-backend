@@ -52,6 +52,7 @@ public class WorkflowNodeConfig {
         LoopContinue("继续循环", "用于终止当前循环，执行下次循环"), // 继续循环节点
         LoopBreak("终止循环", "用于立即终止当前所在的循环，跳出循环体"), // 终止循环节点
         Knowledge("知识库", "在选定的知识中，根据输入变量召回最匹配的信息"), // 知识库节点
+        KnowledgeInsert("知识库写入", "向选定的知识库中写入新的内容"), // 知识库写入节点
         TableSQL("SQL自定义", "可支持对数据表放开读写控制，用户可读写其他用户提交的数据，由开发者控制"),
         TableDataAdd("数据新增", "对选定的数据表进行数据写入"),
         TableDataDelete("数据删除", "对选定的数据表根据指定条件进行数据删除"),
@@ -66,6 +67,7 @@ public class WorkflowNodeConfig {
         DocumentExtraction("文档提取", "用于提取文档内容，支持的文件类型: txt、 markdown、pdf、 html、 xlsx、 xls、 docx、 csv、 md、 htm"), // 文档提取节点
         HTTPRequest("HTTP 请求", "用于配置http请求调用已有的服务"),    // HTTP 请求节点
         Mcp("MCP服务", "用于调用MCP服务"), // MCP服务节点
+        Agent("Agent", "用于调用Agent服务"),
         End("结束", "工作流的最终节点，用于返回工作流运行后的结果信息"); // 结束节点
 
         private String name;

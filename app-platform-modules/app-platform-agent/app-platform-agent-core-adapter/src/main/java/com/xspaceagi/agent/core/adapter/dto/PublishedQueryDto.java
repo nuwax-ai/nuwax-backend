@@ -23,8 +23,14 @@ public class PublishedQueryDto implements Serializable {
     @Schema(description = "子类型")
     private Published.TargetSubType targetSubType;
 
+    @Schema(description = "智能体类型")
+    private List<String> agentTypes;
+
     @Schema(description = "页码")
     private Integer page;
+
+    @Schema(description = "上一页最后一条数据的时间戳，与page二选一")
+    private Long lastTimestamp;
 
     @Schema(description = "每页数量")
     private Integer pageSize;
@@ -65,11 +71,20 @@ public class PublishedQueryDto implements Serializable {
     @Schema(description = "查询的ID范围，比如只查看推荐、官方标识的组件等", hidden = true)
     private List<Long> targetIds;
 
+    @Schema(description = "推荐列表", hidden = true)
+    private List<Long> recommendIds;
+
+    @Schema(description = "排除列表", hidden = true)
+    private List<Long> excludeIds;
+
     @Schema(description = "是否只返回官方标识的内容")
     private Boolean official;
 
     @Schema(description = "适用场景筛选参数，如 [TaskAgent, PageApp]")
     private List<UsageScenarioEnum> usageScenarios;
+
+    @Schema(description = "是否返回配置信息", hidden = true)
+    private boolean returnConfig;
 
     /**
      * 获取页码

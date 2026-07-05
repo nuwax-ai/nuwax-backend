@@ -1,19 +1,18 @@
 package com.xspaceagi.compose.sdk.vo.define;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
 
 @Schema(description = "表结构定义")
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TableDefineVo {
 
     /**

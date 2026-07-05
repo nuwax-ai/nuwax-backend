@@ -44,6 +44,12 @@ public class WorkflowConfigDto {
     @Schema(description = "图标地址")
     private String icon;
 
+    @Schema(description = "工作流类型: Workflow、AgentFlow")
+    private String type;
+
+    @Schema(description = "AgentFlow时所属AgentID")
+    private Long agentId;
+
     @Schema(description = "开始节点", hidden = true)
     private WorkflowNodeDto startNode;
 
@@ -119,6 +125,12 @@ public class WorkflowConfigDto {
                 break;
             case Knowledge:
                 nodeConfigDto = JSON.parseObject(config, KnowledgeNodeConfigDto.class);
+                break;
+            case KnowledgeInsert:
+                nodeConfigDto = JSON.parseObject(config, KnowledgeInsertNodeConfigDto.class);
+                break;
+            case Agent:
+                nodeConfigDto = JSON.parseObject(config, AgentNodeConfigDto.class);
                 break;
             case Loop:
                 nodeConfigDto = JSON.parseObject(config, LoopNodeConfigDto.class);
@@ -215,5 +227,10 @@ public class WorkflowConfigDto {
             return workflowConfigDto;
         }
         return null;
+    }
+
+    public enum Type {
+        Workflow,
+        AgentFlow
     }
 }

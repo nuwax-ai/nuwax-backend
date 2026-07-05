@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ChatKeyCheck {
 
-    public static void check(HttpServletRequest request, UserAccessKeyApiService userAccessKeyApiService) {
+    public static UserAccessKeyDto check(HttpServletRequest request, UserAccessKeyApiService userAccessKeyApiService) {
         String fragment = request.getHeader("Fragment");
         String referer = request.getHeader("Referer");
         String chatKey = null;
@@ -40,7 +40,10 @@ public class ChatKeyCheck {
                 throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
                         BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
             }
+            return userAccessKeyDto;
         }
+        throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
+                BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
     }
 
     private static String extractChatKey(String fragment) {

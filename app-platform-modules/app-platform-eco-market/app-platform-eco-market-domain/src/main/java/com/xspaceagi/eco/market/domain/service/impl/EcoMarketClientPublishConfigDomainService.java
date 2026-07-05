@@ -400,7 +400,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
         }
 
         // 根据数据类型调用不同的启用接口
-        Long resultId;
+        Long resultId = null;
 
         try {
             switch (dataTypeEnum) {
@@ -569,8 +569,9 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                     }
                 }
                 case MCP -> {
-                    // MCP类型启用
-
+                    // 租户初始化时不再通过生态市场自动部署 MCP
+                    log.info("Skip MCP auto-enable: uid={}", config.getUid());
+                    /*
                     var configJson = config.getConfigJson();
                     if (StringUtils.isBlank(configJson)) {
                         log.error("MCP config content required: uid={}", config.getUid());
@@ -601,7 +602,7 @@ public class EcoMarketClientPublishConfigDomainService implements IEcoMarketClie
                     mcpDtoFromJson.setCreator(creator);
 
                     resultId = ecoMarketAdaptor.deployOfficialMcp(mcpDtoFromJson);
-
+                    */
                 }
                 default -> {
                     log.error("Unsupported data type: {}", dataType);

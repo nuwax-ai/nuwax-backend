@@ -141,6 +141,22 @@ public class SysGroupApplicationServiceImpl implements SysGroupApplicationServic
                 : groupList.stream().filter(g -> StatusEnum.isEnabled(g.getStatus())).toList();
     }
 
+    @Override
+    public List<SysGroup> getSubscriptionGroupListByUserId(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        List<Long> subscriptionGroupIds = getSubscriptionPlanGroupIds(userId);
+        if (CollectionUtils.isEmpty(subscriptionGroupIds)) {
+            return List.of();
+        }
+        List<SysGroup> groups = listGroupsByIds(subscriptionGroupIds);
+        if (CollectionUtils.isEmpty(groups)) {
+            return List.of();
+        }
+        return groups.stream().filter(g -> StatusEnum.isEnabled(g.getStatus())).toList();
+    }
+
     private List<Long> getSubscriptionPlanGroupIds(Long userId) {
         try {
             UserSubscriptionDTO subscription = subscriptionRpcService.getUserCurrentSystemSubscription(userId);

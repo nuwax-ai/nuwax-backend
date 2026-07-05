@@ -10,6 +10,7 @@ import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.agent.core.spec.utils.FileTypeUtils;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.AuthService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -59,9 +60,11 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     private UserShareRpcService userShareRpcService;
     @Resource
     private AuthService authService;
+    @Resource
+    private SpacePermissionService spacePermissionService;
 
     @Override
-    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext) {
+    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir) {
         if (userId == null || userId <= 0) {
             log.error("[Web] Invalid userId, userId={}", userId);
             return buildError("userId is invalid");
@@ -71,7 +74,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("cId is invalid");
         }
         try {
-            return computerFileDomainService.getFileList(userId, cId, proxyPath, userContext);
+            return computerFileDomainService.getFileList(userId, cId, proxyPath, userContext, customTargetDir);
         } catch (Exception e) {
             log.error("[Web] Exception querying file list, userId={}, cId={}", userId, cId, e);
             return buildError("Failed to query file list");
@@ -79,7 +82,26 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     @Override
-    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext) {
+    public Map<String, Object> getLogs(Long userId, Long cId, int tailLines) {
+        if (userId == null || userId <= 0) {
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        int safeTailLines = Math.max(1, tailLines);
+        try {
+            return computerFileDomainService.getLogs(userId, cId, safeTailLines, null);
+        } catch (Exception e) {
+            log.error("[Web] Exception querying logs, userId={}, cId={}", userId, cId, e);
+            return buildError("Failed to query logs");
+        }
+    }
+
+    @Override
+    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
         if (userId == null || userId <= 0) {
             log.error("[Web] Invalid userId, userId={}", userId);
             return buildError("userId is invalid");
@@ -93,7 +115,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("files is invalid");
         }
         try {
-            return computerFileDomainService.filesUpdate(userId, cId, files, userContext);
+            return computerFileDomainService.filesUpdate(userId, cId, files, userContext, customTargetDir);
         } catch (Exception e) {
             log.error("[Web] Exception updating user file list, userId={}, cId={}", userId, cId, e);
             return buildError("Failed to update user file list, please check if filename is duplicated");
@@ -101,7 +123,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     @Override
-    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext) {
+    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
         if (userId == null || userId <= 0) {
             log.error("[Web] Invalid userId, userId={}", userId);
             return buildError("userId is invalid");
@@ -119,7 +141,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("file is invalid");
         }
         try {
-            return computerFileDomainService.uploadFile(userId, cId, filePath, file, userContext);
+            return computerFileDomainService.uploadFile(userId, cId, filePath, file, userContext, customTargetDir);
         } catch (Exception e) {
             log.error("[Web] Exception uploading user file, userId={}, cId={}, filePath={}", userId, cId, filePath, e);
             return buildError("Failed to upload user file");
@@ -127,7 +149,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     @Override
-    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext) {
+    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
         if (userId == null || userId <= 0) {
             log.error("[Web] Invalid userId, userId={}", userId);
             return buildError("userId is invalid");
@@ -149,7 +171,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("filePaths and files count mismatch");
         }
         try {
-            return computerFileDomainService.uploadFiles(userId, cId, filePaths, files, userContext);
+            return computerFileDomainService.uploadFiles(userId, cId, filePaths, files, userContext, customTargetDir);
         } catch (Exception e) {
             log.error("[Web] Exception batch uploading user files, userId={}, cId={}", userId, cId, e);
             return buildError("Failed to batch upload user files");
@@ -157,7 +179,34 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     @Override
-    public ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext) {
+    public Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
+        if (userId == null || userId <= 0) {
+            log.error("[Web] Invalid userId, userId={}", userId);
+            return buildError("userId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        if (file == null || file.isEmpty()) {
+            log.error("[Web] file is invalid, file is empty");
+            return buildError("file is invalid");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".zip")) {
+            log.error("[Web] file is invalid, only zip is supported, fileName={}", originalFilename);
+            return buildError("Only zip files are supported");
+        }
+        try {
+            return computerFileDomainService.importProject(userId, cId, file, userContext, customTargetDir);
+        } catch (Exception e) {
+            log.error("[Web] Exception importing project, userId={}, cId={}, fileName={}", userId, cId, originalFilename, e);
+            return buildError("Failed to import project");
+        }
+    }
+
+    @Override
+    public ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext, String customTargetDir) {
         if (userId == null || userId <= 0) {
             log.error("[Web] Invalid userId, userId={}", userId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -171,7 +220,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         log.info("[Web] Download all files, logId={}, userId={}, cId={}", logId, userId, cId);
 
         try {
-            Flux<DataBuffer> fileFlux = computerFileDomainService.downloadAllFiles(userId, cId, logId, userContext);
+            Flux<DataBuffer> fileFlux = computerFileDomainService.downloadAllFiles(userId, cId, logId, userContext, customTargetDir);
 
             // Check the first signal before starting to write to detect errors early
             // Use share() to share Flux, then use materialize() to check the first signal
@@ -273,7 +322,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     @Override
-    public ResponseEntity<StreamingResponseBody> getStaticFile(Long cId, HttpServletRequest request) {
+    public ResponseEntity<StreamingResponseBody> getStaticFile(Long cId, HttpServletRequest request, String customTargetDir) {
         ConversationDto currentConversation = getConversation(cId);
         AuthResult authResult = staticFileAuth(currentConversation, cId, request);
         if (authResult.getRedirectUrl() != null) {
@@ -321,7 +370,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
                 log.info("[Web] Client range request, logId={}, range={}", logId, rangeHeader);
             }
             ResponseEntity<Flux<DataBuffer>> downstreamResponse = computerFileDomainService.getStaticFileResponse(
-                    cId, targetPrefix, finalRelativePath, logId, rangeHeader
+                    cId, targetPrefix, finalRelativePath, logId, rangeHeader, customTargetDir
             );
             if (downstreamResponse == null || downstreamResponse.getBody() == null) {
                 log.error("[Web] Downstream static file response is empty, logId={}", logId);
@@ -545,8 +594,14 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         }
 
         if (!currentUserId.equals(conversationUserId)) {
-            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
+            Long devSpaceId = currentConversation.getDevSpaceId();
+            if (devSpaceId != null) {
+                spacePermissionService.checkSpaceUserPermission(devSpaceId, RequestContext.get().getUserId());
+            } else {
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
+            }
         }
+
         return new AuthResult(conversationUserId, null, null, null);
     }
 

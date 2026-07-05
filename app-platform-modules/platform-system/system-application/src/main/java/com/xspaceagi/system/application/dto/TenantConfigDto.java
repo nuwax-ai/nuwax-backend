@@ -142,6 +142,12 @@ public class TenantConfigDto implements Serializable {
 
     private String mpAppId;
     private String mpAppSecret;
+
+    @Schema(description = "公众号 appId（微信内 H5 JSAPI / OAuth）")
+    private String oaAppId;
+
+    @Schema(description = "公众号 secret")
+    private String oaAppSecret;
     private String sandboxConfig;
     private boolean enabledSandbox;
     private Boolean supportCustomDomain;

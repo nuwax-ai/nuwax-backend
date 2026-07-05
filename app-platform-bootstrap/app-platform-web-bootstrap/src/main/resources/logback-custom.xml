@@ -43,7 +43,7 @@
     <logger name="com.baomidou" level="ERROR"/>
     <logger name="org.mybatis.spring" level="ERROR"/>
     <logger name="com.xspaceagi.system.infra.dao.mapper" level="ERROR"/>
-    <logger name="com.xspaceagi.agent.core.infra.dao.mapper" level="ERROR"/>
+<!--    <logger name="com.xspaceagi.agent.core.infra.dao.mapper" level="ERROR"/>-->
     <logger name="io.lettuce.core" level="ERROR"/>
     <logger name="org.redisson" level="ERROR"/>
     <logger name="com.alibaba" level="ERROR"/>

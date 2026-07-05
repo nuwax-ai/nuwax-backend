@@ -32,7 +32,9 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
@@ -103,6 +105,10 @@ public class WorkflowController {
     @Resource
     private ResourcePricingRpcService resourcePricingRpcService;
 
+    @Resource
+    private IUserDataPermissionRpcService userDataPermissionRpcService;
+
+
     @RequireResource(COMPONENT_LIB_CREATE)
     @Operation(summary = "新增工作流接口")
     @RequestMapping(path = "/add", method = RequestMethod.POST)
@@ -111,6 +117,7 @@ public class WorkflowController {
         WorkflowConfigDto workflowConfigDto = new WorkflowConfigDto();
         BeanUtils.copyProperties(workflowAddDto, workflowConfigDto);
         workflowConfigDto.setCreatorId(RequestContext.get().getUserId());
+        workflowConfigDto.setType(WorkflowConfigDto.Type.Workflow.name());
         Long workflowId = workflowApplicationService.add(workflowConfigDto);
         return ReqResult.success(workflowId);
     }
@@ -140,7 +147,6 @@ public class WorkflowController {
                 return ReqResult.error("1011", I18nUtil.systemMessage("Backend.Workflow.ConcurrentModification"));
             }
         }
-
         workflowApplicationService.save(jsonObject, workflowConfigDto);
         return ReqResult.success(workflowApplicationService.workflowEditVersion(workflowId, true));
     }
@@ -344,8 +350,8 @@ public class WorkflowController {
             if (workflowContext1.getTraceContext().isEnableSubscription()) {
                 List<PriceEstimate.EstimateTarget> estimateTargets = new ArrayList<>();
                 resourcePricingRpcService.completeWorkflowNodeEstimateTargets(estimateTargets, nodeDto, new HashSet<>());
-                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(),
-                        List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build()));
+                estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build());
+                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(), estimateTargets);
                 if (!priceEstimate.isPass()) {
                     WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                     workflowExecutingDto.setSuccess(false);
@@ -479,12 +485,27 @@ public class WorkflowController {
             mcpRpcService.checkMcpPermission(deployedMcp, workflowNodeAddDto.getNodeConfigDto().getToolName());
             workflowMcpLoopCheck(workflowNodeAddDto.getWorkflowId(), deployedMcp, workflowNodeAddDto.getNodeConfigDto().getToolName());
         }
-        if (workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.Knowledge && workflowNodeAddDto.getTypeId() != null) {
+        if ((workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.Knowledge || workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.KnowledgeInsert)
+                && workflowNodeAddDto.getTypeId() != null) {
             KnowledgeConfigModel knowledgeConfigModel = knowledgeConfigApplicationService.queryOneInfoById(workflowNodeAddDto.getTypeId());
             if (knowledgeConfigModel == null) {
                 throw new IllegalArgumentException("Invalid knowledge base ID");
             }
-            spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId());
+            // 检查是否在用户组授权了
+            try {
+                spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId());
+            } catch (Exception e) {
+                UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
+                if (!userDataPermission.getKnowledgeIds().contains(workflowNodeAddDto.getTypeId())) {
+                    throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
+                }
+            }
+        }
+        if (workflowNodeAddDto.getType() == WorkflowNodeConfig.NodeType.Agent) {
+            PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, workflowNodeAddDto.getTypeId());
+            if (!publishedPermissionDto.isExecute()) {
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
+            }
         }
         if (workflowNodeAddDto.getType() != null && workflowNodeAddDto.getType().name().startsWith("Table")) {
             checkTablePermission(workflowNodeAddDto.getTypeId());

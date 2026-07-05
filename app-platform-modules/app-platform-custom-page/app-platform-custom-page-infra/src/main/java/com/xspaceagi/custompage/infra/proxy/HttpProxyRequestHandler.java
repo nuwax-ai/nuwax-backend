@@ -409,6 +409,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause.getCause() != null && (cause.getCause() instanceof SSLHandshakeException)) {
             logger.warn("SSLHandshakeException: {}", cause.getCause().getMessage());
+            ctx.close();
             return;
         }
         clearReceivedWhenConnect();

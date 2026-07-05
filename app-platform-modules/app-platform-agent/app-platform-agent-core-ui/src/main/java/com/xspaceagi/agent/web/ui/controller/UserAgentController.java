@@ -1,9 +1,12 @@
 package com.xspaceagi.agent.web.ui.controller;
 
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
+import com.xspaceagi.agent.core.adapter.application.RecommendApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.UserAgentDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.adapter.repository.entity.UserTargetRelation;
 import com.xspaceagi.agent.core.domain.service.UserTargetRelationDomainService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
@@ -21,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.AGENT_COLLECT;
 
@@ -39,6 +44,9 @@ public class UserAgentController {
     @Resource
     private UserTargetRelationDomainService userTargetRelationDomainService;
 
+    @Resource
+    private RecommendApplicationService recommendApplicationService;
+
     @Operation(summary = "查询用户最近编辑的智能体列表")
     @RequestMapping(path = "/edit/list/{size}", method = RequestMethod.GET)
     public ReqResult<List<UserAgentDto>> editList(@PathVariable Integer size) {
@@ -51,7 +59,10 @@ public class UserAgentController {
     @RequestMapping(path = "/used/list/{size}", method = RequestMethod.GET)
     public ReqResult<List<UserAgentDto>> usedList(@PathVariable Integer size, @RequestParam(required = false) Integer pageIndex, @RequestParam(required = false) String kw) {
         List<UserAgentDto> userAgentDtos = agentApplicationService.queryRecentUseList(RequestContext.get().getUserId(), kw, size, pageIndex);
+        List<TargetRecommendResponse> list = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name());
+        Set<Long> navIds = list.stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toSet());
         userAgentDtos.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName())));
+        userAgentDtos.removeIf(userAgentDto -> navIds.contains(userAgentDto.getAgentId()));
         return ReqResult.success(userAgentDtos);
     }
 

@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
@@ -101,6 +102,33 @@ public class CustomPageCodingController extends BaseController {
         } catch (Exception e) {
             log.error("[Web] upload single filefailed, project Id={}, file Path={}", projectId, filePath, e);
             return ReqResult.error("0001", "Upload single file failed: " + e.getMessage());
+        }
+    }
+
+    @RequireResource(PAGE_APP_UPLOAD_FILE)
+    @Operation(summary = "Upload batch files", description = "Upload multiple files to paths in the project")
+    @PostMapping(value = "/upload-batch-files", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ReqResult<Map<String, Object>> uploadBatchFiles(
+            @RequestParam("projectId") Long projectId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("filePaths") List<String> filePaths) {
+        log.info("[Web] upload batch files request, project Id={}, fileCount={}", projectId, files != null ? files.size() : 0);
+        try {
+            if (files == null || files.isEmpty()) {
+                return ReqResult.error("0001", "Files are required");
+            }
+            if (filePaths == null || filePaths.size() != files.size()) {
+                return ReqResult.error("0001", "filePaths and files count mismatch");
+            }
+
+            UserContext userContext = getUser();
+            return customPageCodingApplicationService.uploadBatchFiles(projectId, files, filePaths, userContext);
+        } catch (SpacePermissionException e) {
+            log.error("[Web] upload batch files failed, project Id={}, {}", projectId, e.getMessage());
+            return ReqResult.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("[Web] upload batch files failed, project Id={}", projectId, e);
+            return ReqResult.error("0001", "Upload batch files failed: " + e.getMessage());
         }
     }
 

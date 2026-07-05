@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -108,15 +109,37 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
 
     @Override
     public List<SpaceDto> queryListByUserId(Long userId) {
-        List<Space> spaceList = spaceDomainService.queryListByIds(spaceDomainService.querySpaceUserListByUserId(userId).stream().map(SpaceUser::getSpaceId).toList());
+        List<SpaceUser> spaceUsers = spaceDomainService.querySpaceUserListByUserId(userId);
+        Map<Long, SpaceUser> spaceUserMap = spaceUsers.stream().collect(Collectors.toMap(SpaceUser::getSpaceId, (s1) -> s1, (s1, s2) -> s1));
+        List<Long> ids = spaceUsers.stream().map(SpaceUser::getSpaceId).toList();
+        List<Space> spaceList = spaceDomainService.queryListByIds(ids);
         if (spaceList != null) {
             return spaceList.stream().map(space -> {
                 SpaceDto spaceDto = new SpaceDto();
                 BeanUtils.copyProperties(space, spaceDto);
+                if (spaceUserMap.get(spaceDto.getId()) != null) {
+                    spaceDto.setCurrentUserRole(spaceUserMap.get(spaceDto.getId()).getRole());
+                }
                 return spaceDto;
             }).collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    @Override
+    public Long getPersonalSpaceId(Long userId) {
+        Space personalSpace = null;
+        List<Space> spaceList = spaceDomainService.queryListByIds(spaceDomainService.querySpaceUserListByUserId(userId).stream().map(SpaceUser::getSpaceId).toList());
+        if (spaceList != null) {
+            personalSpace = spaceList.stream()
+                    .filter(s -> s.getType() == Space.Type.Personal)
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (personalSpace == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentUserNoPersonalSpace);
+        }
+        return personalSpace.getId();
     }
 
     @Override

@@ -8,6 +8,8 @@ import lombok.Getter;
 public enum PricingTypeEnum {
 
     ONE_TIME("ONE_TIME", "单次"),
+    SECOND ("SECOND", "按秒"),
+    MILLION_TOKEN ("MILLION_TOKEN", "按百万Token"),
     BUYOUT("BUYOUT", "买断"),
     MONTHLY("MONTHLY", "包月-属于订阅计划"),
     TIERED("TIERED", "阶梯计费");

@@ -77,6 +77,9 @@ public class CodePluginHandler extends AbstractPluginHandler {
             outputMap.putAll(resultMap);
             codePluginConfigDto.setOutputArgs(new ArrayList<>());
         }
+        if (resultMap != null && resultMap.containsKey("usage")) {
+            outputMap.put("usage", resultMap.get("usage"));
+        }
         resetRequireToFalse(codePluginConfigDto.getOutputArgs());
         for (Arg outputArg : codePluginConfigDto.getOutputArgs()) {
             if ((outputArg.getDataType() == DataTypeEnum.Object || outputArg.getDataType().name().startsWith("Array")) && CollectionUtils.isEmpty(outputArg.getSubArgs())) {

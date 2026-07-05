@@ -10,6 +10,7 @@ import com.xspaceagi.eco.market.domain.model.EcoMarketClientConfigModel;
 import com.xspaceagi.eco.market.domain.model.EcoMarketClientPublishConfigModel;
 import com.xspaceagi.eco.market.spec.app.service.IEcoMarketClientConfigApplicationService;
 import com.xspaceagi.eco.market.spec.app.service.IEcoMarketClientPublishConfigApplicationService;
+import com.xspaceagi.eco.market.spec.enums.EcoMarketDataTypeEnum;
 import com.xspaceagi.eco.market.spec.enums.EcoMarketOwnedFlagEnum;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -113,9 +114,15 @@ public class EcoMarketPullMessage {
                     .collect(Collectors.toList());
 
             // 如果本地没有配置,则主动启用..不管本地配置是否实际启用,只要有记录了,就不在操作自动启用,需要用户自己去手动操作
+            // 租户初始化时不自动启用 MCP 配置
             var needEnableUids = autoUseUids.stream()
                     .filter(uid -> !localUids.contains(uid))
                     .filter(uid -> !myShareUids.contains(uid))
+                    .filter(uid -> autoConfigList.stream()
+                            .filter(config -> config.getUid().equals(uid))
+                            .findFirst()
+                            .map(config -> !EcoMarketDataTypeEnum.MCP.getCode().equals(config.getDataType()))
+                            .orElse(true))
                     .collect(Collectors.toList());
 
             log.info("Eco-market tenant auto-enable, need-enable list: {}", JSON.toJSONString(needEnableUids));

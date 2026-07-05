@@ -1,9 +1,11 @@
 package com.xspaceagi.file.infra.storage;
 
 import com.xspaceagi.file.domain.storage.FileStorageStrategy;
+import com.xspaceagi.system.spec.utils.RedisUtil;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -22,6 +24,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.UUID;
 
 /**
  * S3 Protocol Storage Implementation
@@ -45,6 +48,12 @@ public class S3FileStorageStrategy implements FileStorageStrategy {
 
     @Value("${s3.region:us-east-1}")
     private String region;
+
+    @Value("${s3.proxy:}")
+    private String proxyBaseUrl;
+
+    @Resource
+    private RedisUtil redisUtil;
 
     private volatile S3Client s3Client;
     private volatile S3Presigner s3Presigner;
@@ -181,7 +190,11 @@ public class S3FileStorageStrategy implements FileStorageStrategy {
 
             PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
             String url = presignedRequest.url().toString();
-
+            if (StringUtils.isNotBlank(proxyBaseUrl) && expireSeconds < 86400 * 30) {
+                String key = UUID.randomUUID().toString().replace("-", "") + FileKeyGenerator.extractExtension(fileKey);
+                redisUtil.set("s3p:" + key, url, expireSeconds);
+                url = proxyBaseUrl + "/" + key;
+            }
             log.info("S3 presigned URL generated successfully: {}", fileKey);
             return url;
         } catch (Exception e) {

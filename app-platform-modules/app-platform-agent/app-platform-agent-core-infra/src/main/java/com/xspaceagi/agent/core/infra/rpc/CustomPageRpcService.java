@@ -1,20 +1,18 @@
 package com.xspaceagi.agent.core.infra.rpc;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.PageArgConfig;
 import com.xspaceagi.agent.core.infra.rpc.dto.PageDto;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
 import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
-
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomPageRpcService {
@@ -85,7 +83,7 @@ public class CustomPageRpcService {
             pageDto.setPageArgConfigs(new ArrayList<>());
         }
         List<PageArgConfig> homeIndex = pageDto.getPageArgConfigs().stream().filter(arg -> arg.getPageUri().equals("/") || arg.getPageUri().equals("/index.html")).collect(Collectors.toList());
-        if (homeIndex.size() == 0) {
+        if (homeIndex.isEmpty()) {
             PageArgConfig pageArgConfig = new PageArgConfig();
             pageArgConfig.setBasePath(pageDto.getBasePath());
             pageArgConfig.setPageId(customPageDto.getProjectId());
@@ -172,7 +170,7 @@ public class CustomPageRpcService {
             pageDto.setPageArgConfigs(new ArrayList<>());
         }
         List<PageArgConfig> homeIndex = pageDto.getPageArgConfigs().stream().filter(arg -> arg.getPageUri().equals("/") || arg.getPageUri().equals("/index.html")).collect(Collectors.toList());
-        if (homeIndex.size() == 0) {
+        if (homeIndex.isEmpty()) {
             PageArgConfig pageArgConfig = new PageArgConfig();
             pageArgConfig.setBasePath(pageDto.getBasePath());
             pageArgConfig.setPageId(customPageDto.getProjectId());
@@ -190,5 +188,9 @@ public class CustomPageRpcService {
             }
         });
         return pageDto;
+    }
+
+    public void bindDataSource(Long userId, Long projectId, String type, Long dataSourceId) {
+        iCustomPageRpcService.bindDataSource(userId, projectId, type, dataSourceId);
     }
 }

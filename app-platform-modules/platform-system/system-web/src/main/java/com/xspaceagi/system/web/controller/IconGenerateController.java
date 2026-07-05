@@ -80,6 +80,9 @@ public class IconGenerateController {
             if (Files.exists(path)) {
                 //根据key的后缀设置contentType
                 String contentType = Files.probeContentType(path);
+                if (contentType == null && key.toLowerCase().endsWith(".svg")) {
+                    contentType = "image/svg+xml";
+                }
                 response.setContentType(contentType);
                 Files.copy(path, response.getOutputStream());
             }

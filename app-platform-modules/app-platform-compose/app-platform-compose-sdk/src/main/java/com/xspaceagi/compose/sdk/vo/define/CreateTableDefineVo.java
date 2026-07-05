@@ -1,19 +1,18 @@
 package com.xspaceagi.compose.sdk.vo.define;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.List;
 
 @Schema(description = "表结构定义,新增数据表")
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CreateTableDefineVo {
 
 //    /**

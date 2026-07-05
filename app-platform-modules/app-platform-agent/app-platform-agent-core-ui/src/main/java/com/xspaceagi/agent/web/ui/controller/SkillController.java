@@ -1,10 +1,10 @@
 package com.xspaceagi.agent.web.ui.controller;
 
-import com.xspaceagi.agent.core.adapter.application.ConfigHistoryApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
-import com.xspaceagi.agent.core.adapter.application.SkillApplicationService;
+import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
+import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.agent.core.spec.utils.FileTypeUtils;
 import com.xspaceagi.agent.web.ui.controller.util.SpaceObjectPermissionUtil;
@@ -13,12 +13,10 @@ import com.xspaceagi.agent.web.ui.dto.SkillCopyDto;
 import com.xspaceagi.agent.web.ui.dto.SkillDto;
 import com.xspaceagi.agent.web.ui.dto.SkillUpdateDto;
 import com.xspaceagi.custompage.sdk.dto.CopyTypeEnum;
-import com.xspaceagi.sandbox.SandboxRequestAttributes;
-import com.xspaceagi.system.application.dto.SpaceDto;
+import com.xspaceagi.sandbox.SandboxUtils;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
-import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -39,7 +37,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +46,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.xspaceagi.agent.core.application.service.SkillApplicationServiceImpl.MAX_SINGLE_FILE_SIZE;
+import static com.xspaceagi.agent.core.application.service.SkillApplicationServiceImpl.MAX_SKILL_FILE_SIZE;
 import static com.xspaceagi.system.spec.enums.ResourceEnum.*;
 
 @Tag(name = "技能相关接口")
@@ -67,14 +66,22 @@ public class SkillController {
     private PublishApplicationService publishApplicationService;
     @Resource
     private ConfigHistoryApplicationService configHistoryApplicationService;
+    @Resource
+    private AgentWorkspaceApplicationService agentWorkspaceApplicationService;
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
+    @Resource
+    private RecommendApplicationService recommendApplicationService;
 
     @RequireResource(SKILL_CREATE)
     @Operation(summary = "新增技能")
     @PostMapping(value = "/add", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Long> add(@RequestBody @Valid SkillAddDto skillAddDto, HttpServletRequest request) {
-        if (isSandboxSource(request)) {
-            Long personalSpaceId = getPersonalSpaceId();
-            skillAddDto.setSpaceId(personalSpaceId);
+        if (SandboxUtils.isSandboxRequest(request)) {
+            if (skillAddDto.getSpaceId() == null) {
+                Long personalSpaceId = spaceApplicationService.getPersonalSpaceId(RequestContext.get().getUserId());
+                skillAddDto.setSpaceId(personalSpaceId);
+            }
         }
         if (skillAddDto.getSpaceId() == null) {
             throw new IllegalArgumentException("Invalid spaceId");
@@ -108,7 +115,12 @@ public class SkillController {
     @Operation(summary = "修改技能")
     @PostMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> update(@RequestBody @Valid SkillUpdateDto skillUpdateDto) {
-        checkSkillPermission(skillUpdateDto.getId());
+        SkillConfigDto existSkill = checkSkillPermission(skillUpdateDto.getId());
+
+        // 沙盒技能不允许修改文件
+        if (isSandboxSkill(existSkill) && !CollectionUtils.isEmpty(skillUpdateDto.getFiles())) {
+            throw new IllegalArgumentException("Cannot modify files of sandbox-developed skill");
+        }
 
         if (skillUpdateDto.getName() != null) {
             if (!skillUpdateDto.getName().matches("^[\\u4e00-\\u9fa5A-Za-z0-9_-]+$")) {
@@ -140,22 +152,25 @@ public class SkillController {
             throw new IllegalArgumentException("Invalid skillId");
         }
 
-        // 检查单个文件大小，限制为 80M
-        long maxSingleFileSize = 80L * 1024 * 1024;
-        if (file.getSize() >= maxSingleFileSize) {
+        // 检查单个文件大小
+        if (file.getSize() >= MAX_SINGLE_FILE_SIZE) {
             throw new IllegalArgumentException("Skill package size must not exceed 80 MB");
         }
 
         // 检查技能权限
         SkillConfigDto exist = checkSkillPermission(skillId);
 
+        // 沙盒技能不支持上传文件
+        if (isSandboxSkill(exist)) {
+            throw new IllegalArgumentException("Cannot upload files to sandbox-developed skill");
+        }
+
         // 计算现有文件的总大小
         long existingTotalSize = calculateTotalFileSize(exist.getFiles());
 
-        // 检查新文件 + 原文件总大小，限制为 80M
-        long maxTotalSize = 80L * 1024 * 1024;
+        // 检查新文件 + 原文件总大小
         long newFileSize = file.getSize();
-        if (existingTotalSize + newFileSize > maxTotalSize) {
+        if (existingTotalSize + newFileSize > MAX_SKILL_FILE_SIZE) {
             throw new IllegalArgumentException("Skill package size must not exceed 80 MB");
         }
 
@@ -201,14 +216,13 @@ public class SkillController {
             throw new IllegalArgumentException("Invalid skillId");
         }
 
-        // 检查单个文件大小，限制为 80M
-        long maxSingleFileSize = 80L * 1024 * 1024;
+        // 检查单个文件大小
         long newFilesTotalSize = 0L;
         for (MultipartFile file : files) {
             if (file == null || file.isEmpty()) {
                 continue;
             }
-            if (file.getSize() >= maxSingleFileSize) {
+            if (file.getSize() >= MAX_SINGLE_FILE_SIZE) {
                 throw new IllegalArgumentException("Skill package size must not exceed 80 MB");
             }
             newFilesTotalSize += file.getSize();
@@ -217,12 +231,16 @@ public class SkillController {
         // 检查技能权限
         SkillConfigDto exist = checkSkillPermission(skillId);
 
+        // 沙盒技能不支持上传文件
+        if (isSandboxSkill(exist)) {
+            throw new IllegalArgumentException("Cannot upload files to sandbox-developed skill");
+        }
+
         // 计算现有文件的总大小
         long existingTotalSize = calculateTotalFileSize(exist.getFiles());
 
-        // 检查新文件 + 原文件总大小，限制为 80M
-        long maxTotalSize = 80L * 1024 * 1024;
-        if (existingTotalSize + newFilesTotalSize > maxTotalSize) {
+        // 检查新文件 + 原文件总大小
+        if (existingTotalSize + newFilesTotalSize > MAX_SKILL_FILE_SIZE) {
             throw new IllegalArgumentException("Skill package size must not exceed 80 MB");
         }
 
@@ -279,7 +297,17 @@ public class SkillController {
     @Operation(summary = "删除技能")
     @PostMapping(path = "/delete/{skillId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<Void> delete(@PathVariable Long skillId) {
-        checkSkillPermission(skillId);
+        SkillConfigDto exist = checkSkillPermission(skillId);
+
+        // 沙盒技能需要额外清理沙箱工作空间
+        if (isSandboxSkill(exist)) {
+            try {
+                agentWorkspaceApplicationService.deleteWorkspace(exist.getCreatorId(), exist.getDevAgentConversationId());
+            } catch (Exception e) {
+                log.warn("Failed to delete sandbox workspace for skill, skillId={}, cId={}", skillId, exist.getDevAgentConversationId(), e);
+            }
+        }
+
         skillApplicationService.delete(skillId);
         return ReqResult.success();
     }
@@ -302,9 +330,11 @@ public class SkillController {
     @Operation(summary = "查询技能列表")
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<List<SkillDto>> list(SkillQueryDto queryDto, HttpServletRequest request) {
-        if (isSandboxSource(request)) {
-            Long personalSpaceId = getPersonalSpaceId();
-            queryDto.setSpaceId(personalSpaceId);
+        if (SandboxUtils.isSandboxRequest(request)) {
+            if (queryDto.getSpaceId() == null) {
+                Long personalSpaceId = spaceApplicationService.getPersonalSpaceId(RequestContext.get().getUserId());
+                queryDto.setSpaceId(personalSpaceId);
+            }
         }
         if (queryDto.getSpaceId() == null) {
             throw new IllegalArgumentException("Invalid spaceId");
@@ -325,9 +355,15 @@ public class SkillController {
     @Operation(summary = "导出技能")
     @GetMapping(path = "/export/{skillId}", produces = "application/octet-stream")
     public byte[] export(@PathVariable Long skillId, HttpServletResponse response) {
-        checkSkillPermission(skillId);
+        SkillConfigDto exist = checkSkillPermission(skillId);
 
-        SkillExportResultDto exportResult = skillApplicationService.exportSkill(skillId);
+        SkillExportResultDto exportResult;
+        if (isSandboxSkill(exist)) {
+            // 沙盒技能从沙箱导出
+            exportResult = agentWorkspaceApplicationService.exportSkillFromSandbox(exist.getCreatorId(), exist.getDevAgentConversationId(), exist.getName());
+        } else {
+            exportResult = skillApplicationService.exportSkill(skillId);
+        }
 
         // 设置响应头
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(exportResult.getFileName(), Charset.forName("UTF-8")));
@@ -339,29 +375,24 @@ public class SkillController {
     @RequireResource(SKILL_IMPORT)
     @Operation(summary = "导入技能")
     @PostMapping(value = "/import", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Long> importSkill(@RequestParam("file") MultipartFile file,
-                                         @RequestParam(value = "targetSkillId", required = false) Long targetSkillId,
-                                         @RequestParam(value = "targetSpaceId", required = false) Long targetSpaceId,
-                                         @RequestParam(value = "usageScenarios", required = false) List<UsageScenarioEnum> usageScenarios,
-                                         HttpServletRequest request) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Please select a file to upload");
-        }
-        // 检查文件大小，限制为 20M
-        long maxSize = 20L * 1024 * 1024;
-        if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("Import file must be smaller than 20 MB");
-        }
-        if (isSandboxSource(request)) {
-            Long personalSpaceId = getPersonalSpaceId();
-            targetSpaceId = personalSpaceId;
-            // sandbox 场景下，targetSpaceId 由个人空间决定，需要校验权限
-            spacePermissionService.checkSpaceUserPermission(targetSpaceId);
+    public ReqResult<Long> importSkill(@RequestParam(value = "url", required = false) String url,
+                                       @RequestParam(value = "file", required = false) MultipartFile file,
+                                       @RequestParam(value = "targetSkillId", required = false) Long targetSkillId,
+                                       @RequestParam(value = "targetSpaceId", required = false) Long targetSpaceId,
+                                       @RequestParam(value = "usageScenarios", required = false) List<UsageScenarioEnum> usageScenarios,
+                                       HttpServletRequest request) throws IOException {
+        if (SandboxUtils.isSandboxRequest(request)) {
+            if (targetSpaceId == null) {
+                targetSpaceId = spaceApplicationService.getPersonalSpaceId(RequestContext.get().getUserId());
+            }
         }
 
-        SkillConfigDto existSkill = null;
         if (targetSkillId != null) {
-            existSkill = checkSkillPermission(targetSkillId);
+            SkillConfigDto existSkill = checkSkillPermission(targetSkillId);
+            // 沙盒技能不支持导入
+            if (isSandboxSkill(existSkill)) {
+                throw new IllegalArgumentException("Cannot import to sandbox-developed skill");
+            }
         } else {
             if (targetSpaceId == null) {
                 throw new IllegalArgumentException("Please select a target space");
@@ -369,8 +400,7 @@ public class SkillController {
             spacePermissionService.checkSpaceUserPermission(targetSpaceId);
         }
 
-        SkillExtDto importExt = parseImportExt(usageScenarios);
-        Long resultId = skillApplicationService.importSkill(file, existSkill, targetSpaceId, importExt);
+        Long resultId = skillApplicationService.importSkill(url, file, targetSkillId, targetSpaceId, usageScenarios);
         return ReqResult.success(resultId);
     }
 
@@ -413,6 +443,48 @@ public class SkillController {
         }
 
         Long id = skillApplicationService.copySkill(skillConfigDto, targetSpaceId);
+
+        // 沙盒技能复制：需要为新技能创建开发会话，并复制沙箱工作空间
+        if (isSandboxSkill(skillConfigDto)) {
+            try {
+                TargetRecommendResponse recommendResponse = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name()).stream().filter(targetRecommendResponse -> targetRecommendResponse.getFunctionType().equals(TargetRecommend.FunctionType.SkillDev.name())).findFirst().orElse(null);
+                if (recommendResponse == null) {
+                    throw new IllegalArgumentException("Develop agent not config");
+                }
+
+                Long currentUserId = RequestContext.get().getUserId();
+
+                // 创建开发会话（新技能的 creatorId 是当前用户）
+                Long newCId = conversationApplicationService.createConversationForProjectDevelopment(
+                        RequestContext.get().getTenantId(),
+                        currentUserId,
+                        targetSpaceId,
+                        recommendResponse.getTargetId(),
+                        Published.TargetType.Skill.name(),
+                        id
+                ).getId();
+
+                // 更新新技能的 devAgentConversationId
+                SkillConfigDto updateDto = new SkillConfigDto();
+                updateDto.setId(id);
+                updateDto.setDevAgentConversationId(newCId);
+                skillApplicationService.update(updateDto, false);
+
+                // 复制源沙箱工作空间到新工作空间，并初始化 git
+                agentWorkspaceApplicationService.copySandboxWorkspace(
+                        skillConfigDto.getCreatorId(),
+                        skillConfigDto.getDevAgentConversationId(),
+                        currentUserId,
+                        newCId
+                );
+            } catch (IllegalArgumentException e) {
+                throw e;
+            } catch (Exception e) {
+                log.error("Failed to setup sandbox workspace for copied skill, skillId={}", id, e);
+                throw new RuntimeException("Failed to setup sandbox workspace for copied skill", e);
+            }
+        }
+
         return ReqResult.success(id);
     }
 
@@ -429,22 +501,11 @@ public class SkillController {
     @Operation(summary = "查询技能模板")
     @GetMapping(value = "/template", produces = MediaType.APPLICATION_JSON_VALUE)
     public ReqResult<SkillDto> getTemplate() {
-        try {
-            InputStream inputStream = SkillController.class.getClassLoader().getResourceAsStream("skill-template.json");
-            if (inputStream == null) {
-                log.error("Cannot find skill template file: skill-template.json");
-                throw new IllegalArgumentException("Skill template file does not exist");
-            }
-
-            SkillConfigDto skillConfigDto = skillApplicationService.getSkillTemplate(inputStream);
-            SkillDto skillDto = new SkillDto();
-            BeanUtils.copyProperties(skillConfigDto, skillDto);
-            skillDto.setUsageScenarios(parseUsageScenarios(skillConfigDto.getExt()));
-            return ReqResult.success(skillDto);
-        } catch (Exception e) {
-            log.error("Failed to read skill template", e);
-            throw e;
-        }
+        SkillConfigDto skillConfigDto = skillApplicationService.getSkillTemplate();
+        SkillDto skillDto = new SkillDto();
+        BeanUtils.copyProperties(skillConfigDto, skillDto);
+        skillDto.setUsageScenarios(parseUsageScenarios(skillConfigDto.getExt()));
+        return ReqResult.success(skillDto);
     }
 
     //检查技能权限
@@ -460,44 +521,15 @@ public class SkillController {
         return skillDto;
     }
 
-    private boolean isSandboxSource(HttpServletRequest request) {
-        if (request == null) {
-            return false;
-        }
-        Object src = request.getAttribute(SandboxRequestAttributes.REQUEST_SOURCE);
-        return SandboxRequestAttributes.SOURCE_SANDBOX.equals(src);
-    }
-
-    private Long getPersonalSpaceId() {
-        Long userId = RequestContext.get().getUserId();
-        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
-        SpaceDto personalSpace = spaceDtos.stream()
-                .filter(spaceDto -> spaceDto.getType() == Space.Type.Personal)
-                .findFirst()
-                .orElse(null);
-        if (personalSpace == null) {
-            throw new IllegalArgumentException("User has no personal space");
-        }
-        return personalSpace.getId();
-    }
-
-    private SkillExtDto parseImportExt(List<UsageScenarioEnum> usageScenarios) {
-        if (usageScenarios == null || usageScenarios.isEmpty()) {
-            return buildDefaultSkillExt();
-        }
-        return convertExtArray(usageScenarios, true);
-    }
-
-    private SkillExtDto buildDefaultSkillExt() {
-        SkillExtDto skillExtDto = new SkillExtDto();
-        skillExtDto.setSupportTaskAgent(1);
-        skillExtDto.setSupportPageApp(0);
-        return skillExtDto;
-    }
-
     private SkillExtDto convertExtArray(List<UsageScenarioEnum> extArray, boolean useDefaultWhenEmpty) {
         if (extArray == null || extArray.isEmpty()) {
-            return useDefaultWhenEmpty ? buildDefaultSkillExt() : null;
+            if (!useDefaultWhenEmpty) {
+                return null;
+            }
+            SkillExtDto defaultExt = new SkillExtDto();
+            defaultExt.setSupportTaskAgent(1);
+            defaultExt.setSupportPageApp(0);
+            return defaultExt;
         }
         SkillExtDto ext = new SkillExtDto();
         ext.setSupportTaskAgent(extArray.contains(UsageScenarioEnum.TaskAgent) ? 1 : 0);
@@ -544,6 +576,10 @@ public class SkillController {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private boolean isSandboxSkill(SkillConfigDto skill) {
+        return skill != null && skill.getDevAgentConversationId() != null;
     }
 
     /**

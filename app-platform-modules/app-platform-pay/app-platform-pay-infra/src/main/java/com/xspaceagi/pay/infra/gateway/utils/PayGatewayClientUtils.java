@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
@@ -63,6 +64,31 @@ public final class PayGatewayClientUtils {
             throw toHttpErrorException(e);
         } catch (ResourceAccessException e) {
             log.warn("[pay-gateway] POST network error url={} msg={}", url, e.getMessage(), e);
+            throw new PayGatewayClientException();
+        }
+    }
+
+    public static <T> T postMultipartSigned(
+            RestTemplate restTemplate,
+            String url,
+            MultiValueMap<String, Object> parts,
+            ParameterizedTypeReference<ApiResponse<T>> typeRef,
+            boolean requireNonNullData) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(parts, headers);
+            ResponseEntity<ApiResponse<T>> response = restTemplate.exchange(url, HttpMethod.POST, entity, typeRef);
+            return unwrap(response.getBody(), url, requireNonNullData);
+        } catch (HttpStatusCodeException e) {
+            log.warn(
+                    "[pay-gateway] POST multipart failed url={} status={} body={}",
+                    url,
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString());
+            throw toHttpErrorException(e);
+        } catch (ResourceAccessException e) {
+            log.warn("[pay-gateway] POST multipart network error url={} msg={}", url, e.getMessage(), e);
             throw new PayGatewayClientException();
         }
     }

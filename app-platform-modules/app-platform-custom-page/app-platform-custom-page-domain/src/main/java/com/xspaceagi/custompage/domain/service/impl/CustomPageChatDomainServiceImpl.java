@@ -10,7 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xspaceagi.custompage.domain.gateway.AiAgentClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppAIClient;
 import com.xspaceagi.custompage.domain.service.CustomPageAgentProgressCaptureService;
 import com.xspaceagi.custompage.domain.service.ICustomPageChatDomainService;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainService {
 
     @Resource
-    private AiAgentClient aiAgentClient;
+    private PageAppAIClient pageAppAIClient;
     @Resource
     private CustomPageAgentProgressCaptureService agentProgressCaptureService;
 
@@ -56,7 +56,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
         } catch (Exception e) {
             return ReqResult.error("0001", "Invalid projectId");
         }
-        Map<String, Object> resp = aiAgentClient.sessionCancel(projectIdLong, sessionId, userContext);
+        Map<String, Object> resp = pageAppAIClient.sessionCancel(projectIdLong, sessionId, userContext);
         if (resp == null) {
             return ReqResult.error("9999", "Failed to cancel task: AI Agent returned no response");
         }
@@ -116,7 +116,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
         } catch (Exception e) {
             return ReqResult.error("0001", "Invalid projectId");
         }
-        Map<String, Object> resp = aiAgentClient.getAgentStatus(projectIdLong, userContext);
+        Map<String, Object> resp = pageAppAIClient.getAgentStatus(projectIdLong, userContext);
         if (resp == null) {
             return ReqResult.error("9999", "Failed to query Agent status: AI Agent returned no response");
         }
@@ -176,7 +176,7 @@ public class CustomPageChatDomainServiceImpl implements ICustomPageChatDomainSer
         } catch (Exception e) {
             return ReqResult.error("0001", "Invalid projectId");
         }
-        Map<String, Object> resp = aiAgentClient.stopAgent(projectIdLong, userContext);
+        Map<String, Object> resp = pageAppAIClient.stopAgent(projectIdLong, userContext);
         if (resp == null) {
             return ReqResult.error("9999", "Failed to stop Agent service: AI Agent returned no response");
         }

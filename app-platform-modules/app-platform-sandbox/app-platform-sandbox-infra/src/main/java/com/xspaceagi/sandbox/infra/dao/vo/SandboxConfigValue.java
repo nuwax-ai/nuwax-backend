@@ -19,6 +19,9 @@ public class SandboxConfigValue {
     @Schema(description = "VNC服务端口")
     private int vncPort;
 
+    @Schema(description = "终端服务端口")
+    private int ttydPort;
+
     @Schema(description = "文件服务端口")
     private int fileServerPort;
 

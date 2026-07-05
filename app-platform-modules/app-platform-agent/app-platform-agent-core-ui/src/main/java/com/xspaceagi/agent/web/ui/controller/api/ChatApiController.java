@@ -146,7 +146,7 @@ public class ChatApiController {
     @GetMapping("/{conversationId}/files")
     public ReqResult<ComputerFileListRes> getFileList(@PathVariable Long conversationId) {
         String proxyPath = String.format("/api/v1/chat/%s/file", conversationId);
-        Map<String, Object> result = computerFileApplicationService.getFileList(RequestContext.get().getUserId(), conversationId, proxyPath, null);
+        Map<String, Object> result = computerFileApplicationService.getFileList(RequestContext.get().getUserId(), conversationId, proxyPath, null, null);
         if (result == null) {
             return ReqResult.error("Failed to query file list");
         }
@@ -181,7 +181,8 @@ public class ChatApiController {
         if (cId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        return computerFileApplicationService.getStaticFile(cId, request);
+        String customTargetDir = request.getParameter("customTargetDir");
+        return computerFileApplicationService.getStaticFile(cId, request, customTargetDir);
     }
 
     private Map<String, String> getHeadersFromRequest(HttpServletRequest request) {

@@ -14,6 +14,7 @@ import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.JwtUtils;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import org.springframework.util.Assert;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -255,4 +257,18 @@ public class AuthServiceImpl implements AuthService {
         }
         return null;
     }
+
+    @Override
+    public String newEcoToken(String tenantClientId, String tenantSecret, UserDto user) {
+        TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        Map<String, String> data = Map.of(
+                "clientId", tenantClientId,
+                "clientSiteUrl", tenantConfig.getSiteUrl(),
+                "userId", user.getId().toString(),
+                "role", user.getRole().name()
+        );
+        log.info("newEcoToken: {}, userId {}, userName {}", data, user.getId(), user.getUserName());
+        return JwtUtils.createJwt(String.valueOf(user.getId()), "user" + user.getId(), tenantSecret, 86400, data);
+    }
+
 }

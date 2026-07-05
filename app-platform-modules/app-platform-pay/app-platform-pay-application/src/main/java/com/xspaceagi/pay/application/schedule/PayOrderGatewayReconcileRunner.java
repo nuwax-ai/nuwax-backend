@@ -6,10 +6,10 @@ import com.xspaceagi.pay.application.support.PayOrderBillNotifySupport;
 import com.xspaceagi.pay.application.support.PayOrderBizNotifySupport;
 import com.xspaceagi.pay.application.support.PayOrderGatewayQueryMerger;
 import com.xspaceagi.pay.application.support.PayOrderGatewaySyncFailureSupport;
-import com.xspaceagi.pay.domain.gateway.PaymentScanGateway;
+import com.xspaceagi.pay.application.support.PayOrderStatusQuerySupport;
 import com.xspaceagi.pay.domain.model.PayOrderModel;
 import com.xspaceagi.pay.domain.repository.PayOrderRepository;
-import com.xspaceagi.pay.sdk.dto.ScanOrderStatusQueryResponse;
+import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryResponse;
 import com.xspaceagi.pay.sdk.enums.PaymentStatus;
 import com.xspaceagi.pay.spec.enums.PayBizNotifyStatus;
 import com.xspaceagi.pay.spec.exception.PayGatewayClientException;
@@ -44,7 +44,7 @@ public class PayOrderGatewayReconcileRunner {
     public static final int LOOKBACK_DAYS = 7;
 
     private final PayOrderRepository payOrderRepository;
-    private final PaymentScanGateway paymentScanGateway;
+    private final PayOrderStatusQuerySupport payOrderStatusQuerySupport;
     private final PayGatewayOutboundExecutor payGatewayOutboundExecutor;
     private final IBillRpcService billRpcService;
 
@@ -116,9 +116,9 @@ public class PayOrderGatewayReconcileRunner {
                     e.getMessage());
             return false;
         }
-        ScanOrderStatusQueryResponse last;
+        PaymentStatusQueryResponse last;
         try {
-            last = paymentScanGateway.queryOrderStatus(outbound, row.getGatewayPaymentOrderNo(), true);
+            last = payOrderStatusQuerySupport.queryOrderStatus(outbound, row, true);
         } catch (PayGatewayClientException e) {
             log.warn(
                     "[pay-reconcile] query failed payOrderId={} tenantId={} gatewayNo={} gatewayCode={} gatewayMessage={}",
@@ -152,7 +152,7 @@ public class PayOrderGatewayReconcileRunner {
     }
 
     private boolean tryNotifyTerminalAndMarkNotified(
-            PayOrderModel row, ScanOrderStatusQueryResponse last, PayBizNotifyStatus expectedCurrent) {
+            PayOrderModel row, PaymentStatusQueryResponse last, PayBizNotifyStatus expectedCurrent) {
         if (!PayOrderBillNotifySupport.notifyBillPaymentCallback(billRpcService, row, last, false)) {
             log.warn("[pay-reconcile] bill notify failed payOrderId={}, will retry next tick", row.getId());
             return false;

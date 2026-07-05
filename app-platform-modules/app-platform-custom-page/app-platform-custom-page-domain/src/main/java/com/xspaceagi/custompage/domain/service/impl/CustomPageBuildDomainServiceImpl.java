@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.keepalive.IKeepAliveService;
 import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.proxypath.ICustomPageProxyPathService;
@@ -40,7 +40,7 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
     @Resource
     private ICustomPageBuildRepository customPageBuildRepository;
     @Resource
-    private PageFileBuildClient pageFileBuildClient;
+    private PageAppFileClient pageAppFileClient;
     @Resource
     private IKeepAliveService keepAliveService;
     @Resource
@@ -98,7 +98,7 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
 
     // 调用node创建项目
     public ReqResult<Map<String, Object>> initProject(Long projectId, TemplateTypeEnum templateType) {
-        Map<String, Object> resp = pageFileBuildClient.createProject(projectId, templateType);
+        Map<String, Object> resp = pageAppFileClient.createProject(projectId, templateType);
         if (resp == null) {
             return ReqResult.error("9999", "Create project failed: build server returned no response");
         }
@@ -128,62 +128,62 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         try {
             devProxyPath = customPageProxyPathService.getDevProxyPath(projectId);
         } catch (Exception e) {
-            log.warn("[upload-project] project Id={},could not gettenantdefaultagent", projectId);
+            log.warn("[upload-project] project Id={},could not get tenant default agent", projectId);
             // return ReqResult.error("9999", "租户没有配置默认智能体");
         }
         Integer targetVersion = isInitProject ? 1 : (buildModel.getCodeVersion() + 1);
 
         // 上传
-        log.info("[upload-project] project Id={},startcallserver", projectId);
-        Map<String, Object> resp = pageFileBuildClient.uploadProject(projectId, file, targetVersion,
+        log.info("[upload-project] project Id={},start call server", projectId);
+        Map<String, Object> resp = pageAppFileClient.uploadProject(projectId, file, targetVersion,
                 buildModel.getDevPid(), devProxyPath);
         if (resp == null) {
-            log.error("[upload-project] project Id={},upload projectfailed,server returned null", projectId);
+            log.error("[upload-project] project Id={},upload project failed,server returned null", projectId);
             return ReqResult.error("9999", "Upload project failed: build server returned no response");
         }
 
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
         if (!success) {
-            log.error("[upload-project] project Id={},upload projectfailed,server returned message={}", projectId, message);
+            log.error("[upload-project] project Id={},upload project failed,server returned message={}", projectId, message);
             return ReqResult.error("9999", message);
         }
 
         // 更新版本信息
-        List<VersionInfoDto> versionInfo = isInitProject ? new ArrayList<>() : buildModel.getVersionInfo();
-        versionInfo.add(VersionInfoDto.builder()
-                .version(targetVersion)
-                .time(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
-                .action(CustomPageActionEnum.UPLOAD.getCode())
-                .build());
-        try {
-            CustomPageBuildModel updateModel = new CustomPageBuildModel();
-            updateModel.setId(buildModel.getId());
-            updateModel.setCodeVersion(targetVersion);
-            updateModel.setVersionInfo(versionInfo);
-            // updateModel.setLastChatModelId(chatModelId);
-            // updateModel.setLastMultiModelId(multiModelId);
-            customPageBuildRepository.updateVersionInfo(updateModel, userContext);
-            log.info("[upload-project] project Id={},update version infosucceeded target Version={}", projectId, targetVersion);
-        } catch (Exception e) {
-            log.error("[upload-project] project Id={},update version infofailed, target Version={}", projectId, targetVersion, e);
-            // 不抛出异常，因为上传已经成功
-        }
+//        List<VersionInfoDto> versionInfo = isInitProject ? new ArrayList<>() : buildModel.getVersionInfo();
+//        versionInfo.add(VersionInfoDto.builder()
+//                .version(targetVersion)
+//                .time(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
+//                .action(CustomPageActionEnum.UPLOAD.getCode())
+//                .build());
+//        try {
+//            CustomPageBuildModel updateModel = new CustomPageBuildModel();
+//            updateModel.setId(buildModel.getId());
+//            updateModel.setCodeVersion(targetVersion);
+//            updateModel.setVersionInfo(versionInfo);
+//            // updateModel.setLastChatModelId(chatModelId);
+//            // updateModel.setLastMultiModelId(multiModelId);
+//            customPageBuildRepository.updateVersionInfo(updateModel, userContext);
+//            log.info("[upload-project] project Id={},update version info succeeded target Version={}", projectId, targetVersion);
+//        } catch (Exception e) {
+//            log.error("[upload-project] project Id={},update version info failed, target Version={}", projectId, targetVersion, e);
+//            // 不抛出异常，因为上传已经成功
+//        }
 
         Object pidObj = resp.get("pid");
         Object portObj = resp.get("port");
         if (pidObj == null || portObj == null) {
-            log.error("[upload-project] project Id={},devservice not started, message={}", projectId, resp.get("message"));
+            log.error("[upload-project] project Id={},dev service not started, message={}", projectId, resp.get("message"));
             keepAliveService.updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
-            log.warn("[upload-project] project Id={},devservice not started, update keep-alive infosucceeded,pid=null,port=null", projectId);
+            log.warn("[upload-project] project Id={},dev service not started, update keep-alive info succeeded,pid=null,port=null", projectId);
         } else {
             Integer pid = Integer.valueOf(String.valueOf(pidObj));
             Integer port = Integer.valueOf(String.valueOf(portObj));
             keepAliveService.updateKeepAlive(projectId, new Date(), YesOrNoEnum.Y.getKey(), pid, port, userContext);
-            log.info("[upload-project] project Id={},devservice started, update keep-alive infosucceeded,pid={},port={}", projectId, pid, port);
+            log.info("[upload-project] project Id={},dev service started, update keep-alive info succeeded,pid={},port={}", projectId, pid, port);
         }
 
-        log.info("[upload-project] project Id={},upload projectsucceeded,result={}", projectId, resp);
+        log.info("[upload-project] project Id={},upload project succeeded,result={}", projectId, resp);
         return ReqResult.success(resp);
 
     }
@@ -198,7 +198,7 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         log.info("[start Dev] project Id={},start domain execution", projectId);
 
         ReqResult<Map<String, Object>> result = keepAliveService.handleKeepAlive(projectId, userContext);
-        log.error("[start Dev] project Id={},response,result={}", projectId, result);
+        log.info("[start Dev] project Id={},response,result={}", projectId, result);
 
         return result;
     }
@@ -219,28 +219,28 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(model.getSpaceId());
 
-        log.error("[build] project Id={},startcallserver", projectId);
+        log.info("[build] project Id={},start call server", projectId);
         String prodProxyPath = customPageProxyPathService.getProdProxyPath(projectId);
-        Map<String, Object> resp = pageFileBuildClient.build(projectId, prodProxyPath);
+        Map<String, Object> resp = pageAppFileClient.build(projectId, prodProxyPath);
         if (resp == null) {
-            log.error("[build] project Id={},buildfailed,server returned null", projectId);
+            log.error("[build] project Id={},build failed,server returned null", projectId);
             return ReqResult.error("9999", "Build failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
         if (!success) {
-            log.error("[build] project Id={},buildfailed,server returned message={}", projectId, message);
+            log.error("[build] project Id={},build failed,server returned message={}", projectId, message);
             return ReqResult.error("9999", message);
         }
-        log.error("[build] project Id={},buildsucceeded", projectId);
+        log.info("[build] project Id={},build succeeded", projectId);
 
         // 更新build表的构建状态
         customPageBuildRepository.updateBuildStatus(projectId, model.getCodeVersion(), userContext);
-        log.error("[build] project Id={},buildtableupdatesucceeded", projectId);
+        log.info("[build] project Id={},build table update succeeded", projectId);
 
         // 更新config表的构建状态
         customPageConfigRepository.updateBuildStatus(projectId, publishTypeEnum, userContext);
-        log.error("[build] project Id={},configtableupdatesucceeded", projectId);
+        log.info("[build] project Id={},config table update succeeded", projectId);
 
         return ReqResult.success(resp);
     }
@@ -258,15 +258,15 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         spacePermissionService.checkSpaceUserPermission(model.getSpaceId());
 
         if (model.getDevPid() == null) {
-            log.info("[stop-dev] project Id={}, table queryprojectport null, handle", projectId);
+            log.info("[stop-dev] project Id={}, table query project port null, handle", projectId);
             return ReqResult.success(null);
         }
         if (model.getDevPid() <= 1) {
-            log.info("[stop-dev] project Id={}, table queryprojectpid {},invalid, handle", projectId, model.getDevPid());
+            log.info("[stop-dev] project Id={}, table query project pid {},invalid, handle", projectId, model.getDevPid());
             return ReqResult.error("Invalid process ID (pid)");
         }
 
-        Map<String, Object> resp = pageFileBuildClient.stopDev(projectId, model.getDevPid());
+        Map<String, Object> resp = pageAppFileClient.stopDev(projectId, model.getDevPid());
         if (resp == null) {
             log.error("[stop-dev] project Id={},stop failed,server returned null", projectId);
             return ReqResult.error("9999", "Stop failed: build server returned no response");
@@ -279,7 +279,7 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         }
         log.info("[stop-dev] project Id={},stop succeeded", projectId);
         keepAliveService.updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
-        log.info("[stop-dev] project Id={},keep-alive infoupdatesucceeded", projectId);
+        log.info("[stop-dev] project Id={},keep-alive info update succeeded", projectId);
 
         return ReqResult.success(resp);
     }
@@ -296,11 +296,11 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(model.getSpaceId());
 
-        log.info("[restart-dev] project Id={},startcallserver", projectId);
+        log.info("[restart-dev] project Id={},start call server", projectId);
         Integer pid = model.getDevPid();
 
         String devProxyPath = customPageProxyPathService.getDevProxyPath(projectId);
-        Map<String, Object> resp = pageFileBuildClient.restartDev(projectId, pid, devProxyPath);
+        Map<String, Object> resp = pageAppFileClient.restartDev(projectId, pid, devProxyPath);
         if (resp == null) {
             log.error("[restart-dev] project Id={},restart failed,server returned null", projectId);
             return ReqResult.error("9999", "Restart failed: build server returned no response");
@@ -326,13 +326,13 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
             newPort = Integer.valueOf(String.valueOf(portObj));
         } catch (Exception e) {
             keepAliveService.updateKeepAlive(projectId, new Date(), YesOrNoEnum.N.getKey(), null, null, userContext);
-            log.error("[restart-dev] project Id={},get service port pidexception,update keep-alive info,pid=null,port=null", projectId);
+            log.error("[restart-dev] project Id={},get service port pid exception,update keep-alive info,pid=null,port=null", projectId);
 
             return ReqResult.error("9999", "Failed to obtain dev server port and process ID");
         }
         log.info("[restart-dev] project Id={},restart succeeded", projectId);
         keepAliveService.updateKeepAlive(projectId, new Date(), 1, newPid, newPort, userContext);
-        log.info("[restart-dev] project Id={},update keep-alive infosucceeded,pid={},port={}", projectId, newPid, newPort);
+        log.info("[restart-dev] project Id={},update keep-alive info succeeded,pid={},port={}", projectId, newPid, newPort);
 
         return ReqResult.success(resp);
     }
@@ -361,22 +361,22 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(model.getSpaceId());
 
-        log.info("[delete-project-files] project Id={},startcallserver", projectId);
+        log.info("[delete-project-files] project Id={},start call server", projectId);
         Integer pid = model.getDevPid();
 
-        Map<String, Object> resp = pageFileBuildClient.deleteProject(projectId, pid);
+        Map<String, Object> resp = pageAppFileClient.deleteProject(projectId, pid);
         if (resp == null) {
-            log.error("[delete-project-files] project Id={},deletefailed,server returned null", projectId);
+            log.error("[delete-project-files] project Id={},delete failed,server returned null", projectId);
             return ReqResult.error("9999", "Delete failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
         if (!success) {
-            log.error("[delete-project-files] project Id={},deletefailed,server returned message={}", projectId, message);
+            log.error("[delete-project-files] project Id={},delete failed,server returned message={}", projectId, message);
             return ReqResult.error("9999", message);
         }
 
-        log.info("[delete-project-files] project Id={},deletesucceeded", projectId);
+        log.info("[delete-project-files] project Id={},delete succeeded", projectId);
         return ReqResult.success(resp);
     }
 
@@ -392,27 +392,27 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         // 校验空间权限
         spacePermissionService.checkSpaceUserPermission(model.getSpaceId());
 
-        log.debug("[get Dev Log] project Id={}, startcallserver", projectId);
+        log.debug("[get Dev Log] project Id={}, start call server", projectId);
 
-        Map<String, Object> resp = pageFileBuildClient.getDevLog(projectId, startIndex, logType);
+        Map<String, Object> resp = pageAppFileClient.getDevLog(projectId, startIndex, logType);
         if (resp == null) {
-            log.error("[get Dev Log] project Id={}, query logsfailed, server returned null", projectId);
+            log.error("[get Dev Log] project Id={}, query logs failed, server returned null", projectId);
             return ReqResult.error("9999", "Query logs failed: build server returned no response");
         }
         boolean success = Boolean.parseBoolean(String.valueOf(resp.get("success")));
         String message = resp.get("message") == null ? "" : String.valueOf(resp.get("message"));
         if (!success) {
-            log.error("[get Dev Log] project Id={}, query logsfailed, server returned message={}", projectId, message);
+            log.error("[get Dev Log] project Id={}, query logs failed, server returned message={}", projectId, message);
             return ReqResult.error("9999", message);
         }
-        log.debug("[get Dev Log] project Id={}, query logssucceeded", projectId);
+        log.debug("[get Dev Log] project Id={}, query logs succeeded", projectId);
 
         return ReqResult.success(resp);
     }
 
     @Override
     public ReqResult<Map<String, Object>> copyProject(Long sourceProjectId, Long targetProjectId) {
-        Map<String, Object> resp = pageFileBuildClient.copyProject(sourceProjectId, targetProjectId);
+        Map<String, Object> resp = pageAppFileClient.copyProject(sourceProjectId, targetProjectId);
         if (resp == null) {
             return ReqResult.error("9999", "Copy project failed: build server returned no response");
         }
@@ -426,8 +426,8 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
 
     @Override
     public ReqResult<Map<String, Object>> getLogCacheStats() {
-        log.info("[Domain] getlogcachestats");
-        Map<String, Object> resp = pageFileBuildClient.getLogCacheStats();
+        log.info("[Domain] get log cache stats");
+        Map<String, Object> resp = pageAppFileClient.getLogCacheStats();
         if (resp == null) {
             return ReqResult.error("9999", "Get log cache stats failed: build server returned no response");
         }
@@ -436,14 +436,14 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         if (!success) {
             return ReqResult.error("9999", message);
         }
-        log.info("[Domain] getlogcachestatssucceeded");
+        log.info("[Domain] get log cache stats succeeded");
         return ReqResult.success(resp);
     }
 
     @Override
     public ReqResult<Map<String, Object>> clearAllLogCache() {
         log.info("[Domain] clear all log cache");
-        Map<String, Object> resp = pageFileBuildClient.clearAllLogCache();
+        Map<String, Object> resp = pageAppFileClient.clearAllLogCache();
         if (resp == null) {
             return ReqResult.error("9999", "Clear log cache failed: build server returned no response");
         }
@@ -452,7 +452,7 @@ public class CustomPageBuildDomainServiceImpl implements ICustomPageBuildDomainS
         if (!success) {
             return ReqResult.error("9999", message);
         }
-        log.info("[Domain] clear all log cachesucceeded");
+        log.info("[Domain] clear all log cache succeeded");
         return ReqResult.success(resp);
     }
 }

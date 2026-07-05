@@ -74,4 +74,13 @@ public class AgentConfigUpdateDto implements Serializable {
 
     @Schema(description = "是否隐藏聊天区域，1 隐藏；0 不隐藏")
     private Integer hideChatArea;
+
+    @Schema(description = "是否允许用户在对话框中选择模式， 1 允许，其他不允许")
+    private Integer allowChooseMode;
+
+    @Schema(description = "是否开启询问用户， 1 允许，其他不允许")
+    private Integer enableAskQuestion;
+
+    @Schema(description = "是否开启版本控制， 1 允许，其他不允许")
+    private Integer enableVersionControl;
 }

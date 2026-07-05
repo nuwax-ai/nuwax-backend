@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.infra.component.plugin.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.HttpPluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.HttpNodeConfigDto;
@@ -89,11 +90,20 @@ public class HttpPluginHandler extends AbstractPluginHandler {
 
         HttpResponse httpResponse = httpClient.getLastResponse();
         Map<String, Object> outputMap = new LinkedHashMap<>();
-        if (result != null && JSON.isValid(result)) {
+        if (JSON.isValid(result)) {
             if (result.startsWith("[")) {
                 result = "{\"ROOT_ARRAY\":" + result + "}";
             }
-            Map<String, Object> resultMap = JSON.parseObject(result);
+            JSONObject resultMap = JSON.parseObject(result);
+            //检查是否有usage字段
+            JSONObject usage = resultMap.getJSONObject("usage");
+            if (usage == null && resultMap.get("data") instanceof JSONObject) {
+                JSONObject data = resultMap.getJSONObject("data");
+                if (data != null && data.get("usage") instanceof JSONObject && null != data.getJSONObject("usage")) {
+                    outputMap.put("usage", data.getJSONObject("usage"));
+                }
+            }
+
             //null时为解析参数时传递
             if (httpPluginConfigDto.getOutputArgs() == null) {
                 outputMap.putAll(resultMap);

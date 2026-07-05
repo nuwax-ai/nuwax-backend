@@ -75,7 +75,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
     private String enableModelProxy;
 
     @Override
-    public BackendModelDto getBackendModelConfig(String userApiKey, Long id) {
+    public BackendModelDto getBackendModelConfig(String userApiKey, Long id, String traceId) {
         String cacheKey = BACKEND_MODEL_KEY_PREFIX + userApiKey + (id == null ? "-" : id);
         Object val = redisUtil.get(cacheKey);
         if (val != null) {
@@ -118,7 +118,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
             userAccessKeyDto.getConfig().setEnabled(modelInfoDto.getEnabled() != null && modelInfoDto.getEnabled() == 1);
             userAccessKeyDto.getConfig().setUserName("user" + userAccessKeyDto.getUserId());
             userAccessKeyDto.getConfig().setConversationId(userAccessKeyDto.getUserId().toString());
-            userAccessKeyDto.getConfig().setRequestId(UUID.randomUUID().toString().replace("-", ""));
+            userAccessKeyDto.getConfig().setRequestId(traceId == null ? UUID.randomUUID().toString().replace("-", "") : traceId);
             userAccessKeyDto.getConfig().setModelBaseUrl(apiInfo.getUrl());
             userAccessKeyDto.getConfig().setTraceContext(TraceContext.builder()
                     .nickName(userAccessKeyDto.getConfig().getUserName())
@@ -129,6 +129,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                     .billUserId(userAccessKeyDto.getUserId())
                     .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
                     .traceId(userAccessKeyDto.getConfig().getRequestId())
+                    .apiKey(TraceContext.maskApiKey(userApiKey))
                     .traceTargets(List.of(TraceContext.TraceTarget.builder()
                             .targetId(modelInfoDto.getId().toString())
                             .targetType(TraceContext.TraceTargetType.Model)

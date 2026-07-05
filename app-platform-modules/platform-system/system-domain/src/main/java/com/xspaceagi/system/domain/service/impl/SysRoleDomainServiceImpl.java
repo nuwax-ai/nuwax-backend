@@ -831,7 +831,9 @@ public class SysRoleDomainServiceImpl implements SysRoleDomainService {
 
         MenuBindResourceHelper.adjustMenuBindTypeBottomUp(rootNode, explicitlyBoundMenuIds);
 
-        // 如果 root 的 menuBindType 为 ALL 或 NONE，则按规则将该类型自上而下强制传播到所有子菜单
+        MenuBindResourceHelper.reconcileRootMenuBindType(rootNode);
+
+        // root 为 ALL 时自上而下传播到所有子菜单
         MenuBindResourceHelper.propagateRootMenuBindType(rootNode);
 
         List<MenuNode> result = new ArrayList<>();

@@ -3,10 +3,12 @@ package com.xspaceagi.custompage.application.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
+import com.xspaceagi.custompage.application.service.ICustomPageBuildApplicationService;
 import com.xspaceagi.custompage.application.service.ICustomPageConfigApplicationService;
 import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
@@ -16,14 +18,15 @@ import com.xspaceagi.custompage.domain.service.ICustomPageConfigDomainService;
 import com.xspaceagi.custompage.infra.dao.entity.CustomPageConfig;
 import com.xspaceagi.custompage.infra.dao.service.ICustomPageConfigService;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
-import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
-import com.xspaceagi.custompage.sdk.dto.CustomPageQueryReq;
+import com.xspaceagi.custompage.sdk.dto.*;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
@@ -64,6 +67,53 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
     private ICustomPageConfigService customPageConfigService;
     @Resource
     private ICustomPageConfigApplicationService customPageConfigApplicationService;
+
+    @Resource
+    private ICustomPageBuildApplicationService customPageBuildApplicationService;
+
+    @Override
+    public String create(Long userId, Long spaceId, String name) {
+        TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        CustomPageConfigModel model = new CustomPageConfigModel();
+        model.setName(name);
+        model.setSpaceId(spaceId);
+        model.setNeedLogin(YesOrNoEnum.Y.getKey());
+        model.setProjectType(ProjectType.ONLINE_DEPLOY);
+        UserContext userContext = UserContext.builder()
+                .userId(userId)
+                .tenantConfig(tenantConfig)
+                .tenantId(tenantConfig.getTenantId())
+                .build();
+        try {
+            ReqResult<CustomPageConfigModel> customPageConfigModelReqResult = customPageConfigApplicationService.create(model, userContext);
+            if (customPageConfigModelReqResult.isSuccess()) {
+                // 初始化项目
+                ReqResult<Map<String, Object>> initResult = customPageBuildApplicationService.initProject(customPageConfigModelReqResult.getData().getId(), TemplateTypeEnum.REACT, userContext);
+                if (!initResult.isSuccess()) {
+                    customPageConfigApplicationService.deleteProject(customPageConfigModelReqResult.getData().getId(), userContext);
+                    throw new RuntimeException(initResult.getMessage());
+                }
+                return customPageConfigModelReqResult.getData().getId().toString();
+            }
+            throw new RuntimeException(customPageConfigModelReqResult.getMessage());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bindDataSource(Long userId, Long projectId, String type, Long dataSourceId) {
+        TenantConfigDto tenantConfig = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        UserContext userContext = UserContext.builder()
+                .userId(userId)
+                .tenantConfig(tenantConfig)
+                .tenantId(tenantConfig.getTenantId())
+                .build();
+        ReqResult<Void> voidReqResult = customPageConfigApplicationService.bindDataSource(projectId, type, dataSourceId, userContext);
+        if (!voidReqResult.isSuccess()) {
+            throw new RuntimeException(voidReqResult.getMessage());
+        }
+    }
 
     @Override
     public List<CustomPageDto> list(CustomPageQueryReq req) {
@@ -319,6 +369,8 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
         }
 
         if (completeDataSources && CollectionUtils.isNotEmpty(dto.getDataSources())) {
+            List<Long> workflowIds = dto.getDataSources().stream().filter(dataSource -> "workflow".equalsIgnoreCase(dataSource.getType())).map(DataSourceDto::getId).toList();
+            Map<Long, WorkflowConfigDto> workflowConfigDtoMap = workflowApplicationService.queryPublishedWorkflowConfigs(workflowIds).stream().collect(Collectors.toMap(WorkflowConfigDto::getId, workflowConfigDto -> workflowConfigDto, (v1, v2) -> v1));
             dto.getDataSources().forEach(dataSource -> {
                 String type = dataSource.getType();
                 Long dataSourceId = dataSource.getId();
@@ -332,7 +384,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
                         log.error("[bind Data Source] project Id={},type={},data Source Id={},pluginnot foundor not published, plugin Id={}", model.getId(), type, dataSourceId, dataSourceId);
                     }
                 } else if ("workflow".equalsIgnoreCase(type)) {
-                    WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(dataSourceId, null);
+                    WorkflowConfigDto workflowConfigDto = workflowConfigDtoMap.get(dataSourceId);
                     if (workflowConfigDto != null) {
                         dataSource.setName(workflowConfigDto.getName());
                         dataSource.setIcon(workflowConfigDto.getIcon());
@@ -372,6 +424,7 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
         dto.setExt(model.getExt());
         dto.setTenantId(model.getTenantId());
         dto.setSpaceId(model.getSpaceId());
+        dto.setSandboxId(model.getSandboxId());
         dto.setCreated(model.getCreated());
         dto.setCreatorId(model.getCreatorId());
         dto.setCreatorName(model.getCreatorName());

@@ -18,11 +18,24 @@ public class EcoMarketProperties {
      */
     private ServerConfig server = new ServerConfig();
 
+    private WebConfig web = new WebConfig();
+
     /**
      * 服务端配置
      */
     @Data
     public static class ServerConfig {
+        /**
+         * 远程服务器基础URL
+         */
+        private String baseUrl;
+    }
+
+    /**
+     * 服务端WEB地址配置
+     */
+    @Data
+    public static class WebConfig {
         /**
          * 远程服务器基础URL
          */

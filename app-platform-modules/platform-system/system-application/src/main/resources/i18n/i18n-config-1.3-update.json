@@ -1,0 +1,112 @@
+[
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Chat.callLimitLabel",
+    "fieldValue": "Available Calls",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitle",
+    "fieldValue": "Select Subscription Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc",
+    "fieldValue": "The withdrawal amount is {0} Yuan, the platform service fee is {1} Yuan, and the actual amount received is {2} Yuan.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.callLimitLabel",
+    "fieldValue": "可调用次数",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitle",
+    "fieldValue": "选择订阅套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.unlimited",
+    "fieldValue": "不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc",
+    "fieldValue": "本次提现金额为 {0} 元，平台服务费 {1} 元，实际到账 {2} 元。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Chat.callLimitLabel",
+    "fieldValue": "可調用次數",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitle",
+    "fieldValue": "選擇訂閱套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Chat.unlimited",
+    "fieldValue": "不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc",
+    "fieldValue": "本次提現金額為 {0} 元，平台服務費 {1} 元，實際到賬 {2} 元。",
+    "remark": null
+  }
+]

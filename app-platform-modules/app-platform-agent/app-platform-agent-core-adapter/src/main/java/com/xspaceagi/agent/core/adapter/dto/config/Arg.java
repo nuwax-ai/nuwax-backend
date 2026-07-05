@@ -70,6 +70,9 @@ public class Arg implements Serializable {
 
     private Long loopId;
 
+    @Schema(description = "参数更新策略")
+    private UpdateStrategy updateStrategy;
+
     public void setSubArgs(List<Arg> subArgs) {
         if (this.subArgs != null) {
             return;
@@ -121,7 +124,14 @@ public class Arg implements Serializable {
         Number,
         //自动识别
         AutoRecognition,
+        File,
+        Radio,
+        FixedValue,
+    }
 
+    public enum UpdateStrategy {
+        REPLACE,  // Overwrite the existing value entirely
+        APPEND    // Append to the existing value (string concatenation, list append, or numeric addition)
     }
 
     public static List<Arg> updateBindConfigArgs(String startKey, List<Arg> bindConfigArgs, List<Arg> configInputArgs) {

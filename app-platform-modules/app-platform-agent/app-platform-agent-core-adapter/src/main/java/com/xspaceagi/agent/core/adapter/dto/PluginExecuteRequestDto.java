@@ -21,4 +21,6 @@ public class PluginExecuteRequestDto implements Serializable {
     private Map<String, Object> params;
 
     private boolean test;
+
+    private String apiKey;
 }

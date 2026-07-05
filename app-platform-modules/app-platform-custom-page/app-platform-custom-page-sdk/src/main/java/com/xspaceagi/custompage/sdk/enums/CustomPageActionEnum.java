@@ -11,6 +11,7 @@ public enum CustomPageActionEnum {
     UPLOAD("upload", "Upload project"),
     SUBMIT_FILES_UPDATE("submit_files_update", "Submit file update"),
     UPLOAD_SINGLE_FILE("upload_single_file", "Upload single file"),
+    UPLOAD_BATCH_FILES("upload_batch_files", "Upload batch files"),
     CHAT("chat", "Chat"),
     ROLLBACK_VERSION("rollback_version", "Rollback version");
 

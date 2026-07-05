@@ -68,5 +68,7 @@ public interface ConversationDomainService {
 
     List<ConversationMessage> queryConversationMessageList(Long conversationId, Long lastId, int size);
 
+    List<ConversationMessage> queryConversationMessageList(Long conversationId, Long minId);
+
     List<Conversation> queryLatestSandboxConversationList(List<Long> exceptSandboxIds);
 }

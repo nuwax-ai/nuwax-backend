@@ -8,10 +8,12 @@ import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.CodeCheckResultDto;
 import com.xspaceagi.agent.core.adapter.dto.CreatorDto;
 import com.xspaceagi.agent.core.adapter.dto.ModelQueryDto;
+import com.xspaceagi.agent.core.adapter.dto.SortUpdateDTO;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.ModelConfigRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.infra.component.model.FunctionToolCallback;
 import com.xspaceagi.agent.core.infra.component.model.ModelClientFactory;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
 import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
@@ -57,16 +59,15 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.metadata.DefaultToolMetadata;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -240,7 +241,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     @Override
     public List<ModelConfigDto> queryTenantModelConfigList(Integer accessControlStatus) {
-        return queryModelConfigList(new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getScope, ModelConfig.ModelScopeEnum.Tenant).eq(accessControlStatus != null, ModelConfig::getAccessControl, accessControlStatus).orderByDesc(ModelConfig::getId));
+        return queryModelConfigList(new LambdaQueryWrapper<ModelConfig>().eq(ModelConfig::getScope, ModelConfig.ModelScopeEnum.Tenant).eq(accessControlStatus != null, ModelConfig::getAccessControl, accessControlStatus).orderByAsc(ModelConfig::getSort).orderByDesc(ModelConfig::getCreated));
     }
 
     @Override
@@ -360,6 +361,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     }
 
     private List<ModelConfigDto> queryModelConfigList(LambdaQueryWrapper<ModelConfig> queryWrapper) {
+        queryWrapper.orderByAsc(ModelConfig::getSort).orderByDesc(ModelConfig::getCreated);
         List<ModelConfigDto> modelDtos = new ArrayList<>();
         modelRepository.list(queryWrapper).forEach(model1 -> modelDtos.add(convertToModelDto(model1)));
         // creatorIdList in modelDtos
@@ -454,38 +456,53 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelJsonInvalid);
         }
         modelConfig.setIsReasonModel(0);
-        ChatClient.StreamResponseSpec stream = modelClientFactory.createChatClient(modelConfig)
+        ToolCallback jsonOutputToolCallback = FunctionToolCallback
+                .builder("json_output", (input, context) -> JSON.toJSONString(input))
+                .description("Generate JSON based on the context. When this tool appears, it indicates that the user intends to invoke it to extract JSON content; please invoke it finally")
+                .inputSchema(jsonSchema)
+                .inputType(HashMap.class)
+                .toolMetadata(DefaultToolMetadata.builder().returnDirect(true).build())
+                .toolCallResultConverter((res, returnType) -> (res instanceof String) ? (String) res : JSON.toJSONString(res))
+                .build();
+        ChatClient.StreamResponseSpec stream = modelClientFactory.createChatClient(modelConfig, List.of(jsonOutputToolCallback))
                 .prompt(new Prompt(new SystemMessage(sysPrompt), new UserMessage(prompt))).stream();
         StringBuilder responseStr = new StringBuilder();
-        Mono.create(sink -> stream.chatResponse().onErrorResume(throwable -> {
-                            log.warn("call error", throwable);
-                            if (throwable instanceof TimeoutException) {
-                                return Mono.error(new TimeoutException("Large model execution timeout"));
-                            }
-                            return Mono.error(throwable);
-                        })
-                        .doOnComplete(sink::success).doOnError(sink::error)
-                        .subscribe(chatResponse -> {
-                            Generation result = chatResponse.getResult();
-                            if (result == null || result.getOutput() == null) {
-                                return;
-                            }
-                            AssistantMessage assistantMessage = result.getOutput();
-                            if (assistantMessage != null && assistantMessage.getText() != null) {
-                                responseStr.append(assistantMessage.getText());
-                            }
-                            if (assistantMessage != null && assistantMessage.getMetadata() != null) {
-                                Object finishReason = assistantMessage.getMetadata().get("finishReason");
-                                if (finishReason != null && finishReason.toString().equals("STOP")) {
-                                    sink.success();
+        try {
+            Mono.create(sink -> stream.chatResponse().onErrorResume(throwable -> {
+                                log.warn("call error", throwable);
+                                if (throwable instanceof TimeoutException) {
+                                    return Mono.error(new TimeoutException("Large model execution timeout"));
                                 }
-                            }
-                        }))
-                .block();
+                                return Mono.error(throwable);
+                            })
+                            .doOnComplete(sink::success).doOnError(sink::error)
+                            .subscribe(chatResponse -> {
+                                Generation result = chatResponse.getResult();
+                                if (result == null || result.getOutput() == null) {
+                                    return;
+                                }
+                                AssistantMessage assistantMessage = result.getOutput();
+                                if (assistantMessage != null && assistantMessage.getText() != null) {
+                                    responseStr.append(assistantMessage.getText());
+                                }
+                                if (assistantMessage != null && assistantMessage.getMetadata() != null) {
+                                    Object finishReason = assistantMessage.getMetadata().get("finishReason");
+                                    if (finishReason != null && finishReason.toString().equals("STOP")) {
+                                        sink.success();
+                                    }
+                                }
+                            }))
+                    .block();
+        } catch (Exception e) {
+            log.warn("Model call error", e);
+            return call(modelConfig, sysPrompt, responseStr.toString(), type, retry + 1);
+        }
         String jsonText = ModelInvoker.getJSONText(responseStr.toString());
         if (!JSON.isValid(jsonText)) {
+            log.warn("Model returned JSON format is incorrect, please check prompt\nOriginal content {}\nReturned content：{}", prompt, responseStr);
             return call(modelConfig, sysPrompt, jsonText, type, retry + 1);
         }
+        log.debug("Model call Original content {}, jsonText: {}", prompt, jsonText);
         Object object = JSON.parseObject(jsonText, type.getType());
         if (object == null) {
             log.warn("Model returned JSON format is incorrect, please check prompt\nOriginal content {}\nReturned content：{}", prompt, responseStr);
@@ -501,7 +518,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     public String call(String userPrompt) {
         ModelConfigDto modelConfig = queryDefaultModelConfig();
-        return modelClientFactory.createChatClient(modelConfig).prompt()
+        return modelClientFactory.createChatClient(modelConfig, List.of()).prompt()
                 .user(userPrompt)
                 .call().content();
     }
@@ -596,7 +613,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
                 return null;
             } else {
                 // Non-vector model, use chat interface for testing
-                ChatClient chatClient = modelClientFactory.createChatClient(modelConfig);
+                ChatClient chatClient = modelClientFactory.createChatClient(modelConfig, List.of());
                 Flux<ChatResponse> chatResponseFlux = chatClient.prompt()
                         .user(testPrompt)
                         .stream().chatResponse();
@@ -655,5 +672,16 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             }
         });
         return modelConfigs;
+    }
+
+    @Override
+    public void updateModelSort(List<SortUpdateDTO> updateDTOS) {
+        List<ModelConfig> modelConfigs = updateDTOS.stream().map(updateDTO -> {
+            ModelConfig model = new ModelConfig();
+            model.setId(updateDTO.getId());
+            model.setSort(updateDTO.getSort());
+            return model;
+        }).collect(Collectors.toList());
+        modelRepository.updateBatchById(modelConfigs);
     }
 }

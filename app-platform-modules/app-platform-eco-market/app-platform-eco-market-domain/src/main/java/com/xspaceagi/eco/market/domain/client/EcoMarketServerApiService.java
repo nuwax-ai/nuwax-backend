@@ -1,32 +1,14 @@
 package com.xspaceagi.eco.market.domain.client;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Service;
-
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
-import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
-import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
-import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
+import com.xspaceagi.agent.core.spec.enums.*;
 import com.xspaceagi.eco.market.domain.config.EcoMarketConfig;
-import com.xspaceagi.eco.market.domain.dto.req.ClientRegisterReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ClientValidateReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigBatchDetailReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigDetailReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigOfflineReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigQueryRequest;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigSaveReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigStatusReqDTO;
-import com.xspaceagi.eco.market.domain.dto.req.ServerConfigUnpublishReqDTO;
+import com.xspaceagi.eco.market.domain.dto.req.*;
 import com.xspaceagi.eco.market.domain.dto.resp.ServerConfigDetailRespDTO;
 import com.xspaceagi.eco.market.domain.dto.resp.ServerConfigListRespDTO;
 import com.xspaceagi.eco.market.sdk.model.ClientSecretDTO;
@@ -39,16 +21,17 @@ import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.RedisUtil;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 生态市场服务器API调用服务
@@ -170,11 +153,9 @@ public class EcoMarketServerApiService {
 
                 if (result != null && result.isSuccess()) {
                     // 保存默认会话模型配置
-                    modelApplicationService
-                            .addOrUpdate(buildModelConfig(tenantId, ModelTypeEnum.Chat, 1L));
+                    modelApplicationService.addOrUpdate(buildModelConfig(tenantId, ModelTypeEnum.Chat, 1L));
                     // 保存默认嵌入模型配置
-                    modelApplicationService
-                            .addOrUpdate(buildModelConfig(tenantId, ModelTypeEnum.Embeddings, 2L));
+                    modelApplicationService.addOrUpdate(buildModelConfig(tenantId, ModelTypeEnum.Embeddings, 2L));
                     redisUtil.leftPush("tenant_created", tenantId);
 
                     // todo
@@ -194,6 +175,7 @@ public class EcoMarketServerApiService {
 
     private ModelConfigDto buildModelConfig(Long tenantId, ModelTypeEnum type, Long id) {
         ModelConfigDto modelConfigDto = new ModelConfigDto();
+        modelConfigDto.setPid("nuwax");
         ModelConfigDto modelConfigDto1 = TenantFunctions
                 .callWithIgnoreCheck(() -> modelApplicationService.queryModelConfigById(id));
         if (modelConfigDto1 == null) {
@@ -201,81 +183,43 @@ public class EcoMarketServerApiService {
         }
         modelConfigDto.setSpaceId(-1L);
         modelConfigDto.setIsReasonModel(YesOrNoEnum.N.getKey());
-        modelConfigDto.setApiProtocol(ModelApiProtocolEnum.OpenAI);
         modelConfigDto.setScope(ModelConfig.ModelScopeEnum.Tenant);
         modelConfigDto.setCreatorId(-1L);
         modelConfigDto.setTenantId(tenantId);
-        modelConfigDto.setDescription("本模型由女娲平台提供的试用模型，每天最多免费提供100万token，请尽快更换使用自有模型，或各模型厂商api服务");
+        String baseUrl = "https://api.nuwax.com";
         if (type == ModelTypeEnum.Chat) {
-            modelConfigDto.setName("DeepSeek V3");
-            modelConfigDto.setModel("deepseek-chat");
+            modelConfigDto.setName("DeepSeek V4 Flash");
+            modelConfigDto.setModel("deepseek-v4-flash");
             modelConfigDto.setType(ModelTypeEnum.Chat);
+            modelConfigDto.setTypes(List.of(ModelCapabilityEnum.Text, ModelCapabilityEnum.Reasoning));
+            modelConfigDto.setIsReasonModel(YesOrNoEnum.Y.getKey());
+            modelConfigDto.setApiProtocol(ModelApiProtocolEnum.Anthropic);
+            modelConfigDto.setUsageScenarios(List.of(UsageScenarioEnum.OpenApi, UsageScenarioEnum.ChatBot, UsageScenarioEnum.PageApp, UsageScenarioEnum.TaskAgent, UsageScenarioEnum.Workflow));
+            baseUrl = "https://api.nuwax.com/anthropic";
             modelConfigDto.setFunctionCall(ModelFunctionCallEnum.StreamCallSupported);
+            modelConfigDto.setDescription("Cost-Effective Choice: 284B total parameters, 13B activated, with native million-token context support. Generation speed increased by 50%, invocation cost only 1/12th of Pro, with second-level response and no lag. Ideal for chat interfaces, batch document processing, and lightweight agents, offering a money-saving and efficient solution for large-scale business integration.");
+            modelConfigDto.setMaxTokens(64000);
+            modelConfigDto.setMaxContextTokens(980000);
         } else if (type == ModelTypeEnum.Embeddings) {
-            modelConfigDto.setName("text-embedding-3-large");
-            modelConfigDto.setModel("text-embedding-3-large");
+            modelConfigDto.setName("text-embedding-v4");
+            modelConfigDto.setModel("text-embedding-v4");
+            modelConfigDto.setApiProtocol(ModelApiProtocolEnum.OpenAI);
             modelConfigDto.setType(ModelTypeEnum.Embeddings);
             modelConfigDto.setFunctionCall(ModelFunctionCallEnum.Unsupported);
+            modelConfigDto.setDescription("The Universal Text Embedding V4, a multilingual unified text embedding model trained by Tongyi Lab based on Qwen3, delivers significant improvements in text retrieval, clustering, and classification performance compared to V3. It achieves a 15%–40% performance gain on evaluation tasks such as MTEB multilingual, Chinese-English, and Code retrieval. It supports user-customizable vector dimensions ranging from 64 to 2048.");
+            modelConfigDto.setMaxTokens(8192);
         }
         modelConfigDto.setStrategy(ModelConfig.ModelStrategyEnum.RoundRobin);
-        modelConfigDto.setMaxTokens(32000);
         modelConfigDto.setTopP(0.7);
         modelConfigDto.setTemperature(1.0);
         modelConfigDto.setNetworkType(ModelConfig.NetworkType.Internet);
-        modelConfigDto.setDimension(1536);
+        modelConfigDto.setDimension(2048);
         ModelConfigDto.ApiInfo apiInfo = new ModelConfigDto.ApiInfo();
-        apiInfo.setUrl("https://openai-api.nuwax.com/");
-        apiInfo.setKey("TENANT_SECRET");
+        apiInfo.setUrl(baseUrl);
+        apiInfo.setKey("ak-TENANT_SECRET");
         apiInfo.setWeight(1);
         modelConfigDto.setApiInfoList(List.of(apiInfo));
         return modelConfigDto;
-    }
-
-    /**
-     * 验证客户端凭证
-     *
-     * @param clientId     客户端ID
-     * @param clientSecret 客户端密钥
-     * @return 验证结果，成功返回true，失败返回false
-     */
-    public boolean validateClientCredentials(String clientId, String clientSecret) {
-        try {
-            String url = buildApiUrl(EcoMarketApiConstant.SERVER_API_BASE + "/secret/validate");
-
-            // 构建请求DTO
-            ClientValidateReqDTO reqDTO = new ClientValidateReqDTO();
-            reqDTO.setClientId(clientId);
-            reqDTO.setClientSecret(clientSecret);
-
-            // 构建请求体
-            String jsonBody = JSON.toJSONString(reqDTO);
-            RequestBody body = RequestBody.create(jsonBody, JSON_MEDIA_TYPE);
-
-            // 构建请求
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(body)
-                    .build();
-
-            // 发送请求
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    log.error("Verify client credential request failed, status: {}", response.code());
-                    return false;
-                }
-
-                String responseBody = response.body().string();
-                ReqResult<Boolean> result = JSON.parseObject(responseBody,
-                        new TypeReference<ReqResult<Boolean>>() {
-                        });
-
-                // 判断验证是否成功
-                return result != null && result.isSuccess() && Boolean.TRUE.equals(result.getData());
-            }
-        } catch (IOException e) {
-            log.error("Server verify API error", e);
-            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
-        }
     }
 
     /**
@@ -342,7 +286,7 @@ public class EcoMarketServerApiService {
      * @return 配置详情列表，失败时抛出异常
      */
     public List<ServerConfigDetailRespDTO> getBatchServerConfigDetail(List<String> uids, String clientId,
-            String clientSecret) {
+                                                                      String clientSecret) {
         try {
             String url = buildApiUrl(EcoMarketApiConstant.SERVER_API_BASE + "/config/batchDetail");
 
@@ -398,7 +342,7 @@ public class EcoMarketServerApiService {
      * @return 配置详情列表，失败时抛出异常
      */
     public List<ServerConfigDetailRespDTO> getBatchServerApproveDetail(List<String> uids, String clientId,
-            String clientSecret) {
+                                                                       String clientSecret) {
         try {
             String url = buildApiUrl(EcoMarketApiConstant.SERVER_API_BASE + "/config/batchApproveDetail");
 
@@ -782,7 +726,6 @@ public class EcoMarketServerApiService {
      * 查询自动租户启用的配置信息
      * 服务器端接口对应 EcoMarketServerConfigController 中的 autoUse 方法
      *
-     * @param reqDTO 查询请求DTO
      * @return 分页查询结果
      */
     public List<ServerConfigDetailRespDTO> queryAutoUseConfigList() {
@@ -836,23 +779,23 @@ public class EcoMarketServerApiService {
 
     /**
      * 上传页面zip包到服务器端
-     * 
-     * @param fileBytes     文件字节数组
-     * @param fileName      文件名
-     * @param contentType   文件类型
-     * @param clientId      客户端ID
-     * @param clientSecret  客户端密钥
+     *
+     * @param fileBytes    文件字节数组
+     * @param fileName     文件名
+     * @param contentType  文件类型
+     * @param clientId     客户端ID
+     * @param clientSecret 客户端密钥
      * @return 上传成功后的文件URL，失败时抛出异常
      */
     public String uploadPageZip(byte[] fileBytes, String fileName, String contentType,
-                             String clientId, String clientSecret) {
+                                String clientId, String clientSecret) {
         try {
             String url = buildApiUrl(EcoMarketApiConstant.ServerConfig.UPLOAD_PAGE_ZIP);
             log.info("Upload page zip to server: fileName={}, size={}, contentType={}", fileName, fileBytes.length, contentType);
 
             MediaType fileMediaType = MediaType.parse(contentType != null ? contentType : "application/octet-stream");
             RequestBody fileBody = RequestBody.create(fileBytes, fileMediaType);
-            
+
             // 构建multipart/form-data请求体
             MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
@@ -860,7 +803,7 @@ public class EcoMarketServerApiService {
                     .addFormDataPart("fileName", fileName)
                     .addFormDataPart("clientId", clientId)
                     .addFormDataPart("clientSecret", clientSecret);
-            
+
             RequestBody requestBody = multipartBuilder.build();
 
             Request request = new Request.Builder()
@@ -879,7 +822,7 @@ public class EcoMarketServerApiService {
                     throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
                 }
                 String responseBody = responseBodyObj.string();
-                
+
                 ReqResult<String> result = JSON.parseObject(responseBody,
                         new TypeReference<ReqResult<String>>() {
                         });
@@ -897,6 +840,61 @@ public class EcoMarketServerApiService {
         } catch (IOException e) {
             log.error("Server page zip upload API error: fileName={}", fileName, e);
             throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketPageExportFailed, "上传页面zip包失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据importDataKey从生态市场服务器获取导入数据
+     *
+     * @param importDataKey 导入数据key
+     * @param clientId      客户端ID
+     * @param clientSecret  客户端密钥
+     * @return 导入数据（Map格式）
+     */
+    public Map<String, Object> getImportData(String importDataKey, String clientId, String clientSecret) {
+        try {
+            String url = buildApiUrl(EcoMarketApiConstant.ImportData.GET_IMPORT_DATA);
+
+            Map<String, String> reqMap = new java.util.HashMap<>();
+            reqMap.put("importDataKey", importDataKey);
+            reqMap.put("clientId", clientId);
+            reqMap.put("clientSecret", clientSecret);
+
+            String jsonBody = JSON.toJSONString(reqMap);
+            RequestBody body = RequestBody.create(jsonBody, JSON_MEDIA_TYPE);
+
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    log.error("Get import data request failed, status: {}", response.code());
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
+                            "请求失败，状态码: " + response.code());
+                }
+
+                var responseBodyObj = response.body();
+                if (responseBodyObj == null) {
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketConfigResultBodyEmpty);
+                }
+                String responseBody = responseBodyObj.string();
+                ReqResult<Map<String, Object>> result = JSON.parseObject(responseBody,
+                        new TypeReference<ReqResult<Map<String, Object>>>() {
+                        });
+
+                if (result != null && result.isSuccess()) {
+                    return result.getData();
+                } else {
+                    log.error("Get import data failed: {}", result != null ? result.getMessage() : "Unknown error");
+                    throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed,
+                            result != null ? result.getMessage() : "获取导入数据失败");
+                }
+            }
+        } catch (IOException e) {
+            log.error("Get import data API error", e);
+            throw EcoMarketException.build(BizExceptionCodeEnum.ecoMarketGetConfigFailed, e.getMessage());
         }
     }
 

@@ -26,7 +26,8 @@ public class WrappedNodeHandler implements NodeHandler {
     public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
         try {
             if (workflowContext.isUseResultCache()) {
-                Object value = workflowContext.getWorkflowContextServiceHolder().getRedisUtil().get(generateKey(workflowContext, node));
+                workflowContext.restoreResultStorage();
+                Object value = workflowContext.getResultStorage().get(generateKey(workflowContext, node));
                 if (value != null && JSON.isValid(value.toString())) {
                     NodeResult nodeResult = JSON.parseObject(value.toString(), NodeResult.class);
                     if (nodeResult != null) {
@@ -51,7 +52,9 @@ public class WrappedNodeHandler implements NodeHandler {
                             nodeResult.setResult(result);
                             nodeResult.setInput(workflowContext.getNodeExecuteInputMap().get(node.getId().toString()));
                             nodeResult.setUnreachableNextNodeIds(node.getUnreachableNextNodeIds());
-                            workflowContext.getWorkflowContextServiceHolder().getRedisUtil().set(generateKey(workflowContext, node), JSONObject.toJSONString(nodeResult), 86400);
+                            workflowContext.getResultStorage().put(generateKey(workflowContext, node), JSONObject.toJSONString(nodeResult));
+                        } else {
+                            workflowContext.saveResultStorage();
                         }
                     } catch (Exception e) {
                         log.error("redis set error", e);

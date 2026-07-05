@@ -49,8 +49,10 @@ public class TraceContext {
     private Object log;
 
     private TokenUsage tokenUsage;
+    private DurationUsage durationUsage;
 
     private Long subscriptionId;
+    private String apiKey;
 
     private boolean error;
     private String errorCode;
@@ -73,8 +75,17 @@ public class TraceContext {
                 .billUserId(billUserId)
                 .enableSubscription(enableSubscription)
                 .conversationId(conversationId)
+                .apiKey(apiKey)
                 .traceTargets(nextTraceTargets)
                 .build();
+    }
+
+    public static String maskApiKey(String apiKey) {
+        //apiKey只取前面4位和后4位
+        if (apiKey != null && apiKey.length() >= 8) {
+            return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
+        }
+        return apiKey;
     }
 
 
@@ -114,5 +125,13 @@ public class TraceContext {
         public long cacheInputTokens = 0;
         public long inputTokens = 0;
         public long outputTokens = 0;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class DurationUsage {
+        public long duration = 0;
     }
 }

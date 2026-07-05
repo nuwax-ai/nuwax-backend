@@ -72,6 +72,11 @@ public class PluginDto implements Serializable {
     @Schema(description = "已发布的空间ID", hidden = true)
     private List<Long> publishedSpaceIds;
 
+    @Schema(description = "开发时使用的会话ID")
+    private Long devAgentConversationId;
+
+    private String toolId;
+
     public static PluginDto convertToPluginDto(String config) {
         if (config == null) {
             return null;

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.repository.ICustomPageBuildRepository;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -39,7 +39,7 @@ public class KeepAliveDaemonService {
     @Resource
     private RedissonClient redissonClient;
     @Resource
-    private PageFileBuildClient pageFileBuildClient;
+    private PageAppFileClient pageAppFileClient;
     @Resource
     private ICustomPageBuildRepository customPageBuildRepository;
 
@@ -261,7 +261,7 @@ public class KeepAliveDaemonService {
             contextInstalled = installRequestContext(tenantId);
 
             log.info("[Keep Alive-daemon] project Id={}, pid={}, start stop dev service", projectId, model.getDevPid());
-            Map<String, Object> resp = pageFileBuildClient.stopDev(projectId, model.getDevPid());
+            Map<String, Object> resp = pageAppFileClient.stopDev(projectId, model.getDevPid());
             if (resp == null) {
                 log.error("[Keep Alive-daemon] project Id={}, stop dev failed, no response", projectId);
                 return;

@@ -46,7 +46,6 @@ public class TenantController {
         tenantConfigDto.setDomainNames(null);
         tenantConfigDto.setDefaultSuggestModelId(null);
         tenantConfigDto.setDefaultSummaryModelId(null);
-        tenantConfigDto.setRecommendAgentIds(null);
         tenantConfigDto.setCodeSafeCheckPrompt(null);
         tenantConfigDto.setGlobalSystemPrompt(null);
         tenantConfigDto.setUserWhiteList(null);

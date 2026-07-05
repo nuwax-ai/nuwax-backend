@@ -4,10 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.common.collect.Lists;
-import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
-import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
+import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.*;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.ModelBindConfigDto;
@@ -58,6 +55,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -122,10 +120,15 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
     @Resource
     private ResourcePricingRpcService resourcePricingRpcService;
 
+    @Resource
+    private AgentApplicationService agentApplicationService;
+
     @Override
     public Long add(WorkflowConfigDto workflowConfigDto) {
         WorkflowConfig workflowConfig = WorkflowConfig.builder()
                 .spaceId(workflowConfigDto.getSpaceId())
+                .type(workflowConfigDto.getType())
+                .agentId(workflowConfigDto.getAgentId())
                 .name(workflowConfigDto.getName())
                 .description(workflowConfigDto.getDescription())
                 .icon(workflowConfigDto.getIcon())
@@ -313,6 +316,24 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     });
                 }
             }
+
+            //知识库创建空库
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.KnowledgeInsert && !workflowConfigDto.getSpaceId().equals(targetSpaceId)) {
+                KnowledgeInsertNodeConfigDto knowledgeInsertNodeConfigDto = (KnowledgeInsertNodeConfigDto) workflowNodeDto.getNodeConfig();
+                if (knowledgeInsertNodeConfigDto.getKnowledgeBaseId() != null) {
+                    KnowledgeCreateRequestVo knowledgeCreateRequestVo = KnowledgeCreateRequestVo.builder()
+                            .icon(knowledgeInsertNodeConfigDto.getIcon())
+                            .description(knowledgeInsertNodeConfigDto.getDescription())
+                            .name(knowledgeInsertNodeConfigDto.getName())
+                            .dataType(1)
+                            .spaceId(targetSpaceId)
+                            .userId(userId)
+                            .build();
+                    Long knowledgeConfigId = KnowledgeRpcService.createKnowledgeConfig(knowledgeCreateRequestVo, knowledgeInsertNodeConfigDto.getKnowledgeBaseId());
+                    knowledgeInsertNodeConfigDto.setKnowledgeBaseId(knowledgeConfigId);
+                }
+            }
+
             //数据表结构复制
             if (workflowNodeDto.getType().name().startsWith("Table")) {
                 TableNodeConfigDto tableNodeConfigDto = (TableNodeConfigDto) workflowNodeDto.getNodeConfig();
@@ -416,6 +437,15 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         if (workflowConfig == null) {
             return null;
         }
+
+        List<Arg> agentFLowArgs = null;//agentFlow补全开始节点的输出参数
+        if (WorkflowConfigDto.Type.AgentFlow.name().equals(workflowConfig.getType()) && workflowConfig.getAgentId() != null) {
+            List<AgentComponentConfigDto> agentComponentConfigs = agentApplicationService.queryComponentConfigListByAgentIdAndType(workflowConfig.getAgentId(), AgentComponentConfig.Type.Variable);
+            if (!CollectionUtils.isEmpty(agentComponentConfigs) && agentComponentConfigs.get(0).getBindConfig() instanceof VariableConfigDto variableConfig) {
+                agentFLowArgs = variableConfig.getVariables();
+            }
+        }
+
         WorkflowConfigDto workflowConfigDto = new WorkflowConfigDto();
         BeanUtils.copyProperties(workflowConfig, workflowConfigDto);
         completeCreator(List.of(workflowConfigDto));
@@ -442,6 +472,24 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         //更新聚合变量出参关联的参数列表
         completeVariableAggregateOutputArgConfig(workflowConfigDto.getNodes());
         workflowConfigDto.setSystemVariables(Arg.getSystemVariableArgs());
+        if (agentFLowArgs != null) {
+            // AgentFlow的系统变量不展示上下文
+            List<Arg> systemVariables = Arg.getSystemVariableArgs().stream().filter(arg -> !GlobalVariableEnum.CHAT_CONTEXT.name().equals(arg.getName())).toList();
+            workflowConfigDto.setSystemVariables(systemVariables);
+            WorkflowNodeDto workflowNodeDto = workflowConfigDto.getNodes().stream().filter(node -> node.getType() == WorkflowNodeConfig.NodeType.Start).findFirst().orElse(null);
+            if (workflowNodeDto != null) {
+                workflowNodeDto.getNodeConfig().setInputArgs(new ArrayList<>());
+                agentFLowArgs.forEach(arg -> {
+                    if (!GlobalVariableEnum.isSystemVariable(arg.getName())) {
+                        arg.setSystemVariable(true);
+                        workflowNodeDto.getNodeConfig().getInputArgs().add(arg);
+                    }
+                });
+            }
+        }
+        if (WorkflowConfigDto.Type.AgentFlow.name().equals(workflowConfig.getType()) && workflowConfig.getAgentId() != null) {
+            workflowConfigDto.getNodes().stream().filter(node -> node.getType() == WorkflowNodeConfig.NodeType.End).findFirst().ifPresent(workflowNodeDto -> workflowNodeDto.getNodeConfig().setOutputArgs(new ArrayList<>()));
+        }
         return workflowConfigDto;
     }
 
@@ -502,6 +550,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         workflowConfigDto.setNodes(nodes);
         workflowConfigDto.setPublishedSpaceIds(publishedDto.getPublishedSpaceIds());
         workflowConfigDto.setScope(publishedDto.getScope());
+        workflowConfigDto.setPublishDate(publishedDto.getModified());
         workflowConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(workflowConfigDto.getIcon(), workflowConfigDto.getName(), "workflow"));
         return workflowConfigDto;
     }
@@ -517,6 +566,12 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         }
 
         return JSON.parseObject(publishedDto.getConfig(), WorkflowConfigDto.class);
+    }
+
+    @Override
+    public List<WorkflowConfigDto> queryPublishedWorkflowConfigs(List<Long> workflowIds) {
+        List<PublishedDto> publishedList = publishApplicationService.queryPublishedList(Published.TargetType.Workflow, workflowIds, null, true);
+        return publishedList.stream().map(publishedDto -> JSON.parseObject(publishedDto.getConfig(), WorkflowConfigDto.class)).filter(Objects::nonNull).toList();
     }
 
     @Override
@@ -606,13 +661,30 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 configJson = JSON.toJSONString(nodeConfigDto);
             }
             case Knowledge -> {
-
                 var knowledgeBaseConfigs = Optional.ofNullable(workflowNodeAddDto.getNodeConfigDto())
                         .map(AddNodeConfigDto::getKnowledgeBaseConfigs)
                         .orElse(null);
                 KnowledgeNodeConfigDto knowledgeNodeConfigDto = KnowledgeNodeConfigDto.addFrom(nodeConfigDto, knowledgeBaseConfigs);
                 knowledgeNodeConfigDto.setExtension(workflowNodeAddDto.getExtension());
                 configJson = JSON.toJSONString(knowledgeNodeConfigDto);
+            }
+            case KnowledgeInsert -> {
+                KnowledgeInsertNodeConfigDto knowledgeInsertNodeConfigDto = KnowledgeInsertNodeConfigDto.addFrom(workflowNodeAddDto.getTypeId());
+                knowledgeInsertNodeConfigDto.setExtension(workflowNodeAddDto.getExtension());
+                configJson = JSON.toJSONString(knowledgeInsertNodeConfigDto);
+            }
+            case Agent -> {
+                Assert.isTrue(workflowNodeAddDto.getTypeId() != null, "Agent ID cannot be null");
+                AgentConfigDto agentConfigDto = agentApplicationService.queryPublishedConfig(workflowNodeAddDto.getTypeId(), false);
+                if (agentConfigDto == null) {
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFound);
+                }
+                name = agentConfigDto.getName();
+                description = agentConfigDto.getDescription();
+                AgentNodeConfigDto agentNodeConfigDto = new AgentNodeConfigDto();
+                agentNodeConfigDto.setAgentId(workflowNodeAddDto.getTypeId());
+                agentNodeConfigDto.setExtension(workflowNodeAddDto.getExtension());
+                configJson = JSON.toJSONString(agentNodeConfigDto);
             }
             case LongTermMemory -> {
                 List<Arg> args = new ArrayList<>();
@@ -1558,21 +1630,22 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             }
         });
 
-        Map<Long, WorkflowNodeDto> nodeMap = workflowConfigDto.getNodes().stream().collect(Collectors.toMap(WorkflowNodeDto::getId, n -> n));
-        //检查节点是否有循环连线
-        WorkflowNodeCheckDto workflowNodeLineCheckDto = new WorkflowNodeCheckDto();
-        try {
-            checkIfHasLoopLine(workflowConfigDto.getStartNode(), new HashSet<>(), nodeMap, workflowNodeLineCheckDto);
-        } catch (Exception e) {
-            workflowNodeCheckDtos.add(workflowNodeLineCheckDto);
-        }
 
+        Map<Long, WorkflowNodeDto> nodeMap = workflowConfigDto.getNodes().stream().collect(Collectors.toMap(WorkflowNodeDto::getId, n -> n));
+        if (!"AgentFlow".equals(workflowConfigDto.getType())) {
+            //检查节点是否有循环连线
+            WorkflowNodeCheckDto workflowNodeLineCheckDto = new WorkflowNodeCheckDto();
+            try {
+                checkIfHasLoopLine(workflowConfigDto.getStartNode(), new HashSet<>(), nodeMap, workflowNodeLineCheckDto);
+            } catch (Exception e) {
+                workflowNodeCheckDtos.add(workflowNodeLineCheckDto);
+            }
+        }
         if (!CollectionUtils.isEmpty(workflowNodeCheckDtos)) {
             return workflowNodeCheckDtos;
         }
 
-
-        checkIfStartToEnd(workflowConfigDto.getStartNode(), nodeMap, workflowNodeCheckDtos);
+        checkIfStartToEnd(workflowConfigDto.getStartNode(), nodeMap, workflowNodeCheckDtos, new HashSet<>());
         if (!workflowNodeCheckDtos.isEmpty()) {
             return workflowNodeCheckDtos;
         }
@@ -1636,14 +1709,18 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         return workflowNodeCheckDtos;
     }
 
-    private void checkIfStartToEnd(WorkflowNodeDto startNode, Map<Long, WorkflowNodeDto> nodeMap, List<WorkflowNodeCheckDto> workflowNodeCheckDtos) {
+    private void checkIfStartToEnd(WorkflowNodeDto startNode, Map<Long, WorkflowNodeDto> nodeMap, List<WorkflowNodeCheckDto> workflowNodeCheckDtos, Set<Long> checkedNodeIds) {
         if (!CollectionUtils.isEmpty(startNode.getNextNodeIds())) {
             List<WorkflowNodeDto> nextNodes = new ArrayList<>();
             startNode.getNextNodeIds().forEach(nextNodeId -> {
                 WorkflowNodeDto workflowNodeDto = nodeMap.get(nextNodeId);
                 if (workflowNodeDto != null) {
                     nextNodes.add(workflowNodeDto);
-                    checkIfStartToEnd(workflowNodeDto, nodeMap, workflowNodeCheckDtos);
+                    if (checkedNodeIds.contains(nextNodeId)) {
+                        return;
+                    }
+                    checkedNodeIds.add(nextNodeId);
+                    checkIfStartToEnd(workflowNodeDto, nodeMap, workflowNodeCheckDtos, checkedNodeIds);
                 }
             });
             if (nextNodes.isEmpty() && startNode.getType() != WorkflowNodeConfig.NodeType.End) {
@@ -1670,20 +1747,6 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
         if (!workflowNodeCheckDto.getMessages().contains(message)) {
             workflowNodeCheckDto.getMessages().add(message);
         }
-    }
-
-    private void lookupStartNodes(WorkflowNodeDto node, Map<Long, WorkflowNodeDto> nodeMap, List<WorkflowNodeDto> startNodes) {
-        if (CollectionUtils.isEmpty(node.getPreNodes())) {
-            if (node.getLoopNodeId() != null) {
-                WorkflowNodeDto workflowNodeDto = nodeMap.get(node.getLoopNodeId());
-                if (workflowNodeDto != null && node.getId().equals(workflowNodeDto.getInnerStartNodeId())) {
-                    return;
-                }
-            }
-            startNodes.add(node);
-            return;
-        }
-        node.getPreNodes().forEach(preNode -> lookupStartNodes(preNode, nodeMap, startNodes));
     }
 
     private void checkArgs(WorkflowNodeDto node, List<Arg> inputArgs, Map<String, Arg> argMap, WorkflowNodeCheckDto workflowNodeCheckDto) {
@@ -1959,6 +2022,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             return;
         }
         AtomicBoolean update = new AtomicBoolean(false);
+        NodeConfigDto.ContextPassingType contextPassingType = node.getNodeConfig().getContextPassingType() == null ? NodeConfigDto.ContextPassingType.Manual : node.getNodeConfig().getContextPassingType();
         inputArgs.forEach(inputArg -> {
             if (inputArg.getName() == null) {
                 inputArg.setName("");
@@ -1968,11 +2032,11 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 workflowNodeCheckDto.setSuccess(false);
                 workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.InvalidParamName", inputArg.getName()));
             }
-            if (inputArg.isRequire() && StringUtils.isEmpty(inputArg.getBindValue())) {
+            if (inputArg.isRequire() && StringUtils.isEmpty(inputArg.getBindValue()) && contextPassingType == NodeConfigDto.ContextPassingType.Manual) {
                 workflowNodeCheckDto.setSuccess(false);
                 workflowNodeCheckDto.getMessages().add(I18nUtil.systemMessage("Workflow.Validate.ParamNotBound", inputArg.getName()));
             }
-            if (StringUtils.isNotBlank(inputArg.getBindValue()) && inputArg.getBindValueType() == Arg.BindValueType.Reference) {
+            if (StringUtils.isNotBlank(inputArg.getBindValue()) && inputArg.getBindValueType() == Arg.BindValueType.Reference && contextPassingType == NodeConfigDto.ContextPassingType.Manual) {
                 Arg arg = argMap.get(inputArg.getBindValue());
                 if (arg == null) {
                     workflowNodeCheckDto.setSuccess(false);
@@ -2064,7 +2128,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
             nodeConfig.setExceptionHandleConfig(new ExceptionHandleConfigDto());
             nodeConfig.getExceptionHandleConfig().setExceptionHandleType(ExceptionHandleConfigDto.ExceptionHandleTypeEnum.INTERRUPT);
             nodeConfig.getExceptionHandleConfig().setRetryCount(0);
-            nodeConfig.getExceptionHandleConfig().setTimeout(180);
+            nodeConfig.getExceptionHandleConfig().setTimeout(nodeConfig instanceof AgentNodeConfigDto ? 3600 : 180);
             nodeConfig.getExceptionHandleConfig().setExceptionHandleNodeIds(new ArrayList<>());
             nodeConfig.getExceptionHandleConfig().setSpecificContent(new HashMap<>());
         }
@@ -2282,6 +2346,26 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     }
                 });
                 I18nUtil.replaceSystemMessage("WorkflowKb", knowledgeNodeConfigDto.getOutputArgs());
+            }
+        }
+        if (nodeConfig instanceof KnowledgeInsertNodeConfigDto knowledgeInsertNodeConfig) {
+            KnowledgeConfigVo knowledgeConfigVo = KnowledgeRpcService.queryKnowledgeConfigById(knowledgeInsertNodeConfig.getKnowledgeBaseId());
+            if (knowledgeConfigVo != null) {
+                knowledgeInsertNodeConfig.setName(knowledgeConfigVo.getName());
+                knowledgeInsertNodeConfig.setDescription(knowledgeConfigVo.getDescription());
+                knowledgeInsertNodeConfig.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(knowledgeConfigVo.getIcon(), knowledgeConfigVo.getName(), WorkflowNodeConfig.NodeType.Knowledge.name()));
+            }
+            I18nUtil.replaceSystemMessage("WorkflowKb", knowledgeInsertNodeConfig.getOutputArgs());
+        }
+        if (nodeConfig instanceof AgentNodeConfigDto agentNodeConfigDto) {
+            AgentConfigDto agentConfigDto = agentApplicationService.queryPublishedConfig(agentNodeConfigDto.getAgentId(), forExecute);
+            if (agentConfigDto != null && agentConfigDto.getSpaceId().equals(workflowNodeDto.getSpaceId())) {
+                agentNodeConfigDto.setName(agentConfigDto.getName());
+                agentNodeConfigDto.setDescription(agentConfigDto.getDescription());
+                agentNodeConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(agentConfigDto.getIcon(), agentConfigDto.getName(), WorkflowNodeConfig.NodeType.Agent.name()));
+                if (forExecute) {
+                    agentNodeConfigDto.setAgentConfigDto(agentConfigDto);
+                }
             }
         }
         if (nodeConfig instanceof TableNodeConfigDto tableNodeConfigDto) {
@@ -2527,6 +2611,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     .enableSubscription(tenantConfigDto.getEnableSubscription() != null && tenantConfigDto.getEnableSubscription() == 1)
                     .billUserId(userDto.getId())
                     .devTest(workflowExecuteRequestDto.isTest())
+                    .apiKey(workflowExecuteRequestDto.getApiKey())
                     .traceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder()
                             .targetType(TraceContext.TraceTargetType.Workflow)
                             .name(workflowConfigDto.getName())
@@ -2541,8 +2626,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                     estimateTargets.add(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build());
                 }
                 resourcePricingRpcService.completeWorkflowEstimateTargets(estimateTargets, workflowConfigDto, new HashSet<>());
-                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(),
-                        List.of(PriceEstimate.EstimateTarget.builder().targetType(TargetTypeEnum.WORKFLOW).targetId(workflowConfigDto.getId().toString()).build()));
+                PriceEstimate priceEstimate = resourcePricingRpcService.estimatePrice(tenantConfigDto.getTenantId(), workflowContext1.getTraceContext().getBillUserId(), estimateTargets);
                 if (!priceEstimate.isPass()) {
                     WorkflowExecutingDto workflowExecutingDto = new WorkflowExecutingDto();
                     workflowExecutingDto.setSuccess(false);

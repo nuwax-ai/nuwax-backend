@@ -36,6 +36,9 @@ public class ConversationDto {
     @Schema(description = "会话摘要，当开启长期记忆时，会对每次会话进行总结")
     private String summary;
 
+    @Schema(description = "会话图标")
+    private String icon;
+
     @Schema(description = "用户填写的会话变量内容")
     private Map<String, Object> variables;
 
@@ -67,6 +70,13 @@ public class ConversationDto {
     private String sandboxServerId;
 
     private String sandboxSessionId;
+
+    @Schema(description = "开发项目所在的空间ID")
+    private Long devSpaceId;
+    @Schema(description = "开发模式目标类型 Agent,PageApp,Skill,Plugin")
+    private String devTargetType;
+    @Schema(description = "开发模式目标ID")
+    private String devTargetId;
 
     @Schema(description = "已分享的URI地址，比对上了则不需要认证")
     private List<String> sharedUris;

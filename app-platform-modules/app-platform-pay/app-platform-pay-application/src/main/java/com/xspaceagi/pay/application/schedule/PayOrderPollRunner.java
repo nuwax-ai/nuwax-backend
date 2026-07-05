@@ -3,10 +3,10 @@ package com.xspaceagi.pay.application.schedule;
 import com.xspaceagi.bill.sdk.rpc.IBillRpcService;
 import com.xspaceagi.pay.application.support.PayOrderBillNotifySupport;
 import com.xspaceagi.pay.application.support.PayOrderGatewayQueryMerger;
-import com.xspaceagi.pay.domain.gateway.PaymentScanGateway;
+import com.xspaceagi.pay.application.support.PayOrderStatusQuerySupport;
 import com.xspaceagi.pay.domain.model.PayOrderModel;
 import com.xspaceagi.pay.domain.repository.PayOrderRepository;
-import com.xspaceagi.pay.sdk.dto.ScanOrderStatusQueryResponse;
+import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryResponse;
 import com.xspaceagi.pay.spec.enums.PayBizNotifyStatus;
 import com.xspaceagi.pay.sdk.enums.PaymentStatus;
 import com.xspaceagi.pay.spec.enums.PayOrderGatewaySyncStatus;
@@ -32,19 +32,19 @@ public class PayOrderPollRunner {
     public static final String TASK_BEAN_ID = "payOrderPollTaskExecuteService";
 
     private final PayOrderRepository payOrderRepository;
-    private final PaymentScanGateway paymentScanGateway;
+    private final PayOrderStatusQuerySupport payOrderStatusQuerySupport;
     private final PayGatewayOutboundExecutor payGatewayOutboundExecutor;
     private final IBillRpcService billRpcService;
     private final ScheduleTaskApiService scheduleTaskApiService;
 
     public PayOrderPollRunner(
             PayOrderRepository payOrderRepository,
-            PaymentScanGateway paymentScanGateway,
+            PayOrderStatusQuerySupport payOrderStatusQuerySupport,
             PayGatewayOutboundExecutor payGatewayOutboundExecutor,
             IBillRpcService billRpcService,
             ScheduleTaskApiService scheduleTaskApiService) {
         this.payOrderRepository = payOrderRepository;
-        this.paymentScanGateway = paymentScanGateway;
+        this.payOrderStatusQuerySupport = payOrderStatusQuerySupport;
         this.payGatewayOutboundExecutor = payGatewayOutboundExecutor;
         this.billRpcService = billRpcService;
         this.scheduleTaskApiService = scheduleTaskApiService;
@@ -98,7 +98,7 @@ public class PayOrderPollRunner {
             return true;
         }
 
-        ScanOrderStatusQueryResponse last = null;
+        PaymentStatusQueryResponse last = null;
         PayGatewayOutbound outbound;
         try {
             outbound = payGatewayOutboundExecutor.resolveCached(row.getTenantId());
@@ -107,7 +107,7 @@ public class PayOrderPollRunner {
             return false;
         }
         try {
-            last = paymentScanGateway.queryOrderStatus(outbound, row.getGatewayPaymentOrderNo(), true);
+            last = payOrderStatusQuerySupport.queryOrderStatus(outbound, row, true);
             PayOrderGatewayQueryMerger.mergeIntoRow(row, last);
             payOrderRepository.save(row);
 
@@ -136,7 +136,7 @@ public class PayOrderPollRunner {
     /**
      * 先通知业务，成功后再 CAS 为 NOTIFIED，避免 NOTIFIED 但业务未收到回调。
      */
-    private boolean tryNotifyAndMarkNotified(PayOrderModel row, ScanOrderStatusQueryResponse last, Long payOrderId) {
+    private boolean tryNotifyAndMarkNotified(PayOrderModel row, PaymentStatusQueryResponse last, Long payOrderId) {
         if (!PayOrderBillNotifySupport.notifyBillPaymentCallback(billRpcService, row, last, false)) {
             log.warn("[pay-poll] bill notify failed orderId={}, will retry", payOrderId);
             return false;
@@ -153,7 +153,7 @@ public class PayOrderPollRunner {
         return false;
     }
 
-    private boolean tryNotifyTimeoutAndMark(PayOrderModel row, ScanOrderStatusQueryResponse last, Long payOrderId) {
+    private boolean tryNotifyTimeoutAndMark(PayOrderModel row, PaymentStatusQueryResponse last, Long payOrderId) {
         if (!PayOrderBillNotifySupport.notifyBillPaymentCallback(billRpcService, row, last, true)) {
             log.warn("[pay-poll] bill notify timeout failed orderId={}, will retry", payOrderId);
             return false;

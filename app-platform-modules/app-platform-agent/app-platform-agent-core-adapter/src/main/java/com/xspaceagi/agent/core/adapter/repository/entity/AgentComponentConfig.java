@@ -49,6 +49,6 @@ public class AgentComponentConfig {
     private Date created; // 创建时间
 
     public enum Type {
-        Plugin, Workflow, Trigger, Knowledge, Variable, Database, Model, Agent, Table, Mcp, Page, Event, Skill, SubAgent
+        Plugin, Workflow, Trigger, Knowledge, Variable, Database, Model, Agent, Table, Mcp, Page, Event, Skill, SubAgent, Hook
     }
 }

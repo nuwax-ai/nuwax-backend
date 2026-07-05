@@ -102,12 +102,66 @@ public class MenuBindResourceHelper {
             if (BindTypeEnum.ALL.getCode().equals(bindType)) {
                 propagateMenuBindType(menuId, menuChildrenMap, menuBindTypeMap,
                         processedMenuIds, BindTypeEnum.ALL.getCode());
-            } else if (BindTypeEnum.NONE.getCode().equals(bindType)) {
-                propagateMenuBindType(menuId, menuChildrenMap, menuBindTypeMap,
-                        processedMenuIds, BindTypeEnum.NONE.getCode());
+            }
+            // NONE 不向下传播：子菜单可单独授权，root=NONE 与显式子菜单 ALL 不应互相覆盖
+        }
+        validateRootMenuBindTypeConsistency(menuBindTypeMap);
+        return menuBindTypeMap;
+    }
+
+    /**
+     * 校验 root 与子菜单 bindType 一致性（保存时使用）。
+     */
+    public static void validateRootMenuBindTypeConsistency(Map<Long, Integer> menuBindTypeMap) {
+        if (menuBindTypeMap == null || menuBindTypeMap.isEmpty()) {
+            return;
+        }
+        Integer rootType = menuBindTypeMap.get(0L);
+        if (rootType == null) {
+            return;
+        }
+        if (BindTypeEnum.ALL.getCode().equals(rootType)) {
+            for (Map.Entry<Long, Integer> entry : menuBindTypeMap.entrySet()) {
+                Long menuId = entry.getKey();
+                if (menuId == null || menuId == 0L) {
+                    continue;
+                }
+                Integer bindType = entry.getValue();
+                if (bindType == null
+                        || BindTypeEnum.NONE.getCode().equals(bindType)
+                        || BindTypeEnum.PART.getCode().equals(bindType)) {
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM,
+                            BizExceptionCodeEnum.systemMenuBindRootAllRequiresAllChildren);
+                }
+            }
+            return;
+        }
+        if (BindTypeEnum.NONE.getCode().equals(rootType)) {
+            for (Map.Entry<Long, Integer> entry : menuBindTypeMap.entrySet()) {
+                Long menuId = entry.getKey();
+                if (menuId == null || menuId == 0L) {
+                    continue;
+                }
+                Integer bindType = entry.getValue();
+                if (bindType != null
+                        && (BindTypeEnum.ALL.getCode().equals(bindType)
+                        || BindTypeEnum.PART.getCode().equals(bindType))) {
+                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM,
+                            BizExceptionCodeEnum.systemMenuBindRootNoneForbidsChildGrant);
+                }
+            }
+            return;
+        }
+        if (BindTypeEnum.PART.getCode().equals(rootType)) {
+            boolean anyChildGranted = menuBindTypeMap.entrySet().stream()
+                    .anyMatch(e -> e.getKey() != null && e.getKey() != 0L
+                            && e.getValue() != null
+                            && !BindTypeEnum.NONE.getCode().equals(e.getValue()));
+            if (!anyChildGranted) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM,
+                        BizExceptionCodeEnum.systemMenuBindRootPartRequiresChildGrant);
             }
         }
-        return menuBindTypeMap;
     }
 
     /**
@@ -513,29 +567,7 @@ public class MenuBindResourceHelper {
             if (menuId != null && explicitlyBoundMenuIds.contains(menuId)) {
                 return;
             }
-            boolean allNone = true;
-            boolean allAll = true;
-            boolean hasNonNone = false;
-            for (MenuNode child : children) {
-                Integer bindType = child.getMenuBindType();
-                if (bindType == null || BindTypeEnum.NONE.getCode().equals(bindType)) {
-                    allAll = false;
-                } else if (BindTypeEnum.ALL.getCode().equals(bindType)) {
-                    hasNonNone = true;
-                    allNone = false;
-                } else {
-                    hasNonNone = true;
-                    allNone = false;
-                    allAll = false;
-                }
-            }
-            if (allNone) {
-                node.setMenuBindType(BindTypeEnum.NONE.getCode());
-            } else if (allAll && hasNonNone) {
-                node.setMenuBindType(BindTypeEnum.ALL.getCode());
-            } else {
-                node.setMenuBindType(BindTypeEnum.PART.getCode());
-            }
+            node.setMenuBindType(synthesizeMenuBindTypeFromMenuNodes(children));
         } else {
             Long menuId = node.getId();
             if (menuId == null || explicitlyBoundMenuIds.contains(menuId)) {
@@ -548,17 +580,63 @@ public class MenuBindResourceHelper {
     }
 
     /**
-     * 针对 root 节点自上而下强制传播 ALL/NONE 到所有子菜单
+     * 根据子菜单 bindType 合成父菜单 bindType：全 NONE→NONE，全 ALL→ALL，否则 PART。
+     */
+    public static Integer synthesizeMenuBindTypeFromMenuNodes(List<MenuNode> children) {
+        if (CollectionUtils.isEmpty(children)) {
+            return BindTypeEnum.NONE.getCode();
+        }
+        boolean allNone = true;
+        boolean allAll = true;
+        boolean hasNonNone = false;
+        for (MenuNode child : children) {
+            Integer bindType = child.getMenuBindType();
+            if (bindType == null || BindTypeEnum.NONE.getCode().equals(bindType)) {
+                allAll = false;
+            } else if (BindTypeEnum.ALL.getCode().equals(bindType)) {
+                hasNonNone = true;
+                allNone = false;
+            } else {
+                hasNonNone = true;
+                allNone = false;
+                allAll = false;
+            }
+        }
+        if (allNone) {
+            return BindTypeEnum.NONE.getCode();
+        }
+        if (allAll && hasNonNone) {
+            return BindTypeEnum.ALL.getCode();
+        }
+        return BindTypeEnum.PART.getCode();
+    }
+
+    /**
+     * 校正 root bindType：子菜单存在非 NONE 时，root 不应为 NONE（读路径处理历史脏数据）。
+     */
+    public static void reconcileRootMenuBindType(MenuNode root) {
+        if (root == null || CollectionUtils.isEmpty(root.getChildren())) {
+            return;
+        }
+        Integer rootType = root.getMenuBindType();
+        if (rootType == null || !BindTypeEnum.NONE.getCode().equals(rootType)) {
+            return;
+        }
+        Integer synthesized = synthesizeMenuBindTypeFromMenuNodes(root.getChildren());
+        if (synthesized != null && !BindTypeEnum.NONE.getCode().equals(synthesized)) {
+            root.setMenuBindType(synthesized);
+        }
+    }
+
+    /**
+     * root 为 ALL 时自上而下传播；NONE/PART 不传播，避免覆盖子菜单显式授权。
      */
     public static void propagateRootMenuBindType(MenuNode root) {
         if (root == null) {
             return;
         }
         Integer bindType = root.getMenuBindType();
-        if (bindType == null || BindTypeEnum.PART.getCode().equals(bindType)) {
-            return;
-        }
-        if (!BindTypeEnum.ALL.getCode().equals(bindType) && !BindTypeEnum.NONE.getCode().equals(bindType)) {
+        if (!BindTypeEnum.ALL.getCode().equals(bindType)) {
             return;
         }
         if (CollectionUtils.isNotEmpty(root.getChildren())) {

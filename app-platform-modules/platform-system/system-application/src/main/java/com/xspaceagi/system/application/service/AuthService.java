@@ -34,4 +34,6 @@ public interface AuthService {
     String newTicket(UserDto userDto, String token);
 
     String getTokenByTicket(String ticket);
+
+    String newEcoToken(String tenantClientId, String tenantSecret, UserDto user);
 }

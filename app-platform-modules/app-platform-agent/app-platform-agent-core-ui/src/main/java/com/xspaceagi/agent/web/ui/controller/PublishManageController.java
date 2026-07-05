@@ -121,9 +121,6 @@ public class PublishManageController {
         if (CollectionUtils.isNotEmpty(tenantConfigDto.getDefaultAgentIds())) {
             agentIds.addAll(tenantConfigDto.getDefaultAgentIds());
         }
-        if (CollectionUtils.isNotEmpty(tenantConfigDto.getRecommendAgentIds())) {
-            agentIds.addAll(tenantConfigDto.getRecommendAgentIds());
-        }
         if (CollectionUtils.isNotEmpty(agentIds) && StringUtils.isBlank(configSelectAgentQueryDto.getKw())) {
             List<PublishedDto> agentList = publishApplicationService.queryPublishedList(Published.TargetType.Agent, agentIds);
             if (CollectionUtils.isNotEmpty(agentList)) {

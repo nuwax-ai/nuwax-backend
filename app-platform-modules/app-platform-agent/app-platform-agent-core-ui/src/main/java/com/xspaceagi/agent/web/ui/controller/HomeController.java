@@ -3,11 +3,14 @@ package com.xspaceagi.agent.web.ui.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
+import com.xspaceagi.agent.core.adapter.application.RecommendApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.PublishedDto;
 import com.xspaceagi.agent.core.adapter.dto.PublishedQueryDto;
 import com.xspaceagi.agent.core.adapter.dto.UserAgentDto;
+import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
 import com.xspaceagi.agent.core.adapter.repository.UserAgentSortRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.adapter.repository.entity.UserAgentSort;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
 import com.xspaceagi.agent.web.ui.controller.dto.HomeSortConfigDto;
@@ -57,6 +60,9 @@ public class HomeController extends BaseController {
     @Resource
     private UserAgentSortRepository userAgentSortRepository;
 
+    @Resource
+    private RecommendApplicationService recommendApplicationService;
+
     @Operation(summary = "分类以及智能体排序更新")
     @RequestMapping(path = "/sort/update", method = RequestMethod.POST)
     public ReqResult<HomeItemListDto> updateHomeSortConfig(@RequestBody HomeSortConfigDto homeSortConfigDto) {
@@ -88,7 +94,7 @@ public class HomeController extends BaseController {
         List<UserAgentDto> usedAgentDtos = agentApplicationService.queryRecentUseList(RequestContext.get().getUserId(), 100);
         Map<Long, UserAgentDto> usedAgentMap = usedAgentDtos.stream().collect(Collectors.toMap(UserAgentDto::getAgentId, config -> config, (c1, c2) -> c1));
         HomeItemListDto homeItemListDto = new HomeItemListDto();
-        List<UserAgentDto> userAgentDtos = agentApplicationService.queryCollectionList(RequestContext.get().getUserId(), 1, 20);
+        List<UserAgentDto> userAgentDtos = agentApplicationService.queryCollectionList(RequestContext.get().getUserId(), 1, 30);
         if (!userAgentDtos.isEmpty()) {
             List<HomeItemDto> homeItemDtos = userAgentDtos.stream().map(userAgentDto -> {
                 HomeItemDto homeItemDto = new HomeItemDto();
@@ -118,8 +124,13 @@ public class HomeController extends BaseController {
         }
 
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
-        if (CollectionUtils.isNotEmpty(tenantConfigDto.getRecommendAgentIds())) {
-            List<PublishedDto> publishedDtos = publishApplicationService.queryPublishedList(Published.TargetType.Agent, tenantConfigDto.getRecommendAgentIds());
+        List<Long> recommendAgentIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Agent.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+        recommendAgentIds = recommendAgentIds.isEmpty() ? tenantConfigDto.getRecommendAgentIds() : recommendAgentIds;
+        if (CollectionUtils.isNotEmpty(recommendAgentIds)) {
+            List<PublishedDto> publishedDtos = publishApplicationService.queryPublishedList(Published.TargetType.Agent, recommendAgentIds);
+            //根据recommendAgentIds的顺序对publishedDtos进行排序
+            final List<Long> recommendAgentIds0 = recommendAgentIds;
+            publishedDtos = publishedDtos.stream().sorted(Comparator.comparing(publishedDto -> recommendAgentIds0.indexOf(publishedDto.getTargetId()))).toList();
             List<HomeItemDto> homeItemDtos = publishedDtos.stream().map(publishedDto -> convertToHomeItemDto(publishedDto, userAgentSortMap.get(HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name()), usedAgentMap)).collect(Collectors.toList());
             homeItemDtos.sort(Comparator.comparing(HomeItemDto::getSort));
             Integer sort = getCategorySort(userAgentCategorySortMap, HomeCategoryDto.HomeCategoryTypeEnum.AGENT_RECOMMEND.name());

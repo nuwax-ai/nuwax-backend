@@ -11,7 +11,8 @@ public enum RevenueTargetTypeEnum {
     MODEL("Model", "模型"),
     PLUGIN("Plugin", "插件"),
     MCP("Mcp", "MCP"),
-    WORKFLOW("Workflow", "工作流");
+    WORKFLOW("Workflow", "工作流"),
+    PROJECT("Project", "项目");
 
     private final String code;
     private final String desc;

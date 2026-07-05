@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.core.adapter.dto.config.workflow;
 
+import com.xspaceagi.agent.core.adapter.dto.config.Arg;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.ModelBindConfigDto;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,6 +36,9 @@ public class QaNodeConfigDto extends NodeConfigDto {
     @NotNull(message = "Answer type is required")
     private AnswerTypeEnum answerType;
 
+    @Schema(description = "表单参数")
+    private List<Arg> formArgs;
+
     //从回复中提取字段
     @Schema(description = "从回复中提取字段")
     private Boolean extractField;
@@ -53,7 +57,8 @@ public class QaNodeConfigDto extends NodeConfigDto {
     public enum AnswerTypeEnum {
         //直接回答、选项回答
         TEXT,
-        SELECT
+        SELECT,
+        FORM
     }
 
     @Data

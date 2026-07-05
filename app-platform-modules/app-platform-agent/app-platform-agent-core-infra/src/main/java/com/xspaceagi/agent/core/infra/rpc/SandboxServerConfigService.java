@@ -23,9 +23,11 @@ import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -66,6 +68,10 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
     @Resource
     private ISandboxConfigRpcService iSandboxConfigRpcService;
 
+    @Getter
+    @Value("${custom-page.docker-proxy.base-url:}")
+    private String defaultPageAppVncUrl;
+
     private final HttpClient httpClient = java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
     private final Map<Long, Map<String, ServerStatus>> serverStatusMap = new ConcurrentHashMap<>();
@@ -82,7 +88,6 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
                 .params(Map.of())
                 .build());
     }
-
 
     // Get sandbox server based on cId (automatically get tenantId from session)
     public SandboxServerConfig.SandboxServer selectServer(Long cid) {

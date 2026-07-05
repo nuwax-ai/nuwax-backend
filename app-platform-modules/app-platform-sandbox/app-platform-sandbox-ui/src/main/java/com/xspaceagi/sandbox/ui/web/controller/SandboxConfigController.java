@@ -153,6 +153,7 @@ public class SandboxConfigController {
     @Operation(summary = "客户端注册")
     @PostMapping("/reg")
     public ReqResult<SandboxConfigDto> create(@RequestBody SandboxRegDto sandboxRegDto, HttpServletRequest request) {
+        sandboxRegDto.getSandboxConfigValue().setVncPort(sandboxRegDto.getSandboxConfigValue().getTtydPort());
         int versionNum = toVersionNumber(extractNuwaxVersion(request.getHeader("User-Agent")));
         UserDto user = null;
         if (versionNum > START_VERSION && StringUtils.isNotBlank(sandboxRegDto.getUsername()) && StringUtils.isNotBlank(sandboxRegDto.getPassword())) {

@@ -1,6 +1,7 @@
 package com.xspaceagi.bill.sdk.dto;
 
 import com.xspaceagi.bill.spec.enums.BizTypeEnum;
+import com.xspaceagi.pay.sdk.enums.PayMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -29,6 +30,9 @@ public class CreateOrderRequest implements Serializable {
 
     @Schema(description = "扩展字段")
     private Map<String, Object> extra;
+
+    @Schema(description = "支付方式：scan（默认，扫码/H5 收银台）/ minipay（小程序/微信JSAPI）/ h5（H5支付）/ app（App 原生 SDK）")
+    private PayMode payMode;
 
     @Data
     @Schema(description = "订单项")

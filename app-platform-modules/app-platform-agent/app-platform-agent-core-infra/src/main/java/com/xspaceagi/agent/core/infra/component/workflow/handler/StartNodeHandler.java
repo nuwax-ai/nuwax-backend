@@ -19,6 +19,9 @@ public class StartNodeHandler extends AbstractNodeHandler {
         Map<String, Object> startNodeOutput = new HashMap<>();
         startNodeOutput.putAll(workflowContext.getAgentContext().getVariableParams());
         List<Arg> inputArgs = node.getNodeConfig().getInputArgs();
+        if (inputArgs == null) {
+            inputArgs = new ArrayList<>();
+        }
         Map<String, Object> inputMap = new LinkedHashMap<>();
         for (Arg inputArg : inputArgs) {
             if (StringUtils.isNotBlank(workflowContext.getAgentContext().getMessage()) && inputArg.getName().equals(SystemArgNameEnum.AGENT_USER_MSG.name())) {

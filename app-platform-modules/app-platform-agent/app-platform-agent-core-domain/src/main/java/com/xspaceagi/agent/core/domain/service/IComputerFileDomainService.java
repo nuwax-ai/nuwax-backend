@@ -18,37 +18,47 @@ public interface IComputerFileDomainService {
     /**
      * 获取静态文件（流式返回）
      */
-    Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId);
+    Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String customTargetDir);
 
     /**
      * 获取静态文件完整响应（保留状态码与响应头，支持断点续传）
      */
-    ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader);
+    ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader, String customTargetDir);
 
     /**
      * 查询文件列表
      */
-    Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext);
+    Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir);
 
     /**
      * 更新文件列表
      */
-    Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext);
+    Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir);
 
     /**
      * 上传文件
      */
-    Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext);
+    Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir);
 
     /**
      * 批量上传文件
      */
-    Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext);
+    Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir);
+
+    /**
+     * 导入项目（zip 替换工作空间，保留白名单目录）
+     */
+    Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir);
 
     /**
      * 下载全部文件（zip 流式返回）
      */
-    Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext);
+    Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext, String customTargetDir);
+
+    /**
+     * 获取沙盒日志
+     */
+    Map<String, Object> getLogs(Long userId, Long cId, int tailLines, UserContext userContext);
 
 }
 

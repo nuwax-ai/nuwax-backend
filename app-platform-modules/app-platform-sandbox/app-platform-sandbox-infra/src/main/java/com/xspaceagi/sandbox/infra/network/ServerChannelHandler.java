@@ -321,7 +321,11 @@ public class ServerChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
             }
             String clientKey = ctx.channel().attr(CHANNEL_CLIENT_KEY).get();
             if (clientKey != null) {
-                reverseServerContainer.userSandboxOfflineTouch(clientKey);
+                try {
+                    reverseServerContainer.userSandboxOfflineTouch(clientKey);
+                } catch (Exception e) {
+                    logger.warn("userSandboxOfflineTouch error", e);
+                }
             }
             ProxyChannelManager.removeCmdChannel(ctx.channel());
         }

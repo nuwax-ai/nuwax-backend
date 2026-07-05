@@ -38,9 +38,12 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
             Map<String, Object> intentOption = new HashMap<>();
             intentOption.put("classificationId", classificationIndex.getAndIncrement());
             intentOption.put("intent", intentConfigDto.getIntent());
+            if (intentConfigDto.getName() != null) {
+                intentOption.put("name", intentConfigDto.getName());
+            }
             list.add(intentOption);
         }, ArrayList::addAll);
-        StringBuilder stringBuilder = new StringBuilder(INTENT_RECOGNITION_SYSTEM_PROMPT).append("\n");
+        StringBuilder stringBuilder = new StringBuilder();
         if (StringUtils.isNotBlank(intentRecognitionNodeConfigDto.getExtraPrompt())) {
             stringBuilder.append(intentRecognitionNodeConfigDto.getExtraPrompt()).append("\n");
         }
@@ -54,8 +57,8 @@ public class IntentRecognitionNodeHandler extends AbstractNodeHandler {
         }
         stringBuilder.append("Recognition parameters:\n").append(JSON.toJSONString(params)).append("\n");
         stringBuilder.append("Intent options:\n").append(JSON.toJSONString(intentOptions));
-        modelCallConfigDto.setSystemPrompt(stringBuilder.toString());
-        modelCallConfigDto.setUserPrompt("");
+        modelCallConfigDto.setSystemPrompt(StringUtils.isBlank(intentRecognitionNodeConfigDto.getSystemPrompt()) ? INTENT_RECOGNITION_SYSTEM_PROMPT : intentRecognitionNodeConfigDto.getSystemPrompt());
+        modelCallConfigDto.setUserPrompt(stringBuilder.toString());
         modelCallConfigDto.setChatRound(0);
         modelCallConfigDto.setStreamCall(true);
         modelCallConfigDto.setOutputType(OutputTypeEnum.JSON);

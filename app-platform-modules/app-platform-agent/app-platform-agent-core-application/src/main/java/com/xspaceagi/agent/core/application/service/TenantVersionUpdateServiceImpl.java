@@ -112,6 +112,22 @@ public class TenantVersionUpdateServiceImpl {
             i18nImportService.updateConfigToTenant(tenant, "1.2");
         });
 
+        tenantVersionUpgradeMap.put("1.0.8.4", (tenant) -> {
+            // permission
+            permissionImportService.importDiffToTenant(tenant, "1.5");
+            // i18n
+            i18nImportService.addConfigToTenant(tenant, "1.3");
+            i18nImportService.updateConfigToTenant(tenant, "1.3");
+        });
+
+        tenantVersionUpgradeMap.put("3.0", (tenant) -> {
+            // permission
+            permissionImportService.importDiffToTenant(tenant, "1.6");
+            // i18n
+            i18nImportService.addConfigToTenant(tenant, "1.4");
+            i18nImportService.updateConfigToTenant(tenant, "1.4");
+        });
+
         new Thread(() -> {
             // Customized content required for version upgrade
             while (true) {
@@ -190,26 +206,27 @@ public class TenantVersionUpdateServiceImpl {
 
     public ModelConfigDto buildModelConfig(Long tenantId) {
         ModelConfigDto modelConfigDto = new ModelConfigDto();
+        modelConfigDto.setPid("nuwax");
         modelConfigDto.setSpaceId(-1L);
         modelConfigDto.setIsReasonModel(YesOrNoEnum.N.getKey());
         modelConfigDto.setApiProtocol(ModelApiProtocolEnum.Anthropic);
         modelConfigDto.setScope(ModelConfig.ModelScopeEnum.Tenant);
         modelConfigDto.setCreatorId(-1L);
         modelConfigDto.setTenantId(tenantId);
-        modelConfigDto.setDescription("This model is a trial model provided by the Nuwax. Please replace it with your own model as soon as possible.");
-        modelConfigDto.setName("glm-5.1-anthropic");
-        modelConfigDto.setModel("glm-5.1");
+        modelConfigDto.setDescription("Flagship Top-Tier: 1.6T total parameters, 49B activated, with a million-token ultra-long context window standard across the series. Leading open-source performance in reasoning, coding, and agent orchestration. Versatile for intensive document reading, financial report auditing, and complex project development. Features minimal hallucinations, ideal for high-end private deployments and heavy API workloads.");
+        modelConfigDto.setName("DeepSeek V4 Pro");
+        modelConfigDto.setModel("deepseek-v4-pro");
         modelConfigDto.setType(ModelTypeEnum.Chat);
         modelConfigDto.setFunctionCall(ModelFunctionCallEnum.StreamCallSupported);
         modelConfigDto.setStrategy(ModelConfig.ModelStrategyEnum.RoundRobin);
-        modelConfigDto.setMaxTokens(32000);
+        modelConfigDto.setMaxTokens(384000);
         modelConfigDto.setTopP(0.7);
         modelConfigDto.setTemperature(1.0);
         modelConfigDto.setNetworkType(ModelConfig.NetworkType.Internet);
         modelConfigDto.setDimension(1536);
         ModelConfigDto.ApiInfo apiInfo = new ModelConfigDto.ApiInfo();
-        apiInfo.setUrl("https://anthropic-code-api.nuwax.com/api/anthropic/session-SESSION_ID");
-        apiInfo.setKey("TENANT_SECRET");
+        apiInfo.setUrl("https://api.nuwax.com/anthropic");
+        apiInfo.setKey("ak-TENANT_SECRET");
         apiInfo.setWeight(1);
         modelConfigDto.setApiInfoList(List.of(apiInfo));
         return modelConfigDto;

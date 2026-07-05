@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum RevenueTypeEnum {
     PLAN("Plan", "计划购买"),
     MODEL_CALL("ModelCall", "模型调用"),
-    TOOL_CALL("ToolCall", "工具调用");
+    TOOL_CALL("ToolCall", "工具调用"),
+    PROJECT_PAY("ProjectPay", "项目支付");
 
     private final String code;
     private final String desc;

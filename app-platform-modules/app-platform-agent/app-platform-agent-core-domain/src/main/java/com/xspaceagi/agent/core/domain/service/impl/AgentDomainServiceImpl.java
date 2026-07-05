@@ -198,6 +198,11 @@ public class AgentDomainServiceImpl implements AgentDomainService {
     }
 
     @Override
+    public List<AgentComponentConfig> queryComponentConfigsByAgentIdAndType(Long agentId, AgentComponentConfig.Type type) {
+        return agentComponentConfigRepository.list(new QueryWrapper<>(AgentComponentConfig.builder().agentId(agentId).type(type).build()));
+    }
+
+    @Override
     public List<AgentComponentConfig> queryAgentComponentConfigList(Long agentId) {
         return agentComponentConfigRepository.list(new QueryWrapper<>(AgentComponentConfig.builder().agentId(agentId).build()));
     }

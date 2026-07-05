@@ -35,6 +35,7 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
     private volatile Map<String, Object> responseContext;
     private final TokenLogService tokenLogService;
     private volatile boolean logPushed = false;
+    private String contentEncoding = null;
 
     public BackendProxyHandler(TokenLogService tokenLogService) {
         this.tokenLogService = tokenLogService;
@@ -108,6 +109,7 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
                 sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
                 logger.debug("  {}: {}", header.getKey(), header.getValue());
             });
+            contentEncoding = response.headers().get("Content-Encoding");
             getResponseContext().put("responseHeaders", sb.toString());
         } catch (Exception e) {
             logger.error("Error logging response header", e);
@@ -148,7 +150,9 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
             logger.debug("[Model Proxy Response Body] AccessKey: {}, ResponseTime: {}ms", accessKey, responseTime);
             logger.debug("Backend Model: {}", backendModel);
             // 统一将字节转换为字符串，确保UTF-8编码正确
-            String resBody = responseBuffer.toString(CharsetUtil.UTF_8);
+            byte[] byteArray = responseBuffer.toByteArray();
+            byte[] decompress = DecompressUtils.decompress(byteArray, contentEncoding);
+            String resBody = new String(decompress, CharsetUtil.UTF_8);
             logger.debug("Response Body: {}", resBody);
             getResponseContext().put("responseBody", resBody);
 

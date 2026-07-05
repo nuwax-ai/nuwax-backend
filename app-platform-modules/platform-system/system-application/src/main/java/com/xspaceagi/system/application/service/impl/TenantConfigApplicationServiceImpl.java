@@ -2,6 +2,8 @@ package com.xspaceagi.system.application.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
+import com.xspaceagi.eco.market.sdk.constant.EcoMarketRegisterTaskConstant;
+import com.xspaceagi.eco.market.sdk.model.ClientSecretDTO;
 import com.xspaceagi.eco.market.sdk.service.IEcoMarketSecretRpcService;
 import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictSupport;
 import com.xspaceagi.pay.spec.gateway.PayGatewayOutboundCacheEvictor;
@@ -13,11 +15,14 @@ import com.xspaceagi.system.infra.dao.entity.TenantConfig;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.infra.dao.service.TenantConfigService;
 import com.xspaceagi.system.infra.dao.service.TenantService;
+import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
+import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -30,6 +35,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,16 +55,32 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
     private UserApplicationService userApplicationService;
 
     @Resource
-    private IEcoMarketSecretRpcService ecoMarketSecretRpcService;
+    private ScheduleTaskApiService scheduleTaskApiService;
 
     @Autowired(required = false)
     private PayGatewayOutboundCacheEvictor payGatewayOutboundCacheEvictor;
+
+    @Resource
+    private IEcoMarketSecretRpcService iEcoMarketSecretRpcService;
 
     @Value("${app.version:1.0.0}")
     private String newVersion;
 
     @Value("${license:}")
     private String license;
+
+    @PostConstruct
+    private void startUpRegisterEco() {
+        ClientSecretDTO secretDTO = iEcoMarketSecretRpcService.getByTenantId(1L);
+        if (secretDTO != null) {
+            return;
+        }
+        Tenant t = new Tenant();
+        t.setId(1L);
+        t.setName("Nuwax AgentOS");
+        t.setDescription("Nuwax AgentOS");
+        scheduleEcoMarketRegisterTask(t);
+    }
 
     @Override
     public List<TenantConfigItemDto> getTenantConfigList() {
@@ -207,9 +229,32 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
         RequestContext.setThreadTenantId(tenant.getId());
         userApplicationService.add(userDto);
 
-        // 注册生态市场客户端，注册成功后初始化租户信息
-        ecoMarketSecretRpcService.registerClient(tenant.getId(), tenant.getName(), tenant.getDescription());
-        log.info("注册生态市场客户端成功: tenantId={}", tenant.getId());
+        // 注册任务
+        scheduleEcoMarketRegisterTask(tenant);
+    }
+
+    private void scheduleEcoMarketRegisterTask(Tenant tenant) {
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put("tenantId", tenant.getId());
+            params.put("name", tenant.getName());
+            params.put("description", tenant.getDescription() != null ? tenant.getDescription() : "");
+            Long taskId = scheduleTaskApiService.start(ScheduleTaskDto.builder()
+                    .tenantId(tenant.getId())
+                    .taskId(EcoMarketRegisterTaskConstant.taskIdForTenant(tenant.getId()))
+                    .beanId(EcoMarketRegisterTaskConstant.BEAN_ID)
+                    .taskName("注册生态市场客户端")
+                    .targetType("Tenant")
+                    .targetId(String.valueOf(tenant.getId()))
+                    .maxExecTimes(Long.MAX_VALUE)
+                    .cron(ScheduleTaskDto.Cron.EVERY_MINUTE.getCron())
+                    .lockTime(new Date())
+                    .params(params)
+                    .build());
+            log.info("已调度生态市场注册任务: tenantId={}, scheduleTaskId={}", tenant.getId(), taskId);
+        } catch (Exception e) {
+            log.warn("调度生态市场注册任务失败，租户已创建，可稍后通过生态市场功能触发懒注册: tenantId={}", tenant.getId(), e);
+        }
     }
 
     @Override

@@ -4,14 +4,17 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xspaceagi.agent.core.adapter.dto.AgentPublishVersionDto;
+import com.xspaceagi.agent.core.adapter.typehandler.AgentPublishVersionListTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
-@TableName("agent_config")
+@TableName(value = "agent_config", autoResultMap = true)
 @Data
 @Builder
 @AllArgsConstructor
@@ -24,6 +27,8 @@ public class AgentConfig {
     private String uid; // agent唯一标识
 
     private String type;
+
+    private String subType;
 
     @TableField(value = "_tenant_id")
     private Long tenantId; // 商户ID
@@ -62,6 +67,8 @@ public class AgentConfig {
 
     private Long devConversationId; // 开发模式对应的会话ID
 
+    private Long devAgentConversationId; // 开发Agent的会话ID
+
     private AgentConfig.OpenStatus openScheduledTask;
 
     private Integer expandPageArea;//是否默认展开扩展页面区域, 1 展开；0 不展开
@@ -79,6 +86,15 @@ public class AgentConfig {
     private Integer allowAtSkill;
 
     private Integer allowPrivateSandbox;
+
+    private Integer allowChooseMode;
+
+    private Integer enableAskQuestion;
+
+    private Integer enableVersionControl;
+
+    @TableField(value = "publish_version", typeHandler = AgentPublishVersionListTypeHandler.class)
+    private List<AgentPublishVersionDto> publishVersion;
 
     public enum OpenStatus {
         Open, Close;

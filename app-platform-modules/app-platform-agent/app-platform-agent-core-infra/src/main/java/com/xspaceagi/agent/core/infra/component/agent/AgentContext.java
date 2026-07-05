@@ -11,8 +11,11 @@ import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
+import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.messages.Message;
 
 import java.io.Serializable;
@@ -92,6 +95,9 @@ public class AgentContext implements Serializable {
     @Schema(description = "是否过滤长期记忆中的敏感信息")
     private boolean filterSensitive;
 
+    @Schema(description = "智能体对话模式，yolo : 默认模式，所有命令自动放行；ask 命令需要用户审批")
+    private String agentMode;
+
     private boolean debug;
     private boolean defaultModelChanged;
     private Function<Long, AgentContext> agentContextFunction;
@@ -102,6 +108,8 @@ public class AgentContext implements Serializable {
     private AtomicBoolean ifInterrupted = new AtomicBoolean(false);
 
     private AtomicBoolean finished = new AtomicBoolean(false);
+    private boolean useSate;
+    private Map<String, Object> sessionState;
 
     public Map<String, Object> getVariableParams() {
         if (variableParams == null) {
@@ -146,5 +154,67 @@ public class AgentContext implements Serializable {
 
     public boolean isInterrupted() {
         return ifInterrupted != null && ifInterrupted.get();
+    }
+
+    public String getContextMessagesMd() {
+        if (contextMessages == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Message message : contextMessages) {
+            if (message.getText() != null) {
+                sb.append(message.getMessageType()).append(":\n");
+                sb.append(message.getText().replaceAll("<user-memory>[\\s\\S]*?</user-memory>", "")).append("\n\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    public String getContextMd() {
+        StringBuilder stringBuilder = new StringBuilder();
+        if (StringUtils.isNotBlank(getLongMemory())) {
+            stringBuilder.append("## User LongMemory:\n").append(getLongMemory()).append("\n\n");
+        }
+        if (StringUtils.isNotBlank(getConversation().getSummary())) {
+            stringBuilder.append("## Summary:\n").append(getConversation().getSummary()).append("\n\n");
+        }
+        String contextMessagesMd = getContextMessagesMd();
+        if (StringUtils.isNotBlank(contextMessagesMd)) {
+            stringBuilder.append("## Chat Context:\n").append(contextMessagesMd).append("\n\n");
+        }
+        if (getHeaders() != null && !getHeaders().isEmpty()) {
+            getHeaders().remove("Authorization");
+            getHeaders().remove("authorization");
+            getHeaders().remove("Cookie");
+            getHeaders().remove("cookie");
+            stringBuilder.append("## Request Headers:\n");
+            getHeaders().forEach((k, v) -> {
+                stringBuilder.append(k).append(": ").append(v).append("\n");
+            });
+            stringBuilder.append("\n");
+        }
+        if (CollectionUtils.isNotEmpty(getAttachments())) {
+            stringBuilder.append("## Attachments:\n");
+            getAttachments().forEach(attachment -> {
+                stringBuilder.append(attachment.getFileName()).append(": ").append(attachment.getFileUrl()).append("\n");
+            });
+            stringBuilder.append("\n");
+        }
+        stringBuilder.append("## User Prompt:\n");
+        if (StringUtils.isNotBlank(getMessage())) {
+            stringBuilder.append(getMessage());
+        } else if (CollectionUtils.isNotEmpty(getAttachments())) {
+            stringBuilder.append(I18nUtil.systemMessage("Backend.Agent.Message.AnalyzeAttachments"));
+        }
+        stringBuilder.append("\n\n");
+        stringBuilder.append("## Variables (Current value of the variable; it can be reused if there are no significant changes or insufficient information based on the context):\n");
+        getVariableParams().forEach((k, v) -> {
+            if (k.equals(GlobalVariableEnum.CHAT_CONTEXT.name()) || k.equals(GlobalVariableEnum.AGENT_USER_MSG.name())) {
+                return;
+            }
+            stringBuilder.append(k).append(": ").append(v).append("\n");
+        });
+        stringBuilder.append("\n");
+        return stringBuilder.toString();
     }
 }

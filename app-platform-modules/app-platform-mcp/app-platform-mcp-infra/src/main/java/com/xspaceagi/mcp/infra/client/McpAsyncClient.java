@@ -364,10 +364,10 @@ public class McpAsyncClient {
                     initializeResult.protocolVersion(), initializeResult.capabilities(), initializeResult.serverInfo(),
                     initializeResult.instructions());
 
-            if (!this.protocolVersions.contains(initializeResult.protocolVersion())) {
-                return Mono.error(new McpError(
-                        "Unsupported protocol version from the server: " + initializeResult.protocolVersion()));
-            }
+//            if (!this.protocolVersions.contains(initializeResult.protocolVersion())) {
+//                return Mono.error(new McpError(
+//                        "Unsupported protocol version from the server: " + initializeResult.protocolVersion()));
+//            }
             
             nextHeartbeat();
 

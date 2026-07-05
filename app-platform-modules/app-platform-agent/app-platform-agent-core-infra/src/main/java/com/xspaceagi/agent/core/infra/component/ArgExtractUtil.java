@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ArgExtractUtil {
 
+    @SuppressWarnings("unchecked")
     public static Object extraBindValue(Object currentValue, String bindKey) {
         String[] keys = bindKey.split("\\.");
         for (String key : keys) {

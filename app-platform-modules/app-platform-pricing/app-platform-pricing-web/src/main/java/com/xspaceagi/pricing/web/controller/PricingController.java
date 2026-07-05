@@ -81,14 +81,14 @@ public class PricingController {
             if (pluginInfoDto == null) {
                 return ReqResult.error("Plugin is not published or no permission");
             }
-            request.setPricingType(PricingTypeEnum.ONE_TIME);
+            request.setPricingType(request.getPricingType() == null ? PricingTypeEnum.ONE_TIME : request.getPricingType());
         }
         if (request.getTargetType() == TargetTypeEnum.WORKFLOW) {
             WorkflowInfoDto workflowInfoDto = iAgentRpcService.getPublishedWorkflowInfo(Long.parseLong(request.getTargetId()), request.getSpaceId()).getData();
             if (workflowInfoDto == null) {
                 return ReqResult.error("Workflow is not published or no permission");
             }
-            request.setPricingType(PricingTypeEnum.ONE_TIME);
+            request.setPricingType(request.getPricingType() == null ? PricingTypeEnum.ONE_TIME : request.getPricingType());
         }
         if (request.getTargetType() == TargetTypeEnum.SKILL) {
             SkillInfoDto data = iAgentRpcService.getPublishedSkillInfo(Long.parseLong(request.getTargetId()), request.getSpaceId()).getData();

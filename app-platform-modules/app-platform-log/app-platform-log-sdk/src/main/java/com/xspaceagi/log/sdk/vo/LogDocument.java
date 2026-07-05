@@ -69,6 +69,9 @@ public class LogDocument extends SearchDocument {
     @Schema(description = "缓存输入token数量")
     private Integer cacheInputToken;
 
+    @Schema(description = "缓存创建输入token数量")
+    private Integer cacheCreationInputToken;
+
     @Schema(description = "输入token数量")
     private Integer inputToken;
 
@@ -80,6 +83,9 @@ public class LogDocument extends SearchDocument {
 
     @Schema(description = "请求结束时间")
     private Long requestEndTime;
+
+    @Schema(description = "API Key")
+    private String apiKey;
 
     @Schema(description = "执行结果码 0000为成功")
     @SearchField(keyword = true)

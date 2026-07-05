@@ -35,8 +35,8 @@ public class FileParseService {
 
         List<String> segments = null;
 
-        int words = segmentConfig.getWords();
-        int overlaps = segmentConfig.getOverlaps();
+        int words = segmentConfig.getWords() == null ? 800 : segmentConfig.getWords();
+        int overlaps = segmentConfig.getOverlaps() == null ? 10 : segmentConfig.getOverlaps();
 
         if (segmentConfig.getSegment().equals(SegmentEnum.WORDS)) {
             List<String> contents = new ArrayList<>(1);

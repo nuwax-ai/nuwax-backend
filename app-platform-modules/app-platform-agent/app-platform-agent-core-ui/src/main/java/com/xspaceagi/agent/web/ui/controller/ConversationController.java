@@ -1,5 +1,7 @@
 package com.xspaceagi.agent.web.ui.controller;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
@@ -15,10 +17,12 @@ import com.xspaceagi.agent.core.infra.component.agent.SandboxAgentClient;
 import com.xspaceagi.agent.core.infra.component.model.ModelPageRequest;
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
+import com.xspaceagi.agent.core.infra.sub.ChatMessagePubSubService;
 import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.web.ui.controller.dto.ConversationMessageQueryDto;
 import com.xspaceagi.agent.web.ui.controller.dto.ConversationShareDto;
 import com.xspaceagi.agent.web.ui.controller.dto.ModelPageRequestResultDto;
+import com.xspaceagi.agent.web.ui.controller.dto.PermissionRequestResponseDto;
 import com.xspaceagi.agent.web.ui.dto.ConversationCreateDto;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
@@ -34,7 +38,6 @@ import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.I18nUtil;
-import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -52,6 +55,9 @@ import reactor.core.publisher.Flux;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 @Tag(name = "智能体会话相关接口")
 @RestController
@@ -86,9 +92,6 @@ public class ConversationController {
     private ModelPageRequest modelPageRequest;
 
     @Resource
-    private RedisUtil redisUtil;
-
-    @Resource
     private SandboxServerConfigService sandboxServerConfigService;
 
     @Resource
@@ -96,6 +99,9 @@ public class ConversationController {
 
     @Resource
     private SandboxAgentClient sandboxAgentClient;
+
+    @Resource
+    private ChatMessagePubSubService chatMessagePubSubService;
 
     @Operation(summary = "创建会话")
     @RequestMapping(path = "/create", method = RequestMethod.POST)
@@ -160,7 +166,12 @@ public class ConversationController {
             spacePermissionService.checkSpaceUserPermission(conversationDto.getAgent().getSpaceId());
         } else {
             if (!conversationDto.getUserId().equals(RequestContext.get().getUserId())) {
-                return ReqResult.error("No permission to chat with this agent");
+                if (conversationDto.getDevSpaceId() != null) {
+                    spacePermissionService.checkSpaceUserPermission(conversationDto.getDevSpaceId());
+                    conversationDto.getAgent().setHasPermission(false);
+                } else {
+                    return ReqResult.error("No permission to chat with this agent");
+                }
             }
             PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, conversationDto.getAgentId());
             if (!publishedPermissionDto.isView()) {
@@ -253,7 +264,7 @@ public class ConversationController {
             cid = Long.parseLong(conversationId);
         } catch (NumberFormatException e) {
             // Compatible with previous API calls
-            redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
+            conversationApplicationService.setChatStopStatus(conversationId);
             return ReqResult.success();
         }
         ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), cid);
@@ -262,13 +273,90 @@ public class ConversationController {
         }
 
         if ("TaskAgent".equals(conversation.getAgent().getType())) {
-            if (!sandboxAgentClient.chatCancel(conversationId)) {
-                redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
-            }
-        } else {
-            redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
+            sandboxAgentClient.chatCancel(conversationId);
         }
+        conversationApplicationService.setChatStopStatus(conversationId);
         conversationApplicationService.updateConversationStatus(conversation.getId(), Conversation.ConversationTaskStatus.CANCEL);
+        return ReqResult.success();
+    }
+
+    @Operation(summary = "订阅会话消息")
+    @RequestMapping(path = "/chat/sub/{conversationId}", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<AgentOutputDto> sub(@PathVariable Long conversationId, HttpServletResponse response) {
+        response.setCharacterEncoding("utf-8");
+        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationId);
+        if (conversation == null) {
+            AgentOutputDto agentOutputDto = new AgentOutputDto();
+            agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.ERROR);
+            agentOutputDto.setError("Conversation not found");
+            return Flux.just(agentOutputDto);
+        }
+        if (conversation.getTaskStatus() != Conversation.ConversationTaskStatus.EXECUTING) {
+            AgentOutputDto agentOutputDto = new AgentOutputDto();
+            agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.ERROR);
+            agentOutputDto.setError("Conversation not executing");
+            return Flux.just(agentOutputDto);
+        }
+
+        AtomicReference<Consumer<String>> consumer = new AtomicReference<>();
+        Flux<AgentOutputDto> flux = Flux.create(sink -> {
+            AtomicBoolean completed = new AtomicBoolean(false);
+            List<String> messages = chatMessagePubSubService.getMessages(conversationId.toString());
+            if (messages != null && !messages.isEmpty()) {
+                for (String message : messages) {
+                    try {
+                        AgentOutputDto agentOutputDto = JSON.parseObject(message, AgentOutputDto.class);
+                        sink.next(agentOutputDto);
+                        if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT) {
+                            sink.complete();
+                            completed.set(true);
+                        }
+                    } catch (Exception e) {
+                        log.error("parse message failed", e);
+                    }
+                }
+            }
+            if (completed.get()) {
+                return;
+            }
+            Consumer<String> listener = message -> {
+                if (JSON.isValidArray(message)) {
+                    JSONArray jsonArray = JSON.parseArray(message);
+                    for (int i = 0; i < jsonArray.size(); i++) {
+                        try {
+                            AgentOutputDto agentOutputDto = JSON.parseObject(jsonArray.getString(i), AgentOutputDto.class);
+                            sink.next(agentOutputDto);
+                            if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT || agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.ERROR) {
+                                sink.complete();
+                                chatMessagePubSubService.unsubscribe(conversationId.toString(), consumer.get());
+                            }
+                        } catch (Exception e) {
+                            log.error("parse message failed", e);
+                        }
+                    }
+                }
+            };
+            consumer.set(listener);
+            chatMessagePubSubService.subscribe(conversationId.toString(), listener);
+        });
+        return flux.doOnCancel(() -> chatMessagePubSubService.unsubscribe(conversationId.toString(), consumer.get()));
+    }
+
+    @Operation(summary = "权限请求回复")
+    @RequestMapping(path = "/chat/permission-request/response", method = RequestMethod.POST)
+    public ReqResult<Void> notifyResolved(@RequestBody PermissionRequestResponseDto permissionRequestResponseDto) {
+        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), permissionRequestResponseDto.getConversationId());
+        if (conversation == null) {
+            return ReqResult.error("Conversation not found");
+        }
+
+        if ("TaskAgent".equals(conversation.getAgent().getType())) {
+            Assert.notNull(permissionRequestResponseDto.getOption(), "Option is null");
+            sandboxAgentClient.notifyResolved(permissionRequestResponseDto.getConversationId().toString(), permissionRequestResponseDto.getToolId(), Map.of(
+                    "optionId", permissionRequestResponseDto.getOption().getOptionId(),
+                    "outcome", "selected"
+            ));
+        }
         return ReqResult.success();
     }
 
@@ -290,6 +378,7 @@ public class ConversationController {
         if (conversationByCid == null || conversationByCid.getUserId().equals(RequestContext.get().getUserId())) {
             return ReqResult.error("No permission for this conversation");
         }
+        conversationApplicationService.setChatStopStatus(conversationId.toString());
         sandboxAgentClient.agentStop(conversationId.toString());
         return ReqResult.success();
     }

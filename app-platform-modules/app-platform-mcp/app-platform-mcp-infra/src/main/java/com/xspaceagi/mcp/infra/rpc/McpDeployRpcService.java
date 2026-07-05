@@ -55,7 +55,7 @@ public class McpDeployRpcService {
     @Resource
     private MarketplaceRpcService marketplaceRpcService;
 
-    private java.net.http.HttpClient sseHttpClient = java.net.http.HttpClient.newBuilder()
+    private final java.net.http.HttpClient sseHttpClient = java.net.http.HttpClient.newBuilder()
             .version(java.net.http.HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(10)).build();
 

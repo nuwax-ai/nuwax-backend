@@ -106,6 +106,9 @@ public class McpConfigApplicationServiceImpl implements McpConfigApplicationServ
         }
         if (mcpDto.getMcpConfig() != null && mcpDto.getMcpConfig().getComponents() != null) {
             for (McpComponentDto componentDto : mcpDto.getMcpConfig().getComponents()) {
+                if (StringUtils.isNotBlank(componentDto.getToolName())) {
+                    continue;
+                }
                 String key = componentDto.getType().name() + "_" + componentDto.getTargetId();
                 McpComponentDto component = componentMap.get(key);
                 //存在则使用

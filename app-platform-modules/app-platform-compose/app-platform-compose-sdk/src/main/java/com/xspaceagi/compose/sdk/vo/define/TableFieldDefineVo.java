@@ -3,14 +3,14 @@ package com.xspaceagi.compose.sdk.vo.define;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Schema(description = "表字段定义")
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TableFieldDefineVo {
 
     /**

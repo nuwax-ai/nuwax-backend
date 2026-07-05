@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.proxypath.ICustomPageProxyPathService;
 import com.xspaceagi.custompage.domain.repository.ICustomPageBuildRepository;
@@ -17,7 +17,6 @@ import com.xspaceagi.custompage.domain.service.ICustomPageConfigDomainService;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
-import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -35,7 +34,7 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
     @Resource
     private RedisUtil redisUtil;
     @Resource
-    private PageFileBuildClient pageFileBuildClient;
+    private PageAppFileClient pageAppFileClient;
     @Resource
     private ICustomPageBuildRepository customPageBuildRepository;
     @Resource
@@ -72,12 +71,12 @@ public class KeepAliveServiceImpl implements IKeepAliveService {
             if (project.getDevPid() != null && project.getDevPort() != null) {
                 // 调server保活
                 log.info("[Keep Alive] project Id={},dev is running from table, call server keep-alive API", projectId);
-                serverResp = pageFileBuildClient.keepAlive(projectId, devProxyPath, project.getDevPid(),
+                serverResp = pageAppFileClient.keepAlive(projectId, devProxyPath, project.getDevPid(),
                         project.getDevPort());
             } else {
                 // 调server启动dev
                 log.info("[Keep Alive] project Id={},dev not running, call server start dev", projectId);
-                serverResp = pageFileBuildClient.startDev(projectId, devProxyPath);
+                serverResp = pageAppFileClient.startDev(projectId, devProxyPath);
 
             }
             if (serverResp == null) {

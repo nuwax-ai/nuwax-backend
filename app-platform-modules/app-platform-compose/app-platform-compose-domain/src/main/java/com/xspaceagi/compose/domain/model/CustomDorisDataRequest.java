@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * 查询doris表数据
+ * 查询表数据
  */
-@Schema(description = "查询doris表数据")
+@Schema(description = "查询表数据")
 @Getter
 @Setter
 @NoArgsConstructor

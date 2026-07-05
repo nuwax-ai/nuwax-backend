@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -31,4 +32,17 @@ public class CreateWorkspaceDto implements Serializable {
 
     @Schema(description = "子代理列表")
     private List<SubagentDto> subagents;
+
+    @Schema(description = "MCP servers配置，key为server名称，value为server配置")
+    private Map<String, McpServerConfigDto> mcpServersConfig;
+
+    @Schema(description = "工具权限配置")
+    private PermissionsConfigDto permissionsConfig;
+
+    @Schema(description = "Hooks配置，key为事件类型(如PreToolUse)，value为Hook规则列表")
+    private Map<String, List<HookEntryDto>> hooksConfig;
+
+    @Schema(description = "Hook外挂脚本列表")
+    private List<HookScriptDto> hookScripts;
+
 }

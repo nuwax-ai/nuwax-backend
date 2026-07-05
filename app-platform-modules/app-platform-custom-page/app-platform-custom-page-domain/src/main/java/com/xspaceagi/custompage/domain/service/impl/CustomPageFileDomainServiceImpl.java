@@ -1,6 +1,6 @@
 package com.xspaceagi.custompage.domain.service.impl;
 
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.service.ICustomPageFileDomainService;
 import com.xspaceagi.system.spec.common.UserContext;
 import jakarta.annotation.Resource;
@@ -18,12 +18,12 @@ import reactor.core.publisher.Flux;
 public class CustomPageFileDomainServiceImpl implements ICustomPageFileDomainService {
 
     @Resource
-    private PageFileBuildClient pageFileBuildClient;
+    private PageAppFileClient pageAppFileClient;
 
     @Override
     public Flux<DataBuffer> getStaticFile(String targetPrefix, String relativePath, String logId, UserContext userContext) {
         log.info("[Domain] log Id={}, getstaticfile,target Prefix={}, relative Path={}", logId, targetPrefix, relativePath);
-        return pageFileBuildClient.getStaticFile(targetPrefix, relativePath, logId)
+        return pageAppFileClient.getStaticFile(targetPrefix, relativePath, logId)
                 .doOnError(WebClientResponseException.class, e -> {
                     log.error("[Domain] log Id={}, getstaticfilefailed, target Prefix={}, relative Path={}, status={}",
                             logId, targetPrefix, relativePath, e.getStatusCode());

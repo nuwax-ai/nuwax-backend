@@ -191,7 +191,7 @@ public class ImOutputProcessor {
 
         try {
             String proxyPath = String.format("/api/computer/static/%s", conversationId);
-            Map<String, Object> result = computerFileApplicationService.getFileList(userId, conversationId, proxyPath, null);
+            Map<String, Object> result = computerFileApplicationService.getFileList(userId, conversationId, proxyPath, null, null);
             if (result == null) {
                 return entries;
             }

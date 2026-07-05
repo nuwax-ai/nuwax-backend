@@ -192,7 +192,7 @@ public class BillCalculateTaskServiceImpl extends AbstractTaskExecuteService {
 
         if (tenantConfig.getEnableSubscription() != null && tenantConfig.getEnableSubscription() == 1 && !traceContext.isError() && !traceContext.isDevTest()) {
             PricingConfigDTO pricingConfigDTO = iPricingRpcService.queryPricingInfo(request);
-            if (pricingConfigDTO != null && pricingConfigDTO.getStatus() == 1 && (pricingConfigDTO.getPricingType() == PricingTypeEnum.ONE_TIME || pricingConfigDTO.getPricingType() == PricingTypeEnum.TIERED)) {
+            if (pricingConfigDTO != null && pricingConfigDTO.getStatus() == 1) {
                 log.info("定价配置匹配成功 pricingType={} price={} trialCount={}",
                         pricingConfigDTO.getPricingType(), pricingConfigDTO.getPrice(), pricingConfigDTO.getTrialCount());
                 boolean isToolCall = false;
@@ -200,6 +200,20 @@ public class BillCalculateTaskServiceImpl extends AbstractTaskExecuteService {
                     //积分扣减计算
                     creditAmount = pricingConfigDTO.getPrice().multiply(BigDecimal.valueOf(tenantConfig.getCreditExchangeRate()));
                     feeAmount = pricingConfigDTO.getPrice();
+                    isToolCall = true;
+                }
+                if (pricingConfigDTO.getPricingType() == PricingTypeEnum.SECOND && traceContext.getDurationUsage() != null && traceContext.getDurationUsage().duration > 0
+                        && (pricingConfigDTO.getTargetType() == TargetTypeEnum.WORKFLOW || pricingConfigDTO.getTargetType() == TargetTypeEnum.PLUGIN)) {
+                    //积分扣减计算
+                    feeAmount = pricingConfigDTO.getPrice().multiply(BigDecimal.valueOf(traceContext.getDurationUsage().duration));
+                    creditAmount = feeAmount.multiply(BigDecimal.valueOf(tenantConfig.getCreditExchangeRate()));
+                    isToolCall = true;
+                }
+                if (pricingConfigDTO.getPricingType() == PricingTypeEnum.MILLION_TOKEN && tokenUsage != null && tokenUsage.outputTokens > 0
+                        && (pricingConfigDTO.getTargetType() == TargetTypeEnum.WORKFLOW || pricingConfigDTO.getTargetType() == TargetTypeEnum.PLUGIN)) {
+                    //积分扣减计算
+                    feeAmount = pricingConfigDTO.getPrice().multiply(BigDecimal.valueOf(tokenUsage.outputTokens)).divide(BigDecimal.valueOf(1000000), RoundingMode.HALF_UP);
+                    creditAmount = feeAmount.multiply(BigDecimal.valueOf(tenantConfig.getCreditExchangeRate()));
                     isToolCall = true;
                 }
                 if (pricingConfigDTO.getPricingType() == PricingTypeEnum.TIERED && pricingConfigDTO.getTargetType() == TargetTypeEnum.MODEL) {

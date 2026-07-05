@@ -37,6 +37,9 @@ public class WorkflowBindConfigDto implements Serializable {
     // 相同requestId时是否使用缓存的结果，问答场景
     private boolean useResultCache;
 
+    @Schema(description = "是否需要审批，0-否，1-是")
+    private Integer callApproval;
+
     public enum WorkflowInvokeTypeEnum {
         //自动调用、按需调用
         AUTO, ON_DEMAND, MANUAL, MANUAL_ON_DEMAND

@@ -328,12 +328,32 @@ public class SysGroupController extends BaseController {
         if (dto == null) {
             return ReqResult.error("参数不能为空");
         }
-        // 用户组不允许绑定 生态市场/系统管理
+        // 用户组不允许绑定系统管理
         checkForbiddenMenuCodes(dto.getMenuTree());
 
         GroupBindMenuModel model = GroupBindMenuModelConverter.convertToModel(dto);
         sysGroupApplicationService.bindMenu(model, getUser());
         return ReqResult.success();
+    }
+
+    @RequireResource(USER_MANAGE_BIND_GROUP)
+    @Operation(summary = "查询用户订阅套餐关联的用户组列表")
+    @GetMapping("/list-subscription-group/{userId}")
+    public ReqResult<List<SysGroupDto>> getSubscriptionGroupListByUserId(@PathVariable Long userId) {
+        if (userId == null) {
+            return ReqResult.error("参数不能为空");
+        }
+        List<SysGroup> groupList = sysGroupApplicationService.getSubscriptionGroupListByUserId(userId);
+        if (CollectionUtils.isEmpty(groupList)) {
+            return ReqResult.success();
+        }
+        List<SysGroupDto> dtoList = groupList.stream().map(group -> {
+            SysGroupDto groupDto = new SysGroupDto();
+            BeanUtils.copyProperties(group, groupDto);
+            return groupDto;
+        }).collect(Collectors.toList());
+        I18nUtil.replaceSystemMessage(dtoList);
+        return ReqResult.success(dtoList);
     }
 
     @RequireResource(USER_GROUP_MANAGE_BIND_MENU)
@@ -359,10 +379,6 @@ public class SysGroupController extends BaseController {
         }
         for (MenuNodeDto node : nodes) {
             if (StringUtils.isNotBlank(node.getCode())) {
-                if (node.getCode().equals(MenuEnum.ECO_MARKET.getCode()) && node.getMenuBindType() > 0) {
-                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupCannotBindForbiddenMenu,
-                            MenuEnum.ECO_MARKET.getName());
-                }
                 if (node.getCode().equals(MenuEnum.SYSTEM_MANAGE.getCode()) && node.getMenuBindType() > 0) {
                     throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemGroupCannotBindForbiddenMenu,
                             MenuEnum.SYSTEM_MANAGE.getName());

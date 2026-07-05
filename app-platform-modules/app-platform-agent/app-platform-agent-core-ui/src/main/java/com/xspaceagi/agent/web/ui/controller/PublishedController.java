@@ -7,8 +7,10 @@ import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishedStatistics;
+import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.domain.service.ConversationDomainService;
 import com.xspaceagi.agent.core.infra.rpc.CategoryRpcService;
 import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
@@ -57,6 +59,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
@@ -113,6 +116,9 @@ public class PublishedController extends BaseController {
 
     @Resource
     private ResourcePricingRpcService resourcePricingRpcService;
+
+    @Resource
+    private RecommendApplicationService recommendApplicationService;
 
     @Operation(summary = "广场-智能体与插件分类")
     @RequestMapping(path = "/category/list", method = RequestMethod.GET)
@@ -183,7 +189,15 @@ public class PublishedController extends BaseController {
         }
         if (publishedQueryDto.getShowRecommend() == null) {
             publishedQueryDto.setShowRecommend(true);
+            List<Long> recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Agent.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+            publishedQueryDto.setRecommendIds(recommendIds);
+            if (recommendIds.isEmpty()) {
+                publishedQueryDto.setShowRecommend(false);
+            }
         }
+
+        List<Long> excludeIds = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+        publishedQueryDto.setExcludeIds(excludeIds);
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
@@ -191,8 +205,11 @@ public class PublishedController extends BaseController {
         });
 
         if (RequestContext.get().getUserId() != null) {
-            UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
-            page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1 && !userDataPermission.getAgentIds().contains(publishedDto.getTargetId()));
+            UserDto user = (UserDto) RequestContext.get().getUser();
+            if (user.getRole() != User.Role.Admin) {//管理员展示列表
+                UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
+                page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1 && !userDataPermission.getAgentIds().contains(publishedDto.getTargetId()));
+            }
         } else {
             page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1);
         }
@@ -217,19 +234,28 @@ public class PublishedController extends BaseController {
         publishedQueryDto.setShowRecommend(false);
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         if (publishedQueryDto.getTargetType() == Published.TargetType.Agent) {
-            publishedQueryDto.setTargetIds(tenantConfigDto.getOfficialAgentIds());
+            List<Long> recommendIds;
+            if (publishedQueryDto.getTargetSubType() != null && publishedQueryDto.getTargetSubType() == Published.TargetSubType.PageApp) {
+                recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.PageApp.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+            } else {
+                recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Agent.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+            }
+            publishedQueryDto.setTargetIds(recommendIds.isEmpty() ? tenantConfigDto.getOfficialAgentIds() : recommendIds);
         }
         if (publishedQueryDto.getTargetType() == Published.TargetType.Plugin && tenantConfigDto.getOfficialPluginIds() != null) {
             List<Long> ids = parseToLongIds(tenantConfigDto.getOfficialPluginIds());
-            publishedQueryDto.setTargetIds(ids);
+            List<Long> recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Plugin.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+            publishedQueryDto.setTargetIds(recommendIds.isEmpty() ? ids : recommendIds);
         }
         if (publishedQueryDto.getTargetType() == Published.TargetType.Workflow && tenantConfigDto.getOfficialWorkflowIds() != null) {
+            List<Long> recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Workflow.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
             List<Long> ids = parseToLongIds(tenantConfigDto.getOfficialWorkflowIds());
-            publishedQueryDto.setTargetIds(ids);
+            publishedQueryDto.setTargetIds(recommendIds.isEmpty() ? ids : recommendIds);
         }
         if (publishedQueryDto.getTargetType() == Published.TargetType.Skill && tenantConfigDto.getOfficialSkillIds() != null) {
+            List<Long> recommendIds = recommendApplicationService.list(TargetRecommend.RecType.Official.name(), TargetRecommend.TargetType.Skill.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
             List<Long> ids = parseToLongIds(tenantConfigDto.getOfficialSkillIds());
-            publishedQueryDto.setTargetIds(ids);
+            publishedQueryDto.setTargetIds(recommendIds.isEmpty() ? ids : recommendIds);
         }
         if (CollectionUtils.isEmpty(publishedQueryDto.getTargetIds())) {
             publishedQueryDto.setTargetIds(List.of(-1L));
@@ -272,6 +298,33 @@ public class PublishedController extends BaseController {
             publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Plugin.name(), true));
         });
 
+        return ReqResult.success(page);
+    }
+
+    @Operation(summary = "【新】已发布分组列表接口（广场以及弹框选择中全部插件）")
+    @RequestMapping(path = "/grouped/list", method = RequestMethod.POST)
+    public ReqResult<List<ResourceGroupDto>> groupedPluginList(@RequestBody PublishedQueryDto publishedQueryDto) {
+        Assert.isTrue(publishedQueryDto.getTargetType() == Published.TargetType.Plugin || publishedQueryDto.getTargetType() == Published.TargetType.Workflow, "Invalid TargetType");
+        if (publishedQueryDto.getAllowCopy() == null || publishedQueryDto.getAllowCopy().equals(YesOrNoEnum.N.getKey())) {
+            publishedQueryDto.setOnlyTemplate(YesOrNoEnum.N.getKey());
+        }
+        if (publishedQueryDto.getLastTimestamp() == null) {
+            publishedQueryDto.setLastTimestamp(System.currentTimeMillis());
+        }
+        if ("Plugin".equals(publishedQueryDto.getCategory()) || "Workflow".equals(publishedQueryDto.getCategory())) {
+            publishedQueryDto.setCategory(null);
+        }
+        //查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
+        if (publishedQueryDto.getSpaceId() != null) {
+            //查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
+            var spaceIds = this.obtainAuthSpaceIds();
+            if (spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
+                publishedQueryDto.setSpaceId(null);
+            }
+        }
+        completeOfficialTargetIds(publishedQueryDto);
+        List<ResourceGroupDto> page = publishApplicationService.queryGroupedPublishedList(publishedQueryDto);
+        page.forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), publishedDto.getType(), true)));
         return ReqResult.success(page);
     }
 
@@ -655,6 +708,10 @@ public class PublishedController extends BaseController {
         });
     }
 
+    /**
+     * 分页参数可能不准的原因：
+     * 同一个技能（同 targetId）如果既在用户有权限的空间发布、又在租户级别发布，就会查出多条 Published 记录。SQL LIMIT 10 拿到 10 行，去重后可能只剩 7 条，但返回的 size 仍然是 10。
+     */
     @Operation(summary = "查询技能列表-用于@技能")
     @RequestMapping(path = "/skill/list-for-at", method = RequestMethod.POST)
     public ReqResult<SuperPage<PublishedDto>> skillListForAt(@RequestBody PublishedQueryDto publishedQueryDto) {
@@ -662,6 +719,7 @@ public class PublishedController extends BaseController {
         queryDto.setTargetType(Published.TargetType.Skill);
         queryDto.setPage(publishedQueryDto.getPage());
         queryDto.setPageSize(publishedQueryDto.getPageSize());
+        queryDto.setLastTimestamp(publishedQueryDto.getLastTimestamp());
         queryDto.setKw(publishedQueryDto.getKw());
         queryDto.setUsageScenarios(publishedQueryDto.getUsageScenarios());
         queryDto.setJustReturnSpaceData(false);

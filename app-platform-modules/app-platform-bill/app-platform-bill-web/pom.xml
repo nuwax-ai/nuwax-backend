@@ -22,5 +22,9 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-bill-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-pay-spec</artifactId>
+        </dependency>
     </dependencies>
 </project>

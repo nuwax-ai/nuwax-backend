@@ -23,6 +23,7 @@ public class HandlerFactory {
             case Output -> new WrappedNodeHandler(new ProcessOutputNodeHandler());
             case Code -> new WrappedNodeHandler(new CodeNodeHandler());
             case Knowledge -> new WrappedNodeHandler(new KnowledgeBaseNodeHandler());
+            case KnowledgeInsert -> new WrappedNodeHandler(new KnowledgeInsertNodeHandler());
             case VariableAggregation -> new VariableAggregationNodeHandler();
             case Variable -> new VariableNodeHandler();
             case LongTermMemory -> new LongMemoryNodeHandler();

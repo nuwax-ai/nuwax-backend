@@ -10,6 +10,7 @@ import com.xspaceagi.credit.app.service.CreditPackageService;
 import com.xspaceagi.credit.app.service.CreditService;
 import com.xspaceagi.credit.sdk.dto.*;
 import com.xspaceagi.credit.spec.enums.CreditTypeEnum;
+import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
@@ -95,7 +96,10 @@ public class UserCreditController {
 
     @PostMapping("/order/create")
     @Operation(summary = "创建积分增购订单")
-    public ReqResult<OrderDTO> createOrder(@RequestParam Long packageId, HttpServletRequest httpServletRequest) {
+    public ReqResult<OrderDTO> createOrder(
+            @RequestParam Long packageId,
+            @RequestParam(required = false) PayMode payMode,
+            HttpServletRequest httpServletRequest) {
         CreditPackageDTO packageById = creditPackageService.getPackageById(packageId);
         if (packageById == null) {
             return ReqResult.error(I18nUtil.systemMessage("Backend.Credit.Package.Error.NotFound"));
@@ -113,6 +117,7 @@ public class UserCreditController {
         item.setCount(1);
         item.setSnapshot(JSON.parseObject(JSON.toJSONString(packageById)));
         request.setItems(List.of(item));
+        request.setPayMode(payMode);
         OrderDTO order = iBillRpcService.createOrder(request);
         return ReqResult.success(order);
     }

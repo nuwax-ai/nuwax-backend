@@ -63,6 +63,7 @@ auth:
     - /api/logo/
     - /api/file
     - /api/f/
+    - /api/f1/
     - /api/mcp/sse
     - /api/mcp/message
     - /api/v1/
@@ -70,6 +71,8 @@ auth:
     - /api/audio
     - /api/page/workflow
     - /api/page/plugin
+    - /api/page/w
+    - /api/page/p
     - /api/published/category
     - /api/published/agent/list
     - /api/computer/static
@@ -83,6 +86,11 @@ auth:
     - /api/im/dingtalk
     - /api/im/wework
     - /api/i18n/
+    # 支付渠道/微信 OAuth 回调：第三方回跳，不能依赖登录态
+    - /api/bill/order/pay/front-notify
+    - /api/pay/general/h5/front-notify
+    - /api/wechat/oa/callback
+    - /api/eco/client
 
 # DataSource Config
 mybatis-plus:
@@ -119,7 +127,7 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 1.0.8.3
+  version: 3.0
 
 stt:
   api:
@@ -130,5 +138,21 @@ sandbox:
     rewrite:
       allow-path:
         - "skill/**"
+        - "plugin/**"
         - "publish/apply"
         - "im/wechat/push-message"
+        - "compose/db/table/add"
+        - "compose/db/table/updateTableName"
+        - "compose/db/table/updateTableDefinition"
+        - "compose/db/table/delete/*"
+        - "compose/db/table/list"
+        - "compose/db/table/detailById"
+        - "compose/db/table/existTableData"
+        - "compose/db/table/copyTableDefinition"
+        - "space/list"
+        - "file/upload"
+        - "f/**"
+        - "page/target/schema"
+        - "table/sql/new"
+        - "table/sql/update"
+        - "pay/general/**"

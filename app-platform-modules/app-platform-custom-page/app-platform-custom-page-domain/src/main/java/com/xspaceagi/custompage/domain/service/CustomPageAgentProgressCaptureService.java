@@ -23,7 +23,8 @@ import com.alibaba.fastjson2.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xspaceagi.custompage.domain.gateway.AiAgentClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppAIClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.model.CustomPageConversationModel;
 import com.xspaceagi.custompage.domain.util.AgentProgressContextUtil;
 import com.xspaceagi.custompage.domain.util.AgentProgressEventUtil;
@@ -57,7 +58,9 @@ public class CustomPageAgentProgressCaptureService {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Resource
-    private AiAgentClient aiAgentClient;
+    private PageAppAIClient pageAppAIClient;
+    @Resource
+    private PageAppFileClient pageAppFileClient;
     @Resource
     private ICustomPageConversationDomainService customPageConversationDomainService;
     @Resource
@@ -244,16 +247,19 @@ public class CustomPageAgentProgressCaptureService {
 
     private void startAgentSubscription(String sessionId, Long projectId, UserContext userContext,
             String fluxRequestId) {
-        aiAgentClient.subscribeSessionSse(sessionId, null, projectId, userContext,
+        pageAppAIClient.subscribeSessionSse(sessionId, null, projectId, userContext,
                 (eventName, data) -> onAgentEvent(sessionId, projectId, eventName, data),
                 () -> onAgentStreamFinished(projectId, fluxRequestId),
                 errorMessage -> onSubscribeFailed(projectId, fluxRequestId, errorMessage));
     }
 
     private void onAgentEvent(String sessionId, Long projectId, String eventName, String data) {
+        log.info("[Agent Progress] event received, project Id={}, session Id={}, event={}, data={}",
+                projectId, sessionId, eventName, data == null ? null : (data.length() > 500 ? data.substring(0, 500) + "..." : data));
         String eventRequestId = extractRequestId(data);
         CaptureContext context = findCaptureForEvent(projectId, sessionId, eventRequestId);
         if (context == null) {
+            log.warn("[Agent Progress] no capture context found for event, project Id={}, session Id={}, event={}", projectId, sessionId, eventName);
             return;
         }
         if (!AgentProgressEventUtil.shouldPersist(eventName)) {
@@ -269,10 +275,15 @@ public class CustomPageAgentProgressCaptureService {
             context.requestIdRef.set(eventRequestId);
         }
 
+        boolean isFinalEvent = AgentProgressEventUtil.isFinalEvent(eventName, data);
+        if (isFinalEvent) {
+            autoGitCommit(context);
+        }
         broadcastToEmitters(context, eventName, data);
         maybePersistIncremental(context);
 
-        if (AgentProgressEventUtil.isFinalEvent(eventName, data)) {
+        if (isFinalEvent) {
+            log.info("[Agent Progress] terminal event detected, project Id={}, event={}", projectId, eventName);
             persistAssistantConversation(context, true);
         }
     }
@@ -309,9 +320,31 @@ public class CustomPageAgentProgressCaptureService {
         persistAssistantConversation(context, false);
         if (isContextTerminal(context)) {
             sessionCoordinator.markTurnDone(context.projectId, context.fluxRequestId);
+            // 兜底：如果 onAgentEvent 终态时未执行则在此执行
+            autoGitCommit(context);
         }
         sessionCoordinator.releaseCaptureLock(context.projectId, context.fluxRequestId);
         completeEmitters(context);
+    }
+
+    /**
+     * 执行 autoGitCommit，通过 AtomicBoolean 保证只执行一次。
+     * SSE 回调线程中 RequestContext 不可用，调用前通过 userContext 绑定。
+     */
+    private void autoGitCommit(CaptureContext context) {
+        if (!context.gitCommitted.compareAndSet(false, true)) {
+            return;
+        }
+        AgentProgressContextUtil.runWithUserContext(context.userContext, () -> {
+            try {
+                pageAppFileClient.gitAutoCommit(
+                        context.projectId,
+                        "auto commit: AI development changes",
+                        null, null);
+            } catch (Exception e) {
+                log.warn("[Agent Progress] auto git commit failed, project Id={}", context.projectId, e);
+            }
+        });
     }
 
     private void onSubscribeFailed(Long projectId, String fluxRequestId, String errorMessage) {
@@ -526,6 +559,7 @@ public class CustomPageAgentProgressCaptureService {
         private final AtomicReference<String> requestIdRef = new AtomicReference<>();
         private final AtomicReference<Long> assistantRecordIdRef = new AtomicReference<>();
         private final AtomicLong lastPersistAtMs = new AtomicLong(0);
+        private final AtomicBoolean gitCommitted = new AtomicBoolean(false);
 
         private CaptureContext(Long projectId, String sessionId, UserContext userContext, String fluxRequestId) {
             this.projectId = projectId;

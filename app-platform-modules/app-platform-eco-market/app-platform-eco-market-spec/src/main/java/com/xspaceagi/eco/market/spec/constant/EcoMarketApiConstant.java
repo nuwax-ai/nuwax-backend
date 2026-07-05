@@ -125,4 +125,14 @@ public class EcoMarketApiConstant {
          */
         public static final String BASE = CLIENT_API_BASE + "/publish/config";
     }
+
+    /**
+     * 导入数据相关API路径
+     */
+    public static class ImportData {
+        /**
+         * 获取导入数据API路径
+         */
+        public static final String GET_IMPORT_DATA = SERVER_API_BASE + "/import/data";
+    }
 } 

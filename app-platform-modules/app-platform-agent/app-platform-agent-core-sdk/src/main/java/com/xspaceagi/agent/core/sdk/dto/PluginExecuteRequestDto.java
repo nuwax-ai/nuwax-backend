@@ -10,9 +10,9 @@ import java.util.Map;
 @Data
 public class PluginExecuteRequestDto implements Serializable {
     private String requestId;
-    private String config;
+    private Object config;
     // 用于传递通用智能体的绑定参数配置
-    private String bindConfig;
+    private Object bindConfig;
     private Long spaceId;
     private Long userId;
     private Object user;

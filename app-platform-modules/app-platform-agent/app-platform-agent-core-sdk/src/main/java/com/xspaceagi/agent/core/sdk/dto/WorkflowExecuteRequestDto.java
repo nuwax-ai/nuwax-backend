@@ -17,9 +17,9 @@ public class WorkflowExecuteRequestDto implements Serializable {
     private Long workflowId;
     private Long spaceId;
     private Map<String, Object> params;
-    private String config;
+    private Object config;
     // 用于传递通用智能体的绑定参数配置
-    private String bindConfig;
+    private Object bindConfig;
 
     @Schema(description = "调用轨迹")
     private TraceContext traceContext;

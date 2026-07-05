@@ -223,6 +223,24 @@ public class WorkflowExecutor {
             logDocument.setResultCode("0000");
             logDocument.setResultMsg("Success");
             logDocument.setRequestEndTime(System.currentTimeMillis());
+
+            if (result instanceof Map<?, ?>) {
+                Object o = ((Map<?, ?>) result).get("usage");
+                if (o instanceof Map<?, ?>) {
+                    TraceContext.TokenUsage tokenUsage = new TraceContext.TokenUsage();
+                    Object o3 = ((Map<?, ?>) o).get("completionTokens");
+                    if (o3 instanceof Number) {
+                        tokenUsage.outputTokens = ((Number) o3).longValue();
+                    }
+                    TraceContext.DurationUsage durationUsage = new TraceContext.DurationUsage();
+                    Object o4 = ((Map<?, ?>) o).get("duration");
+                    if (o4 instanceof Number) {
+                        durationUsage.duration = ((Number) o4).longValue();
+                        workflowContext.getTraceContext().setDurationUsage(durationUsage);
+                    }
+                }
+            }
+
             workflowContext.getWorkflowContextServiceHolder().getILogRpcService().pushTraceLog(workflowContext.getTraceContext());
         } catch (Exception e) {
             // Ignore

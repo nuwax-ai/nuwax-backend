@@ -130,6 +130,9 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     systemMenuBindResourceBindTypeInvalid("3132", "资源ID[%s]的绑定类型[%s]无效，只能是0(NONE)、1(ALL)或2(PART)", "For resource ID [%s], bind type [%s] is invalid; must be 0 (NONE), 1 (ALL), or 2 (PART).", "菜单绑定"),
     systemRbacResourceCodeLengthExceeded("3133", "资源码长度不能超过100", "Resource code length cannot exceed 100.", "RBAC"),
     systemGroupCannotBindForbiddenMenu("3134", "用户组不能绑定「%s」菜单", "User group cannot bind menu \"%s\".", "RBAC"),
+    systemMenuBindRootAllRequiresAllChildren("3280", "根节点为全部绑定时，所有子菜单必须为全部绑定", "When root is fully bound, all child menus must be fully bound.", "菜单绑定"),
+    systemMenuBindRootNoneForbidsChildGrant("3281", "根节点为未绑定时，子菜单不能为全部绑定或部分绑定", "When root is unbound, child menus cannot be fully or partially bound.", "菜单绑定"),
+    systemMenuBindRootPartRequiresChildGrant("3282", "根节点为部分绑定时，至少需要一个子菜单有权限", "When root is partially bound, at least one child menu must be granted.", "菜单绑定"),
     systemVerifyCodeIncorrect("3135", "验证码错误", "Incorrect verification code.", "验证码"),
     systemVerifyParamInvalid("3136", "校验参数异常", "Invalid verification parameters.", "验证码"),
     systemVerifyCodeCheckFailed("3137", "验证码校验失败", "Verification code check failed.", "验证码"),
@@ -141,6 +144,10 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     systemWeChatAccessTokenFetchFailed("3143", "获取微信 access_token 失败", "Failed to obtain WeChat access_token.", "微信"),
     systemWeChatApiReturnedError("3144", "%s", "%s", "微信"),
     systemWeChatPhoneNumberFetchFailed("3145", "获取微信手机号失败", "Failed to obtain WeChat phone number.", "微信"),
+    systemWeChatOpenIdFetchFailed("3180", "获取微信 OpenID 失败", "Failed to obtain WeChat OpenID.", "微信"),
+    systemWeChatMpNotConfigured("3181", "微信小程序 AppId/AppSecret 未配置", "WeChat mini program AppId/AppSecret is not configured.", "微信"),
+    systemAlipayMiniPayNotConfigured("3182", "支付宝小程序支付授权未配置", "Alipay mini program payment auth is not configured.", "支付宝"),
+    systemWeChatOaNotConfigured("3186", "微信公众号 AppId/AppSecret 未配置", "WeChat official account AppId/AppSecret is not configured.", "微信"),
     systemTenantDomainAlreadyInUse("3146", "域名%s已被占用", "Domain %s is already in use.", "租户"),
     systemUserIdInvalid("3147", "错误的用户ID", "Invalid user ID.", "用户"),
     systemMenuPermissionImportTenantInvalid("3148", "菜单权限导入失败,租户ID无效", "Menu permission import failed: invalid tenant ID.", "权限"),
@@ -230,7 +237,7 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     customPagePathConfigExists("3241", "指定路径的配置已存在，无法添加", "Configuration for this path already exists; cannot add.", "自定义页面"),
     customPagePathConfigNotFoundForEdit("3242", "指定路径的配置不存在，无法编辑", "Configuration for this path does not exist; cannot edit.", "自定义页面"),
     customPagePathConfigNotFoundForDelete("3243", "指定路径的配置不存在，无法删除", "Configuration for this path does not exist; cannot delete.", "自定义页面"),
-    customPageProjectConfigNotFound("3244", "项目配置不存在", "Project configuration does not exist.", "自定义页面"),
+    customPageProjectConfigNotFound("3244", "项目不存在", "Project does not exist.", "自定义页面"),
     customPageDuplicatePathConfig("3245", "存在重复的路径配置: %s:%s", "Duplicate path configuration: %s:%s", "自定义页面"),
     customPageBackendListEmpty("3246", "后端地址列表不能为空: %s:%s", "Backend address list cannot be empty: %s:%s", "自定义页面"),
     customPageBackendAddressEmpty("3247", "后端地址不能为空: %s:%s", "Backend address cannot be empty: %s:%s", "自定义页面"),
@@ -413,6 +420,7 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     agentTemplateConfigInvalid("9224", "该模版配置异常，暂时不可用", "This template configuration is invalid and temporarily unavailable.", "模版"),
     agentSandboxServerStoppedOrRemoved("9225", "关联的agent服务器已停止或已删除", "The associated agent server has stopped or been removed.", "沙箱/电脑"),
     agentSandboxNotFound("9226", "未找到沙盒服务器", "Sandbox server not found.", "沙箱/电脑"),
+    agentSandboxConfigError("9226", "沙盒服务器配置错误", "Sandbox server config error.", "沙箱/电脑"),
     agentPrivateComputerDeleteForbidden("9227", "私有电脑的智能体不允许在此删除", "Agents on a private computer cannot be deleted here.", "智能体"),
     agentKnowledgeIdInvalid("9228", "知识ID错误", "Invalid knowledge ID.", "参数"),
     agentPageIdInvalid("9229", "页面ID错误", "Invalid page ID.", "参数"),
@@ -540,6 +548,8 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     agentOpenapiConversationIdInvalid("9363", "conversationId 错误", "Invalid conversationId.", "OpenAPI 英文"),
     agentOpenapiPluginNotFound("9364", "Plugin不存在", "Plugin does not exist.", "英文资源名"),
     agentOpenapiSkillNotFound("9366", "Skill不存在", "Skill does not exist.", "英文资源名"),
+    agentTemplateInitFailed("9367", "项目模板初始化失败 %s", "Failed to init project template. %s", "工作空间"),
+    agentPackageFailed("9367", "项目打包失败 %s", "Failed to package artifact %s", "工作空间"),
 
     /** 沙箱 / 电脑连接与状态 */
     agentComputerConnectFailed("9371", "智能体电脑连接失败", "Failed to connect to agent computer.", "沙箱"),
@@ -555,10 +565,15 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     agentWorkflowLoopMaxCountInvalid("9379", "循环节点最大循环次数不能小于等于0", "Loop max iterations must be greater than 0.", "工作流"),
     agentWorkflowConditionBranchesEmpty("9380", "条件分支列表不能为空", "Condition branch list cannot be empty.", "工作流"),
 
+    workspaceExecuteCommandFailed("9400", "命令执行失败 %s", "Failed to execute command. %s", "工作空间"),
 
     pay_order_not_found("9381", "支付订单不存在", "Payment order not found", "支付"),
 
-    pay_developer_account_not_found("9382", "开发者账户信息不存在", "Developer account not found", "支付");
+    pay_developer_account_not_found("9382", "开发者账户信息不存在", "Developer account not found", "支付"),
+
+    pay_h5_not_allowed_in_app("9383", "App 内请使用原生支付，不支持 H5 支付", "H5 payment is not allowed in the app; use native SDK payment", "支付"),
+
+    pay_app_native_requires_app("9384", "App 原生支付仅限 App 内调用，手机浏览器请使用 H5 支付", "App native payment requires the app client; use H5 payment in mobile browser", "支付");
 
     /**
      * 错误码

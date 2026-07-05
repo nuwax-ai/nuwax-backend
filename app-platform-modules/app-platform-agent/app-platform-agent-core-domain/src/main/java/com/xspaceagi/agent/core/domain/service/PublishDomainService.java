@@ -32,6 +32,8 @@ public interface PublishDomainService {
 
     void savePublished(Published published);
 
+    void updatePublishedGroupInfo(Published.TargetType targetType, Long targetId, Long groupId);
+
     /**
      * 审核不通过
      */

@@ -64,9 +64,9 @@ public class ConditionNodeHandler extends AbstractNodeHandler {
         return Mono.just(Map.of());
     }
 
-    private boolean eval(Object firstValue, Object secondValue, ConditionNodeConfigDto.CompareTypeEnum compareType) {
+    public static boolean eval(Object firstValue, Object secondValue, ConditionNodeConfigDto.CompareTypeEnum compareType) {
         String firstValueStr = firstValue == null ? null : firstValue.toString();
-        if (firstValue != null && (firstValue instanceof List<?>) && ((List<?>) firstValue).size() > 0) {
+        if ((firstValue instanceof List<?>) && !((List<?>) firstValue).isEmpty()) {
             Object val = ((List<?>) firstValue).get(0);
             firstValueStr = val == null ? null : val.toString();
         }
@@ -135,7 +135,7 @@ public class ConditionNodeHandler extends AbstractNodeHandler {
         return false;
     }
 
-    private int compareValues(Object firstValue, Object secondValue) {
+    private static int compareValues(Object firstValue, Object secondValue) {
         if (firstValue == null || secondValue == null) {
             return -1;
         }
@@ -146,7 +146,7 @@ public class ConditionNodeHandler extends AbstractNodeHandler {
         }
     }
 
-    private int compareLength(Object firstValue, Object secondValue) {
+    private static int compareLength(Object firstValue, Object secondValue) {
         if (firstValue == null || secondValue == null) {
             return -1;
         }

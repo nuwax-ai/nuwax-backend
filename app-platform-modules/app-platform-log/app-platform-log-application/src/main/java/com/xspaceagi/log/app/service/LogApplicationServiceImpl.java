@@ -90,7 +90,10 @@ public class LogApplicationServiceImpl extends AbstractTaskExecuteService implem
         if (traceContext0 == null) {
             return;
         }
-        redisUtil.rightPush("log:queue", JSON.toJSONString(((TraceContext) traceContext0).getLog()));
+        TraceContext traceContext = (TraceContext) traceContext0;
+        LogDocument logDocument = (LogDocument) traceContext.getLog();
+        logDocument.setApiKey(TraceContext.maskApiKey(traceContext.getApiKey()));
+        redisUtil.rightPush("log:queue", JSON.toJSONString(logDocument));
         ((TraceContext) traceContext0).setLog(null);
         redisUtil.rightPush("bill:queue", JSON.toJSONString(traceContext0));
     }

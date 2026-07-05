@@ -23,4 +23,6 @@ public class SkillPublishedConfigDto {
 
     @Schema(description = "技能发布zip代理下载地址")
     private String zipFileUrl;
+
+    private Long devAgentConversationId;
 }

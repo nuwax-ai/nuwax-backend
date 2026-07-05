@@ -330,10 +330,6 @@ public class Prompts {
             </output-rules>
             """;
 
-    public static final String CURRENT_TIME = """
-            <current-cst-time>{time}</current-cst-time>
-            """;
-
     // 个人电脑助理提示词
     public static final String PERSONAL_COMPUTER_ASSISTANT_PROMPT = """
             ## Role

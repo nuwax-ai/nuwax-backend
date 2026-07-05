@@ -30,6 +30,12 @@ public interface ICustomPageCodingApplicationService {
      */
     ReqResult<Map<String, Object>> uploadSingleFile(Long projectId, MultipartFile file, String filePath,
                                                     UserContext userContext);
+
+    /**
+     * 批量上传文件
+     */
+    ReqResult<Map<String, Object>> uploadBatchFiles(Long projectId, List<MultipartFile> files,
+                                                     List<String> filePaths, UserContext userContext);
     /**
      * 获取单个文件的反向代理地址
      */

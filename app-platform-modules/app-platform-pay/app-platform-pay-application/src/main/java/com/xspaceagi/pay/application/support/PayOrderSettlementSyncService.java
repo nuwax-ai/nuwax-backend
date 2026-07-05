@@ -1,10 +1,9 @@
 package com.xspaceagi.pay.application.support;
 
 import com.xspaceagi.bill.sdk.rpc.IBillRpcService;
-import com.xspaceagi.pay.domain.gateway.PaymentScanGateway;
 import com.xspaceagi.pay.domain.model.PayOrderModel;
 import com.xspaceagi.pay.domain.repository.PayOrderRepository;
-import com.xspaceagi.pay.sdk.dto.ScanOrderStatusQueryResponse;
+import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryResponse;
 import com.xspaceagi.pay.sdk.enums.PaymentStatus;
 import com.xspaceagi.pay.spec.enums.PayBizNotifyStatus;
 import com.xspaceagi.pay.spec.enums.PayOrderGatewaySyncStatus;
@@ -25,7 +24,7 @@ import org.springframework.util.StringUtils;
 public class PayOrderSettlementSyncService {
 
     private final PayOrderRepository payOrderRepository;
-    private final PaymentScanGateway paymentScanGateway;
+    private final PayOrderStatusQuerySupport payOrderStatusQuerySupport;
     private final PayGatewayOutboundExecutor payGatewayOutboundExecutor;
     private final IBillRpcService billRpcService;
 
@@ -50,10 +49,10 @@ public class PayOrderSettlementSyncService {
             return false;
         }
 
-        ScanOrderStatusQueryResponse last;
+        PaymentStatusQueryResponse last;
         try {
             PayGatewayOutbound outbound = payGatewayOutboundExecutor.resolveCached(tenantId);
-            last = paymentScanGateway.queryOrderStatus(outbound, row.getGatewayPaymentOrderNo(), true);
+            last = payOrderStatusQuerySupport.queryOrderStatus(outbound, row, true);
             PayOrderGatewayQueryMerger.mergeIntoRow(row, last);
             payOrderRepository.save(row);
         } catch (PayGatewayClientException e) {
@@ -78,7 +77,7 @@ public class PayOrderSettlementSyncService {
     }
 
     private boolean notifyBillAndMark(
-            PayOrderModel row, ScanOrderStatusQueryResponse last, PayBizNotifyStatus expectedCurrent) {
+            PayOrderModel row, PaymentStatusQueryResponse last, PayBizNotifyStatus expectedCurrent) {
         if (!PayOrderBillNotifySupport.notifyBillPaymentCallback(billRpcService, row, last, false)) {
             log.warn("[pay-settlement-sync] bill notify failed bizOrderNo={}", row.getBizOrderNo());
             return false;

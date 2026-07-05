@@ -1,6 +1,8 @@
 package com.xspaceagi.pay.web.controller.admin;
 
+import com.xspaceagi.pay.application.service.FileEntryApplicationService;
 import com.xspaceagi.pay.application.service.MerchantOnboardingApplicationService;
+import com.xspaceagi.pay.sdk.dto.FileEntryUploadResponse;
 import com.xspaceagi.pay.sdk.dto.MerchantOnboardingResponse;
 import com.xspaceagi.pay.sdk.dto.MerchantOnboardingUpdateRequest;
 import com.xspaceagi.pay.sdk.dto.MerchantOnboardingUpsertRequest;
@@ -14,10 +16,14 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import static com.xspaceagi.system.spec.enums.ResourceEnum.PAY_EARNINGS_MODIFY;
 import static com.xspaceagi.system.spec.enums.ResourceEnum.PAY_EARNINGS_QUERY;
@@ -30,6 +36,25 @@ public class MerchantOnboardingAdminController {
 
     @Resource
     private MerchantOnboardingApplicationService merchantOnboardingAppService;
+
+    @Resource
+    private FileEntryApplicationService fileEntryAppService;
+
+    @RequireResource(PAY_EARNINGS_MODIFY)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "上传进件影像", description = "上传文件，返回 fileKey 与 publicUrl；提交进件请传 *FileKey，重传同字段请带 replaceFileKey")
+    public ReqResult<FileEntryUploadResponse> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "replaceFileKey", required = false) String replaceFileKey) {
+        Long tenantId = RequestContext.get() == null ? null : RequestContext.get().getTenantId();
+        Assert.notNull(tenantId, "tenantId must be non-null");
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("请选择文件");
+        }
+        String replaceKey = StringUtils.hasText(replaceFileKey) ? replaceFileKey.trim() : null;
+        log.info("api /pay/merchant-onboarding/upload-image tenantId={}, size={}", tenantId, file.getSize());
+        return ReqResult.success(fileEntryAppService.uploadMerchantOnboardingImage(file, replaceKey));
+    }
 
     @RequireResource(PAY_EARNINGS_MODIFY)
     @PostMapping("/add")

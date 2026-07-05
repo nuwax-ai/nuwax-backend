@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.infra.component.agent;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.google.common.base.Joiner;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
@@ -44,6 +45,7 @@ import com.xspaceagi.system.spec.exception.AgentInterruptException;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 
 import static com.xspaceagi.agent.core.spec.constant.Prompts.EXTRACT_PARAM_PROMPT;
 import static com.xspaceagi.agent.core.spec.constant.Prompts.SUGGEST_PROMPT;
+import static com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum.CHAT_CONTEXT;
 
 @Slf4j
 @Component
@@ -138,6 +141,9 @@ public class AgentExecutor extends BaseComponent {
         }
 
         agentContext.getAgentExecuteResult().setStartTime(System.currentTimeMillis());
+        if (agentContext.getAgentConfig().getModelComponentConfig().getTargetConfig() == null || !(agentContext.getAgentConfig().getModelComponentConfig().getTargetConfig() instanceof ModelConfigDto)) {
+            return Flux.error(new BizException("Incomplete agent model configuration. Please check if the associated model has been deleted."));
+        }
         ModelBindConfigDto modelBindConfigDto = (ModelBindConfigDto) agentContext.getAgentConfig().getModelComponentConfig().getBindConfig();
         int contextRounds = modelBindConfigDto.getContextRounds() == null ? 0 : modelBindConfigDto.getContextRounds();
         if ("TaskAgent".equals(agentContext.getAgentConfig().getType())) {
@@ -145,7 +151,7 @@ public class AgentExecutor extends BaseComponent {
         }
         List<Message> contextMessages = new ArrayList<>();
         if (contextRounds > 0) {
-            contextMessages.addAll(conversationApplicationService.getRoundMessages(agentContext.getConversationId(), contextRounds * 2));
+            contextMessages.addAll(getRoundMessages(agentContext, contextRounds * 2));
         }
         agentContext.setContextMessages(contextMessages);
 
@@ -166,25 +172,30 @@ public class AgentExecutor extends BaseComponent {
         Sinks.Many<AgentOutputDto> sink = Sinks.many().multicast().onBackpressureBuffer();
         //优先执行变量组件
         AtomicReference<Disposable> nextDisposable = new AtomicReference<>();
-        Disposable disposable = variableSet(agentContext, sink).doOnError(sink::tryEmitError).doOnSuccess((result) -> submit(() -> {
-            try {
-                if (agentContext.isInterrupted()) {
-                    sink.tryEmitComplete();
-                    return;
-                }
-                nextDisposable.set(doNext(agentContext, sink));
-            } catch (Exception e) {
-                log.error("Execution failed", e);
-                sink.tryEmitError(e);
-            }
-        })).subscribe();
-
-        return sink.asFlux().publishOn(Schedulers.boundedElastic()).doOnCancel(() -> {
-            disposable.dispose();
-            if (nextDisposable.get() != null) {
-                nextDisposable.get().dispose();
-            }
-        });
+        AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
+        return sink.asFlux().doOnSubscribe(subscriber -> {
+                    Disposable disposable = variableSet(agentContext, sink).doOnError(sink::tryEmitError).doOnSuccess((result) -> submit(() -> {
+                        try {
+                            if (agentContext.isInterrupted()) {
+                                sink.tryEmitComplete();
+                                return;
+                            }
+                            nextDisposable.set(doNext(agentContext, sink));
+                        } catch (Exception e) {
+                            log.error("Execution failed", e);
+                            sink.tryEmitError(e);
+                        }
+                    })).subscribe();
+                    disposableAtomicReference.set(disposable);
+                })
+                .publishOn(Schedulers.boundedElastic()).doOnCancel(() -> {
+                    if (disposableAtomicReference.get() != null) {
+                        disposableAtomicReference.get().dispose();
+                    }
+                    if (nextDisposable.get() != null) {
+                        nextDisposable.get().dispose();
+                    }
+                });
     }
 
     private Disposable doNext(AgentContext agentContext, Sinks.Many<AgentOutputDto> sink) {
@@ -212,8 +223,7 @@ public class AgentExecutor extends BaseComponent {
                 .id(UUID.randomUUID().toString().replace("-", ""))
                 .time(new Date())
                 .build();
-        conversationApplicationService.addRoundMessage(agentContext.getConversationId(), userMessageDto);
-
+        addRoundMessage(agentContext, userMessageDto);
         if (!directOutputResults.isEmpty()) {
             ChatMessageDto chatMessageDto = ChatMessageDto.builder()
                     .role(ChatMessageDto.Role.ASSISTANT)
@@ -253,7 +263,7 @@ public class AgentExecutor extends BaseComponent {
 
         String systemPrompt = buildSystemPrompt(agentContext, pageComponentConfigs);
         agentContext.getAgentConfig().setSystemPrompt(systemPrompt);
-        ModelContext modelContext = buildModelContext(agentContext, systemPrompt, agentContext.getMessage(), agentContext.getConversationId(), true, null, null);
+        ModelContext modelContext = buildModelContext(agentContext, systemPrompt, agentContext.getMessage(), agentContext.getConversationId(), null, null);
         if (CollectionUtils.isNotEmpty(autoCallTools)) {
             List<Message> messages = new ArrayList<>();
             messages.add(new AssistantMessage(Joiner.on("\n\n").join(autoCallTools)));
@@ -319,6 +329,9 @@ public class AgentExecutor extends BaseComponent {
         StringBuilder reasoningText = new StringBuilder();
         return callMessageFlux.doOnError(e -> chatError(agentContext, msgSb.toString(), reasoningText.toString(), sink, componentExecutedList, e))
                 .doOnComplete(() -> chatComplete(agentContext, sink, msgSb.toString(), reasoningText.toString(), componentExecutedList))
+                .doOnCancel(() -> {
+                    chatComplete(agentContext, sink, msgSb.toString(), reasoningText.toString(), componentExecutedList);
+                })
                 .subscribe((res) -> {
                     if (agentContext.isInterrupted()) {
                         return;
@@ -328,7 +341,10 @@ public class AgentExecutor extends BaseComponent {
                     } else {
                         msgSb.append(res.getText());
                     }
-                    sink.tryEmitNext(buildOutputMessage(agentContext, res));
+                    Sinks.EmitResult emitResult = sink.tryEmitNext(buildOutputMessage(agentContext, res));
+                    if (emitResult.isFailure()) {
+                        log.error("Agent output failed, cid {}, error {}", agentContext.getConversationId(), emitResult);
+                    }
                 }, throwable -> {
                     chatError(agentContext, msgSb.toString(), reasoningText.toString(), sink, componentExecutedList, throwable);
                     if (throwable instanceof AgentInterruptException) {
@@ -338,7 +354,7 @@ public class AgentExecutor extends BaseComponent {
                 });
     }
 
-    private static String buildProcessingText(ComponentExecutingDto componentExecutingDto) {
+    public static String buildProcessingText(ComponentExecutingDto componentExecutingDto) {
         return String.format(
                 "\n<div><markdown-custom-process executeId=\"%s\" type=\"%s\" status=\"%s\" name=\"%s\"></markdown-custom-process></div>\n\n",
                 escapeHtmlAttr(componentExecutingDto.getResult().getExecuteId()),
@@ -378,7 +394,7 @@ public class AgentExecutor extends BaseComponent {
                     .time(new Date())
                     .componentExecutedList(componentExecutedList.stream().map(componentExecutingDto -> (Object) componentExecutingDto).toList())
                     .build();
-            conversationApplicationService.addRoundMessage(agentContext.getConversationId(), assistantMessage);
+            addRoundMessage(agentContext, assistantMessage);
         } else {
             CallMessage callMessage = new CallMessage();
             callMessage.setText("```\n" + e.getMessage() + "\n```");
@@ -427,7 +443,7 @@ public class AgentExecutor extends BaseComponent {
                     .time(new Date())
                     .finished(true)
                     .build();
-            conversationApplicationService.addRoundMessage(agentContext.getConversationId(), assistantMessage);
+            addRoundMessage(agentContext, assistantMessage);
         }
         if (agentContext.getAgentExecuteResult().getSuccess() == null) {
             agentContext.getAgentExecuteResult().setSuccess(true);
@@ -450,6 +466,54 @@ public class AgentExecutor extends BaseComponent {
                 //do nothing
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addRoundMessage(AgentContext agentContext, ChatMessageDto userMessageDto) {
+        if (agentContext.isUseSate()) {
+            userMessageDto.setComponentExecutedList(null);
+            Map<String, Object> state = agentContext.getVariableParams();
+            String key = buildAgentStateKey(agentContext);
+            Map<String, Object> agentState = (Map<String, Object>) state.computeIfAbsent(key, k -> new HashMap<>());
+            List<ChatMessageDto> chatMessages = (List<ChatMessageDto>) agentState.computeIfAbsent("roundMessageList", k -> new ArrayList<>());
+            chatMessages.add(userMessageDto);
+            ModelBindConfigDto modelBindConfigDto = (ModelBindConfigDto) agentContext.getAgentConfig().getModelComponentConfig().getBindConfig();
+            int contextRounds = modelBindConfigDto.getContextRounds() == null ? 0 : modelBindConfigDto.getContextRounds();
+            if ("TaskAgent".equals(agentContext.getAgentConfig().getType())) {
+                contextRounds = 10;// 用于后续补充上下文记忆
+            }
+            if (contextRounds > 0 && chatMessages.size() > contextRounds) {
+                chatMessages.subList(0, chatMessages.size() - contextRounds).clear();
+            }
+        } else {
+            conversationApplicationService.addRoundMessage(agentContext.getConversationId(), userMessageDto);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Message> getRoundMessages(AgentContext agentContext, int ct) {
+        if (agentContext.isUseSate()) {
+            Map<String, Object> state = agentContext.getVariableParams();
+            String key = buildAgentStateKey(agentContext);
+            Map<String, Object> agentState = (Map<String, Object>) state.computeIfAbsent(key, k -> new HashMap<>());
+            List<?> messages = (List<?>) agentState.get("roundMessageList");
+            if (messages == null) {
+                return new ArrayList<>();
+            }
+            List<ChatMessageDto> chatMessages = messages.stream().map(message -> {
+                if (message instanceof ChatMessageDto chatMessageDto) {
+                    return chatMessageDto;
+                }
+                return JSONObject.parseObject(JSON.toJSONString(message), ChatMessageDto.class);
+            }).toList();
+            return ChatMessageDto.toMessages(chatMessages);
+        } else {
+            return TenantFunctions.callWithIgnoreCheck(() -> conversationApplicationService.getRoundMessages(agentContext.getConversationId(), ct));
+        }
+    }
+
+    private String buildAgentStateKey(AgentContext agentContext) {
+        return "_agent" + agentContext.getAgentConfig().getId();
     }
 
     private Map<String, Object> extractAutoInvokeComponentRequireParamValues(AgentContext agentContext) {
@@ -481,18 +545,7 @@ public class AgentExecutor extends BaseComponent {
         if (requireArgs.isEmpty()) {
             return new HashMap<>();
         }
-        //args组装一起
-        String userPrompt = buildVarUserPrompt(agentContext);
-        AgentContext agentContext1 = new AgentContext();
-        BeanUtils.copyProperties(agentContext, agentContext1);
-        agentContext1.setContextMessages(new ArrayList<>(agentContext.getContextMessages()));
-        ModelContext modelContext = buildModelContext(agentContext1, EXTRACT_PARAM_PROMPT, userPrompt, null, true, OutputTypeEnum.JSON, allArgs);
-        modelInvoker.invoke(modelContext).blockLast();
-        Object res = modelContext.getModelCallResult().getData();
-        if (!(res instanceof Map)) {
-            return new HashMap<>();
-        }
-        return (Map<String, Object>) res;
+        return extractParam(agentContext, allArgs);
     }
 
     private static void checkAndSetRequireArgs(List<Arg> argBindConfigs, List<Arg> requireArgs, List<Arg> allArgs, Long id) {
@@ -510,7 +563,7 @@ public class AgentExecutor extends BaseComponent {
         });
     }
 
-    private static String buildUserMessage(AgentContext agentContext) {
+    public static String buildUserMessage(AgentContext agentContext) {
         StringBuilder stringBuilder = new StringBuilder();
         //长期记忆
         if (StringUtils.isNotBlank(agentContext.getLongMemory())) {
@@ -520,7 +573,7 @@ public class AgentExecutor extends BaseComponent {
         if (withUserPrompt) {
             String userPrompt = agentContext.getAgentConfig().getUserPrompt();
             if (StringUtils.isNotBlank(userPrompt)) {
-                stringBuilder.append("<user-prompt>").append(PlaceholderParser.resoleAndReplacePlaceholder(agentContext.getVariableParams(), userPrompt)).append("</user-prompt>");
+                stringBuilder.append("<user-reminder>\n").append(PlaceholderParser.resoleAndReplacePlaceholder(agentContext.getVariableParams(), userPrompt)).append("\n</user-reminder>");
             }
         }
 
@@ -1174,12 +1227,12 @@ public class AgentExecutor extends BaseComponent {
                 if (variableConfigDto != null && !CollectionUtils.isEmpty(variableConfigDto.getVariables())) {
                     //过滤出自定义变量，同时把前端已经传递的变量也过滤掉
                     List<Arg> nonSysArgs = variableConfigDto.getVariables().stream().filter(var -> !var.isSystemVariable()
-                                    && var.getInputType() != null && var.getInputType() == Arg.InputTypeEnum.AutoRecognition && !agentContext.getVariableParams().containsKey(var.getName()))
+                                    && var.getInputType() != null && var.getInputType() == Arg.InputTypeEnum.AutoRecognition)
                             .toList();
                     userArgs.addAll(nonSysArgs);
                     variableConfigDto.getVariables().forEach((var) -> {
                         if (var.isSystemVariable() && var.getEnable()) {
-                            if (GlobalVariableEnum.CHAT_CONTEXT.name().equals(var.getName())) {
+                            if (CHAT_CONTEXT.name().equals(var.getName())) {
                                 ModelBindConfigDto modelBindConfigDto = (ModelBindConfigDto) agentContext.getAgentConfig().getModelComponentConfig().getBindConfig();
                                 if (modelBindConfigDto != null) {
                                     List<Message> messages = new ArrayList<>(agentContext.getContextMessages());
@@ -1214,8 +1267,15 @@ public class AgentExecutor extends BaseComponent {
                 String userPrompt = buildVarUserPrompt(agentContext);
                 AgentContext agentContext1 = new AgentContext();
                 BeanUtils.copyProperties(agentContext, agentContext1);
-                agentContext1.setContextMessages(new ArrayList<>(agentContext.getContextMessages()));
-                ModelContext modelContext = buildModelContext(agentContext1, EXTRACT_PARAM_PROMPT, userPrompt, null, true, OutputTypeEnum.JSON, userArgs);
+                agentContext1.setContextMessages(new ArrayList<>());
+                ModelContext modelContext = buildModelContext(agentContext1, EXTRACT_PARAM_PROMPT, userPrompt, null, OutputTypeEnum.JSON, userArgs);
+                ModelConfigDto modelConfig = modelContext.getModelConfig();
+                if (modelConfig.getIsReasonModel() != null && modelConfig.getIsReasonModel() == 1) {
+                    ModelConfigDto modelConfigDto = new ModelConfigDto();
+                    BeanUtils.copyProperties(modelConfig, modelConfigDto);
+                    modelConfigDto.setIsReasonModel(0);
+                    modelContext.setModelConfig(modelConfigDto);
+                }
                 Disposable d = modelInvoker.invoke(modelContext).doOnError(throwable -> {
                     componentExecuteResult.setEndTime(System.currentTimeMillis());
                     componentExecuteResult.setSuccess(false);
@@ -1259,6 +1319,15 @@ public class AgentExecutor extends BaseComponent {
                         if (res instanceof Map) {
                             Map<String, Object> resMap = (Map<String, Object>) res;
                             resMap.forEach((k, v) -> agentContext.getVariableParams().put(k, v));
+                            // 通用智能体提前保存识别的变量
+                            if ("TaskAgent".equals(agentContext.getAgentConfig().getType())) {
+                                try {
+                                    conversationApplicationService.updateConversationVariables(Long.parseLong(agentContext.getConversationId()), agentContext.getVariableParams());
+                                } catch (Exception e) {
+                                    // ignore
+                                    log.error("Update conversation variables failed", e);
+                                }
+                            }
                         }
                     } catch (Exception e) {
                         log.error("User variable setting failed", e);
@@ -1276,41 +1345,38 @@ public class AgentExecutor extends BaseComponent {
         });
     }
 
+    private Map<String, Object> extractParam(AgentContext agentContext, List<Arg> args) {
+        //args组装一起
+        String userPrompt = buildVarUserPrompt(agentContext);
+        AgentContext agentContext1 = new AgentContext();
+        BeanUtils.copyProperties(agentContext, agentContext1);
+        agentContext1.setContextMessages(new ArrayList<>());
+        ModelContext modelContext = buildModelContext(agentContext1, EXTRACT_PARAM_PROMPT, userPrompt, null, OutputTypeEnum.JSON, args);
+        ModelConfigDto modelConfig = modelContext.getModelConfig();
+        if (modelConfig.getIsReasonModel() != null && modelConfig.getIsReasonModel() == 1) {
+            ModelConfigDto modelConfigDto = new ModelConfigDto();
+            BeanUtils.copyProperties(modelConfig, modelConfigDto);
+            modelConfigDto.setIsReasonModel(0);// 变量提取关闭思考模式
+            modelContext.setModelConfig(modelConfigDto);
+        }
+        modelInvoker.invoke(modelContext).blockLast();
+        Object res = modelContext.getModelCallResult().getData();
+        if (!(res instanceof Map)) {
+            return new HashMap<>();
+        }
+        return (Map<String, Object>) res;
+    }
+
     private static String buildVarUserPrompt(AgentContext agentContext) {
         StringBuilder stringBuilder = new StringBuilder();
-        if (StringUtils.isNotBlank(agentContext.getLongMemory())) {
-            stringBuilder.append("\n<long_memory>\n").append(JSON.toJSONString(agentContext.getLongMemory())).append("\n<long_memory>\n");
+        if (StringUtils.isNotBlank(agentContext.getAgentConfig().getSystemPrompt())) {
+            stringBuilder.append("## Target Conversation's System Prompt:\n").append(agentContext.getAgentConfig().getSystemPrompt()).append("\n\n");
         }
-        if (agentContext.getVariableParams().get(GlobalVariableEnum.CHAT_CONTEXT.name()) == null) {
-            ModelBindConfigDto modelBindConfigDto = (ModelBindConfigDto) agentContext.getAgentConfig().getModelComponentConfig().getBindConfig();
-            if (modelBindConfigDto != null) {
-                List<Message> messages = new ArrayList<>(agentContext.getContextMessages());
-                messages.add(0, new SystemMessage(agentContext.getAgentConfig().getSystemPrompt() == null ? "You are a helpful assistant." : agentContext.getAgentConfig().getSystemPrompt()));
-                stringBuilder.append("\n<chat_context>\n").append(JSON.toJSONString(messages)).append("\n</chat_context>\n");
-            }
-        } else {
-            stringBuilder.append("\n<chat_context>\n").append(JSON.toJSONString(agentContext.getVariableParams().get(GlobalVariableEnum.CHAT_CONTEXT.name()))).append("\n</chat_context>\n");
-        }
-        if (agentContext.getHeaders() != null && !agentContext.getHeaders().isEmpty()) {
-            agentContext.getHeaders().remove("Authorization");
-            agentContext.getHeaders().remove("authorization");
-            agentContext.getHeaders().remove("Cookie");
-            agentContext.getHeaders().remove("cookie");
-            stringBuilder.append("\n<http_headers>\n").append(JSON.toJSONString(agentContext.getHeaders())).append("\n</http_headers>\n");
-        }
-        if (CollectionUtils.isNotEmpty(agentContext.getAttachments())) {
-            stringBuilder.append("\n<attachment>").append(JSON.toJSONString(agentContext.getAttachments())).append("</attachment>\n");
-        }
-        if (StringUtils.isNotBlank(agentContext.getMessage())) {
-            stringBuilder.append(agentContext.getMessage());
-        } else if (CollectionUtils.isNotEmpty(agentContext.getAttachments())) {
-            stringBuilder.append(I18nUtil.systemMessage("Backend.Agent.Message.AnalyzeAttachments"));
-        }
-        return stringBuilder.toString();
+        return stringBuilder.append(agentContext.getContextMd()).toString();
     }
 
     private static ModelContext buildModelContext(AgentContext agentContext, String systemPrompt, String userPrompt,
-                                                  String conversationId, boolean streamCall, OutputTypeEnum outputType, List<Arg> outputArgs) {
+                                                  String conversationId, OutputTypeEnum outputType, List<Arg> outputArgs) {
         ModelContext modelContext = new ModelContext();
         modelContext.setRequestId(agentContext.getRequestId());
         modelContext.setAgentContext(agentContext);
@@ -1321,7 +1387,7 @@ public class AgentExecutor extends BaseComponent {
         modelCallConfigDto.setSystemPrompt(systemPrompt);
         modelCallConfigDto.setUserPrompt(userPrompt);
         modelCallConfigDto.setChatRound(0);
-        modelCallConfigDto.setStreamCall(streamCall);
+        modelCallConfigDto.setStreamCall(true);
         modelCallConfigDto.setOutputType(outputType);
         modelCallConfigDto.setOutputArgs(outputArgs);
         modelCallConfigDto.setMaxTokens(modelBindConfigDto.getMaxTokens());
@@ -1480,7 +1546,7 @@ public class AgentExecutor extends BaseComponent {
                 arg.setDataType(DataTypeEnum.Array_String);
                 outputArgs.add(arg);
                 ModelContext suggestModelContext = buildModelContext(agentContext, buildSuggestSystemPrompt(agentContext), buildSuggestUserPrompt(agentContext),
-                        null, true, OutputTypeEnum.JSON, outputArgs);
+                        null, OutputTypeEnum.JSON, outputArgs);
                 Disposable disposable = modelInvoker.invoke(suggestModelContext).doOnError((e) -> {
                     log.error("Suggested question invocation failed", e);
                     sink.success(new ArrayList<>());

@@ -54,18 +54,25 @@ public class MerchantOnboardingResponse {
 
     /** 营业执照 */
     private String orgCertificateUrl;
+    private String orgCertificateFileKey;
     /** 法人身份证正面 */
     private String legalPersonIdCardFrontUrl;
+    private String legalPersonIdCardFrontFileKey;
     /** 法人身份证背面 */
     private String legalPersonIdCardBackUrl;
+    private String legalPersonIdCardBackFileKey;
     /** 财务室照片 */
     private String photoFinanceRoomUrl;
+    private String photoFinanceRoomFileKey;
     /** 门头照片 */
     private String photoGateUrl;
+    private String photoGateFileKey;
     /** 地标照片 */
     private String photoLandmarkUrl;
+    private String photoLandmarkFileKey;
     /** 银行开户证明 */
     private String bankAccountProofUrl;
+    private String bankAccountProofFileKey;
 
     private LocalDateTime created;
     private LocalDateTime modified;

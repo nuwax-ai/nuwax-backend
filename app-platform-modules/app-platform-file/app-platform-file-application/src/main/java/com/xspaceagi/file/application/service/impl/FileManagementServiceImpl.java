@@ -4,6 +4,7 @@ import com.xspaceagi.file.application.service.FileManagementService;
 import com.xspaceagi.file.domain.model.FileRecordDomain;
 import com.xspaceagi.file.domain.repository.FileRecordRepository;
 import com.xspaceagi.file.domain.storage.FileStorageStrategy;
+import com.xspaceagi.file.infra.storage.FileKeyGenerator;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -102,15 +103,8 @@ public class FileManagementServiceImpl implements FileManagementService {
     }
 
     private static String getFileExtension(String fileName) {
-        String fileExtension = "";
-        if (fileName != null && fileName.contains(".")) {
-            fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
-//            List<String> fileTypes = List.of("pdf", "txt", "doc", "docx", "md", "json", "xml", "xls", "xlsx", "ppt", "pptx", "mp4", "mov", "mp3", "wav", "aac", "flac", "ogg", "wma", "aiff", "m4a", "amr", "midi", "opus", "ra", "zip", "rar", "7z", "tar", "gz", "bz2", "tgz", "tar.gz", "tar.bz2", "tar.7z", "tar.gz", "jpg", "jpeg", "jpe", "png", "gif", "bmp", "ico", "icns", "svg", "webp", "heic", "mkv", "webm");
-//            if (!fileTypes.contains(fileExtension.toLowerCase())) {
-//                throw new BizException("Unsupported file type");
-//            }
-        }
-        return fileExtension;
+        String ext = FileKeyGenerator.extractExtension(fileName);
+        return ext.startsWith(".") ? ext.substring(1) : ext;
     }
 
     @Override

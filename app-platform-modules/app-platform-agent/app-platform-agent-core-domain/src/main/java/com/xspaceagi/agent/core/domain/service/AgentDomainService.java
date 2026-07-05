@@ -96,6 +96,8 @@ public interface AgentDomainService {
      */
     AgentComponentConfig queryComponentConfig(Long id);
 
+    List<AgentComponentConfig> queryComponentConfigsByAgentIdAndType(Long agentId, AgentComponentConfig.Type type);
+
     /**
      * 查询智能体组件配置
      *

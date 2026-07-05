@@ -35,6 +35,9 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
     @Schema(description = "token上限")
     private Integer maxTokens; // token上限
 
+    @Schema(description = "系统提示词")
+    private String systemPrompt;
+
     @Schema(description = "补充提示词")
     private String extraPrompt;
 
@@ -55,12 +58,22 @@ public class IntentRecognitionNodeConfigDto extends NodeConfigDto {
         @Schema(description = "唯一标识")
         private String uuid;
 
-        @Schema(description = "意图描述")
+        @Schema(description = "意图名称")
+        private String name;
+
+        @Schema(description = "意图描述，兜底匹配")
         private String intent;
 
         @Schema(description = "意图类型,NORMAL正常添加配置,OTHER其他意图")
         private IntentTypeEnum intentType;
 
+        //条件参数关系
+        @Schema(description = "条件参数之间关系")
+        private ConditionNodeConfigDto.ConditionTypeEnum conditionType;
+
+        //参数列表配置
+        @Schema(description = "参数列表配置")
+        private List<ConditionNodeConfigDto.ConditionArgDto> conditionArgs;
 
         @Schema(description = "关联下级节点id列表")
         private List<Long> nextNodeIds;

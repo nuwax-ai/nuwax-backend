@@ -1,7 +1,7 @@
 package com.xspaceagi.pay.application.support;
 
 import com.xspaceagi.pay.domain.model.PayOrderModel;
-import com.xspaceagi.pay.sdk.dto.ScanOrderStatusQueryResponse;
+import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -20,7 +20,7 @@ public final class PayOrderGatewayQueryMerger {
 
     private PayOrderGatewayQueryMerger() {}
 
-    public static void mergeIntoRow(PayOrderModel row, ScanOrderStatusQueryResponse r) {
+    public static void mergeIntoRow(PayOrderModel row, PaymentStatusQueryResponse r) {
         if (r == null) {
             return;
         }

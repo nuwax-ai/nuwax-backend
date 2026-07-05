@@ -27,9 +27,9 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     private ComputerFileClient computerFileClient;
 
     @Override
-    public Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId) {
+    public Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String customTargetDir) {
         log.info("[Domain] logId={}, 获取静态文件, targetPrefix={}, relativePath={}", logId, targetPrefix, relativePath);
-        return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId)
+            return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId, customTargetDir)
                 .doOnError(WebClientResponseException.NotFound.class, e -> {
                     handleFileNotFound(logId, targetPrefix, relativePath, e);
                 })
@@ -42,10 +42,10 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     }
 
     @Override
-    public ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader) {
+    public ResponseEntity<Flux<DataBuffer>> getStaticFileResponse(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader, String customTargetDir) {
         log.info("[Domain] logId={}, 获取静态文件完整响应, targetPrefix={}, relativePath={}, range={}",
                 logId, targetPrefix, relativePath, rangeHeader);
-        return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId, rangeHeader);
+        return computerFileClient.getStaticFile(cId, targetPrefix, relativePath, logId, rangeHeader, customTargetDir);
     }
 
     /**
@@ -109,33 +109,39 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     }
 
     @Override
-    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext) {
+    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir) {
         log.info("[Domain] 查询文件列表, userId={}, cId={}", userId, cId);
-        return computerFileClient.getFileList(userId, cId, proxyPath);
+        return computerFileClient.getFileList(userId, cId, proxyPath, customTargetDir);
     }
 
     @Override
-    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext) {
+    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
         log.info("[Domain] 更新文件列表, userId={}, cId={}", userId, cId);
-        return computerFileClient.filesUpdate(userId, cId, files);
+        return computerFileClient.filesUpdate(userId, cId, files, customTargetDir);
     }
 
     @Override
-    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext) {
+    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
         log.info("[Domain] 上传文件, userId={}, cId={}, filePath={}", userId, cId, filePath);
-        return computerFileClient.uploadFile(userId, cId, filePath, file);
+        return computerFileClient.uploadFile(userId, cId, filePath, file, customTargetDir);
     }
 
     @Override
-    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext) {
+    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
         log.info("[Domain] 批量上传文件, userId={}, cId={}, fileCount={}", userId, cId, files != null ? files.size() : 0);
-        return computerFileClient.uploadFiles(userId, cId, filePaths, files);
+        return computerFileClient.uploadFiles(userId, cId, filePaths, files, customTargetDir);
     }
 
     @Override
-    public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext) {
+    public Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 导入项目, userId={}, cId={}, fileName={}", userId, cId, file != null ? file.getOriginalFilename() : null);
+        return computerFileClient.importProject(userId, cId, file, customTargetDir);
+    }
+
+    @Override
+    public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext, String customTargetDir) {
         log.info("[Domain] 下载全部文件, logId={}, userId={}, cId={}", logId, userId, cId);
-        return computerFileClient.downloadAllFiles(userId, cId, logId)
+        return computerFileClient.downloadAllFiles(userId, cId, logId, customTargetDir)
                 .doOnError(WebClientResponseException.NotFound.class, e -> {
                     handleDownloadFileNotFound(logId, userId, cId, e);
                 })
@@ -145,6 +151,12 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
                 .doOnError(Throwable.class, e -> {
                     handleDownloadGenericError(logId, userId, cId, e);
                 });
+    }
+
+    @Override
+    public Map<String, Object> getLogs(Long userId, Long cId, int tailLines, UserContext userContext) {
+        log.info("[Domain] 获取沙盒日志, userId={}, cId={}, tailLines={}", userId, cId, tailLines);
+        return computerFileClient.getLogs(userId, cId, tailLines);
     }
 
     /**

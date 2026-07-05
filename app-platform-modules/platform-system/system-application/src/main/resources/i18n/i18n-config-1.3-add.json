@@ -1,0 +1,2672 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.datatable.description",
+    "fieldValue": "Table",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.datatable.name",
+    "fieldValue": "Table",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.knowledge.description",
+    "fieldValue": "Knowledge",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.knowledge.name",
+    "fieldValue": "Knowledge",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.plugin.description",
+    "fieldValue": "Plugin",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.plugin.name",
+    "fieldValue": "Plugin",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.workflow.description",
+    "fieldValue": "Workflow",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.workflow.name",
+    "fieldValue": "Workflow",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitleTrial",
+    "fieldValue": "Select Subscription Plan (Trials: {used}/{total})",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Common.nextPage",
+    "fieldValue": "Next",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Common.prevPage",
+    "fieldValue": "Previous",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.myOrders",
+    "fieldValue": "My Orders",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.amount",
+    "fieldValue": "Amount",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.bizType",
+    "fieldValue": "Business Type",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.bizTypeCreditPurchase",
+    "fieldValue": "Credit Purchase",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.bizTypeSubscription",
+    "fieldValue": "Subscription",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.createdTime",
+    "fieldValue": "Created Time",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.description",
+    "fieldValue": "Description",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.empty",
+    "fieldValue": "No orders yet",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.goPay",
+    "fieldValue": "Pay Now",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.orderId",
+    "fieldValue": "Order ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.orderStatus",
+    "fieldValue": "Order Status",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.pageTitle",
+    "fieldValue": "My Orders",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.statusAll",
+    "fieldValue": "All",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.statusCancelled",
+    "fieldValue": "Cancelled",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.statusPaid",
+    "fieldValue": "Paid",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.statusPending",
+    "fieldValue": "Pending",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.alipay",
+    "fieldValue": "Alipay",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payCancelled",
+    "fieldValue": "Payment cancelled",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payParamsFailed",
+    "fieldValue": "Failed to get payment parameters",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payPollTimeout",
+    "fieldValue": "Confirming payment result, please check later",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.qrCodeUnsupported",
+    "fieldValue": "Please open on a device that supports QR code scanning",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.wechatBrowserPayUnsupported",
+    "fieldValue": "Due to WeChat browser limitations, direct payment is not supported here. Please click the top right menu and choose 'Open in Browser' to complete your payment.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.wechatPay",
+    "fieldValue": "WeChat Pay",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.ChatInputHome.dropFilesHint",
+    "fieldValue": "Release to upload files",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.ChatInputHome.pastedFileName",
+    "fieldValue": "Pasted File-{0}-{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrent",
+    "fieldValue": "Current Plan",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Constants.Space.group",
+    "fieldValue": "Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.OpenApp.subscription",
+    "fieldValue": "Subscribe",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.pluginPageTitle",
+    "fieldValue": "Plugins",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.workflowPageTitle",
+    "fieldValue": "Workflows",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmMoveToGroup",
+    "fieldValue": "Confirm Move to Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveDesc",
+    "fieldValue": "Are you sure you want to remove \"{0}\" from the current group?",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveFromGroup",
+    "fieldValue": "Confirm Remove from Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createGroupTitle",
+    "fieldValue": "Create Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createSuccess",
+    "fieldValue": "Created successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteConfirmContent",
+    "fieldValue": "Are you sure you want to delete the group \"{0}\"?",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteSuccess",
+    "fieldValue": "Deleted successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editGroupTitle",
+    "fieldValue": "Edit Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editSuccess",
+    "fieldValue": "Updated successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescLabel",
+    "fieldValue": "Group Description",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescMaxLength",
+    "fieldValue": "Description cannot exceed 100 characters",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescPlaceholder",
+    "fieldValue": "Please enter group description",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupIconLabel",
+    "fieldValue": "Group Icon",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameLabel",
+    "fieldValue": "Group Name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameMaxLength",
+    "fieldValue": "Name cannot exceed 30 characters",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameNoWhitespace",
+    "fieldValue": "Name cannot be empty",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNamePlaceholder",
+    "fieldValue": "Please enter group name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameRequired",
+    "fieldValue": "Group name is required",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeLabel",
+    "fieldValue": "Group Type",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeRequired",
+    "fieldValue": "Please select group type",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveSuccess",
+    "fieldValue": "Moved successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToGroup",
+    "fieldValue": "Move to Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToOtherGroup",
+    "fieldValue": "Move to other group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeFromGroup",
+    "fieldValue": "Remove from Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeSuccess",
+    "fieldValue": "Removed successfully",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroup",
+    "fieldValue": "Select Group",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder",
+    "fieldValue": "Please select a group to move to",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.unitCount",
+    "fieldValue": "{0} items",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodMillionToken",
+    "fieldValue": "million tokens",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodSecond",
+    "fieldValue": "second",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeMonthly",
+    "fieldValue": "Monthly",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeOneTime",
+    "fieldValue": "One-time",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeTiered",
+    "fieldValue": "Tiered billing",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemCreditPackages.periodMonthUnit",
+    "fieldValue": "months",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionDesc",
+    "fieldValue": "Link user groups to control the permissions included in this plan. Multiple selections allowed.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionTitle",
+    "fieldValue": "Developer permissions",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldCreditAmountMonthly",
+    "fieldValue": "Credits included (monthly)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldDescPlaceholder",
+    "fieldValue": "Describe the plan positioning and target scenarios",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldHotLabel",
+    "fieldValue": "Featured tag",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldNamePlaceholderExample",
+    "fieldValue": "e.g. Basic",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPriceLabel",
+    "fieldValue": "Plan price (¥)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPricePlaceholderExample",
+    "fieldValue": "e.g. 99",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.fieldValidityPeriod",
+    "fieldValue": "Validity period",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.originalPrice",
+    "fieldValue": "Original ¥{0}/{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption12Months",
+    "fieldValue": "12 months",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption1Month",
+    "fieldValue": "1 month",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption3Months",
+    "fieldValue": "3 months",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail",
+    "fieldValue": "Username / Phone / Email",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.datatable.description",
+    "fieldValue": "数据表",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.datatable.name",
+    "fieldValue": "数据表",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.knowledge.description",
+    "fieldValue": "知识库",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.knowledge.name",
+    "fieldValue": "知识库",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.plugin.description",
+    "fieldValue": "插件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.plugin.name",
+    "fieldValue": "插件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.workflow.description",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.workflow.name",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitleTrial",
+    "fieldValue": "选择订阅套餐（试用次数：{used}/{total}）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Common.nextPage",
+    "fieldValue": "下一页",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Common.prevPage",
+    "fieldValue": "上一页",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.myOrders",
+    "fieldValue": "我的订单",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.amount",
+    "fieldValue": "金额",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.bizType",
+    "fieldValue": "业务类型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.bizTypeCreditPurchase",
+    "fieldValue": "积分购买",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.bizTypeSubscription",
+    "fieldValue": "订阅购买",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.createdTime",
+    "fieldValue": "创建时间",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.description",
+    "fieldValue": "描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.empty",
+    "fieldValue": "暂无订单记录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.goPay",
+    "fieldValue": "去支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.orderId",
+    "fieldValue": "订单ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.orderStatus",
+    "fieldValue": "订单状态",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.pageTitle",
+    "fieldValue": "我的订单",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.statusAll",
+    "fieldValue": "全部",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.statusCancelled",
+    "fieldValue": "已取消",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.statusPaid",
+    "fieldValue": "已支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.statusPending",
+    "fieldValue": "待处理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.alipay",
+    "fieldValue": "支付宝支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payCancelled",
+    "fieldValue": "已取消支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payParamsFailed",
+    "fieldValue": "获取支付参数失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payPollTimeout",
+    "fieldValue": "支付结果确认中，请稍后查看",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.qrCodeUnsupported",
+    "fieldValue": "请在支持扫码设备打开",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.wechatBrowserPayUnsupported",
+    "fieldValue": "由于微信内置浏览器限制，暂不支持直接支付，请点击右上角选择“在浏览器中打开”以完成支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.wechatPay",
+    "fieldValue": "微信支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.ChatInputHome.dropFilesHint",
+    "fieldValue": "释放以上传文件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.ChatInputHome.pastedFileName",
+    "fieldValue": "粘贴文件-{0}-{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrent",
+    "fieldValue": "当前套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Constants.Space.group",
+    "fieldValue": "分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.OpenApp.subscription",
+    "fieldValue": "订阅",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.pluginPageTitle",
+    "fieldValue": "插件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.workflowPageTitle",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmMoveToGroup",
+    "fieldValue": "确认移入分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveDesc",
+    "fieldValue": "确认将“{0}”从当前分组移出吗？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveFromGroup",
+    "fieldValue": "确认移出分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createGroupTitle",
+    "fieldValue": "新建分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createSuccess",
+    "fieldValue": "新建成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteConfirmContent",
+    "fieldValue": "确定要删除分组“{0}”吗？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteSuccess",
+    "fieldValue": "删除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editGroupTitle",
+    "fieldValue": "编辑分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editSuccess",
+    "fieldValue": "修改成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescLabel",
+    "fieldValue": "分组描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescMaxLength",
+    "fieldValue": "描述长度不能超过100个字符",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescPlaceholder",
+    "fieldValue": "请输入分组描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupIconLabel",
+    "fieldValue": "分组图标",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameLabel",
+    "fieldValue": "分组名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameMaxLength",
+    "fieldValue": "名称长度不能超过30个字符",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameNoWhitespace",
+    "fieldValue": "名称不能为空白字符",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNamePlaceholder",
+    "fieldValue": "请输入分组名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameRequired",
+    "fieldValue": "请输入分组名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeLabel",
+    "fieldValue": "分组类型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeRequired",
+    "fieldValue": "请选择分组类型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveSuccess",
+    "fieldValue": "移入成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToGroup",
+    "fieldValue": "移入分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToOtherGroup",
+    "fieldValue": "移动至其它分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeFromGroup",
+    "fieldValue": "移出分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeSuccess",
+    "fieldValue": "移出成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroup",
+    "fieldValue": "选择分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder",
+    "fieldValue": "请选择要移入的分组",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.unitCount",
+    "fieldValue": "{0} 个",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodMillionToken",
+    "fieldValue": "百万Token",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodSecond",
+    "fieldValue": "秒",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeMonthly",
+    "fieldValue": "包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeOneTime",
+    "fieldValue": "单次",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeTiered",
+    "fieldValue": "阶梯计费",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemCreditPackages.periodMonthUnit",
+    "fieldValue": "个月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionDesc",
+    "fieldValue": "关联用户组以控制套餐包含的权限范围，可多选",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionTitle",
+    "fieldValue": "开发者权限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldCreditAmountMonthly",
+    "fieldValue": "套餐包含积分（每月）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldDescPlaceholder",
+    "fieldValue": "描述套餐的定位和适用场景",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldHotLabel",
+    "fieldValue": "热门标签",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldNamePlaceholderExample",
+    "fieldValue": "例如：基础版",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPriceLabel",
+    "fieldValue": "套餐价格 (¥)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPricePlaceholderExample",
+    "fieldValue": "例如：99",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.fieldValidityPeriod",
+    "fieldValue": "套餐有效期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.originalPrice",
+    "fieldValue": "原价¥{0}/{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption12Months",
+    "fieldValue": "12个月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption1Month",
+    "fieldValue": "1个月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption3Months",
+    "fieldValue": "3个月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail",
+    "fieldValue": "用户名称/手机号/邮箱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.datatable.description",
+    "fieldValue": "資料表",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.datatable.name",
+    "fieldValue": "資料表",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.knowledge.description",
+    "fieldValue": "知識庫",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.knowledge.name",
+    "fieldValue": "知識庫",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.plugin.description",
+    "fieldValue": "外掛程式",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.plugin.name",
+    "fieldValue": "外掛程式",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.workflow.description",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.workflow.name",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Chat.subscriptionModalTitleTrial",
+    "fieldValue": "選擇訂閱套餐（試用次數：{used}/{total}）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Common.nextPage",
+    "fieldValue": "下一頁",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Common.prevPage",
+    "fieldValue": "上一頁",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.myOrders",
+    "fieldValue": "我的訂單",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.amount",
+    "fieldValue": "金額",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.bizType",
+    "fieldValue": "業務類型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.bizTypeCreditPurchase",
+    "fieldValue": "積分購買",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.bizTypeSubscription",
+    "fieldValue": "訂閱購買",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.createdTime",
+    "fieldValue": "建立時間",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.description",
+    "fieldValue": "描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.empty",
+    "fieldValue": "暫無訂單記錄",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.goPay",
+    "fieldValue": "去支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.orderId",
+    "fieldValue": "訂單ID",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.orderStatus",
+    "fieldValue": "訂單狀態",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.pageTitle",
+    "fieldValue": "我的訂單",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.statusAll",
+    "fieldValue": "全部",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.statusCancelled",
+    "fieldValue": "已取消",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.statusPaid",
+    "fieldValue": "已支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.statusPending",
+    "fieldValue": "待處理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.alipay",
+    "fieldValue": "支付寶支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payCancelled",
+    "fieldValue": "已取消支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payParamsFailed",
+    "fieldValue": "獲取支付參數失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payPollTimeout",
+    "fieldValue": "支付結果確認中，請稍後查看",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.qrCodeUnsupported",
+    "fieldValue": "請在支援掃碼的裝置上開啟",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.wechatBrowserPayUnsupported",
+    "fieldValue": "由於微信內置瀏覽器限制，暫不支援直接支付，請點擊右上角選擇「在瀏覽器中打開」以完成支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.wechatPay",
+    "fieldValue": "微信支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.ChatInputHome.dropFilesHint",
+    "fieldValue": "釋放以上傳檔案",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.ChatInputHome.pastedFileName",
+    "fieldValue": "貼上檔案-{0}-{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.PaymentSubscriptionModal.btnCurrent",
+    "fieldValue": "當前套餐",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Constants.Space.group",
+    "fieldValue": "分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.OpenApp.subscription",
+    "fieldValue": "訂閱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.pluginPageTitle",
+    "fieldValue": "套件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpacePluginWorkflow.workflowPageTitle",
+    "fieldValue": "工作流",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmMoveToGroup",
+    "fieldValue": "確認移入分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveDesc",
+    "fieldValue": "確定將「{0}」從當前分組移出嗎？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.confirmRemoveFromGroup",
+    "fieldValue": "確認移出分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createGroupTitle",
+    "fieldValue": "新建分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.createSuccess",
+    "fieldValue": "新建成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteConfirmContent",
+    "fieldValue": "確定要刪除分組「{0}」嗎？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.deleteSuccess",
+    "fieldValue": "刪除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editGroupTitle",
+    "fieldValue": "編輯分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.editSuccess",
+    "fieldValue": "修改成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescLabel",
+    "fieldValue": "分組描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescMaxLength",
+    "fieldValue": "描述長度不能超過100個字元",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupDescPlaceholder",
+    "fieldValue": "請輸入分組描述",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupIconLabel",
+    "fieldValue": "分組圖示",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameLabel",
+    "fieldValue": "分組名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameMaxLength",
+    "fieldValue": "名稱長度不能超過30個字元",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameNoWhitespace",
+    "fieldValue": "名稱不能為空白字元",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNamePlaceholder",
+    "fieldValue": "請輸入分組名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupNameRequired",
+    "fieldValue": "請輸入分組名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeLabel",
+    "fieldValue": "分組類型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.groupTypeRequired",
+    "fieldValue": "請選擇分組類型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveSuccess",
+    "fieldValue": "移入成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToGroup",
+    "fieldValue": "移入分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.moveToOtherGroup",
+    "fieldValue": "移動至其它分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeFromGroup",
+    "fieldValue": "移出分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.removeSuccess",
+    "fieldValue": "移出成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroup",
+    "fieldValue": "選擇分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder",
+    "fieldValue": "請選擇要移入的分組",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResource.LeftGroupList.unitCount",
+    "fieldValue": "{0} 個",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodMillionToken",
+    "fieldValue": "百萬Token",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.periodSecond",
+    "fieldValue": "秒",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeMonthly",
+    "fieldValue": "包月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeOneTime",
+    "fieldValue": "單次",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceResourcePricing.pricingTypeTiered",
+    "fieldValue": "階梯計費",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemCreditPackages.periodMonthUnit",
+    "fieldValue": "個月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionDesc",
+    "fieldValue": "關聯用戶組以控制套餐包含的權限範圍，可多選",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.developerPermissionTitle",
+    "fieldValue": "開發者權限",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldCreditAmountMonthly",
+    "fieldValue": "套餐包含積分（每月）",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldDescPlaceholder",
+    "fieldValue": "描述套餐的定位和適用場景",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldHotLabel",
+    "fieldValue": "熱門標籤",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldNamePlaceholderExample",
+    "fieldValue": "例如：基礎版",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPriceLabel",
+    "fieldValue": "套餐價格 (¥)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldPricePlaceholderExample",
+    "fieldValue": "例如：99",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.fieldValidityPeriod",
+    "fieldValue": "套餐有效期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.originalPrice",
+    "fieldValue": "原價¥{0}/{1}",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption12Months",
+    "fieldValue": "12個月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption1Month",
+    "fieldValue": "1個月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemPlans.periodOption3Months",
+    "fieldValue": "3個月",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail",
+    "fieldValue": "用戶名稱/手機號/郵箱",
+    "remark": null
+  }
+]

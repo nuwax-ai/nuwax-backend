@@ -67,7 +67,7 @@ class JdkClientHttpRequest extends AbstractClientHttpRequest {
         this.uri = uri;
         this.bufferFactory = bufferFactory;
         this.builder = HttpRequest.newBuilder(uri);
-        this.builder.timeout(Duration.ofMinutes(3));//1分钟没有任何响应则超时
+        this.builder.timeout(Duration.ofMinutes(5));
     }
 
     @Override

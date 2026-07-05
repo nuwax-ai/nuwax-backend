@@ -6,10 +6,10 @@ import com.xspaceagi.log.sdk.request.DocumentSearchRequest;
 import com.xspaceagi.log.sdk.service.ISearchRpcService;
 import com.xspaceagi.log.sdk.vo.LogDocument;
 import com.xspaceagi.log.web.controller.dto.LogQueryDto;
-import com.xspaceagi.system.spec.common.RequestContext;
-import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.exception.LogPlatformException;
 import com.xspaceagi.system.spec.page.PageQueryVo;
@@ -134,6 +134,9 @@ public abstract class BaseController {
             page.setRecords(result.getItems().stream().map(item -> {
                 LogDocument document = (LogDocument) item.getDocument();
                 document.setProcessData(null);
+                //input和output不超过100字
+                document.setInput(document.getInput() == null ? null : StringUtils.abbreviate(document.getInput(), 100));
+                document.setOutput(document.getOutput() == null ? null : StringUtils.abbreviate(document.getOutput(), 100));
                 return document;
             }).collect(Collectors.toList()));
             return ReqResult.success(page);

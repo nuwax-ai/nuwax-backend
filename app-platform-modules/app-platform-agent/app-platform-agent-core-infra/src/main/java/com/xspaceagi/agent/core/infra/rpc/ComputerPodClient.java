@@ -1,12 +1,21 @@
 package com.xspaceagi.agent.core.infra.rpc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
+import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
+import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
+import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
+import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
+import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigValue;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -23,19 +32,75 @@ public class ComputerPodClient {
     @Resource
     private SandboxServerConfigService sandboxServerConfigService;
 
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
+
+    @Resource
+    private ICustomPageRpcService iCustomPageRpcService;
+
+    @Resource
+    private ISandboxConfigRpcService iSandboxConfigRpcService;
+
+    @Resource
+    private SpacePermissionService spacePermissionService;
+
+    @Value("${custom-page.ai-agent.base-url:}")
+    private String configuredBaseUrl;
+
     /**
      * 启动容器
      */
     public Map<String, Object> ensurePod(Long cId, Long userId) {
-        SandboxServerConfig.SandboxServer sandboxServer = selectSandboxServer(cId);
-        String url = sandboxServer.getServerAgentUrl() + "/computer/pod/ensure";
+        ConversationDto conversationByCid = conversationApplicationService.getConversationByCid(cId);
+        String baseUrl;
+        SandboxServerConfig.SandboxServer sandboxServer;
+        Map<String, Object> extraBody = new HashMap<>();
+        if (conversationByCid == null) {
+            // 同一个ID兼容适配网页应用
+            CustomPageDto customPageDto = iCustomPageRpcService.queryDetail(cId);
+            if (customPageDto == null) {
+                throw new BizException("Incomplete data");
+            }
+            spacePermissionService.checkSpaceUserPermission(customPageDto.getSpaceId());
+            if (customPageDto.getSandboxId() == null) {
+                baseUrl = configuredBaseUrl;
+                sandboxServer = new SandboxServerConfig.SandboxServer();
+                sandboxServer.setServerAgentUrl(baseUrl);
+            } else {
+                try {
+                    SandboxConfigRpcDto sandboxConfigRpcDto = iSandboxConfigRpcService.selectAppDevelopmentSandbox(customPageDto.getTenantId(), userId, customPageDto.getSpaceId(), customPageDto.getProjectId(), customPageDto.getSandboxId());
+                    SandboxConfigValue configValue = sandboxConfigRpcDto.getConfigValue();
+                    baseUrl = configValue.getHostWithScheme() + ":" + configValue.getAgentPort();
+                    sandboxServer = new SandboxServerConfig.SandboxServer();
+                    sandboxServer.setServerAgentUrl(baseUrl);
+                    String isolationType = sandboxConfigRpcDto.getIsolation() == null ? null : sandboxConfigRpcDto.getIsolation().name();
+                    String podId = sandboxConfigRpcDto.getIsolationKey();
+                    extraBody.put("tenant_id", customPageDto.getTenantId());
+                    extraBody.put("space_id", customPageDto.getSpaceId());
+                    if (isolationType != null) {
+                        extraBody.put("isolation_type", isolationType);
+                    }
+                    if (podId != null) {
+                        extraBody.put("pod_id", podId);
+                    }
+                } catch (Exception e) {
+                    log.warn("[workspace-client] selectAppDevelopmentSandbox failed cId={}", cId, e);
+                    throw new BizException("The sandbox bound to the project does not exist or has been taken offline.");
+                }
+            }
+            extraBody.put("service_type", "web-agent-runner");
+        } else {
+            sandboxServer = selectSandboxServer(cId);
+            baseUrl = sandboxServer.getServerAgentUrl();
+        }
+        String url = baseUrl + "/computer/pod/ensure";
         log.info("[ComputerPodClient] ensurePod userId={} cId={} , url={}", userId, cId, url);
 
         Map<String, Object> body = new HashMap<>();
         body.put("project_id", String.valueOf(cId));
         body.put("user_id", String.valueOf(userId));
         body.put("resource_limits", null);
-
+        body.putAll(extraBody);
         return doPost(url, body, sandboxServer, userId + "_" + cId + "_ensure");
     }
 

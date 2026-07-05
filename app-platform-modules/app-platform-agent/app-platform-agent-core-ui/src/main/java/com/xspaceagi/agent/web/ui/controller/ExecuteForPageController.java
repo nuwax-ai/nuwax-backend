@@ -1,10 +1,7 @@
 package com.xspaceagi.agent.web.ui.controller;
 
 import com.alibaba.fastjson2.JSON;
-import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
-import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
+import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentComponentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
@@ -20,8 +17,8 @@ import com.xspaceagi.agent.web.ui.controller.util.ReferUtil;
 import com.xspaceagi.custompage.sdk.dto.DataSourceDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
@@ -36,7 +33,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -76,6 +75,9 @@ public class ExecuteForPageController {
 
     @Resource
     private IUserDataPermissionRpcService userDataPermissionRpcService;
+
+    @Resource
+    private TableWorkflowForPageApplicationService tableWorkflowForPageApplicationService;
 
     @Operation(summary = "运行已发布的工作流")
     @RequestMapping(path = "/api/page/workflow/{key}/streamExecute", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -117,14 +119,15 @@ public class ExecuteForPageController {
                 .map(workflowExecutingDto -> " " + JSON.toJSONString(workflowExecutingDto));
     }
 
-    @Operation(summary = "运行已发布的工作流")
-    @RequestMapping(path = "/api/page/workflow/{key}/execute", method = RequestMethod.POST)
-    public ReqResult<Object> executeWorkflow(@PathVariable String key, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request, HttpServletResponse response) {
+
+    @Operation(summary = "运行已发布的工作流（new）")
+    @RequestMapping(path = "/api/page/w/{key}", method = RequestMethod.POST)
+    public ReqResult<Object> executeW(@PathVariable String key, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request, HttpServletResponse response) {
         String requestId = UUID.randomUUID().toString().replace("-", "");
         ReferUtil.RefererParseVo refererParseVo = ReferUtil.parseRefer(request);
         PageDto pageDto = parseFromReferer(refererParseVo);
         Optional<DataSourceDto> first = pageDto.getDataSources().stream().filter(dataSourceDto -> dataSourceDto.getKey() != null && dataSourceDto.getKey().equals(key)).findFirst();
-        if (!first.isPresent()) {
+        if (first.isEmpty()) {
             return ReqResult.error("The requested data source does not exist");
         }
 
@@ -148,17 +151,23 @@ public class ExecuteForPageController {
         workflowExecuteRequestDto.setAgentId(refererParseVo.getAgentId());
         response.setCharacterEncoding("utf-8");
         WorkflowExecutingDto workflowExecutingDto = workflowApplicationService.executeWorkflow(workflowExecuteRequestDto, workflowConfigDto).blockLast();
-        return ReqResult.success(workflowExecutingDto.getData());
+        return workflowExecutingDto != null && workflowExecutingDto.isSuccess() ? ReqResult.success(workflowExecutingDto.getData()) : ReqResult.error(workflowExecutingDto == null ? "" : workflowExecutingDto.getMessage());
+    }
+
+    @Operation(summary = "运行已发布的工作流")
+    @RequestMapping(path = "/api/page/workflow/{key}/execute", method = RequestMethod.POST)
+    public ReqResult<Object> executeWorkflow(@PathVariable String key, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request, HttpServletResponse response) {
+        return executeW(key, params, request, response);
     }
 
     private PageDto parseFromReferer(ReferUtil.RefererParseVo refererParseVo) {
         if (refererParseVo == null || refererParseVo.getPageId() == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageIdError);
         }
-        if (refererParseVo == null || refererParseVo.getAgentId() == null) {
+        if (refererParseVo.getAgentId() == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageAgentIdError);
         }
-        if (refererParseVo == null || refererParseVo.getEnv() == null) {
+        if (refererParseVo.getEnv() == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageEnvInvalid);
         }
         PageDto pageDto = customPageRpcService.queryPageDto(refererParseVo.getPageId(), false);
@@ -224,16 +233,15 @@ public class ExecuteForPageController {
         emitter.complete();
     }
 
-
-    @Operation(summary = "插件运行接口")
-    @RequestMapping(path = "/api/page/plugin/{key}/execute", method = RequestMethod.POST)
-    public ReqResult<Object> execute(@PathVariable String key, @RequestBody Map<String, Object> params, HttpServletRequest request) {
+    @Operation(summary = "插件运行接口（new）")
+    @RequestMapping(path = "/api/page/p/{key}", method = RequestMethod.POST)
+    public ReqResult<Object> executeP(@PathVariable String key, @RequestBody Map<String, Object> params, HttpServletRequest request) {
         String requestId = UUID.randomUUID().toString().replace("-", "");
         ReferUtil.RefererParseVo refererParseVo = ReferUtil.parseRefer(request);
         PageDto pageDto;
         pageDto = parseFromReferer(refererParseVo);
         Optional<DataSourceDto> first = pageDto.getDataSources().stream().filter(dataSourceDto -> dataSourceDto.getKey() != null && dataSourceDto.getKey().equals(key)).findFirst();
-        if (!first.isPresent()) {
+        if (first.isEmpty()) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPageDatasourceNotFound);
         }
         PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(first.get().getId(), null);
@@ -255,7 +263,13 @@ public class ExecuteForPageController {
         pluginExecuteRequestDto.setAgentId(refererParseVo.getAgentId());
         pluginExecuteRequestDto.setTest(false);
         PluginExecuteResultDto pluginExecuteResultDto = pluginApplicationService.execute(pluginExecuteRequestDto, pluginDto);
-        return ReqResult.success(pluginExecuteResultDto.getResult());
+        return pluginExecuteResultDto.isSuccess() ? ReqResult.success(pluginExecuteResultDto.getResult()) : ReqResult.error(pluginExecuteResultDto.getError());
+    }
+
+    @Operation(summary = "插件运行接口")
+    @RequestMapping(path = "/api/page/plugin/{key}/execute", method = RequestMethod.POST)
+    public ReqResult<Object> execute(@PathVariable String key, @RequestBody Map<String, Object> params, HttpServletRequest request) {
+        return executeP(key, params, request);
     }
 
     @Operation(summary = "获取插件、工作流接口文档schema")
@@ -263,5 +277,39 @@ public class ExecuteForPageController {
     public ReqResult<Object> schema(TargetTypeEnum type, Long id, Long projectId) {
         String data = iAgentRpcService.queryApiSchema(type, id, projectId).getData();
         return ReqResult.success(data != null ? JSON.parse(data) : null);
+    }
+
+    @Operation(summary = "创建数据表操作API(SQL)")
+    @RequestMapping(path = "/api/table/sql/new", method = RequestMethod.POST)
+    public ReqResult<PageSqlResultDTO> tableNewSql(@RequestBody PageAppNewSqlDTO pageAppNewSqlDTO) {
+        PageDto pageDto = customPageRpcService.queryPageDto(Long.parseLong(pageAppNewSqlDTO.getProjectId()), false);
+        if (pageDto == null) {
+            throw new IllegalArgumentException("Invalid projectId");
+        }
+        if (StringUtils.isBlank(pageAppNewSqlDTO.getGroupName())) {
+            pageAppNewSqlDTO.setGroupName(pageDto.getId().toString());//id不会变
+            pageAppNewSqlDTO.setGroupDescription(pageDto.getName());
+        }
+        pageAppNewSqlDTO.setSpaceId(pageDto.getSpaceId());
+        spacePermissionService.checkSpaceUserPermission(pageAppNewSqlDTO.getSpaceId());
+        PageSqlResultDTO resultDTO = tableWorkflowForPageApplicationService.tableNewSql(pageAppNewSqlDTO);
+        return ReqResult.success(resultDTO);
+    }
+
+    @Operation(summary = "更新数据表操作API(SQL)")
+    @RequestMapping(path = "/api/table/sql/update", method = RequestMethod.POST)
+    public ReqResult<PageSqlResultDTO> tableUpdateSql(@RequestBody PageAppUpdateSqlDTO pageAppUpdateSqlDTO) {
+        WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(pageAppUpdateSqlDTO.getApiId());
+        if (workflowConfigDto == null) {
+            throw new IllegalArgumentException("Invalid apiId");
+        }
+        PageDto pageDto = customPageRpcService.queryPageDto(Long.parseLong(pageAppUpdateSqlDTO.getProjectId()), false);
+        if (pageDto == null) {
+            throw new IllegalArgumentException("Invalid projectId");
+        }
+        Assert.isTrue(workflowConfigDto.getSpaceId().equals(pageDto.getSpaceId()), "Invalid spaceId");
+        spacePermissionService.checkSpaceUserPermission(workflowConfigDto.getSpaceId());
+        PageSqlResultDTO resultDTO = tableWorkflowForPageApplicationService.tableUpdateSql(pageAppUpdateSqlDTO);
+        return ReqResult.success(resultDTO);
     }
 }

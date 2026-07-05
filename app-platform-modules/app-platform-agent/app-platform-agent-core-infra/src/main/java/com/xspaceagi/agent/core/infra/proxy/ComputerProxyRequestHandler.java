@@ -4,13 +4,17 @@ import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
+import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
+import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.AuthService;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -42,11 +46,14 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     private static final Pattern DESKTOP_PATTERN = Pattern.compile("/computer/desktop/(\\d+)/(.*)");
     private static final Pattern AUDIO_PATTERN = Pattern.compile("/computer/audio/(\\d+)/(.*)");
     private static final Pattern IME_PATTERN = Pattern.compile("/computer/ime/(\\d+)/(.*)");
+    private static final Pattern TERMINAL_PATTERN = Pattern.compile("/computer/terminal/(\\d+)/(.*)");
 
     private final SandboxServerConfigService sandboxServerConfigService;
     private final UserShareRpcService userShareRpcService;
     private final AuthService authService;
     private final TenantConfigApplicationService tenantConfigApplicationService;
+    private final SpacePermissionService spacePermissionService;
+    private final ICustomPageRpcService iCustomPageRpcService;
     private final Bootstrap httpClientBootstrap;
     private final Bootstrap httpsClientBootstrap;
     private final int pendingMax;
@@ -63,6 +70,8 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                                        UserShareRpcService userShareRpcService,
                                        AuthService authService,
                                        TenantConfigApplicationService tenantConfigApplicationService,
+                                       ICustomPageRpcService iCustomPageRpcService,
+                                       SpacePermissionService spacePermissionService,
                                        Bootstrap httpClientBootstrap,
                                        Bootstrap httpsClientBootstrap,
                                        int pendingMax) {
@@ -70,6 +79,8 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
         this.userShareRpcService = userShareRpcService;
         this.authService = authService;
         this.tenantConfigApplicationService = tenantConfigApplicationService;
+        this.iCustomPageRpcService = iCustomPageRpcService;
+        this.spacePermissionService = spacePermissionService;
         this.httpClientBootstrap = httpClientBootstrap;
         this.httpsClientBootstrap = httpsClientBootstrap;
         this.pendingMax = pendingMax;
@@ -86,35 +97,43 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 writeError(ctx, HttpResponseStatus.BAD_REQUEST, "cId is missing or format error");
                 return;
             }
-
+            Long tenantId;
+            Long computerUserId = null;
+            Long projectUserId = null;
+            Long projectSpaceId = null;
+            Long projectSandboxId = null;
+            String targetUrl = null;
             // Get target server information based on cId
-            SandboxServerConfig.SandboxServer sandboxServer;
+            SandboxServerConfig.SandboxServer sandboxServer = null;
             try {
                 sandboxServer = sandboxServerConfigService.selectServer(cId);
+                targetUrl = sandboxServer.getServerVncUrl();
+                ConversationDto currentConversation = sandboxServer.getCurrentConversation();
+                if (currentConversation == null) {
+                    ReferenceCountUtil.release(msg);
+                    writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Current session not bound to sandbox server");
+                    return;
+                }
+                // Get creator ID of current session
+                computerUserId = currentConversation.getUserId();
+
+                // Set RequestContext, used for multi-tenant user_share table query
+                tenantId = currentConversation.getTenantId();
             } catch (Exception e) {
-                log.warn("Failed to get sandbox server, cId={}", cId, e);
-                ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Failed to get sandbox server: " + e.getMessage());
-                return;
+                //兜底检查是不是网页应用
+                CustomPageDto customPageDto = TenantFunctions.callWithIgnoreCheck(() -> iCustomPageRpcService.queryDetail(cId));
+                if (customPageDto == null) {
+                    log.warn("Failed to get sandbox server, cId={}", cId, e);
+                    ReferenceCountUtil.release(msg);
+                    writeError(ctx, HttpResponseStatus.BAD_REQUEST, "Failed to get sandbox server: " + e.getMessage());
+                    return;
+                }
+                tenantId = customPageDto.getTenantId();
+                projectSpaceId = customPageDto.getSpaceId();
+                projectUserId = customPageDto.getCreatorId();
+                projectSandboxId = customPageDto.getSandboxId();
             }
 
-            String targetUrl = sandboxServer.getServerVncUrl();
-            if (StringUtils.isBlank(targetUrl)) {
-                ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Sandbox server VNC address not configured");
-                return;
-            }
-            ConversationDto currentConversation = sandboxServer.getCurrentConversation();
-            if (currentConversation == null) {
-                ReferenceCountUtil.release(msg);
-                writeError(ctx, HttpResponseStatus.BAD_GATEWAY, "Current session not bound to sandbox server");
-                return;
-            }
-            // Get creator ID of current session
-            Long computerUserId = currentConversation.getUserId();
-
-            // Set RequestContext, used for multi-tenant user_share table query
-            Long tenantId = currentConversation.getTenantId();
             RequestContext<?> requestContext = null;
             try {
                 if (tenantId != null) {
@@ -123,6 +142,24 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     requestContext.setTenantId(tenantId);
                     requestContext.setTenantConfig(tenantConfig);
                     RequestContext.set(requestContext);
+                }
+
+                if (computerUserId == null) {
+                    if (projectSandboxId == null) {
+                        sandboxServer = new SandboxServerConfig.SandboxServer();
+                        sandboxServer.setScope(SandboxScopeEnum.GLOBAL);
+                        targetUrl = sandboxServerConfigService.getDefaultPageAppVncUrl();
+                    } else {
+                        sandboxServer = sandboxServerConfigService.selectServer((TenantConfigDto) RequestContext.get().getTenantConfig(), projectUserId, projectSandboxId.toString());
+                        targetUrl = sandboxServer.getServerVncUrl();
+                    }
+                    computerUserId = projectUserId;
+                }
+
+                if (StringUtils.isBlank(targetUrl)) {
+                    ReferenceCountUtil.release(msg);
+                    writeError(ctx, HttpResponseStatus.BAD_REQUEST, "Sandbox server VNC address not configured");
+                    return;
                 }
 
                 // Get shareKey from URL parameter or Cookie
@@ -146,12 +183,17 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     ctx.channel().attr(ComputerProxyServerContainer.SHARE_EXPIRE).set(userShare.getExpire());
                     ctx.channel().attr(ComputerProxyServerContainer.SK_COOKIE_KEY).set(skCookieKey);
                 } else {// Non-shared link
-                    if (!allow(computerUserId, request, ctx)) {
+                    if (!allow(computerUserId, projectSpaceId, request, ctx)) {
                         ReferenceCountUtil.release(msg);
                         writeError(ctx, HttpResponseStatus.FORBIDDEN, "No permission to access current user resource");
                         return;
                     }
                 }
+            } catch (Exception e) {
+                log.warn("Failed to get sandbox server, cId={}", cId, e);
+                ReferenceCountUtil.release(msg);
+                writeError(ctx, HttpResponseStatus.BAD_REQUEST, "Failed to get sandbox server: " + e.getMessage());
+                return;
             } finally {
                 // Clean up RequestContext
                 if (requestContext != null) {
@@ -169,7 +211,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             }
             this.targetOrigin = ComputerProxyServerContainer.buildOrigin(targetScheme, this.targetHost, this.targetPort);
 
-            uri = rewriteUri(uri, computerUserId, sandboxServer);
+            uri = rewriteUri(uri, computerUserId, sandboxServer, projectSpaceId != null);
             request.setUri(uri);
 
             request.headers().set(HttpHeaderNames.HOST, this.targetHost + ":" + this.targetPort);
@@ -325,6 +367,15 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
                 return null;
             }
         }
+        matcher = TERMINAL_PATTERN.matcher(uri);
+        if (matcher.matches()) {
+            String cId = matcher.group(1);
+            try {
+                return Long.valueOf(cId);
+            } catch (Exception e) {
+                return null;
+            }
+        }
         return null;
     }
 
@@ -334,7 +385,7 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
      * /computer/audio/{cId}/xxx -> /computer/audio/{userId}/{cId}/xxx
      * /computer/ime/{cId}/xxx -> /computer/ime/{userId}/{cId}/xxx
      */
-    private String rewriteUri(String uri, Long userId, SandboxServerConfig.SandboxServer sandboxServer) {
+    private String rewriteUri(String uri, Long userId, SandboxServerConfig.SandboxServer sandboxServer, boolean isPageApp) {
         // Handle desktop path
         Matcher matcher = DESKTOP_PATTERN.matcher(uri);
         if (matcher.matches()) {
@@ -378,13 +429,26 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             log.info("Computer proxy rewrite uri: {} -> {}", uri, newUri);
             return newUri;
         }
+
+        matcher = TERMINAL_PATTERN.matcher(uri);
+        if (matcher.matches()) {
+            String cId = matcher.group(1);
+            String newUri;
+            if (isPageApp) {
+                newUri = "/web/ttyd/" + userId + "/" + cId + "/ws";
+            } else {
+                newUri = "/computer/ttyd/" + userId + "/" + cId + "/ws";
+            }
+            log.info("Computer proxy rewrite uri: {} -> {}", uri, newUri);
+            return newUri;
+        }
         return uri;
     }
 
     /**
      * User permission validation
      */
-    private boolean allow(Long vncUserId, HttpRequest request, ChannelHandlerContext ctx) {
+    private boolean allow(Long vncUserId, Long projectSpaceId, HttpRequest request, ChannelHandlerContext ctx) {
         if (vncUserId == null) {
             log.warn("Failed to get VNC userId");
             return false;
@@ -394,7 +458,17 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
             log.info("Failed to get login userId. vncUserId={}", vncUserId);
             return false;
         }
-        boolean allow = vncUserId.equals(loginUserId);
+        boolean allow;
+        if (projectSpaceId != null) {
+            try {
+                spacePermissionService.checkSpaceUserPermission(projectSpaceId, loginUserId);
+                allow = true;
+            } catch (Exception e) {
+                allow = false;
+            }
+        } else {
+            allow = vncUserId.equals(loginUserId);
+        }
         log.info("Computer proxy allow={}: {} -> {}", allow, vncUserId, loginUserId);
         return allow;
     }

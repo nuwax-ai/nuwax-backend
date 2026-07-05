@@ -255,6 +255,8 @@ public class PricingAppServiceImpl implements PricingAppService {
                             result.setSubscription(userSubscriptionDTO);
                             continue;
                         case ONE_TIME:
+                        case SECOND:
+                        case MILLION_TOKEN:
                         case TIERED:
                             // Allow usage if user has credits above 0
                             UserCreditSummary userCreditSummary = TenantFunctions.callWithIgnoreCheck(() -> iCreditRpcService.getUserCreditSummary(userId));

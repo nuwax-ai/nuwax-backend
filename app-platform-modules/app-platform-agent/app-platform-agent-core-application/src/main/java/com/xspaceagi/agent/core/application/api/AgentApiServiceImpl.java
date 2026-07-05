@@ -620,7 +620,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             return ReqResult.error("Page data source not found");
         }
         Optional<DataSourceDto> first = dataSources.stream().filter(dataSourceDto -> dataSourceDto.getId() != null && dataSourceDto.getId().equals(targetId)).findFirst();
-        if (!first.isPresent()) {
+        if (first.isEmpty()) {
             return ReqResult.error("Data source not found");
         }
         String key = first.get().getKey();
@@ -638,14 +638,14 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
             List<Arg> inputArgs = pluginConfigDto.getInputArgs();
             List<Arg> outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
+                    Arg.builder().require(true).name("success").description("Interface call status, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
                     Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
                     Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(pluginConfigDto.getOutputArgs()).build()
             );
             Map<String, Object> outputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
             Map<String, Object> inputSchema = ArgConverter.convertArgsToJsonSchema(inputArgs);
             apiSchema.put("paths", Map.of(
-                    "/api/page/plugin/" + key + "/execute",
+                    "/api/page/p/" + key,
                     buildPath(pluginDto.getName(), pluginDto.getDescription(), "application/json", inputSchema, outputSchema)
             ));
         }
@@ -654,28 +654,17 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             if (workflowConfigDto == null) {
                 return ReqResult.error("Workflow not found");
             }
-            String description = workflowConfigDto.getDescription() == null ? "" : workflowConfigDto.getDescription() + "(Note that this interface is a text/event-stream streaming interface, it ends when complete=true appears. When processing data, please note that SSE data starts with data:, and SSE streaming interface is not used by default unless the user explicitly requests to use streaming interface)";
             List<Arg> inputArgs = workflowConfigDto.getInputArgs();
             Map<String, Object> inputSchema = ArgConverter.convertArgsToJsonSchema(inputArgs, true);
             List<Arg> outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
-                    Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
-                    Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build(),
-                    Arg.builder().require(true).name("complete").description("Whether workflow execution is completed, just need to pay attention to results when complete=true if no special requirements").dataType(DataTypeEnum.Boolean).build()
-            );
-            Map<String, Object> streamOutputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
-
-            outputArgs = List.of(
-                    Arg.builder().require(true).name("success").description("Interface call status, success=true only represents successful interface call, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
+                    Arg.builder().require(true).name("success").description("Interface call status, business execution logic please pay attention to data definition").dataType(DataTypeEnum.Boolean).build(),
                     Arg.builder().require(true).name("message").description("Error information when interface call fails, such as server internal error").dataType(DataTypeEnum.String).build(),
                     Arg.builder().require(true).name("data").description("Returned specific business data").dataType(DataTypeEnum.Object).subArgs(workflowConfigDto.getOutputArgs()).build()
             );
             Map<String, Object> outputSchema = ArgConverter.convertArgsToJsonSchema(outputArgs);
 
             apiSchema.put("paths", Map.of(
-                    "/api/page/workflow/" + key + "/streamExecute",
-                    buildPath(workflowConfigDto.getName(), description, "text/event-stream", inputSchema, streamOutputSchema),
-                    "/api/page/workflow/" + key + "/execute",
+                    "/api/page/w/" + key,
                     buildPath(workflowConfigDto.getName(), workflowConfigDto.getDescription() == null ? "" : workflowConfigDto.getDescription(), "application/json", inputSchema, outputSchema)
             ));
         }
@@ -846,6 +835,21 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                         Long knowledgeConfigId = knowledgeRpcService.createKnowledgeConfig(knowledgeCreateRequestVo, knowledgeBaseConfigDto.getKnowledgeBaseId());
                         knowledgeBaseConfigDto.setKnowledgeBaseId(knowledgeConfigId);
                     });
+                }
+            }
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.KnowledgeInsert) {
+                KnowledgeInsertNodeConfigDto knowledgeNodeConfigDto = (KnowledgeInsertNodeConfigDto) workflowNodeDto.getNodeConfig();
+                if (knowledgeNodeConfigDto.getKnowledgeBaseId() != null) {
+                    KnowledgeCreateRequestVo knowledgeCreateRequestVo = KnowledgeCreateRequestVo.builder()
+                            .dataType(1)
+                            .name(knowledgeNodeConfigDto.getName())
+                            .description(knowledgeNodeConfigDto.getDescription())
+                            .icon(knowledgeNodeConfigDto.getIcon())
+                            .userId(user.getId())
+                            .spaceId(spaceId)
+                            .build();
+                    Long knowledgeConfigId = knowledgeRpcService.createKnowledgeConfig(knowledgeCreateRequestVo, knowledgeNodeConfigDto.getKnowledgeBaseId());
+                    knowledgeNodeConfigDto.setKnowledgeBaseId(knowledgeConfigId);
                 }
             }
             if (workflowNodeDto.getType().name().startsWith("Table")) {
@@ -1148,7 +1152,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
     @Override
     public Mono<Object> executePlugin(PluginExecuteRequestDto pluginExecuteRequest) {
-        PluginDto pluginDto = (PluginDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getConfig());
+        PluginDto pluginDto = pluginExecuteRequest.getConfig() instanceof PluginDto ?
+                (PluginDto) pluginExecuteRequest.getConfig() : (PluginDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getConfig().toString());
         if (pluginDto == null) {
             return Mono.error(new IllegalArgumentException("Invalid plugin configuration"));
         }
@@ -1165,11 +1170,16 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
 
         //For common agent, when user uses workflow, plugin, set parameter reference (temporarily only support system variables, user custom variables in agent cannot be passed)
         if (pluginExecuteRequest.getBindConfig() != null) {
-            PluginBindConfigDto pluginBindConfigDto = (PluginBindConfigDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getBindConfig());
+            PluginBindConfigDto pluginBindConfigDto = pluginExecuteRequest.getBindConfig() instanceof PluginBindConfigDto ?
+                    (PluginBindConfigDto) pluginExecuteRequest.getBindConfig() : (PluginBindConfigDto) JsonSerializeUtil.parseObjectGeneric(pluginExecuteRequest.getBindConfig().toString());
             if (pluginBindConfigDto != null) {
                 completeArgReferenceBindValue(agentContext, pluginBindConfigDto.getInputArgBindConfigs(), pluginExecuteRequest.getParams());
             }
         }
+        if (pluginExecuteRequest.getTraceContext() != null && pluginExecuteRequest.getTraceContext().getConversationId() != null) {
+            completeAgentContextVariable(agentContext, pluginExecuteRequest.getTraceContext().getConversationId());
+        }
+
         PluginContext pluginContext = PluginContext.builder()
                 .requestId(pluginExecuteRequest.getRequestId())
                 .pluginConfig((PluginConfigDto) pluginDto.getConfig())
@@ -1188,6 +1198,22 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                         result.getError()));
             }
         }).doOnError(emitter::error).subscribe());
+    }
+
+    private void completeAgentContextVariable(AgentContext agentContext, String conversationId) {
+        try {
+            ConversationDto conversation = conversationApplicationService.getConversationByCid(Long.parseLong(conversationId));
+            if (conversation != null && conversation.getVariables() != null) {
+                conversation.getVariables().forEach((key, value) -> {
+                    if (!agentContext.getVariableParams().containsKey(key)) {
+                        agentContext.getVariableParams().put(key, value);
+                    }
+                });
+            }
+            log.debug("completeAgentContextVariable conversationId: {}, variables: {}", conversationId, agentContext.getVariableParams());
+        } catch (Exception e) {
+            log.error("completeAgentContextVariable error", e);
+        }
     }
 
     private void completeArgReferenceBindValue(AgentContext agentContext, List<Arg> inputArgs, Map<String, Object> params) {
@@ -1223,7 +1249,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     public Flux<WorkflowExecuteResultDto> executeWorkflow(WorkflowExecuteRequestDto workflowExecuteRequest) {
         AtomicReference<Disposable> disposable = new AtomicReference<>();
         Flux<WorkflowExecuteResultDto> flux = Flux.create(emitter -> {
-            WorkflowConfigDto workflowConfigDto = (WorkflowConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getConfig());
+            WorkflowConfigDto workflowConfigDto = (workflowExecuteRequest.getConfig() instanceof WorkflowConfigDto) ?
+                    (WorkflowConfigDto) workflowExecuteRequest.getConfig() : (WorkflowConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getConfig().toString());
             if (workflowConfigDto == null) {
                 emitter.error(BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkflowNotFoundSimple));
                 return;
@@ -1246,9 +1273,14 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
                 emitter.next(workflowExecutingDto);
             });
 
+            if (workflowExecuteRequest.getTraceContext() != null && workflowExecuteRequest.getTraceContext().getConversationId() != null) {
+                completeAgentContextVariable(agentContext, workflowExecuteRequest.getTraceContext().getConversationId());
+            }
+
             //For common agent, when user uses workflow, plugin, set parameter reference (temporarily only support system variables, user custom variables in agent cannot be passed)
             if (workflowExecuteRequest.getBindConfig() != null) {
-                WorkflowBindConfigDto workflowBindConfigDto = (WorkflowBindConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getBindConfig());
+                WorkflowBindConfigDto workflowBindConfigDto = workflowExecuteRequest.getBindConfig() instanceof WorkflowBindConfigDto ?
+                        (WorkflowBindConfigDto) workflowExecuteRequest.getBindConfig() : (WorkflowBindConfigDto) JsonSerializeUtil.parseObjectGeneric(workflowExecuteRequest.getBindConfig().toString());
                 if (workflowBindConfigDto != null) {
                     completeArgReferenceBindValue(agentContext, workflowBindConfigDto.getInputArgBindConfigs(), workflowExecuteRequest.getParams());
                 }
@@ -1360,7 +1392,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         agentConfigDto.setName(pageAppAgentCreateDto.getName());
         agentConfigDto.setDescription(pageAppAgentCreateDto.getDescription());
         agentConfigDto.setIcon(pageAppAgentCreateDto.getIcon());
-        agentConfigDto.setType("PageApp");
+        agentConfigDto.setType(AgentConfigDto.AgentType.PageApp.name());
+        agentConfigDto.setSubType(AgentConfigDto.AgentSubType.PageApp.name());
         Long agentId = agentApplicationService.add(agentConfigDto);
         AgentComponentConfigDto agentComponentConfigDto = new AgentComponentConfigDto();
         agentComponentConfigDto.setAgentId(agentId);
@@ -1456,7 +1489,8 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         agentConfigDto.setSpaceId(spaceDto.getId());
         agentConfigDto.setName(StringUtils.isNotBlank(name) ? "Agent@" + name : I18nUtil.systemMessage("Backend.Agent.PrivateAgent.DefaultName", sandboxId.toString()));
         agentConfigDto.setDescription(I18nUtil.systemMessage("Backend.Agent.PrivateAgent.Description"));
-        agentConfigDto.setType("TaskAgent");
+        agentConfigDto.setType(AgentConfigDto.AgentType.TaskAgent.name());
+        agentConfigDto.setSubType(AgentConfigDto.AgentSubType.General.name());
         agentConfigDto.setOpenLongMemory(AgentConfig.OpenStatus.Open);
         agentConfigDto.setAllowOtherModel(YesOrNoEnum.Y.getKey());
         Map<String, Object> extra = new HashMap<>();

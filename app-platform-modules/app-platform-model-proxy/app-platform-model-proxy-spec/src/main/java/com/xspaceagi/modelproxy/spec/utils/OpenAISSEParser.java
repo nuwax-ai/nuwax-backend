@@ -12,54 +12,39 @@ public class OpenAISSEParser {
     private static final Pattern TOTAL_TOKENS_PATTERN = Pattern.compile("\"total_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern CONTENT_PATTERN = Pattern.compile("\"content\"\\s*:\\s*\"([^\"]*)\"");
 
-    public static TokenUsage extractTokenUsage(String sseData) {
+    public static TokenUsage extractTokenUsage(String data) {
         TokenUsage usage = new TokenUsage();
         StringBuilder textBuilder = new StringBuilder();
+        Matcher cachedMatcher = CAHED_TOKENS_PATTERN.matcher(data);
+        while (cachedMatcher.find()) {
+            usage.cachedTokens = Integer.parseInt(cachedMatcher.group(1));
+        }
 
-        String[] lines = sseData.split("\n");
+        Matcher promptMatcher = PROMPT_TOKENS_PATTERN.matcher(data);
+        while (promptMatcher.find()) {
+            usage.promptTokens = Integer.parseInt(promptMatcher.group(1));
+        }
 
-        for (String line : lines) {
-            line = line.trim();
+        Matcher promptCacheCreateMatcher = CACHE_PROMPT_CREATE_TOKENS_PATTERN.matcher(data);
+        while (promptCacheCreateMatcher.find()) {
+            usage.cacheCreationInputTokens = Integer.parseInt(promptCacheCreateMatcher.group(1));
+        }
 
-            if (line.startsWith("data:")) {
-                String data = line.substring(5).trim();
+        Matcher completionMatcher = COMPLETION_TOKENS_PATTERN.matcher(data);
+        while (completionMatcher.find()) {
+            usage.completionTokens = Integer.parseInt(completionMatcher.group(1));
+        }
 
-                if (data.equals("[DONE]")) {
-                    continue;
-                }
+        Matcher totalMatcher = TOTAL_TOKENS_PATTERN.matcher(data);
+        while (totalMatcher.find()) {
+            usage.totalTokens = Integer.parseInt(totalMatcher.group(1));
+        }
 
-                Matcher cachedMatcher = CAHED_TOKENS_PATTERN.matcher(data);
-                if (cachedMatcher.find()) {
-                    usage.cachedTokens = Integer.parseInt(cachedMatcher.group(1));
-                }
-
-                Matcher promptMatcher = PROMPT_TOKENS_PATTERN.matcher(data);
-                if (promptMatcher.find()) {
-                    usage.promptTokens = Integer.parseInt(promptMatcher.group(1));
-                }
-
-                Matcher promptCacheCreateMatcher = CACHE_PROMPT_CREATE_TOKENS_PATTERN.matcher(data);
-                if (promptCacheCreateMatcher.find()) {
-                    usage.promptTokens += Integer.parseInt(promptCacheCreateMatcher.group(1));
-                }
-
-                Matcher completionMatcher = COMPLETION_TOKENS_PATTERN.matcher(data);
-                if (completionMatcher.find()) {
-                    usage.completionTokens = Integer.parseInt(completionMatcher.group(1));
-                }
-
-                Matcher totalMatcher = TOTAL_TOKENS_PATTERN.matcher(data);
-                if (totalMatcher.find()) {
-                    usage.totalTokens = Integer.parseInt(totalMatcher.group(1));
-                }
-
-                Matcher contentMatcher = CONTENT_PATTERN.matcher(data);
-                while (contentMatcher.find()) {
-                    String content = contentMatcher.group(1);
-                    textBuilder.append(content);
-                    usage.contentDeltaCount++;
-                }
-            }
+        Matcher contentMatcher = CONTENT_PATTERN.matcher(data);
+        while (contentMatcher.find()) {
+            String content = contentMatcher.group(1);
+            textBuilder.append(content);
+            usage.contentDeltaCount++;
         }
 
         usage.content = textBuilder.toString();
@@ -67,6 +52,7 @@ public class OpenAISSEParser {
     }
 
     public static class TokenUsage {
+        public long cacheCreationInputTokens = 0;
         public long cachedTokens = 0;
         public long promptTokens = 0;
         public long completionTokens = 0;

@@ -12,6 +12,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
+import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
@@ -48,8 +49,12 @@ public class PluginAndWorkflowApiController {
 
     @Operation(summary = "工作流流式执行接口")
     @RequestMapping(path = "/api/v1/workflow/{id}/sse/execute", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> streamExecuteWorkflow(@PathVariable Long id, @RequestBody @Valid Map<String, Object> params, HttpServletResponse response) {
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+    public Flux<String> streamExecuteWorkflow(@PathVariable Long id, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request, HttpServletResponse response) {
+        String requestId0 = request.getHeader("Trace-Id");
+        if (requestId0 == null) {
+            requestId0 = UUID.randomUUID().toString().replace("-", "");
+        }
+        final String requestId = requestId0;
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(id, null, true);
         if (workflowConfigDto == null) {
             return Flux.create(emitter -> sendError(emitter, requestId, "Error workflow id or not published"));
@@ -73,8 +78,12 @@ public class PluginAndWorkflowApiController {
 
     @Operation(summary = "工作流执行接口")
     @RequestMapping(path = "/api/v1/workflow/{id}/execute", method = RequestMethod.POST)
-    public ReqResult<Object> executeWorkflow(@PathVariable Long id, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request, HttpServletResponse response) {
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+    public ReqResult<Object> executeWorkflow(@PathVariable Long id, @RequestBody @Valid Map<String, Object> params, HttpServletRequest request) {
+        UserAccessKeyDto userAccessKey = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
+        String requestId = request.getHeader("Trace-Id");
+        if (requestId == null) {
+            requestId = UUID.randomUUID().toString().replace("-", "");
+        }
         WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(id, null, true);
         if (workflowConfigDto == null) {
             return ReqResult.error("Error workflow id or not published");
@@ -87,8 +96,9 @@ public class PluginAndWorkflowApiController {
         workflowExecuteRequestDto.setParams(params);
         workflowExecuteRequestDto.setRequestId(requestId);
         workflowExecuteRequestDto.setAgentId(-1L);
-        response.setCharacterEncoding("utf-8");
+        workflowExecuteRequestDto.setApiKey(userAccessKey.getAccessKey());
         WorkflowExecutingDto workflowExecutingDto = workflowApplicationService.executeWorkflow(workflowExecuteRequestDto, workflowConfigDto).blockLast();
+        assert workflowExecutingDto != null;
         return ReqResult.success(workflowExecutingDto.getData());
     }
 
@@ -106,7 +116,11 @@ public class PluginAndWorkflowApiController {
     @Operation(summary = "插件运行接口")
     @RequestMapping(path = "/api/v1/plugin/{id}/execute", method = RequestMethod.POST)
     public ReqResult<Object> execute(@PathVariable Long id, @RequestBody Map<String, Object> params, HttpServletRequest request) {
-        String requestId = UUID.randomUUID().toString().replace("-", "");
+        UserAccessKeyDto userAccessKey = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
+        String requestId = request.getHeader("Trace-Id");
+        if (requestId == null) {
+            requestId = UUID.randomUUID().toString().replace("-", "");
+        }
         PluginDto pluginDto = pluginApplicationService.queryPublishedPluginConfig(id, null);
         if (pluginDto == null) {
             throw new BizException("Error plugin id or not published");
@@ -116,11 +130,25 @@ public class PluginAndWorkflowApiController {
         pluginExecuteRequestDto.setParams(params);
         pluginExecuteRequestDto.setPluginId(id);
         pluginExecuteRequestDto.setRequestId(requestId);
-        pluginExecuteRequestDto.setRequestId(UUID.randomUUID().toString());
         pluginExecuteRequestDto.setAgentId(-1L);
         pluginExecuteRequestDto.setTest(false);
+        pluginExecuteRequestDto.setApiKey(userAccessKey.getAccessKey());
         PluginExecuteResultDto pluginExecuteResultDto = pluginApplicationService.execute(pluginExecuteRequestDto, pluginDto);
         return ReqResult.success(pluginExecuteResultDto.getResult());
+    }
+
+
+    @Operation(summary = "工具执行接口")
+    @RequestMapping(path = "/api/v1/tool/{id}", method = RequestMethod.POST)
+    public Object executeTool(@PathVariable String id, @RequestBody Map<String, Object> params, HttpServletRequest request) {
+        try {
+            if (id.startsWith("p")) {
+                return execute(Long.parseLong(id.substring(1)), params, request).getData();
+            }
+            return executeWorkflow(Long.parseLong(id.substring(1)), params, request).getData();
+        } catch (Exception e) {
+            return Map.of("error", Map.of("message", e.getMessage(), "code", "0001"));
+        }
     }
 
     private void checkPermission(List<Long> publishedSpaceIds, Published.PublishScope scope) {

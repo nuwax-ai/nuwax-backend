@@ -1,14 +1,13 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
+import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.spec.enums.ComponentTypeEnum;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
-import com.xspaceagi.agent.core.adapter.repository.entity.Published;
-import com.xspaceagi.agent.core.spec.enums.ComponentTypeEnum;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 @Data
 public class ComponentDto implements Serializable {
@@ -18,6 +17,9 @@ public class ComponentDto implements Serializable {
 
     @Schema(description = "空间ID")
     private Long spaceId;
+
+    @Schema(description = "分组ID")
+    private Long groupId;
 
     @Schema(description = "组件类型")
     private ComponentTypeEnum type;
@@ -53,5 +55,8 @@ public class ComponentDto implements Serializable {
 
     @Schema(description = "是否启用")
     private Integer enabled;
+
+    @Schema(description = "[插件专用]开发时使用的会话ID")
+    private Long devAgentConversationId;
 
 }

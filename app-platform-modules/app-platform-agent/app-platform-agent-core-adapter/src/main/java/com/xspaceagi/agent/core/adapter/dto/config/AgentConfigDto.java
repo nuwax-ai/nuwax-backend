@@ -2,10 +2,7 @@ package com.xspaceagi.agent.core.adapter.dto.config;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import com.xspaceagi.agent.core.adapter.dto.CreatorDto;
-import com.xspaceagi.agent.core.adapter.dto.GuidQuestionDto;
-import com.xspaceagi.agent.core.adapter.dto.PublishUserDto;
-import com.xspaceagi.agent.core.adapter.dto.StatisticsDto;
+import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentConfig;
@@ -35,6 +32,9 @@ public class AgentConfigDto implements Serializable {
 
     @Schema(description = "类型，ChatBot 对话智能体；PageApp 网页应用智能体, TaskAgent 任务型智能体")
     private String type;
+
+    @Schema(description = "子类型,ChatBot->ChatBot、PageApp->PageApp, TaskAgent -> General、Custom、Flow、Group")
+    private String subType;
 
     @Schema(description = "商户ID")
     private Long tenantId; // 商户ID
@@ -111,8 +111,11 @@ public class AgentConfigDto implements Serializable {
     @Schema(description = "是否收藏", hidden = true)
     private boolean isCollected;
 
-    @Schema(description = "开发会话ID")
+    @Schema(description = "debug调试会话ID")
     private Long devConversationId;
+
+    @Schema(description = "开发Agent的会话ID")
+    private Long devAgentConversationId;
 
     @Schema(description = "发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布")
     private Date publishDate;
@@ -161,6 +164,23 @@ public class AgentConfigDto implements Serializable {
 
     @Schema(description = "是否允许用户在对话框中选择自己的电脑， 1 允许，其他不允许")
     private Integer allowPrivateSandbox;
+
+    @Schema(description = "是否允许用户在对话框中选择模式， 1 允许，其他不允许")
+    private Integer allowChooseMode;
+
+    @Schema(description = "是否开启询问用户， 1 允许，其他不允许")
+    private Integer enableAskQuestion;
+
+    @Schema(description = "是否开启版本控制， 1 允许，其他不允许")
+    private Integer enableVersionControl;
+
+    @Schema(description = "发布版本列表")
+    private List<AgentPublishVersionDto> publishVersion;
+
+    @Schema(description = "已发布的空间ID", hidden = true)
+    private List<Long> publishedSpaceIds;
+
+    private List<CustomPageMenu> customPageMenus;
 
     public String getPageHomeIndex() {
         //设置默认页面首页
@@ -249,6 +269,10 @@ public class AgentConfigDto implements Serializable {
                     VariableConfigDto variableConfigDto = JSON.parseObject(componentConfig.getBindConfig().toString(), VariableConfigDto.class);
                     componentConfig.setBindConfig(variableConfigDto);
                 }
+                case Hook -> {
+                    HookConfigDto hookConfigDto = JSON.parseObject(componentConfig.getBindConfig().toString(), HookConfigDto.class);
+                    componentConfig.setBindConfig(hookConfigDto);
+                }
                 case Mcp -> {
                     McpBindConfigDto mcpBindConfigDto = JSON.parseObject(componentConfig.getBindConfig().toString(), McpBindConfigDto.class);
                     componentConfig.setBindConfig(mcpBindConfigDto);
@@ -308,6 +332,11 @@ public class AgentConfigDto implements Serializable {
                         componentConfig.setBindConfig(new VariableConfigDto());
                     }
                 }
+                case Hook -> {
+                    if (!(componentConfig.getBindConfig() instanceof HookConfigDto)) {
+                        componentConfig.setBindConfig(new HookConfigDto());
+                    }
+                }
                 case Mcp -> {
                     if (!(componentConfig.getBindConfig() instanceof McpBindConfigDto)) {
                         componentConfig.setBindConfig(new McpBindConfigDto());
@@ -349,5 +378,13 @@ public class AgentConfigDto implements Serializable {
         private String path;
         @Schema(description = "是否选中")
         private boolean selected;
+    }
+
+    public enum AgentType {
+        ChatBot, PageApp, TaskAgent
+    }
+
+    public enum AgentSubType {
+        ChatBot, PageApp, General, Custom, Flow, Group
     }
 }

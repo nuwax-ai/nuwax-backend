@@ -8,6 +8,8 @@ import com.xspaceagi.agent.core.sdk.dto.ReqResult;
 import com.xspaceagi.agent.core.sdk.dto.SkillInfoDto;
 import com.xspaceagi.bill.app.service.BillOrderAppService;
 import com.xspaceagi.bill.app.service.BillRevenueAppService;
+import com.xspaceagi.bill.app.service.support.MiniPayChannelCredentialResolver;
+import com.xspaceagi.bill.app.service.support.WeChatJsapiChannelCredentialResolver;
 import com.xspaceagi.bill.infra.dao.entity.BillOrder;
 import com.xspaceagi.bill.infra.dao.entity.BillOrderItem;
 import com.xspaceagi.bill.infra.dao.mapper.BillOrderMapper;
@@ -18,10 +20,22 @@ import com.xspaceagi.bill.spec.enums.*;
 import com.xspaceagi.credit.sdk.dto.CreditAddRequest;
 import com.xspaceagi.credit.sdk.rpc.ICreditRpcService;
 import com.xspaceagi.credit.spec.enums.CreditTypeEnum;
-import com.xspaceagi.pay.sdk.dto.PaymentOrderCreateResponse;
+import com.xspaceagi.pay.sdk.dto.AppOrderRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.AppTransactionRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.MiniPayOrderRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.MiniPayTransactionRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.OrderAndTransactionCreateResponse;
+import com.xspaceagi.pay.sdk.dto.OrderCreateResponse;
 import com.xspaceagi.pay.sdk.dto.ScanOrderCreateRequest;
+import com.xspaceagi.pay.sdk.dto.H5OrderRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.H5TransactionRpcCreateRequest;
+import com.xspaceagi.pay.sdk.dto.CashierSessionCreateRequest;
+import com.xspaceagi.pay.sdk.dto.CashierSessionCreateResponse;
+import com.xspaceagi.pay.sdk.enums.PayChannel;
 import com.xspaceagi.pay.sdk.enums.PayMode;
+import com.xspaceagi.pay.sdk.enums.PayClientScene;
 import com.xspaceagi.pay.sdk.service.IPaymentRpcService;
+import com.xspaceagi.pay.sdk.support.PayOrderExtKeys;
 import com.xspaceagi.subscription.sdk.dto.CreateSubscriptionRequest;
 import com.xspaceagi.subscription.sdk.dto.PlanDTO;
 import com.xspaceagi.subscription.sdk.rpc.ISubscriptionRpcService;
@@ -40,6 +54,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,6 +95,12 @@ public class BillOrderAppServiceImpl implements BillOrderAppService {
 
     @Resource
     private UserApplicationService userApplicationService;
+
+    @Resource
+    private MiniPayChannelCredentialResolver miniPayChannelCredentialResolver;
+
+    @Resource
+    private WeChatJsapiChannelCredentialResolver weChatJsapiChannelCredentialResolver;
 
     @Override
     public OrderDTO createOrder(CreateOrderRequest request) {
@@ -122,17 +145,39 @@ public class BillOrderAppServiceImpl implements BillOrderAppService {
             order.setAmount(totalAmount);
 
             //创建支付订单
-            ScanOrderCreateRequest paymentScanCreateOrderRequest = new ScanOrderCreateRequest();
-            paymentScanCreateOrderRequest.setBizOrderNo(order.getId().toString());
-            paymentScanCreateOrderRequest.setOrderAmount(totalAmount.multiply(new BigDecimal(100)).longValue());
-            paymentScanCreateOrderRequest.setSubject(request.getDescription());
-            PaymentOrderCreateResponse orderForScan = iPaymentRpcService.createOrderForScan(paymentScanCreateOrderRequest);
+            PayMode payMode = request.getPayMode() != null ? request.getPayMode() : PayMode.scan;
+            OrderCreateResponse payOrderResponse;
+            if (payMode == PayMode.minipay) {
+                MiniPayOrderRpcCreateRequest miniPayOrderRequest = new MiniPayOrderRpcCreateRequest();
+                miniPayOrderRequest.setBizOrderNo(order.getId().toString());
+                miniPayOrderRequest.setOrderAmount(totalAmount.multiply(new BigDecimal(100)).longValue());
+                miniPayOrderRequest.setSubject(request.getDescription());
+                payOrderResponse = iPaymentRpcService.createOrderForMiniPay(miniPayOrderRequest);
+            } else if (payMode == PayMode.h5) {
+                H5OrderRpcCreateRequest h5OrderRequest = new H5OrderRpcCreateRequest();
+                h5OrderRequest.setBizOrderNo(order.getId().toString());
+                h5OrderRequest.setOrderAmount(totalAmount.multiply(new BigDecimal(100)).longValue());
+                h5OrderRequest.setSubject(request.getDescription());
+                payOrderResponse = iPaymentRpcService.createOrderForH5(h5OrderRequest);
+            } else if (payMode == PayMode.app) {
+                AppOrderRpcCreateRequest appOrderRequest = new AppOrderRpcCreateRequest();
+                appOrderRequest.setBizOrderNo(order.getId().toString());
+                appOrderRequest.setOrderAmount(totalAmount.multiply(new BigDecimal(100)).longValue());
+                appOrderRequest.setSubject(request.getDescription());
+                payOrderResponse = iPaymentRpcService.createOrderForApp(appOrderRequest);
+            } else {
+                ScanOrderCreateRequest paymentScanCreateOrderRequest = new ScanOrderCreateRequest();
+                paymentScanCreateOrderRequest.setBizOrderNo(order.getId().toString());
+                paymentScanCreateOrderRequest.setOrderAmount(totalAmount.multiply(new BigDecimal(100)).longValue());
+                paymentScanCreateOrderRequest.setSubject(request.getDescription());
+                payOrderResponse = iPaymentRpcService.createOrderForScan(paymentScanCreateOrderRequest);
+            }
             Map<String, Object> extra = request.getExtra();
             if (extra == null) {
                 extra = new HashMap<>();
             }
-            extra.put("gatewayPaymentOrderNo", orderForScan.getGatewayPaymentOrderNo());
-            extra.put("payMode", PayMode.scan.name());
+            extra.put("gatewayPaymentOrderNo", payOrderResponse.getGatewayPaymentOrderNo());
+            extra.put("payMode", payMode.name());
             order.setExtra(JSON.toJSONString(extra));
             billOrderService.updateById(order);
         } catch (Exception e) {
@@ -144,6 +189,221 @@ public class BillOrderAppServiceImpl implements BillOrderAppService {
 
         log.info("创建订单, orderId={}, userId={}, amount={}", order.getId(), request.getUserId(), totalAmount);
         return convertToDTO(order);
+    }
+
+    @Override
+    public OrderAndTransactionCreateResponse invokeMiniPay(long userId, MiniPayInvokeRequest request, String clientIp) {
+        if (request.getOrderId() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), I18nUtil.systemMessage("Backend.Bill.Order.Validate.OrderIdRequired"));
+        }
+        if (request.getPayChannel() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "payChannel is required");
+        }
+        BillOrder order = requirePendingBillOrder(userId, request.getOrderId());
+        ensurePayOrderForMode(order, PayMode.minipay);
+
+        MiniPayTransactionRpcCreateRequest txRequest = new MiniPayTransactionRpcCreateRequest();
+        txRequest.setBizOrderNo(String.valueOf(order.getId()));
+        txRequest.setPayChannel(request.getPayChannel());
+        txRequest.setClientIp(clientIp);
+        txRequest.setPayClientScene(PayClientScene.MINI_PROGRAM);
+        miniPayChannelCredentialResolver.applyChannelParams(order.getTenantId(), request, txRequest);
+        OrderAndTransactionCreateResponse response = iPaymentRpcService.createMiniPayTransaction(txRequest);
+        recordPayClientSelectionOnBillOrder(order, PayClientScene.MINI_PROGRAM, response.getPayChannel());
+        return response;
+    }
+
+    @Override
+    public OrderAndTransactionCreateResponse invokeWeChatJsapi(
+            long userId, WeChatJsapiInvokeRequest request, String clientIp) {
+        if (request.getOrderId() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), I18nUtil.systemMessage("Backend.Bill.Order.Validate.OrderIdRequired"));
+        }
+        BillOrder order = requirePendingBillOrder(userId, request.getOrderId());
+        ensurePayOrderForMode(order, PayMode.minipay);
+
+        MiniPayTransactionRpcCreateRequest txRequest = new MiniPayTransactionRpcCreateRequest();
+        txRequest.setBizOrderNo(String.valueOf(order.getId()));
+        txRequest.setClientIp(clientIp);
+        txRequest.setPayClientScene(PayClientScene.WECHAT_JSAPI);
+        weChatJsapiChannelCredentialResolver.applyChannelParams(order.getTenantId(), request, txRequest);
+        OrderAndTransactionCreateResponse response = iPaymentRpcService.createMiniPayTransaction(txRequest);
+        recordPayClientSelectionOnBillOrder(order, PayClientScene.WECHAT_JSAPI, response.getPayChannel());
+        return response;
+    }
+
+    @Override
+    public OrderAndTransactionCreateResponse invokeH5Web(long userId, H5WebInvokeRequest request, String clientIp) {
+        if (request.getOrderId() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), I18nUtil.systemMessage("Backend.Bill.Order.Validate.OrderIdRequired"));
+        }
+        if (request.getPayChannel() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "payChannel is required");
+        }
+        if (request.getFrontNotifyUrl() == null || request.getFrontNotifyUrl().isBlank()) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "frontNotifyUrl is required");
+        }
+        BillOrder order = requirePendingBillOrder(userId, request.getOrderId());
+        ensurePayOrderForMode(order, PayMode.h5);
+        H5TransactionRpcCreateRequest txRequest = new H5TransactionRpcCreateRequest();
+        txRequest.setBizOrderNo(String.valueOf(order.getId()));
+        txRequest.setPayChannel(request.getPayChannel());
+        txRequest.setClientIp(clientIp);
+        String frontNotifyUrl = validateFrontNotifyUrl(request.getFrontNotifyUrl().trim());
+        txRequest.setFrontNotifyUrl(buildChannelFrontNotifyUrl(frontNotifyUrl, request.getOrderId()));
+        OrderAndTransactionCreateResponse response = iPaymentRpcService.createH5Transaction(txRequest);
+        recordPayClientSelectionOnBillOrder(order, PayClientScene.H5_WEB, response.getPayChannel());
+        return response;
+    }
+
+    @Override
+    public OrderAndTransactionCreateResponse invokeAppNative(
+            long userId, AppNativeInvokeRequest request, String clientIp) {
+        if (request.getOrderId() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), I18nUtil.systemMessage("Backend.Bill.Order.Validate.OrderIdRequired"));
+        }
+        if (request.getPayChannel() == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "payChannel is required");
+        }
+        BillOrder order = requirePendingBillOrder(userId, request.getOrderId());
+        ensurePayOrderForMode(order, PayMode.app);
+
+        AppTransactionRpcCreateRequest txRequest = new AppTransactionRpcCreateRequest();
+        txRequest.setBizOrderNo(String.valueOf(order.getId()));
+        txRequest.setPayChannel(request.getPayChannel());
+        txRequest.setClientIp(clientIp);
+        txRequest.setPayClientScene(PayClientScene.NATIVE_APP);
+        OrderAndTransactionCreateResponse response = iPaymentRpcService.createAppTransaction(txRequest);
+        recordPayClientSelectionOnBillOrder(order, PayClientScene.NATIVE_APP, response.getPayChannel());
+        return response;
+    }
+
+    @Override
+    public CashierSessionCreateResponse invokeScanCashier(long userId, Long orderId, String returnUrl) {
+        if (orderId == null) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), I18nUtil.systemMessage("Backend.Bill.Order.Validate.OrderIdRequired"));
+        }
+        BillOrder order = requirePendingBillOrder(userId, orderId);
+        OrderCreateResponse payOrderResponse = ensurePayOrderForMode(order, PayMode.scan);
+        CashierSessionCreateRequest paymentCreateCashierSessionRequest = new CashierSessionCreateRequest();
+        paymentCreateCashierSessionRequest.setGatewayPaymentOrderNo(payOrderResponse.getGatewayPaymentOrderNo());
+        paymentCreateCashierSessionRequest.setBizRedirectUrl(returnUrl);
+        return iPaymentRpcService.createCashierSession(paymentCreateCashierSessionRequest);
+    }
+
+    private static String buildChannelFrontNotifyUrl(String frontNotifyUrl, Long orderId) {
+        URI frontendUri = URI.create(frontNotifyUrl);
+        String origin = frontendUri.getScheme() + "://" + frontendUri.getAuthority();
+        String encodedReturnUrl = URLEncoder.encode(frontNotifyUrl, StandardCharsets.UTF_8);
+        return origin + "/api/bill/order/pay/front-notify?orderId=" + orderId + "&returnUrl=" + encodedReturnUrl;
+    }
+
+    private static String validateFrontNotifyUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "frontNotifyUrl must start with http or https");
+            }
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "Invalid frontNotifyUrl");
+            }
+            return url;
+        } catch (IllegalArgumentException e) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "Invalid frontNotifyUrl");
+        }
+    }
+
+    private void recordPayClientSelectionOnBillOrder(BillOrder order, PayClientScene scene, PayChannel payChannel) {
+        Map<String, Object> extra = parseExtra(order.getExtra());
+        extra.put(PayOrderExtKeys.PAY_CLIENT_SCENE, scene.name());
+        if (payChannel != null) {
+            extra.put("payChannel", payChannel.name());
+        }
+        order.setExtra(JSON.toJSONString(extra));
+        billOrderService.updateById(order);
+    }
+
+    private BillOrder requirePendingBillOrder(long userId, Long orderId) {
+        BillOrder order = billOrderService.getById(orderId);
+        if (order == null) {
+            throw new BizException("ORDER_NOT_FOUND", I18nUtil.systemMessage("Backend.Bill.Order.Error.OrderNotFound"));
+        }
+        if (!Long.valueOf(userId).equals(order.getUserId())) {
+            throw new BizException("USER_NOT_MATCH", I18nUtil.systemMessage("Backend.Bill.Order.Error.UserNotMatch"));
+        }
+        Long ctxTenantId = RequestContext.get() != null ? RequestContext.get().getTenantId() : null;
+        if (ctxTenantId == null || !ctxTenantId.equals(order.getTenantId())) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(), "订单租户与当前上下文不一致");
+        }
+        if (!PayStatusEnum.PENDING.getCode().equals(order.getPayStatus())) {
+            throw new BizException("ORDER_NOT_PENDING", "The order status is incorrect.");
+        }
+        return order;
+    }
+
+    private OrderCreateResponse ensurePayOrderForMode(BillOrder order, PayMode targetPayMode) {
+        OrderCreateResponse response;
+        if (targetPayMode == PayMode.minipay) {
+            MiniPayOrderRpcCreateRequest req = new MiniPayOrderRpcCreateRequest();
+            req.setBizOrderNo(String.valueOf(order.getId()));
+            req.setOrderAmount(orderAmountFen(order));
+            req.setSubject(resolvePaySubject(order));
+            response = iPaymentRpcService.createOrderForMiniPay(req);
+        } else if (targetPayMode == PayMode.h5) {
+            H5OrderRpcCreateRequest req = new H5OrderRpcCreateRequest();
+            req.setBizOrderNo(String.valueOf(order.getId()));
+            req.setOrderAmount(orderAmountFen(order));
+            req.setSubject(resolvePaySubject(order));
+            response = iPaymentRpcService.createOrderForH5(req);
+        } else if (targetPayMode == PayMode.app) {
+            AppOrderRpcCreateRequest req = new AppOrderRpcCreateRequest();
+            req.setBizOrderNo(String.valueOf(order.getId()));
+            req.setOrderAmount(orderAmountFen(order));
+            req.setSubject(resolvePaySubject(order));
+            response = iPaymentRpcService.createOrderForApp(req);
+        } else {
+            ScanOrderCreateRequest req = new ScanOrderCreateRequest();
+            req.setBizOrderNo(String.valueOf(order.getId()));
+            req.setOrderAmount(orderAmountFen(order));
+            req.setSubject(resolvePaySubject(order));
+            response = iPaymentRpcService.createOrderForScan(req);
+        }
+        updateBillPayPointer(order, targetPayMode, response.getGatewayPaymentOrderNo());
+        return response;
+    }
+
+    private void updateBillPayPointer(BillOrder order, PayMode payMode, String gatewayPaymentOrderNo) {
+        Map<String, Object> extra = parseExtra(order.getExtra());
+        extra.put("payMode", payMode.name());
+        extra.put("gatewayPaymentOrderNo", gatewayPaymentOrderNo);
+        order.setExtra(JSON.toJSONString(extra));
+        billOrderService.updateById(order);
+    }
+
+    private static long orderAmountFen(BillOrder order) {
+        BigDecimal amount = order.getAmount() == null ? BigDecimal.ZERO : order.getAmount();
+        return amount.multiply(new BigDecimal(100)).longValue();
+    }
+
+    private static String resolvePaySubject(BillOrder order) {
+        if (order.getDescription() != null && !order.getDescription().isBlank()) {
+            return order.getDescription();
+        }
+        return "BillOrder-" + order.getId();
+    }
+
+    private static Map<String, Object> parseExtra(String extraJson) {
+        if (extraJson == null || extraJson.isBlank()) {
+            return new HashMap<>();
+        }
+        try {
+            Map<String, Object> parsed = JSON.parseObject(extraJson);
+            return parsed != null ? parsed : new HashMap<>();
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
     }
 
     @Override

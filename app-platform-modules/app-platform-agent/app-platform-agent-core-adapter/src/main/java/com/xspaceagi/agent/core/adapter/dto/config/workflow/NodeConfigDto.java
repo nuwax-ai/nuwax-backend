@@ -11,6 +11,8 @@ import java.util.Map;
 @Data
 public class NodeConfigDto implements Serializable {
 
+    private ContextPassingType contextPassingType;
+
     @Schema(description = "扩展字段，用于前端存储画布位置等相关配置")
     private Map<String, Object> extension;
 
@@ -22,4 +24,9 @@ public class NodeConfigDto implements Serializable {
 
     @Schema(description = "异常处理配置")
     private ExceptionHandleConfigDto exceptionHandleConfig;
+
+    public enum ContextPassingType {
+        Auto,
+        Manual
+    }
 }

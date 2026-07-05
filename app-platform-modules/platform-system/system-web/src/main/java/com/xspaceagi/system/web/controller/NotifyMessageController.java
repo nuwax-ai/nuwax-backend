@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,8 +55,11 @@ public class NotifyMessageController {
     @Value("${app.version}")
     private String version;
 
-    @Value("${eco-market.server.base-url}")
+    @Value("${eco-market.server.base-url:}")
     private String cloudApi;
+
+    @Value("${eco-market.server.cancelHB:}")
+    private String cancelHB;
 
     @Resource
     private ClientSecretRpcService clientSecretRpcService;
@@ -94,12 +98,14 @@ public class NotifyMessageController {
                             .senderId(RequestContext.get().getUserId())
                             .userIds(Arrays.asList(RequestContext.get().getUserId()))
                             .build()));
-                    PullMessageAckDto pullMessageAckDto = new PullMessageAckDto();
-                    pullMessageAckDto.setClientId(clientSecretResponse.getClientId());
-                    pullMessageAckDto.setClientSecret(clientSecretResponse.getClientSecret());
-                    pullMessageAckDto.setUid(userDto.getUid());
-                    pullMessageAckDto.setMessageIds(pullMessageResponseDtos.getData().stream().map(PullMessageResponseDto::getMessageId).collect(Collectors.toList()));
-                    httpClient.post(cloudApi + "/api/message/ack", JSON.toJSONString(pullMessageAckDto), Map.of("Authorization", "Bearer " + clientSecretResponse.getClientSecret()));
+                    if (StringUtils.isBlank(cancelHB)) {
+                        PullMessageAckDto pullMessageAckDto = new PullMessageAckDto();
+                        pullMessageAckDto.setClientId(clientSecretResponse.getClientId());
+                        pullMessageAckDto.setClientSecret(clientSecretResponse.getClientSecret());
+                        pullMessageAckDto.setUid(userDto.getUid());
+                        pullMessageAckDto.setMessageIds(pullMessageResponseDtos.getData().stream().map(PullMessageResponseDto::getMessageId).collect(Collectors.toList()));
+                        httpClient.post(cloudApi + "/api/message/ack", JSON.toJSONString(pullMessageAckDto), Map.of("Authorization", "Bearer " + clientSecretResponse.getClientSecret()));
+                    }
                 }
             }
         }

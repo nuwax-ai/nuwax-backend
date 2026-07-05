@@ -4,8 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 各 Open API 路径参与 body 哈希的字段（不含 {@code timestamp}/{@code nonce}/{@code signature}）。
- * <p>path 与各 {@code OpenApi*Sign#PATH_*} 保持一致，为单一来源。</p>
+ * 各 Open API 路径参与 body 哈希的字段
  */
 public final class OpenApiSignPolicies {
 
@@ -24,6 +23,39 @@ public final class OpenApiSignPolicies {
             Map.entry(
                     OpenApiPaymentScanSign.PATH_STATUS,
                     List.of("clientId", "gatewayPaymentOrderNo", "syncFromChannel")),
+            Map.entry(
+                    OpenApiPaymentMiniPaySign.PATH_CREATE_ORDER_AND_TRANSACTION,
+                    List.of("bizOrderNo", "buyerId", "clientId", "openId", "orderAmount", "payChannel", "subAppid")),
+            Map.entry(
+                    OpenApiPaymentMiniPaySign.PATH_CREATE_ORDER,
+                    List.of("bizOrderNo", "clientId", "orderAmount")),
+            Map.entry(
+                    OpenApiPaymentMiniPaySign.PATH_CREATE_TRANSACTION,
+                    List.of("buyerId", "clientId", "gatewayPaymentOrderNo", "openId", "payChannel", "subAppid")),
+            Map.entry(
+                    OpenApiPaymentMiniPaySign.PATH_STATUS,
+                    List.of("clientId", "gatewayPaymentOrderNo", "syncFromChannel")),
+            Map.entry(
+                    OpenApiPaymentH5Sign.PATH_CREATE_ORDER,
+                    List.of("bizOrderNo", "clientId", "orderAmount")),
+            Map.entry(
+                    OpenApiPaymentH5Sign.PATH_CREATE_TRANSACTION,
+                    List.of("clientId", "frontNotifyUrl", "gatewayPaymentOrderNo", "payChannel")),
+            Map.entry(
+                    OpenApiPaymentH5Sign.PATH_STATUS,
+                    List.of("clientId", "gatewayPaymentOrderNo", "syncFromChannel")),
+            Map.entry(
+                    OpenApiPaymentAppSign.PATH_CREATE_ORDER_AND_TRANSACTION,
+                    List.of("bizOrderNo", "clientId", "orderAmount", "payChannel")),
+            Map.entry(
+                    OpenApiPaymentAppSign.PATH_CREATE_ORDER,
+                    List.of("bizOrderNo", "clientId", "orderAmount")),
+            Map.entry(
+                    OpenApiPaymentAppSign.PATH_CREATE_TRANSACTION,
+                    List.of("clientId", "gatewayPaymentOrderNo", "payChannel")),
+            Map.entry(
+                    OpenApiPaymentAppSign.PATH_STATUS,
+                    List.of("clientId", "gatewayPaymentOrderNo", "syncFromChannel")),
             Map.entry(OpenApiPaymentConfigSign.PATH_QUERY, List.of("clientId")),
             Map.entry(
                     OpenApiMerchantOnboardingSign.PATH_ADD,
@@ -38,7 +70,10 @@ public final class OpenApiSignPolicies {
                     List.of("clientId", "onboardingType", "page", "pageSize", "status")),
             Map.entry(
                     OpenApiCashierSign.PATH_SESSION,
-                    List.of("clientId", "gatewayPaymentOrderNo", "orderAmount")));
+                    List.of("clientId", "gatewayPaymentOrderNo", "orderAmount")),
+            Map.entry(
+                    OpenApiFileEntrySign.PATH_UPLOAD,
+                    List.of("clientId", "bizType", "replaceFileKey")));
 
     public static List<String> signFieldsForPath(String path) {
         String normalized = normalizePath(path);

@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.domain.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xspaceagi.agent.core.adapter.dto.PublishApplyQueryDto;
@@ -14,8 +15,10 @@ import com.xspaceagi.agent.core.adapter.repository.PublishedStatisticsRepository
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishApply;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishedStatistics;
-import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
+import com.xspaceagi.agent.core.adapter.repository.entity.ResourceGroupRelation;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
+import com.xspaceagi.agent.core.domain.service.ResourceGroupRelationDomainService;
+import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
@@ -43,6 +46,9 @@ public class PublishDomainServiceImpl implements PublishDomainService {
     @Resource
     private PublishedStatisticsRepository publishedStatisticsRepository;
 
+    @Resource
+    private ResourceGroupRelationDomainService resourceGroupRelationDomainService;
+
     @Override
     public void deleteByTargetId(Published.TargetType targetType, Long targetId) {
         Assert.notNull(targetType, "targetType不能为空");
@@ -69,8 +75,25 @@ public class PublishDomainServiceImpl implements PublishDomainService {
         queryWrapper.eq(Published::getTargetId, publishApply.getTargetId());
         queryWrapper.eq(Published::getScope, publishApply.getScope());
         publishedRepository.remove(queryWrapper);
-
         publishedList.forEach(published -> publishedRepository.save(published));
+        // 分组内其他工具时间更新
+        if (!CollectionUtils.isEmpty(publishedList)) {
+            Published published = publishedList.get(0);
+            if (published.getGroupId() != null) {
+                List<ResourceGroupRelation> resourceGroupRelations = resourceGroupRelationDomainService.listByGroupId(published.getGroupId());
+                resourceGroupRelations.forEach(resourceGroupRelation -> {
+                    LambdaQueryWrapper<Published> queryWrapper1 = new LambdaQueryWrapper<>();
+                    queryWrapper1.eq(Published::getTargetType, resourceGroupRelation.getTargetType());
+                    queryWrapper1.eq(Published::getTargetId, resourceGroupRelation.getTargetId());
+                    publishedRepository.update(Published.builder()
+                            .groupId(published.getGroupId())
+                            .modified(published.getModified())
+                            .build(), queryWrapper1);
+                });
+            }
+        }
+
+
         PublishApply publishApplyUpdate = new PublishApply();
         publishApplyUpdate.setId(publishApply.getId());
         publishApplyUpdate.setPublishStatus(Published.PublishStatus.Published);
@@ -79,6 +102,23 @@ public class PublishDomainServiceImpl implements PublishDomainService {
 
     public void savePublished(Published published) {
         publishedRepository.save(published);
+    }
+
+    @Override
+    public void updatePublishedGroupInfo(Published.TargetType targetType, Long targetId, Long groupId) {
+        if (groupId != null) {
+            boolean update = publishedRepository.update(Published.builder().groupId(groupId).build(), new QueryWrapper<>(Published.builder().targetType(targetType).targetId(targetId).build()));
+            if (update) {
+                //更新相同分组的时间
+                publishedRepository.update(Published.builder().modified(new Date()).build(), new QueryWrapper<>(Published.builder().groupId(groupId).build()));
+            }
+        } else {
+            UpdateWrapper<Published> updateWrapper = new UpdateWrapper<>();
+            updateWrapper.eq("target_type", targetType);
+            updateWrapper.eq("target_id", targetId);
+            updateWrapper.set("group_id", null);
+            publishedRepository.update(updateWrapper);
+        }
     }
 
     @Override
@@ -150,7 +190,7 @@ public class PublishDomainServiceImpl implements PublishDomainService {
             queryWrapper.eq(Published::getCategory, publishedQueryDto.getCategory());
         }
         if (StringUtils.isNotBlank(publishedQueryDto.getKw())) {
-            queryWrapper.like(Published::getName, publishedQueryDto.getKw());
+            queryWrapper.apply("MATCH(name, description) AGAINST({0} IN BOOLEAN MODE)", publishedQueryDto.getKw());
         }
         if (publishedQueryDto.getTargetSubType() != null) {
             if (Published.TargetSubType.ChatBot == publishedQueryDto.getTargetSubType()) {
@@ -172,6 +212,9 @@ public class PublishDomainServiceImpl implements PublishDomainService {
         if (!CollectionUtils.isEmpty(publishedQueryDto.getTargetIds())) {
             queryWrapper.in(Published::getTargetId, publishedQueryDto.getTargetIds());
         }
+        if (!CollectionUtils.isEmpty(publishedQueryDto.getExcludeIds())) {
+            queryWrapper.notIn(Published::getTargetId, publishedQueryDto.getExcludeIds());
+        }
         // 技能扩展字段筛选（ext JSON）
         if (publishedQueryDto.getTargetType() == Published.TargetType.Skill) {
             Boolean supportTaskAgent = extractUsageScenarioFlag(publishedQueryDto.getUsageScenarios(), UsageScenarioEnum.TaskAgent);
@@ -187,6 +230,16 @@ public class PublishDomainServiceImpl implements PublishDomainService {
                 );
             }
         }
+        if (publishedQueryDto.getTargetType() == Published.TargetType.Workflow) {
+            queryWrapper.apply("(JSON_UNQUOTE(JSON_EXTRACT(ext, '$.workflowType')) = 'Workflow' OR ext IS NULL)");
+        }
+        if (!CollectionUtils.isEmpty(publishedQueryDto.getAgentTypes())) {
+            List<String> types = publishedQueryDto.getAgentTypes();
+            String placeholders = types.stream()
+                    .map(t -> "'" + t.replace("'", "''") + "'")
+                    .collect(Collectors.joining(","));
+            queryWrapper.apply("(JSON_UNQUOTE(JSON_EXTRACT(ext, '$.agentType')) IN (" + placeholders + ") OR ext IS NULL)");//NULL兼容之前的数据
+        }
         List<Published> recommendAgentList = new ArrayList<>();
         if (publishedQueryDto.getTargetType() == Published.TargetType.Agent
                 && publishedQueryDto.getShowRecommend() != null && publishedQueryDto.getShowRecommend()
@@ -198,12 +251,12 @@ public class PublishDomainServiceImpl implements PublishDomainService {
                 excludeAgentIds.add(tenantConfigDto.getDefaultAgentId());
             }
             //未选择分类时排除推荐的智能体，后续会统一展示在最前面
-            if (StringUtils.isBlank(publishedQueryDto.getCategory()) && !CollectionUtils.isEmpty(tenantConfigDto.getRecommendAgentIds())) {
-                excludeAgentIds.addAll(tenantConfigDto.getRecommendAgentIds());
+            if (StringUtils.isBlank(publishedQueryDto.getCategory()) && !CollectionUtils.isEmpty(publishedQueryDto.getRecommendIds())) {
+                excludeAgentIds.addAll(publishedQueryDto.getRecommendIds());
                 //展示在最前面
                 if (publishedQueryDto.obtainPage() == 1) {
                     //查询推荐智能体
-                    recommendAgentList = queryPublishedList(Published.TargetType.Agent, tenantConfigDto.getRecommendAgentIds());
+                    recommendAgentList = queryPublishedList(Published.TargetType.Agent, publishedQueryDto.getRecommendIds());
                     if (StringUtils.isNotBlank(publishedQueryDto.getKw())) {
                         recommendAgentList.removeIf(recommendAgent -> !recommendAgent.getName().contains(publishedQueryDto.getKw()));
                     }
@@ -217,7 +270,7 @@ public class PublishDomainServiceImpl implements PublishDomainService {
                     }
                     //根据tenantConfigDto.getRecommendAgentIds()从前到后的顺序对recommendAgentList排序
                     recommendAgentList.sort(Comparator.comparing(agent -> {
-                        int index = tenantConfigDto.getRecommendAgentIds().indexOf(agent.getTargetId());
+                        int index = publishedQueryDto.getRecommendIds().indexOf(agent.getTargetId());
                         return index == -1 ? Integer.MAX_VALUE : index;
                     }));
 
@@ -227,15 +280,22 @@ public class PublishDomainServiceImpl implements PublishDomainService {
                 queryWrapper.notIn(Published::getTargetId, excludeAgentIds);
             }
         }
-        Integer page = publishedQueryDto.obtainPage();
+
         Integer size = publishedQueryDto.obtainPageSize();
         //查询总条数
-        var dataTotalCount = publishedRepository.count(queryWrapper);
-
+        var dataTotalCount = 0L;
+        Integer page = publishedQueryDto.obtainPage();
+        if (publishedQueryDto.getLastTimestamp() == null) {
+            dataTotalCount = publishedRepository.count(queryWrapper);
+            queryWrapper.last("limit " + (page - 1) * size + "," + size);
+        } else {
+            queryWrapper.le(Published::getModified, new Date(publishedQueryDto.getLastTimestamp()));
+            queryWrapper.last("limit " + size);
+        }
         // 不查config字段
-        queryWrapper.select(Published.class, info -> !"config".equals(info.getColumn()));
-
-        queryWrapper.last("limit " + (page - 1) * size + "," + size);
+        if (!publishedQueryDto.isReturnConfig()) {
+            queryWrapper.select(Published.class, info -> !"config".equals(info.getColumn()));
+        }
         queryWrapper.orderByDesc(Published::getModified);
         //查询数据列表
         var dataList = publishedRepository.list(queryWrapper);
@@ -249,6 +309,12 @@ public class PublishDomainServiceImpl implements PublishDomainService {
             targetIds.add(published.getTargetId());
             return true;
         }).collect(Collectors.toList());
+        if (publishedQueryDto.getTargetIds() != null && !publishedQueryDto.getTargetIds().isEmpty()) {
+            dataList.sort(Comparator.comparing(published -> {
+                int index = publishedQueryDto.getTargetIds().indexOf(published.getTargetId());
+                return index == -1 ? Integer.MAX_VALUE : index;
+            }));
+        }
         dataTotalCount += recommendAgentList.size();
         SuperPage<Published> iPage = new SuperPage(page, size, dataTotalCount, dataList);
         return iPage;

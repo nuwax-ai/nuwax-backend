@@ -24,7 +24,7 @@ public class DefaultIconUrlUtil {
     }
 
     public static String setDefaultIconUrl(String originalIcon, String name, String type) {
-        if (StringUtils.isBlank(name)) {
+        if (StringUtils.isBlank(name) || RequestContext.get() == null) {
             return originalIcon;
         }
         //避免名字太长引起url超长

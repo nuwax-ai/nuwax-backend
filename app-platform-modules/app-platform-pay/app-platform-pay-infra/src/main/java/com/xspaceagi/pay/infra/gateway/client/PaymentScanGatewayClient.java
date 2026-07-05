@@ -5,10 +5,10 @@ import com.xspaceagi.pay.infra.gateway.utils.PayGatewayClientUtils;
 import com.xspaceagi.pay.sdk.dto.ApiResponse;
 import com.xspaceagi.pay.sdk.dto.CashierSessionCreateRequest;
 import com.xspaceagi.pay.sdk.dto.CashierSessionCreateResponse;
-import com.xspaceagi.pay.sdk.dto.PaymentOrderCreateResponse;
+import com.xspaceagi.pay.sdk.dto.OrderCreateResponse;
 import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryRequest;
 import com.xspaceagi.pay.sdk.dto.ScanOrderCreateRequest;
-import com.xspaceagi.pay.sdk.dto.ScanOrderStatusQueryResponse;
+import com.xspaceagi.pay.sdk.dto.PaymentStatusQueryResponse;
 import com.xspaceagi.pay.sdk.sign.OpenApiCashierSign;
 import com.xspaceagi.pay.sdk.sign.OpenApiPaymentScanSign;
 import com.xspaceagi.pay.spec.gateway.PayGatewayOutbound;
@@ -22,11 +22,11 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class PaymentScanGatewayClient implements PaymentScanGateway {
 
-    private static final ParameterizedTypeReference<ApiResponse<PaymentOrderCreateResponse>> CREATE_TYPE =
-            new ParameterizedTypeReference<ApiResponse<PaymentOrderCreateResponse>>() {};
+    private static final ParameterizedTypeReference<ApiResponse<OrderCreateResponse>> CREATE_TYPE =
+            new ParameterizedTypeReference<ApiResponse<OrderCreateResponse>>() {};
 
-    private static final ParameterizedTypeReference<ApiResponse<ScanOrderStatusQueryResponse>> STATUS_TYPE =
-            new ParameterizedTypeReference<ApiResponse<ScanOrderStatusQueryResponse>>() {};
+    private static final ParameterizedTypeReference<ApiResponse<PaymentStatusQueryResponse>> STATUS_TYPE =
+            new ParameterizedTypeReference<ApiResponse<PaymentStatusQueryResponse>>() {};
 
     private static final ParameterizedTypeReference<ApiResponse<CashierSessionCreateResponse>> CASHIER_SESSION_TYPE =
             new ParameterizedTypeReference<ApiResponse<CashierSessionCreateResponse>>() {};
@@ -38,7 +38,7 @@ public class PaymentScanGatewayClient implements PaymentScanGateway {
     }
 
     @Override
-    public PaymentOrderCreateResponse createOrder(
+    public OrderCreateResponse createOrder(
             PayGatewayOutbound outbound, String bizOrderNo, long orderAmount, String subject, String ext) {
         ScanOrderCreateRequest request = new ScanOrderCreateRequest();
         request.setClientId(outbound.clientId());
@@ -53,7 +53,7 @@ public class PaymentScanGatewayClient implements PaymentScanGateway {
     }
 
     @Override
-    public ScanOrderStatusQueryResponse queryOrderStatus(
+    public PaymentStatusQueryResponse queryOrderStatus(
             PayGatewayOutbound outbound, String gatewayPaymentOrderNo, boolean syncFromChannel) {
         PaymentStatusQueryRequest request = new PaymentStatusQueryRequest();
         request.setClientId(outbound.clientId());

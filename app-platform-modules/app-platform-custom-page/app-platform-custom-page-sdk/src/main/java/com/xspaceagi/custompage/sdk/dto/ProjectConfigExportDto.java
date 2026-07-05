@@ -49,4 +49,7 @@ public class ProjectConfigExportDto implements Serializable {
 
     @Schema(description = "Bound workflow data sources")
     private List<Map<String, Object>> dataSourceWorkflows;
+
+    @Schema(description = "Project resource group and workflow bindings")
+    private ResourceGroupExportDto resourceGroup;
 }

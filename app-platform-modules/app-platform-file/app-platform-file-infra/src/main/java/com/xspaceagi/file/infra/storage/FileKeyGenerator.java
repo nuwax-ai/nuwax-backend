@@ -30,15 +30,25 @@ public class FileKeyGenerator {
         return String.format("%s/%s/%s/%s%s", storageType, businessType, date, uuid, extension);
     }
 
+    private static final String[] COMPOUND_EXTENSIONS = {
+            ".tar.gz", ".tar.bz2", ".tar.xz", ".tar.7z", ".tar.zst", ".tar.lz", ".tar.lzma", ".tar.sz", ".tar.lzo"
+    };
+
     /**
-     * Extract file extension
+     * Extract file extension (including dot), e.g. ".tar.gz" or ".jpg"
      *
      * @param fileName File name
      * @return Extension (including dot), or empty string if no extension
      */
-    private static String extractExtension(String fileName) {
+    public static String extractExtension(String fileName) {
         if (fileName == null || fileName.isEmpty()) {
             return "";
+        }
+        String lowerName = fileName.toLowerCase();
+        for (String ext : COMPOUND_EXTENSIONS) {
+            if (lowerName.endsWith(ext)) {
+                return fileName.substring(fileName.length() - ext.length());
+            }
         }
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex > 0 && dotIndex < fileName.length() - 1) {

@@ -32,6 +32,11 @@ public interface SpaceApplicationService {
     List<SpaceDto> queryListByUserId(Long userId);
 
     /**
+     * 查询用户的个人空间ID
+     */
+    Long getPersonalSpaceId(Long userId);
+
+    /**
      * 查询空间用户列表
      */
     List<SpaceUserDto> querySpaceUserList(Long spaceId);

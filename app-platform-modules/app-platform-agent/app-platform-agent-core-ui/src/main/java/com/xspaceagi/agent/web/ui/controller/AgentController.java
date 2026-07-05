@@ -28,8 +28,8 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -115,6 +115,16 @@ public class AgentController {
 
     @Resource
     private IUserDataPermissionRpcService userDataPermissionRpcService;
+
+    @Resource
+    private AgentWorkspaceApplicationService agentWorkspaceApplicationService;
+
+    @Operation(summary = "AI生成项目信息")
+    @RequestMapping(path = "/generate-info", method = RequestMethod.POST)
+    public ReqResult<GenerateInfoResultDto> generateInfo(@RequestBody @Valid GenerateInfoReqDto req) {
+        GenerateInfoResultDto result = agentApplicationService.generateInfo(req);
+        return ReqResult.success(result);
+    }
 
     // 方法内部做了资源鉴权，此处不用@RequireResource鉴权
     @Operation(summary = "新增智能体接口")
@@ -292,6 +302,14 @@ public class AgentController {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPrivateComputerDeleteForbidden);
         }
         agentApplicationService.delete(agentId);
+
+        if (agentConfigDto.getDevAgentConversationId() != null) {
+            try {
+                agentWorkspaceApplicationService.deleteWorkspace(agentConfigDto.getCreatorId(), agentConfigDto.getDevAgentConversationId());
+            } catch (Exception e) {
+                log.warn("Failed to delete sandbox workspace for agent, agentId={}, cId={}", agentId, agentConfigDto.getDevAgentConversationId(), e);
+            }
+        }
         return ReqResult.success();
     }
 
@@ -382,14 +400,14 @@ public class AgentController {
             boolean needCheckPermissionState = true;
             if (knowledgeIds != null && !knowledgeIds.isEmpty()) {
                 for (Long knowledgeId : knowledgeIds) {
-                    if(knowledgeId.equals(knowledgeConfigModel.getId())) {
+                    if (knowledgeId.equals(knowledgeConfigModel.getId())) {
                         needCheckPermissionState = false;
                         break;
                     }
                 }
             }
             //新增特殊授权
-            if(needCheckPermissionState) {
+            if (needCheckPermissionState) {
                 spacePermissionService.checkSpaceUserPermission(knowledgeConfigModel.getSpaceId(), RequestContext.get().getUserId());
             }
 
@@ -420,6 +438,11 @@ public class AgentController {
         if (agentComponentConfigAddDto.getType() == AgentComponentConfig.Type.Skill) {
             skillApplicationService.checkSpaceSkillPermission(agentConfigDto.getSpaceId(), agentComponentConfigAddDto.getTargetId());
         }
+
+        if (agentComponentConfigAddDto.getType() == AgentComponentConfig.Type.Agent) {
+            checkAgentPermission(agentComponentConfigAddDto.getTargetId());
+        }
+
         BeanUtils.copyProperties(agentComponentConfigAddDto, componentConfigDto);
         agentApplicationService.addComponentConfig(componentConfigDto);
         return ReqResult.success(componentConfigDto.getId());
@@ -752,6 +775,25 @@ public class AgentController {
         return ReqResult.success();
     }
 
+    @RequireResource(AGENT_MODIFY)
+    @Operation(summary = "更新subagent配置")
+    @RequestMapping(path = "/component/hook/update", method = RequestMethod.POST)
+    public ReqResult<Void> updateComponentHookConfig(@RequestBody AgentComponentConfigUpdateDto<HookConfigDto> componentConfigUpdateDto) {
+        //权限验证
+        checkComponentPermission(componentConfigUpdateDto.getId(), AgentComponentConfig.Type.Hook);
+        componentConfigUpdateDto.getBindConfig().getHooks().forEach(hook -> {
+            Assert.notNull(hook.getName(), "hook name can not be null");
+            Assert.notNull(hook.getConfig(), "hook config can not be null");
+            Assert.notNull(hook.getType(), "hook type can not be null");
+            Assert.notNull(hook.getEvent(), "hook event can not be null");
+        });
+
+        AgentComponentConfigDto agentComponentConfigDto = new AgentComponentConfigDto();
+        BeanUtils.copyProperties(componentConfigUpdateDto, agentComponentConfigDto);
+        agentApplicationService.updateComponentConfig(agentComponentConfigDto);
+        return ReqResult.success();
+    }
+
     @Operation(summary = "触发器定时任务时区数据")
     @RequestMapping(path = "/trigger/timeZone/data", method = RequestMethod.GET)
     public ReqResult<TriggerTimeZoneData> getTriggerTimeZoneData() {
@@ -818,10 +860,11 @@ public class AgentController {
     }
 
     private AgentConfigDto checkAgentPermission(Long agentId) {
-        AgentConfigDto agentDto = agentApplicationService.queryById(agentId);
-        if (agentDto == null) {
+        List<AgentConfigDto> agentDtos = agentApplicationService.queryListByIds(List.of(agentId));
+        if (CollectionUtils.isEmpty(agentDtos)) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotFoundAlt);
         }
+        AgentConfigDto agentDto = agentDtos.get(0);
         spacePermissionService.checkSpaceUserPermission(agentDto.getSpaceId());
         return agentDto;
     }

@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.xspaceagi.agent.core.adapter.application.ResourceGroupApplicationService;
+import com.xspaceagi.agent.core.adapter.dto.ResourceGroupDto;
+import com.xspaceagi.agent.core.adapter.repository.entity.ResourceGroupRelation;
+
 import com.xspaceagi.custompage.sdk.dto.*;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
@@ -20,6 +24,7 @@ import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.utils.IdGeneratorRetryUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson2.JSON;
@@ -30,7 +35,7 @@ import com.xspaceagi.agent.core.sdk.dto.TemplateEnableOrUpdateDto;
 import com.xspaceagi.agent.core.sdk.dto.WorkflowInfoDto;
 import com.xspaceagi.agent.core.sdk.enums.TargetTypeEnum;
 import com.xspaceagi.custompage.domain.dto.PageFileInfo;
-import com.xspaceagi.custompage.domain.gateway.PageFileBuildClient;
+import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.keepalive.IKeepAliveService;
 import com.xspaceagi.custompage.domain.model.CustomPageBuildModel;
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
@@ -57,7 +62,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     @Resource
     private IKeepAliveService keepAliveService;
     @Resource
-    private PageFileBuildClient pageFileBuildClient;
+    private PageAppFileClient pageAppFileClient;
     @Resource
     private SpacePermissionService spacePermissionService;
     @Resource
@@ -68,6 +73,8 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     private ICustomPageProxyPathService customPageProxyPathService;
     @Resource
     private ICustomPageConversationDomainService customPageConversationDomainService;
+    @Resource
+    private ResourceGroupApplicationService resourceGroupApplicationService;
 
     @Override
     public ReqResult<CustomPageConfigModel> create(CustomPageConfigModel model, UserContext userContext) {
@@ -145,14 +152,14 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(model, userContext);
 
-        log.info("[update] update projectsucceeded, project Id={}", model.getId());
+        log.info("[update] update project succeeded, project Id={}", model.getId());
         return ReqResult.success(configModel);
     }
 
     @Override
     public ReqResult<List<ProxyConfig>> addProxy(Long projectId, ProxyConfig proxyConfig,
                                                  UserContext userContext) {
-        log.info("[Domain] updatereverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+        log.info("[Domain] update reverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
@@ -173,7 +180,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         for (int i = 0; i < existingProxyConfigs.size(); i++) {
             ProxyConfig existing = existingProxyConfigs.get(i);
             if (existing.getEnv() == proxyConfig.getEnv() && existing.getPath().equals(proxyConfig.getPath())) {
-                log.error("[Domain] reverse proxy configalready exists, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+                log.error("[Domain] reverse proxy config already exists, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                         proxyConfig.getPath());
                 throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageProxyEnvPathExists);
             }
@@ -192,14 +199,14 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] updatereverse proxy configsucceeded, project Id={}, env={}, path={}",
+        log.info("[Domain] update reverse proxy config succeeded, project Id={}, env={}, path={}",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(existingProxyConfigs);
     }
 
     @Override
     public ReqResult<Void> editProxy(Long projectId, ProxyConfig proxyConfig, UserContext userContext) {
-        log.info("[Domain] editreverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
+        log.info("[Domain] edit reverse proxy config, project Id={}, env={}, path={}", projectId, proxyConfig.getEnv(),
                 proxyConfig.getPath());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
@@ -239,7 +246,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] editreverse proxy configsucceeded, project Id={}, env={}, path={}",
+        log.info("[Domain] edit reverse proxy config succeeded, project Id={}, env={}, path={}",
                 projectId, proxyConfig.getEnv(), proxyConfig.getPath());
         return ReqResult.success(null);
     }
@@ -334,7 +341,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] configure path argssucceeded, project Id={}, page Uri={}",
+        log.info("[Domain] configure path args succeeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -361,7 +368,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         // 查找是否已存在相同pageUri的配置
         for (PageArgConfig existing : existingPageArgConfigs) {
             if (existing.getPageUri().equals(pageArgConfig.getPageUri())) {
-                log.error("[Domain] path configalready exists, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
+                log.error("[Domain] path config already exists, project Id={}, page Uri={}", projectId, pageArgConfig.getPageUri());
                 throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPagePathConfigExists);
             }
         }
@@ -376,7 +383,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] add path configsucceeded, project Id={}, page Uri={}",
+        log.info("[Domain] add path config succeeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -425,7 +432,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] editpath configsucceeded, project Id={}, page Uri={}",
+        log.info("[Domain] edit path config succeeded, project Id={}, page Uri={}",
                 projectId, pageArgConfig.getPageUri());
         return ReqResult.success(null);
     }
@@ -470,7 +477,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] delete path configsucceeded, project Id={}, page Uri={}",
+        log.info("[Domain] delete path config succeeded, project Id={}, page Uri={}",
                 projectId, pageUri);
         return ReqResult.success(null);
     }
@@ -502,7 +509,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] batch configure reverse proxysucceeded, project Id={}, config Count={}",
+        log.info("[Domain] batch configure reverse proxy succeeded, project Id={}, config Count={}",
                 projectId, proxyConfigs != null ? proxyConfigs.size() : 0);
         return ReqResult.success(null);
     }
@@ -546,7 +553,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     }
 
     public ReqResult<InputStream> exportProject(Long projectId, ExportTypeEnum exportType, UserContext userContext) {
-        log.info("[export Project] project Id={}, export Type={},startexportproject", projectId, exportType);
+        log.info("[export Project] project Id={}, export Type={},start export project", projectId, exportType);
 
         Optional.ofNullable(projectId).filter(x -> x > 0)
                 .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
@@ -569,12 +576,12 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         ProjectConfigExportDto configExportDto = exportType == ExportTypeEnum.LATEST ? buildConfigExportDto(configModel) : null;
 
-        InputStream inputStream = pageFileBuildClient.exportProject(projectId, exportVersion, exportType.name(), configExportDto);
+        InputStream inputStream = pageAppFileClient.exportProject(projectId, exportVersion, exportType.name(), configExportDto);
         if (inputStream == null) {
             return ReqResult.error("9999", "Export project failed: build server returned no response");
         }
 
-        log.info("[export Project] exportprojectsucceeded, project Id={}, export Type={}, code Version={}", projectId, exportType, exportVersion);
+        log.info("[export Project] export project succeeded, project Id={}, export Type={}, code Version={}", projectId, exportType, exportVersion);
         return ReqResult.success(inputStream);
     }
 
@@ -596,6 +603,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         if (configModel.getDataSources() != null && !configModel.getDataSources().isEmpty()) {
             List<Map<String, Object>> dataSourcePlugins = new ArrayList<>();
             List<Map<String, Object>> dataSourceWorkflows = new ArrayList<>();
+            Map<Long, String> workflowIdToKey = new HashMap<>();
 
             for (DataSourceDto dataSource : configModel.getDataSources()) {
                 try {
@@ -614,7 +622,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                             try {
                                 spacePermissionService.checkSpaceUserPermission(pluginSpaceId);
                             } catch (Exception e) {
-                                log.info("[export Project] project Id={},exportuserno plugin space permission,ignoreplugin,id={}, error={}", configModel.getId(),
+                                log.info("[export Project] project Id={} export, user no plugin space permission,ignore plugin id={}, error={}", configModel.getId(),
                                         pluginSpaceId, e.getMessage());
                                 continue;
                             }
@@ -634,7 +642,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         if (pluginMap != null) {
                             dataSourcePlugins.add(pluginMap);
                         } else {
-                            log.warn("[export Project] project Id={},queryplugindetailsfailed,id={}, error={}", configModel.getId(),
+                            log.warn("[export Project] project Id={},query plugin details failed,id={}, error={}", configModel.getId(),
                                     dataSource.getId(), errResult != null ? errResult.getMessage() : "无响应");
                             throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPagePluginQueryFailed,
                                     dataSource.getId(), dataSource.getName());
@@ -655,7 +663,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                             try {
                                 spacePermissionService.checkSpaceUserPermission(workflowSpaceId);
                             } catch (Exception e) {
-                                log.info("[export Project] project Id={},exportuserno workflow space permission,ignoreworkflow,id={}, error={}", configModel.getId(),
+                                log.info("[export Project] project Id={} export user, no workflow space permission,ignore workflow id={}, error={}", configModel.getId(),
                                         workflowSpaceId, e.getMessage());
                                 continue;
                             }
@@ -674,8 +682,9 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
                         if (workflowMap != null) {
                             dataSourceWorkflows.add(workflowMap);
+                            workflowIdToKey.put(dataSource.getId(), dataSource.getKey());
                         } else {
-                            log.warn("[export Project] project Id={},queryworkflowdetailsfailed,id={}, error={}", configModel.getId(),
+                            log.warn("[export Project] project Id={},query workflow details failed,id={}, error={}", configModel.getId(),
                                     dataSource.getId(), errResult != null ? errResult.getMessage() : "无响应");
                             throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.customPageWorkflowQueryFailed,
                                     dataSource.getId(), dataSource.getName());
@@ -683,15 +692,49 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
                     }
                 } catch (Exception e) {
-                    log.warn("[export Project] project Id={},querydata sourcedetailsfailed, type={}, id={}, error={}", configModel.getId(),
+                    log.warn("[export Project] project Id={},query data source details failed, type={}, id={}, error={}", configModel.getId(),
                             dataSource.getType(), dataSource.getId(), e.getMessage());
                 }
             }
 
             configDto.setDataSourcePlugins(dataSourcePlugins.isEmpty() ? null : dataSourcePlugins);
             configDto.setDataSourceWorkflows(dataSourceWorkflows.isEmpty() ? null : dataSourceWorkflows);
+            configDto.setResourceGroup(buildResourceGroupExportDto(configModel.getId(), configModel.getSpaceId(), workflowIdToKey));
         }
         return configDto;
+    }
+
+    private ResourceGroupExportDto buildResourceGroupExportDto(Long projectId, Long spaceId, Map<Long, String> workflowIdToKey) {
+        List<ResourceGroupDto> groups = resourceGroupApplicationService.queryList(
+                projectId.toString(), List.of(TargetTypeEnum.Workflow.name()), spaceId);
+        if (groups.isEmpty()) {
+            return null;
+        }
+
+        List<ResourceGroupRelation> relations = resourceGroupApplicationService.queryGroupRelations(groups.get(0).getId());
+        if (CollectionUtils.isEmpty(relations)) {
+            return null;
+        }
+
+        List<String> workflowKeys = new ArrayList<>();
+        for (ResourceGroupRelation relation : relations) {
+            if (!TargetTypeEnum.Workflow.name().equals(relation.getTargetType())) {
+                continue;
+            }
+            String workflowKey = workflowIdToKey.get(relation.getTargetId());
+            if (workflowKey != null) {
+                workflowKeys.add(workflowKey);
+            }
+        }
+        if (workflowKeys.isEmpty()) {
+            return null;
+        }
+
+        ResourceGroupDto group = groups.get(0);
+        return ResourceGroupExportDto.builder()
+                .description(group.getDescription())
+                .workflowKeys(workflowKeys)
+                .build();
     }
 
     @Override
@@ -709,7 +752,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         // }
         // spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
 
-        Map<String, Object> resp = pageFileBuildClient.getProjectContent(projectId, command, proxyPath);
+        Map<String, Object> resp = pageAppFileClient.getProjectContent(projectId, command, proxyPath);
         if (resp == null) {
             return ReqResult.error("9999", "Failed to query project file content: build server returned no response");
         }
@@ -754,9 +797,9 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                 return ReqResult.error("0002", "The specified version does not exist");
             }
 
-            resp = pageFileBuildClient.getProjectContentByVersion(projectId, codeVersion, null, proxyPath);
+            resp = pageAppFileClient.getProjectContentByVersion(projectId, codeVersion, null, proxyPath);
         } else {
-            resp = pageFileBuildClient.getProjectContent(projectId, null, proxyPath);
+            resp = pageAppFileClient.getProjectContent(projectId, null, proxyPath);
         }
 
         if (resp == null) {
@@ -794,11 +837,11 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
     @Override
     public ReqResult<Void> bindDataSource(Long projectId, DataSourceDto dataSource, UserContext userContext) {
-        log.info("[Domain] savedata source, project Id={}, type={}, data Source Id={}",
+        log.info("[Domain] save data source, project Id={}, type={}, data Source Id={}",
                 projectId, dataSource.getType(), dataSource.getId());
 
         if (dataSource.getType() == null || dataSource.getType().trim().isEmpty()) {
-            log.error("[Domain] data sourcetype cannot be empty, project Id={}", projectId);
+            log.error("[Domain] data source type cannot be empty, project Id={}", projectId);
             return ReqResult.error("0003", "Data source type is required");
         }
 
@@ -808,7 +851,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         }
 
         if (dataSource.getName() == null || dataSource.getName().trim().isEmpty()) {
-            log.error("[Domain] data sourcename cannot be empty, project Id={}", projectId);
+            log.error("[Domain] data source name cannot be empty, project Id={}", projectId);
             return ReqResult.error("0005", "Data source name is required");
         }
 
@@ -853,19 +896,19 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] savedata sourcesucceeded, project Id={}, type={}, id={}",
+        log.info("[Domain] save data source succeeded, project Id={}, type={}, id={}",
                 projectId, dataSource.getType(), dataSource.getId());
         return ReqResult.success(null);
     }
 
     @Override
     public ReqResult<Void> unbindDataSource(Long projectId, DataSourceDto dataSource, UserContext userContext) {
-        log.info("[unbind Data Source] unbinddata source, project Id={}, type={}, data Source Id={}",
+        log.info("[unbind Data Source] unbind data source, project Id={}, type={}, data Source Id={}",
                 projectId, dataSource.getType(), dataSource.getId());
 
         CustomPageConfigModel configModel = customPageConfigRepository.getById(projectId);
         if (configModel == null) {
-            log.error("[unbind Data Source] projectnot found, project Id={}", projectId);
+            log.error("[unbind Data Source] project not found, project Id={}", projectId);
             return ReqResult.error("0001", "Project configuration does not exist");
         }
 
@@ -883,7 +926,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                 // 删除现有数据源
                 existingDataSources.remove(existing);
                 found = true;
-                log.info("[unbind Data Source] unbinddata source, project Id={}, type={}, id={}",
+                log.info("[unbind Data Source] unbind data source, project Id={}, type={}, id={}",
                         projectId, dataSource.getType(), dataSource.getId());
                 break;
             }
@@ -903,7 +946,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         customPageConfigRepository.updateById(updateModel, userContext);
 
-        log.info("[Domain] unbinddata sourcesucceeded, project Id={}, type={}, id={}",
+        log.info("[Domain] unbind data source succeeded, project Id={}, type={}, id={}",
                 projectId, dataSource.getType(), dataSource.getId());
         return ReqResult.success(null);
     }
@@ -938,7 +981,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
         // 删除会话记录
         customPageConversationDomainService.deleteByProjectId(projectId, userContext);
 
-        log.info("[Domain] delete projectsucceeded, project Id={}", projectId);
+        log.info("[Domain] delete project succeeded, project Id={}", projectId);
         Map<String, Object> map = new HashMap<>();
         map.put("config", configModel);
         map.put("build", buildModel);
@@ -951,20 +994,20 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
      */
     public void importProjectConfig(CustomPageConfigModel model, UserContext userContext) {
         Long projectId = model.getId();
-        log.info("[upload-project] project Id={},startimportconfig file", projectId);
+        log.info("[upload-project] project Id={},start import config file", projectId);
 
         String proxyPath = "/page/static/" + projectId;
         // 获取项目文件内容
         ReqResult<Map<String, Object>> contentResult = this.queryProjectContent(projectId, "cpage_config", proxyPath);
         if (!contentResult.isSuccess()) {
-            log.warn("[upload-project] project Id={},getprojectfilecontentfailed", projectId);
+            log.warn("[upload-project] project Id={},get project file content failed", projectId);
             return;
         }
 
         Map<String, Object> data = contentResult.getData();
         Object filesObj = data.get("files");
         if (filesObj == null) {
-            log.info("[upload-project] project Id={},projectfile list is empty", projectId);
+            log.info("[upload-project] project Id={},project file list is empty", projectId);
             return;
         }
 
@@ -995,7 +1038,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
             log.info("[upload-project] project Id={},cpage_config.json file not found", projectId);
             return;
         }
-        log.info("[upload-project] project Id={},found cpage_config.json file,startparseconfig", projectId);
+        log.info("[upload-project] project Id={},found cpage_config.json file,start parse config", projectId);
 
         // 解析配置文件
         try {
@@ -1010,7 +1053,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
             // 应用配置
             applyProjectConfig(model, configDto, userContext);
 
-            log.info("[upload-project] project Id={},config fileimportsucceeded", projectId);
+            log.info("[upload-project] project Id={},config file import succeeded", projectId);
         } catch (Exception e) {
             log.error("[upload-project] project Id={}, failed to parse config file", projectId, e);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPageConfigFileParseFailed,
@@ -1024,7 +1067,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
     private void applyProjectConfig(CustomPageConfigModel model, ProjectConfigExportDto configDto,
                                     UserContext userContext) {
         Long projectId = model.getId();
-        log.info("[upload-project] project Id={},startapplyconfig", projectId);
+        log.info("[upload-project] project Id={},start apply config", projectId);
 
         CustomPageConfigModel updateModel = new CustomPageConfigModel();
         updateModel.setId(projectId);
@@ -1062,10 +1105,11 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
         // 创建插件和工作流，准备数据源数据
         List<DataSourceDto> dataSources = new ArrayList<>();
+        Map<String, Long> workflowKeyToId = new HashMap<>();
 
         // 创建插件
         if (configDto.getDataSourcePlugins() != null && !configDto.getDataSourcePlugins().isEmpty()) {
-            log.info("[upload-project] project Id={},startcreateplugin,count={}", projectId,
+            log.info("[upload-project] project Id={},start create plugin,count={}", projectId,
                     configDto.getDataSourcePlugins().size());
             for (Map<String, Object> pluginMap : configDto.getDataSourcePlugins()) {
                 try {
@@ -1087,13 +1131,13 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                     com.xspaceagi.agent.core.sdk.dto.ReqResult<Long> pluginResult = agentRpcService
                             .pluginEnableOrUpdate(pluginDto);
                     if (!pluginResult.isSuccess()) {
-                        log.error("[upload-project] project Id={},createpluginfailed,message={}",
+                        log.error("[upload-project] project Id={},create plugin failed,message={}",
                                 projectId,
                                 pluginResult.getMessage());
                         // throw new BizException("创建插件失败: " + pluginResult.getMessage());
                         continue;
                     } else {
-                        log.info("[upload-project] project Id={},createpluginsucceeded,plugin Id={}",
+                        log.info("[upload-project] project Id={},create plugin succeeded,plugin Id={}",
                                 projectId, pluginResult.getData());
                     }
                     Long pluginId = pluginResult.getData();
@@ -1108,14 +1152,14 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         dataSources.add(dataSource);
                     }
                 } catch (Exception e) {
-                    log.error("[upload-project] project Id={},createpluginfailed", projectId, e);
+                    log.error("[upload-project] project Id={},create plugin failed", projectId, e);
                 }
             }
         }
 
         // 创建工作流
         if (configDto.getDataSourceWorkflows() != null && !configDto.getDataSourceWorkflows().isEmpty()) {
-            log.info("[upload-project] project Id={},startcreateworkflow,count={}", projectId,
+            log.info("[upload-project] project Id={},start create workflow,count={}", projectId,
                     configDto.getDataSourceWorkflows().size());
             for (Map<String, Object> workflowMap : configDto.getDataSourceWorkflows()) {
                 try {
@@ -1139,7 +1183,7 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                         // throw new BizException("创建工作流失败: " + templateResult.getMessage());
                         continue;
                     } else {
-                        log.info("[upload-project] project Id={},createworkflowsucceeded,workflow Id={}",
+                        log.info("[upload-project] project Id={},create workflow succeeded,workflow Id={}",
                                 projectId, templateResult.getData());
                     }
                     Long workflowId = templateResult.getData();
@@ -1152,6 +1196,9 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
                                 .key(workflowKey)
                                 .build();
                         dataSources.add(dataSource);
+                        if (StringUtils.isNotBlank(workflowKey)) {
+                            workflowKeyToId.put(workflowKey, workflowId);
+                        }
                     }
                 } catch (Exception e) {
                     log.error("[upload-project] project Id={}, failed to create workflow", projectId, e);
@@ -1159,9 +1206,11 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
             }
         }
 
+        bindImportedResourceGroup(projectId, model.getName(), model.getSpaceId(), configDto.getResourceGroup(), workflowKeyToId);
+
         if (!dataSources.isEmpty()) {
             updateModel.setDataSources(dataSources);
-            log.info("[upload-project] project Id={},binddata source,data Sources={}", projectId, dataSources);
+            log.info("[upload-project] project Id={},bind data source,data Sources={}", projectId, dataSources);
         }
 
         // 统一更新项目配置
@@ -1174,8 +1223,40 @@ public class CustomPageConfigDomainServiceImpl implements ICustomPageConfigDomai
 
             customPageConfigRepository.updateById(updateModel, userContext);
 
-            log.info("[upload-project] project Id={},update project configsucceeded", projectId);
+            log.info("[upload-project] project Id={},update project config succeeded", projectId);
         }
+    }
+
+    private void bindImportedResourceGroup(Long projectId, String projectName, Long spaceId,
+                                           ResourceGroupExportDto groupExport, Map<String, Long> workflowKeyToId) {
+        if (groupExport == null || CollectionUtils.isEmpty(groupExport.getWorkflowKeys()) || workflowKeyToId.isEmpty()) {
+            return;
+        }
+
+        Long groupId = getOrCreateProjectResourceGroup(projectId, projectName, spaceId, groupExport.getDescription());
+        for (String workflowKey : groupExport.getWorkflowKeys()) {
+            Long workflowId = workflowKeyToId.get(workflowKey);
+            if (workflowId != null) {
+                resourceGroupApplicationService.addResourceToGroup(groupId, TargetTypeEnum.Workflow.name(), workflowId);
+            }
+        }
+    }
+
+    private Long getOrCreateProjectResourceGroup(Long projectId, String projectName, Long spaceId, String description) {
+        String groupName = projectId.toString();
+        List<ResourceGroupDto> existingGroups = resourceGroupApplicationService.queryList(
+                groupName, List.of(TargetTypeEnum.Workflow.name()), spaceId);
+        if (!existingGroups.isEmpty()) {
+            return existingGroups.get(0).getId();
+        }
+
+        ResourceGroupDto resourceGroupDto = new ResourceGroupDto();
+        resourceGroupDto.setName(groupName);
+        resourceGroupDto.setDescription(projectName);
+        resourceGroupDto.setIcon(null);
+        resourceGroupDto.setType(TargetTypeEnum.Workflow.name());
+        resourceGroupDto.setSpaceId(spaceId);
+        return resourceGroupApplicationService.add(resourceGroupDto);
     }
 
     @Override

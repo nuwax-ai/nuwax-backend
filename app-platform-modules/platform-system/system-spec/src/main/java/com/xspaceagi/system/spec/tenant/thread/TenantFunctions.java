@@ -13,7 +13,7 @@ public class TenantFunctions {
         try {
             call = callable.call();
         } catch (Exception e) {
-            log.error("callWithIgnoreCheck error", e);
+            log.warn("callWithIgnoreCheck error {}", e.getMessage());
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }

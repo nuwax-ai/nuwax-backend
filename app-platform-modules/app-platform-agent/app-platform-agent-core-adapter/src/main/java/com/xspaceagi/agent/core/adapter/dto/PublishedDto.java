@@ -1,17 +1,16 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.spec.enums.PluginTypeEnum;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.custompage.sdk.dto.SourceTypeEnum;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 @Data
 public class PublishedDto implements Serializable {
@@ -22,6 +21,8 @@ public class PublishedDto implements Serializable {
     private Long tenantId;
 
     private Long spaceId;
+
+    private Long groupId;
 
     @Schema(description = "目标对象（智能体、工作流、插件）ID")
     private Published.TargetType targetType;
@@ -101,6 +102,9 @@ public class PublishedDto implements Serializable {
 
     @Schema(description = "价格")
     private BigDecimal price;
+
+    @Schema(description = "价格类型, ONE_TIME 次；SECOND 秒；MILLION_TOKEN 百万Token")
+    private String pricingType;
 
     @Schema(description = "是否已订阅，对智能体和技能有效")
     private boolean subscribed;

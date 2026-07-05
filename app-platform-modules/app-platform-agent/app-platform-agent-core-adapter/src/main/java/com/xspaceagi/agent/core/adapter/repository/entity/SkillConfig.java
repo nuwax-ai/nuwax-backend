@@ -57,4 +57,6 @@ public class SkillConfig {
     private String modifiedName; // 最后修改人
 
     private Integer yn; // 逻辑标记,1:有效;-1:无效
+
+    private Long devAgentConversationId;
 }

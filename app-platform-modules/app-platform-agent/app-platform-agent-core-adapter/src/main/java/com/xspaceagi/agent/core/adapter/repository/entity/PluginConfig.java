@@ -39,4 +39,6 @@ public class PluginConfig {
     private Date modified;
 
     private Date created;
+
+    private Long devAgentConversationId;
 }

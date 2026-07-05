@@ -134,7 +134,7 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
 
     @Override
     public List<WorkflowConfig> queryListBySpaceId(Long spaceId) {
-        LambdaQueryWrapper<WorkflowConfig> queryWrapper = new LambdaQueryWrapper<>(WorkflowConfig.builder().spaceId(spaceId).build());
+        LambdaQueryWrapper<WorkflowConfig> queryWrapper = new LambdaQueryWrapper<>(WorkflowConfig.builder().spaceId(spaceId).type(WorkflowConfigDto.Type.Workflow.name()).build());
         return workflowConfigRepository.list(queryWrapper);
     }
 
@@ -165,6 +165,7 @@ public class WorkflowDomainServiceImpl implements WorkflowDomainService {
         WorkflowConfig newWorkflowConfig = WorkflowConfig.builder()
                 .spaceId(targetSpaceId)
                 .creatorId(userId)
+                .type(workflowConfig.getType())
                 .name(workflowConfig.getName())
                 .description(workflowConfig.getDescription())
                 .icon(workflowConfig.getIcon())

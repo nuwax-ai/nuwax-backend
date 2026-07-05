@@ -8,8 +8,8 @@ import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
-import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
+import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -51,6 +51,11 @@ public class SpaceController {
 
     @Resource
     private UserApplicationService userApplicationService;
+
+    private static int compare(SpaceDto o1, SpaceDto o2) {
+        if (o1.getType() == Space.Type.Personal) return -1;
+        return 1;
+    }
 
     @RequireResource(SPACE_CREATE)
     @Operation(summary = "创建团队空间接口")
@@ -135,6 +140,8 @@ public class SpaceController {
                 spaceDto.setCurrentUserRole(spaceUserDto.getRole());
             }
         });
+        //个人空间排到第一个去
+        spaceDtoList.sort(SpaceController::compare);
         I18nUtil.replaceSystemMessage(spaceDtoList);
         return ReqResult.success(spaceDtoList);
     }

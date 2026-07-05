@@ -43,13 +43,93 @@ public class FileTypeUtils {
             return new MediaType("application", "json", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".xml")) {
             return new MediaType("application", "xml", StandardCharsets.UTF_8);
-        } else if (lowerFileName.endsWith(".txt")) {
+        } else if (lowerFileName.endsWith(".txt") || lowerFileName.endsWith(".text")) {
             return new MediaType("text", "plain", StandardCharsets.UTF_8);
         } else if (lowerFileName.endsWith(".md")
                 || lowerFileName.endsWith(".markdown")
                 || lowerFileName.endsWith(".mdown")
                 || lowerFileName.endsWith(".mkd")) {
             return new MediaType("text", "markdown", StandardCharsets.UTF_8);
+        }
+        // 代码文件
+        else if (lowerFileName.endsWith(".py")) {
+            return new MediaType("text", "x-python", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".java")) {
+            return new MediaType("text", "x-java-source", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".ts")) {
+            return new MediaType("text", "typescript", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".tsx")) {
+            return new MediaType("text", "tsx", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".jsx")) {
+            return new MediaType("text", "jsx", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".go")) {
+            return new MediaType("text", "x-go", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".rs")) {
+            return new MediaType("text", "rust", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".c") || lowerFileName.endsWith(".h")) {
+            return new MediaType("text", "x-c", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".cpp") || lowerFileName.endsWith(".hpp")
+                || lowerFileName.endsWith(".cc") || lowerFileName.endsWith(".cxx")) {
+            return new MediaType("text", "x-c++", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".cs")) {
+            return new MediaType("text", "x-csharp", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".php")) {
+            return new MediaType("text", "x-php", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".rb")) {
+            return new MediaType("text", "x-ruby", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".swift")) {
+            return new MediaType("text", "x-swift", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".kt") || lowerFileName.endsWith(".kts")) {
+            return new MediaType("text", "x-kotlin", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".scala") || lowerFileName.endsWith(".sc")) {
+            return new MediaType("text", "x-scala", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".clj")) {
+            return new MediaType("text", "x-clojure", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".lua")) {
+            return new MediaType("text", "x-lua", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".sql")) {
+            return new MediaType("application", "sql", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".sh") || lowerFileName.endsWith(".bash")
+                || lowerFileName.endsWith(".zsh")) {
+            return new MediaType("application", "x-sh", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".fish")) {
+            return new MediaType("application", "x-fish", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".ps1")) {
+            return new MediaType("text", "x-powershell", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".bat") || lowerFileName.endsWith(".cmd")) {
+            return new MediaType("application", "x-bat", StandardCharsets.UTF_8);
+        }
+        // 配置文件
+        else if (lowerFileName.endsWith(".yaml") || lowerFileName.endsWith(".yml")) {
+            return new MediaType("application", "x-yaml", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".toml")) {
+            return new MediaType("application", "toml", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".csv")) {
+            return new MediaType("text", "csv", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".tsv")) {
+            return new MediaType("text", "tab-separated-values", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".ini") || lowerFileName.endsWith(".conf")
+                || lowerFileName.endsWith(".config") || lowerFileName.endsWith(".properties")
+                || lowerFileName.endsWith(".env") || lowerFileName.endsWith(".gitignore")
+                || lowerFileName.endsWith(".gitattributes") || lowerFileName.endsWith(".editorconfig")
+                || lowerFileName.endsWith(".log")) {
+            return new MediaType("text", "plain", StandardCharsets.UTF_8);
+        }
+        // 样式与文档标记
+        else if (lowerFileName.endsWith(".xhtml")) {
+            return new MediaType("application", "xhtml+xml", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".scss") || lowerFileName.endsWith(".sass")) {
+            return new MediaType("text", "x-scss", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".less")) {
+            return new MediaType("text", "x-less", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".styl")) {
+            return new MediaType("text", "x-stylus", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".rst")) {
+            return new MediaType("text", "x-rst", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".adoc") || lowerFileName.endsWith(".asciidoc")) {
+            return new MediaType("text", "asciidoc", StandardCharsets.UTF_8);
+        } else if (lowerFileName.endsWith(".diff") || lowerFileName.endsWith(".patch")) {
+            return new MediaType("text", "x-diff", StandardCharsets.UTF_8);
         }
         // 其他类型
         else if (lowerFileName.endsWith(".pdf")) {

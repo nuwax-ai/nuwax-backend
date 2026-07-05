@@ -61,13 +61,18 @@ public class ComputerFileClient {
 
     /**
      * 获取文件列表
+     *
+     * @param customTargetDir 目标目录，非空时直接作为查询目录，为空则由服务端按 proxyPath 处理
      */
-    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath) {
-        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId) + "/computer/get-file-list")
+    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, String customTargetDir) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId) + "/computer/get-file-list")
                 .queryParam("userId", userId)
                 .queryParam("cId", cId)
-                .queryParam("proxyPath", proxyPath)
-                .toUriString();
+                .queryParam("proxyPath", proxyPath);
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            builder.queryParam("customTargetDir", customTargetDir);
+        }
+        String url = builder.toUriString();
         log.info("[computer-client] userId={} cId={} 调用获取文件列表接口, url={}", userId, cId, url);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -84,15 +89,30 @@ public class ComputerFileClient {
     }
 
     /**
-     * 获取静态文件（流式返回）
+     * 构建静态文件 URL
+     * 始终用 targetPrefix + relativePath 拼接路径，customTargetDir 非空时作为 query param 传给 file-server
      */
-    public Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId) {
-        // 使用 UriComponentsBuilder 来正确处理路径编码
-        String[] prefixSegments = Arrays.stream(targetPrefix.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
-        String[] relativeSegments = Arrays.stream(relativePath.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
+    private String buildStaticFileUrl(Long cId, String targetPrefix, String relativePath, String customTargetDir) {
+        String base = getBaseUrl(cId);
+        String[] prefixSegments = Arrays.stream(targetPrefix.split("/")).filter(s -> !s.isEmpty()).toArray(String[]::new);
+        String[] relativeSegments = Arrays.stream(relativePath.split("/")).filter(s -> !s.isEmpty()).toArray(String[]::new);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(base)
+                .pathSegment(prefixSegments)
+                .pathSegment(relativeSegments);
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            builder.queryParam("customTargetDir", customTargetDir);
+        }
+        return builder.toUriString();
+    }
 
-        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId)).pathSegment(prefixSegments).pathSegment(relativeSegments).toUriString();
-        log.info("[computer-client] logId={} 调用获取静态文件接口, url={}, targetPrefix={}, relativePath={}", logId, url, targetPrefix, relativePath);
+    /**
+     * 获取静态文件（流式返回）
+     *
+     * @param customTargetDir 目标目录，非空时直接使用，为空则用 targetPrefix + relativePath
+     */
+    public Flux<DataBuffer> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String customTargetDir) {
+        String url = buildStaticFileUrl(cId, targetPrefix, relativePath, customTargetDir);
+        log.info("[computer-client] logId={} 调用获取静态文件接口, url={}, targetPrefix={}, relativePath={}, customTargetDir={}", logId, url, targetPrefix, relativePath, customTargetDir);
 
         return webClient.get()
                 .uri(url)
@@ -110,13 +130,12 @@ public class ComputerFileClient {
 
     /**
      * 获取静态文件（流式返回，保留状态码与响应头，支持断点续传）
+     *
+     * @param customTargetDir 目标目录，非空时直接使用，为空则用 targetPrefix + relativePath
      */
-    public ResponseEntity<Flux<DataBuffer>> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader) {
-        String[] prefixSegments = Arrays.stream(targetPrefix.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
-        String[] relativeSegments = Arrays.stream(relativePath.split("/")).filter(segment -> !segment.isEmpty()).toArray(String[]::new);
-
-        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId)).pathSegment(prefixSegments).pathSegment(relativeSegments).toUriString();
-        log.info("[computer-client] logId={} 调用获取静态文件接口(含响应头), url={}, targetPrefix={}, relativePath={}, range={}", logId, url, targetPrefix, relativePath, rangeHeader);
+    public ResponseEntity<Flux<DataBuffer>> getStaticFile(Long cId, String targetPrefix, String relativePath, String logId, String rangeHeader, String customTargetDir) {
+        String url = buildStaticFileUrl(cId, targetPrefix, relativePath, customTargetDir);
+        log.info("[computer-client] logId={} 调用获取静态文件接口(含响应头), url={}, targetPrefix={}, relativePath={}, range={}, customTargetDir={}", logId, url, targetPrefix, relativePath, rangeHeader, customTargetDir);
 
         try {
             ResponseEntity<Flux<DataBuffer>> response = webClient.get()
@@ -151,7 +170,7 @@ public class ComputerFileClient {
     public byte[] getStaticFileAsBytes(Long cId, String staticPrefix, String relativePath, String logId) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
-            getStaticFile(cId, staticPrefix, relativePath, logId).doOnNext(dataBuffer -> {
+            getStaticFile(cId, staticPrefix, relativePath, logId, null).doOnNext(dataBuffer -> {
                 try {
                     byte[] bytes = new byte[dataBuffer.readableByteCount()];
                     dataBuffer.read(bytes);
@@ -175,7 +194,7 @@ public class ComputerFileClient {
     /**
      * 更新文件列表
      */
-    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files) {
+    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, String customTargetDir) {
         String url = getBaseUrl(cId) + "/computer/files-update";
         log.info("[computer-client] userId={} cId={} 更新文件列表, url={}, filesCount={}", userId, cId, url, files != null ? files.size() : 0);
 
@@ -183,6 +202,9 @@ public class ComputerFileClient {
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
         requestBody.put("files", files);
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            requestBody.put("customTargetDir", customTargetDir);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -204,7 +226,7 @@ public class ComputerFileClient {
     /**
      * 上传文件
      */
-    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file) {
+    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, String customTargetDir) {
         String url = getBaseUrl(cId) + "/computer/upload-file";
         log.info("[computer-client] userId={} cId={} 上传用户文件, url={}, filePath={}", userId, cId, url, filePath);
 
@@ -218,6 +240,9 @@ public class ComputerFileClient {
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
         body.add("filePath", filePath);
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            body.add("customTargetDir", customTargetDir);
+        }
 
         HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
@@ -237,7 +262,7 @@ public class ComputerFileClient {
     /**
      * 批量上传文件
      */
-    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files) {
+    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, String customTargetDir) {
         String url = getBaseUrl(cId) + "/computer/upload-files";
         log.info("[computer-client] userId={} cId={} 批量上传用户文件, url={}, fileCount={}, filePathsCount={}", userId, cId, url,
                 files != null ? files.size() : 0, filePaths != null ? filePaths.size() : 0);
@@ -248,6 +273,9 @@ public class ComputerFileClient {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            body.add("customTargetDir", customTargetDir);
+        }
 
         // 确保 filePaths 始终作为数组传递，即使只有一个值
         // 使用循环 add 方法确保每个值都作为数组元素传递
@@ -278,14 +306,52 @@ public class ComputerFileClient {
     }
 
     /**
+     * 导入项目（zip 替换工作空间）
+     */
+    public Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, String customTargetDir) {
+        String url = getBaseUrl(cId) + "/computer/import-project";
+        log.info("[computer-client] userId={} cId={} 导入项目, url={}, fileName={}", userId, cId, url, file.getOriginalFilename());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", file.getResource());
+        body.add("userId", String.valueOf(userId));
+        body.add("cId", String.valueOf(cId));
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            body.add("customTargetDir", customTargetDir);
+        }
+
+        HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {
+                    });
+            Map<String, Object> responseBody = entity.getBody();
+            log.info("[computer-client] userId={} cId={} 导入项目, 响应结果={}", userId, cId, responseBody);
+            return responseBody;
+        } catch (HttpClientErrorException e) {
+            log.warn("[computer-client] userId={} cId={} 调用导入项目接口失败, status={}, responseBody={}", userId, cId,
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            return parseClientErr(userId + "_" + cId, e);
+        }
+    }
+
+    /**
      * 下载全部文件（zip 流式返回）
      */
-    public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId) {
-        String url = UriComponentsBuilder
+    public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, String customTargetDir) {
+        UriComponentsBuilder builder = UriComponentsBuilder
                 .fromHttpUrl(getBaseUrl(cId) + "/computer/download-all-files")
                 .queryParam("userId", userId)
-                .queryParam("cId", cId)
-                .toUriString();
+                .queryParam("cId", cId);
+        if (customTargetDir != null && !customTargetDir.isBlank()) {
+            builder.queryParam("customTargetDir", customTargetDir);
+        }
+        String url = builder.toUriString();
         log.info("[computer-client] logId={} 调用下载全部文件接口, url={}", logId, url);
 
         return webClient.get()
@@ -304,6 +370,30 @@ public class ComputerFileClient {
                 .doOnComplete(() -> {
                     log.info("[computer-client] logId={} 调用下载全部文件接口, 流式传输完成", logId);
                 });
+    }
+
+    /**
+     * 获取沙盒日志
+     */
+    public Map<String, Object> getLogs(Long userId, Long cId, int tailLines) {
+        String url = UriComponentsBuilder.fromHttpUrl(getBaseUrl(cId) + "/computer/get-logs")
+                .queryParam("userId", userId)
+                .queryParam("cId", cId)
+                .queryParam("tailLines", tailLines)
+                .toUriString();
+        log.info("[computer-client] userId={} cId={} 获取沙盒日志, url={}", userId, cId, url);
+
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {
+            });
+            Map<String, Object> body = entity.getBody();
+            log.info("[computer-client] userId={} cId={} 获取沙盒日志, 已响应", userId, cId);
+            return body;
+        } catch (HttpClientErrorException e) {
+            log.warn("[computer-client] userId={} cId={} 获取沙盒日志失败, status={}, responseBody={}", userId, cId, e.getStatusCode(), e.getResponseBodyAsString());
+            return parseClientErr(userId + "_" + cId, e);
+        }
     }
 
     // 捕获4xx错误，尝试解析响应体

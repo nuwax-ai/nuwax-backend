@@ -1,0 +1,308 @@
+{
+  "fromVersion": "1.5",
+  "toVersion": "1.6",
+  "resources": {
+    "added": [
+      {
+        "code": "display_recommend_manage",
+        "name": "展示推荐模块",
+        "description": "展示推荐模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 26,
+        "status": 1
+      },
+      {
+        "code": "display_recommend_query",
+        "name": "查询",
+        "description": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "display_recommend_manage",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "display_recommend_save",
+        "name": "保存",
+        "description": "保存",
+        "source": 1,
+        "type": 2,
+        "parentCode": "display_recommend_manage",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "display_recommend_delete",
+        "name": "删除",
+        "description": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "display_recommend_manage",
+        "sortIndex": 3,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "more_page",
+        "code": "history_conversation",
+        "name": "历史会话",
+        "source": 1,
+        "path": "/more-page/history-conversation",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 7,
+        "status": 1
+      },
+      {
+        "parentCode": "system_manage",
+        "code": "recommend_manage",
+        "name": "推荐管理",
+        "description": "推荐管理",
+        "source": 1,
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 9,
+        "status": 1
+      },
+      {
+        "parentCode": "recommend_manage",
+        "code": "recommend_official",
+        "name": "官方推荐",
+        "description": "官方推荐",
+        "source": 1,
+        "path": "/system/recommend-manage/official",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "recommend_manage",
+        "code": "recommend_chatbox",
+        "name": "对话框智能体",
+        "description": "对话框智能体",
+        "source": 1,
+        "path": "/system/recommend-manage/chatbox",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "eco_market",
+        "old": {
+          "code": "eco_market",
+          "name": "生态市场",
+          "description": "生态市场",
+          "source": 1,
+          "path": "/ecosystem/mcp",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        },
+        "new": {
+          "code": "eco_market",
+          "name": "生态市场",
+          "description": "生态市场",
+          "source": 1,
+          "path": "%siteUrl%/api/eco/redirect",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      },
+      {
+        "key": "permission_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "permission_manage",
+          "name": "菜单权限",
+          "description": "菜单权限",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "permission_manage",
+          "name": "菜单权限",
+          "description": "菜单权限",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_task_manage",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_task_manage",
+          "name": "任务管理",
+          "description": "任务管理",
+          "source": 1,
+          "path": "/system/task-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_task_manage",
+          "name": "任务管理",
+          "description": "任务管理",
+          "source": 1,
+          "path": "/system/task-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_log_query",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 12,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_config",
+        "old": {
+          "parentCode": "system_manage",
+          "code": "system_config",
+          "name": "系统配置",
+          "description": "系统配置",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 12,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "system_manage",
+          "code": "system_config",
+          "name": "系统配置",
+          "description": "系统配置",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 13,
+          "status": 1
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "recommend_manage",
+        "resourceCode": "display_recommend_manage",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "recommend_manage",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "display_recommend_manage",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "recommend_official",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "recommend_chatbox",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "history_conversation",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "eco_market",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "history_conversation",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

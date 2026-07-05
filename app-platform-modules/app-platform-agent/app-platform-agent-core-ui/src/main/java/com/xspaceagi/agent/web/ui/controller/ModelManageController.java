@@ -2,6 +2,7 @@ package com.xspaceagi.agent.web.ui.controller;
 
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.ModelConfigAddDto;
+import com.xspaceagi.agent.core.adapter.dto.SortUpdateDTO;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
 import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
@@ -12,8 +13,8 @@ import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationS
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
-import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,6 +50,13 @@ public class ModelManageController extends BaseController {
         modelConfigDto.setScope(ModelConfig.ModelScopeEnum.Tenant);
         modelConfigDto.setCreatorId(RequestContext.get().getUserId());
         modelApplicationService.addOrUpdate(modelConfigDto);
+        return ReqResult.success();
+    }
+
+    @PostMapping("/sort/update")
+    @Operation(summary = "更新模型排序")
+    public ReqResult<Void> updatePackageSort(@RequestBody List<SortUpdateDTO> updateDTOS) {
+        modelApplicationService.updateModelSort(updateDTOS);
         return ReqResult.success();
     }
 

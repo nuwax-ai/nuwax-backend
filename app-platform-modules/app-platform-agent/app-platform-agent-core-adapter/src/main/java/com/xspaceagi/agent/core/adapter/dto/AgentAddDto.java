@@ -31,4 +31,7 @@ public class AgentAddDto implements Serializable {
 
     @Schema(description = "类型，ChatBot 对话智能体；TaskAgent 任务型智能体", requiredMode = Schema.RequiredMode.REQUIRED)
     private String type;
+
+    @Schema(description = "子类型，ChatBot 问答型、General 通用型、Custom 自定义、Flow 流程协作、Group 群组协作")
+    private String subType;
 }

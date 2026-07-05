@@ -31,6 +31,9 @@ public class PluginBindConfigDto implements Serializable {
     @Schema(description = "是否默认选中，0-否，1-是")
     private Integer defaultSelected;
 
+    @Schema(description = "是否需要审批，0-否，1-是")
+    private Integer callApproval;
+
     public enum PluginInvokeTypeEnum {
         //自动调用、按需调用、手动选择、手动选择和按需调用
         AUTO, ON_DEMAND, MANUAL, MANUAL_ON_DEMAND

@@ -5,6 +5,8 @@ import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -15,6 +17,8 @@ public interface PublishApplicationService {
      */
     SuperPage<PublishedDto> queryPublishedList(PublishedQueryDto publishedQueryDto);
 
+    List<ResourceGroupDto> queryGroupedPublishedList(PublishedQueryDto publishedQueryDto);
+
     SuperPage<PublishedDto> queryPublishedListForAt(PublishedQueryDto publishedQueryDto);
 
     List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds);
@@ -22,6 +26,8 @@ public interface PublishApplicationService {
     List<PublishedDto> queryPublishedListWithoutConfig(Published.TargetType targetType, List<Long> targetIds, String kw);
 
     List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw);
+
+    List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw, boolean returnConfig);
 
     IPage<PublishedDto> queryPublishedListForManage(PublishedQueryDto publishedQueryDto);
 
@@ -38,6 +44,8 @@ public interface PublishApplicationService {
      * 发布申请
      */
     Long publishApply(PublishApplyDto publishApplyDto);
+
+    String publishOrApply(PublishApplySubmitDto publishApplySubmitDto);
 
     /**
      * 通过发布
@@ -108,4 +116,6 @@ public interface PublishApplicationService {
     void updateAccessControlStatus(Published.TargetType targetType, Long targetId, Integer status);
 
     void updatePublishName(Published.TargetType targetType, Long targetId, String name);
+
+    Object checkPermissionAndReturnTargetConfig(Published.TargetType targetType, Long targetId);
 }

@@ -5,7 +5,8 @@ import com.xspaceagi.pay.sdk.enums.MerchantOnboardingType;
 import lombok.Data;
 
 /**
- * 创建/全量更新进件资料（图片字段均为 URL）。
+ * 创建/全量更新进件资料。
+ * 影像优先传 {@code *FileKey}（本系统上传）；{@code *Url} 保留兼容外部链接。
  */
 @Data
 public class MerchantOnboardingUpsertRequest {
@@ -56,4 +57,16 @@ public class MerchantOnboardingUpsertRequest {
     private String photoGateUrl;
     private String photoLandmarkUrl;
     private String bankAccountProofUrl;
+
+
+    /** 营业执照；本系统上传时为 file_entry.file_key */
+    private String orgCertificateFileKey;
+    /** 法人身份证人像面/正面 file_key */
+    private String legalPersonIdCardFrontFileKey;
+    /** 法人身份证国徽面/反面 file_key */
+    private String legalPersonIdCardBackFileKey;
+    private String photoFinanceRoomFileKey;
+    private String photoGateFileKey;
+    private String photoLandmarkFileKey;
+    private String bankAccountProofFileKey;
 }

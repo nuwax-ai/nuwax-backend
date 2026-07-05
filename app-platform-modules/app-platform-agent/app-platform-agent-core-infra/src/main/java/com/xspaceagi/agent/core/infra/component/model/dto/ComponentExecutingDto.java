@@ -114,6 +114,10 @@ public class ComponentExecutingDto implements Serializable {
         // 打开桌面
         OPEN_DESKTOP,
         // 打开文件
-        OPEN_FILE
+        OPEN_FILE,
+        // request_permission
+        REQUEST_PERMISSION,
+        //ASK USER
+        ASK_QUESTION,
     }
 }

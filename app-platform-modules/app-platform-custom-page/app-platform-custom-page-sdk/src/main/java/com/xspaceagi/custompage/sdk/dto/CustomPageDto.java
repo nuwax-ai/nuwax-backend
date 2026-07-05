@@ -88,6 +88,9 @@ public class CustomPageDto {
     @Schema(description = "Space ID")
     private Long spaceId;
 
+    @Schema(description = "Sandbox ID")
+    private Long sandboxId;
+
     @Schema(description = "Created time")
     private Date created;
 

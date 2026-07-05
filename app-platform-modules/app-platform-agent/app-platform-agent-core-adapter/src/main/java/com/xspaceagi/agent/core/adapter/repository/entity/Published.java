@@ -28,6 +28,8 @@ public class Published {
 
     private Long spaceId;
 
+    private Long groupId;
+
     @TableField("user_id")
     private Long userId;
 
@@ -97,7 +99,9 @@ public class Published {
         Knowledge,
         Table,
         Skill,
-        Model
+        Model,
+        PageApp,
+        Mcp
     }
 
     public enum TargetSubType {

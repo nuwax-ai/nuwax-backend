@@ -105,7 +105,7 @@ public class ModelClientFactory {
         return webClientBuilder.clone();
     }
 
-    public ChatClient createChatClient(ModelConfigDto model) {
+    public ChatClient createChatClient(ModelConfigDto model, List<ToolCallback> functionCallbacks) {
         ModelContext modelContext = new ModelContext();
         String traceId = UUID.randomUUID().toString().replace("-", "");
         modelContext.setTraceContext(TraceContext.builder()
@@ -122,7 +122,7 @@ public class ModelClientFactory {
         modelContext.setRequestId(traceId);
         modelContext.setConversationId(traceId);
         modelContext.setModelConfig(model);
-        return createChatClient(modelContext, model, List.of());
+        return createChatClient(modelContext, model, functionCallbacks);
     }
 
     public EmbeddingModel createEmbeddingModel(ModelConfigDto model) {
@@ -186,7 +186,16 @@ public class ModelClientFactory {
         apiInfo.setKey(frontendModelDto.getApiKey());
         apiInfo.setUrl(frontendModelDto.getBaseUrl());
 
-
+        boolean forceToolChoice = false;
+        if (functionCallbacks != null) {
+            forceToolChoice = functionCallbacks.stream().anyMatch(callback -> callback.getToolDefinition().name().contains("json_output"));
+            if (forceToolChoice) {
+                isReasoningModel = false;
+            }
+//            if (model.getTypes() != null && model.getTypes().contains(ModelCapabilityEnum.Reasoning)) {
+//                forceToolChoice = false;
+//            }
+        }
         if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
             var promptOptions = OpenAiChatOptions.builder()
                     .model(model.getModel())
@@ -194,7 +203,8 @@ public class ModelClientFactory {
                     .maxTokens(model.getMaxTokens())
                     .temperature(temperature)
                     .topP(topP)
-                    .extraBody(buildExtraBody(model))
+                    .extraBody(buildExtraBody(model, isReasoningModel))
+                    .toolChoice(forceToolChoice ? OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder.function("json_output") : null)
                     .build();
             OpenAiApi api = new OpenAiApi(apiInfo.getUrl(), new SimpleApiKey(apiInfo.getKey()), CollectionUtils.toMultiValueMap(Map.of()),
                     "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
@@ -225,6 +235,7 @@ public class ModelClientFactory {
                     .temperature(temperature)
                     .topP(topP)
                     .maxTokens(model.getMaxTokens())
+                    .toolChoice(forceToolChoice ? new AnthropicApi.ToolChoiceAny("any", true) : null)
                     .thinking(new AnthropicApi.ChatCompletionRequest.ThinkingConfig(isReasoningModel ? AnthropicApi.ThinkingType.ENABLED : AnthropicApi.ThinkingType.DISABLED, budget))
                     .build();
             AnthropicApi api = AnthropicApi.builder()
@@ -247,16 +258,15 @@ public class ModelClientFactory {
         return builder.build();
     }
 
-    private Map<String, Object> buildExtraBody(ModelConfigDto model) {
+    private Map<String, Object> buildExtraBody(ModelConfigDto model, boolean isReasoningModel) {
         boolean thinkingModel = (model.getTypes() != null && model.getTypes().contains(ModelCapabilityEnum.Reasoning));
         if (!thinkingModel) {
             return null;
         }
-        boolean thinking = model.getIsReasonModel() != null && model.getIsReasonModel() == 1;
         if ("alibaba-cn".equals(model.getPid()) || "alibaba-coding-plan-cn".equals(model.getPid()) || "nuwax".equals(model.getPid())) {
-            return Map.of("enable_thinking", thinking);
+            return Map.of("enable_thinking", isReasoningModel, "thinking", Map.of("type", isReasoningModel ? "enabled" : "disabled"));
         }
-        return Map.of("thinking", Map.of("type", thinking ? "enabled" : "disabled"));
+        return Map.of("thinking", Map.of("type", isReasoningModel ? "enabled" : "disabled"));
     }
 
     private static String completeBaseUrl(String baseUrl) {

@@ -31,6 +31,12 @@ public interface ICustomPageCodingDomainService {
             UserContext userContext);
 
     /**
+     * 批量上传文件
+     */
+    ReqResult<Map<String, Object>> uploadBatchFiles(Long projectId, List<MultipartFile> files,
+            List<String> filePaths, UserContext userContext);
+
+    /**
      * 回滚版本
      */
     ReqResult<Map<String, Object>> rollbackVersion(Long projectId, Integer rollbackTo, UserContext userContext);

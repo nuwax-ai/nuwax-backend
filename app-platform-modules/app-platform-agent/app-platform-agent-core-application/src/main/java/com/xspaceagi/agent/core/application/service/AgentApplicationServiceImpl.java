@@ -13,7 +13,7 @@ import com.xspaceagi.agent.core.adapter.dto.config.plugin.CodePluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.HttpPluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginDto;
-import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.workflow.*;
 import com.xspaceagi.agent.core.adapter.repository.CopyIndexRecordRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.*;
 import com.xspaceagi.agent.core.domain.service.AgentDomainService;
@@ -30,9 +30,13 @@ import com.xspaceagi.agent.core.infra.rpc.*;
 import com.xspaceagi.agent.core.infra.rpc.dto.PageDto;
 import com.xspaceagi.agent.core.spec.enums.*;
 import com.xspaceagi.agent.core.spec.utils.PlaceholderParser;
+import com.xspaceagi.agent.core.spec.utils.SvgIconUtil;
+import com.xspaceagi.agent.core.spec.utils.ZipStringUtils;
 import com.xspaceagi.compose.sdk.request.DorisTableDefineRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
 import com.xspaceagi.compose.sdk.vo.define.TableDefineVo;
+import com.xspaceagi.file.application.service.FileManagementService;
+import com.xspaceagi.file.domain.model.FileRecordDomain;
 import com.xspaceagi.knowledge.sdk.request.KnowledgeCreateRequestVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeConfigVo;
 import com.xspaceagi.mcp.sdk.dto.McpComponentDto;
@@ -67,6 +71,7 @@ import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.file.InMemoryMultipartFile;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -75,9 +80,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -162,6 +169,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @Resource
     private ResourcePricingRpcService resourcePricingRpcService;
 
+    @Resource
+    private FileManagementService fileManagementService;
+
     @Override
     @DSTransactional
     public Long add(AgentConfigDto agent) {
@@ -209,6 +219,23 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 .name(modelConfigDto.getName()).description(modelConfigDto.getModel())
                 .bindConfig(modelBindConfigDto).build();
         agentDomainService.addAgentComponentConfig(agentComponentConfig);
+
+        //AgentFlow初始化工作流
+        if (agent.getSubType() != null && agent.getSubType().equals(AgentConfigDto.AgentSubType.Flow.name())) {
+            WorkflowConfigDto workflowConfigDto = new WorkflowConfigDto();
+            workflowConfigDto.setName(agent.getName());
+            workflowConfigDto.setDescription(agent.getDescription());
+            workflowConfigDto.setCreatorId(agentConfig.getCreatorId());
+            workflowConfigDto.setSpaceId(agent.getSpaceId());
+            workflowConfigDto.setType(WorkflowConfigDto.Type.AgentFlow.name());
+            workflowConfigDto.setAgentId(agentConfig.getId());
+            Long workflowId = workflowApplicationService.add(workflowConfigDto);
+            AgentComponentConfig workflowComponentConfig = AgentComponentConfig.builder().agentId(agentConfig.getId())
+                    .type(AgentComponentConfig.Type.Workflow).targetId(workflowId)
+                    .name(workflowConfigDto.getName()).description(workflowConfigDto.getDescription())
+                    .bindConfig(new WorkflowBindConfigDto()).build();
+            agentDomainService.addAgentComponentConfig(workflowComponentConfig);
+        }
 
         // 添加智能体新增历史记录
         addConfigHistory(agentConfig.getId(), ConfigHistory.Type.Add, I18nUtil.systemMessage("Agent.ConfigHistory.Add"));
@@ -512,6 +539,21 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentConfig.getExtra() == null) {
             agentConfigDto.setExtra(new HashMap<>());
         }
+        if (agentConfigDto.getSubType() == null) {
+            if (AgentConfigDto.AgentType.ChatBot.name().equals(agentConfigDto.getType())) {
+                agentConfigDto.setSubType(AgentConfigDto.AgentSubType.ChatBot.name());
+            }
+            if (AgentConfigDto.AgentType.PageApp.name().equals(agentConfigDto.getType())) {
+                agentConfigDto.setSubType(AgentConfigDto.AgentSubType.PageApp.name());
+            }
+            if (AgentConfigDto.AgentType.TaskAgent.name().equals(agentConfigDto.getType())) {
+                if (agentConfigDto.getDevAgentConversationId() != null) {
+                    agentConfigDto.setSubType(AgentConfigDto.AgentSubType.Custom.name());
+                } else {
+                    agentConfigDto.setSubType(AgentConfigDto.AgentSubType.General.name());
+                }
+            }
+        }
         return agentConfigDto;
     }
 
@@ -558,6 +600,41 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (agentConfig != null) {
             AgentConfigDto agentConfigDto = convertToDto(agentConfig);
             agentConfigDto.setAgentComponentConfigList(queryComponentConfigList(agentId, forExecute));
+            // 从agentConfigDto.getAgentComponentConfigList()中获取类型为Model的组件列表
+            List<AgentComponentConfigDto> modelComponentConfigList = agentConfigDto.getAgentComponentConfigList()
+                    .stream()
+                    .filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Model)
+                    .toList();
+            if (!modelComponentConfigList.isEmpty()) {
+                agentConfigDto.setModelComponentConfig(modelComponentConfigList.get(0));
+            }
+            if (AgentConfigDto.AgentSubType.Flow.name().equals(agentConfigDto.getSubType())) {
+                AgentComponentConfigDto componentConfigDto = agentConfigDto.getAgentComponentConfigList().stream().filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow).findFirst().orElse(null);
+                if (componentConfigDto != null) {
+                    WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryById(componentConfigDto.getTargetId());
+                    Assert.notNull(workflowConfigDto, "AgentFlow configuration is incomplete");
+                    List<WorkflowNodeDto> workflowNodes = forExecute ? workflowApplicationService.queryWorkflowNodeListForTestExecute(workflowConfigDto.getId()) : workflowApplicationService.queryWorkflowNodeList(workflowConfigDto.getId());
+                    workflowConfigDto.setNodes(workflowNodes);
+                    componentConfigDto.setTargetConfig(workflowConfigDto);
+                }
+            }
+            completeCreatorAndSpaceInfo(List.of(agentConfigDto));
+            PublishedDto published = publishApplicationService.queryPublished(Published.TargetType.Agent, agentId);
+            if (published != null) {
+                agentConfigDto.setPublishDate(published.getModified());
+                agentConfigDto.setCategory(published.getCategory());
+            }
+            return agentConfigDto;
+        }
+
+        return null;
+    }
+
+    private AgentConfigDto queryByIdForDetail(Long agentId) {
+        AgentConfig agentConfig = agentDomainService.queryById(agentId);
+        if (agentConfig != null) {
+            AgentConfigDto agentConfigDto = convertToDto(agentConfig);
+            agentConfigDto.setAgentComponentConfigList(queryComponentConfigList(agentId, false));
             // 从agentConfigDto.getAgentComponentConfigList()中获取类型为Model的组件列表
             List<AgentComponentConfigDto> modelComponentConfigList = agentConfigDto.getAgentComponentConfigList()
                     .stream()
@@ -749,6 +826,12 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         return queryComponentConfigList(agentId, false);
     }
 
+    @Override
+    public List<AgentComponentConfigDto> queryComponentConfigListByAgentIdAndType(Long agentId, AgentComponentConfig.Type type) {
+        List<AgentComponentConfig> agentComponentConfigs = agentDomainService.queryComponentConfigsByAgentIdAndType(agentId, type);
+        return convertComponentConfigList(agentId, agentComponentConfigs, false);
+    }
+
     private List<AgentComponentConfigDto> queryComponentConfigList(Long agentId, boolean forExecute) {
         List<AgentComponentConfig> agentComponentConfigList = agentDomainService.queryAgentComponentConfigList(agentId);
         AgentComponentConfig varConfig = agentComponentConfigList.stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Variable).findFirst().orElse(null);
@@ -761,6 +844,21 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             varConfig.setBindConfig(variableBindConfigDto);
             agentDomainService.addAgentComponentConfig(varConfig);
             agentComponentConfigList.add(varConfig);
+        }
+
+        AgentComponentConfig hookConfig = agentComponentConfigList.stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Hook).findFirst().orElse(null);
+        if (hookConfig == null) {
+            //初始化Hook配置
+            HookConfigDto hookBindConfigDto = new HookConfigDto();
+            hookBindConfigDto.setHooks(new ArrayList<>());
+            AgentComponentConfig hookComponentConfig = AgentComponentConfig.builder().agentId(agentId)
+                    .type(AgentComponentConfig.Type.Hook)
+                    .targetId(-1L)
+                    .name("Hook").description("Hook Binding")
+                    .bindConfig(hookBindConfigDto).build();
+            agentComponentConfigList.add(hookComponentConfig);
+            agentDomainService.addAgentComponentConfig(hookComponentConfig);
+
         }
 
         AgentComponentConfig eventConfig = agentComponentConfigList.stream().filter(agentComponentConfig -> agentComponentConfig.getType() == AgentComponentConfig.Type.Event).findFirst().orElse(null);
@@ -788,7 +886,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     .bindConfig(subAgentBindConfigDto).build();
             agentDomainService.addAgentComponentConfig(subAgentConfig);
         }
+        return convertComponentConfigList(agentId, agentComponentConfigList, forExecute);
+    }
 
+    private List<AgentComponentConfigDto> convertComponentConfigList(Long agentId, List<AgentComponentConfig> agentComponentConfigList, boolean forExecute) {
         AgentConfig agentConfig = agentDomainService.queryById(agentId);
         List<AgentComponentConfigDto> agentComponentConfigDtoList = agentComponentConfigList.stream().map(agentComponentConfig -> {
             AgentComponentConfigDto agentComponentConfigDto = AgentComponentConfigDto.builder().build();
@@ -808,6 +909,19 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     public AgentConfigDto queryPublishedConfig(Long agentId, boolean execute) {
+        String cacheKey = "agent_config:" + (execute ? "execute_" : "") + agentId;
+        Object val = redisUtil.get(cacheKey);
+        try {
+            if (val != null) {
+                String config = ZipStringUtils.decompressFromBase64(val.toString());
+                AgentConfigCacheStatusVo agentConfigCacheStatusVo = (AgentConfigCacheStatusVo) JsonSerializeUtil.parseObjectGeneric(config);
+                if (!checkIfCacheExpired(agentConfigCacheStatusVo)) {
+                    return agentConfigCacheStatusVo.getAgentConfig();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("读取Agent缓存失败：{}", cacheKey, e);
+        }
         PublishedDto agentPublished = publishApplicationService.queryPublished(Published.TargetType.Agent, agentId);
         if (agentPublished == null) {
             return null;
@@ -816,6 +930,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         AgentConfig agentConfig = new AgentConfig();
         BeanUtils.copyProperties(agentConfigDto, agentConfig);
         convertComponentConfig(agentConfigDto.getModelComponentConfig());
+        agentConfigDto.setPublishedSpaceIds(agentPublished.getPublishedSpaceIds());
         agentConfigDto.getAgentComponentConfigList().forEach(componentConfigDto -> componentConfigDto.setSpaceId(agentConfigDto.getSpaceId()));
         agentConfigDto.setAgentComponentConfigList(completeAgentComponentConfig(agentConfig, agentConfigDto.getAgentComponentConfigList(), execute));
         AgentComponentConfigDto modelComponentConfig = agentConfigDto.getAgentComponentConfigList()
@@ -830,20 +945,182 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         if (tenantConfig.getDefaultAgentId() != null && agentId.longValue() == tenantConfig.getDefaultAgentId() && CollectionUtils.isNotEmpty(tenantConfig.getDefaultAgentIds())) {
             //排除自身
             tenantConfig.getDefaultAgentIds().remove(agentId);
-            List<PublishedDto> publishedList = publishApplicationService.queryPublishedList(Published.TargetType.Agent, tenantConfig.getDefaultAgentIds());
-            publishedList.forEach(publishedDto -> {
+            for (Long defaultAgentId : tenantConfig.getDefaultAgentIds()) {
+                AgentConfigDto defaultAgentConfigDto = queryPublishedConfig(defaultAgentId, execute);
                 AgentComponentConfigDto agentComponentConfigDto = new AgentComponentConfigDto();
-                agentComponentConfigDto.setAgentId(agentId);
-                agentComponentConfigDto.setTargetId(publishedDto.getTargetId());
-                agentComponentConfigDto.setName(publishedDto.getName());
-                agentComponentConfigDto.setDescription(publishedDto.getDescription());
-                agentComponentConfigDto.setType(AgentComponentConfig.Type.Agent);
                 agentConfigDto.getAgentComponentConfigList().add(agentComponentConfigDto);
-            });
+                agentComponentConfigDto.setAgentId(agentId);
+                agentComponentConfigDto.setTargetId(defaultAgentId);
+                agentComponentConfigDto.setName(defaultAgentConfigDto.getName());
+                agentComponentConfigDto.setDescription(defaultAgentConfigDto.getDescription());
+                agentComponentConfigDto.setType(AgentComponentConfig.Type.Agent);
+                agentComponentConfigDto.setTargetConfig(defaultAgentConfigDto);
+            }
         }
         agentConfigDto.setPublishDate(agentPublished.getModified());
         agentConfigDto.setAccessControl(agentPublished.getAccessControl());
+
+        // 缓存
+        try {
+            AgentConfigCacheStatusVo agentConfigCacheStatusVo = new AgentConfigCacheStatusVo();
+            agentConfigCacheStatusVo.setAgentConfig(agentConfigDto);
+            agentConfigCacheStatusVo.setComponents(new ArrayList<>());
+            AgentConfigCacheStatusVo.AgentComponentCacheStatusVo agentComponentCacheStatusVo = new AgentConfigCacheStatusVo.AgentComponentCacheStatusVo();
+            agentComponentCacheStatusVo.setTargetType(Published.TargetType.Agent);
+            agentComponentCacheStatusVo.setTargetId(agentId);
+            agentComponentCacheStatusVo.setLastUpdated(agentPublished.getModified().getTime());
+            agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+            writeAgentConfigToCache(agentConfigDto, agentConfigCacheStatusVo);
+            String jsonStringGeneric = JsonSerializeUtil.toJSONStringGeneric(agentConfigCacheStatusVo);
+            redisUtil.set(cacheKey, ZipStringUtils.compressToBase64(jsonStringGeneric));
+        } catch (Exception e) {
+            // 忽略
+            log.warn("cache agent_config error", e);
+        }
         return agentConfigDto;
+    }
+
+    private boolean checkIfCacheExpired(AgentConfigCacheStatusVo agentConfigCacheStatusVo) {
+        //按照type分组
+        List<Long> agentIds = agentConfigCacheStatusVo.getComponents().stream().filter(agentComponentCacheStatusVo -> agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Agent).map(AgentConfigCacheStatusVo.AgentComponentCacheStatusVo::getTargetId).toList();
+        List<PublishedDto> publishedDtos = publishApplicationService.queryPublishedListWithoutConfig(Published.TargetType.Agent, agentIds, null);
+        Map<Long, PublishedDto> agentMap = publishedDtos.stream().collect(Collectors.toMap(PublishedDto::getTargetId, publishedDto -> publishedDto, (p, p1) -> p));
+
+        List<Long> pluginIds = agentConfigCacheStatusVo.getComponents().stream().filter(agentComponentCacheStatusVo -> agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Plugin).map(AgentConfigCacheStatusVo.AgentComponentCacheStatusVo::getTargetId).toList();
+        publishedDtos = publishApplicationService.queryPublishedListWithoutConfig(Published.TargetType.Plugin, pluginIds, null);
+        Map<Long, PublishedDto> pluginMap = publishedDtos.stream().collect(Collectors.toMap(PublishedDto::getTargetId, publishedDto -> publishedDto, (p, p1) -> p));
+
+        List<Long> workflowIds = agentConfigCacheStatusVo.getComponents().stream().filter(agentComponentCacheStatusVo -> agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Workflow).map(AgentConfigCacheStatusVo.AgentComponentCacheStatusVo::getTargetId).toList();
+        publishedDtos = publishApplicationService.queryPublishedListWithoutConfig(Published.TargetType.Workflow, workflowIds, null);
+        Map<Long, PublishedDto> workflowMap = publishedDtos.stream().collect(Collectors.toMap(PublishedDto::getTargetId, publishedDto -> publishedDto, (p, p1) -> p));
+
+        List<Long> skillIds = agentConfigCacheStatusVo.getComponents().stream().filter(agentComponentCacheStatusVo -> agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Skill).map(AgentConfigCacheStatusVo.AgentComponentCacheStatusVo::getTargetId).toList();
+        publishedDtos = publishApplicationService.queryPublishedListWithoutConfig(Published.TargetType.Skill, skillIds, null);
+        Map<Long, PublishedDto> skillMap = publishedDtos.stream().collect(Collectors.toMap(PublishedDto::getTargetId, publishedDto -> publishedDto, (p, p1) -> p));
+
+        List<Long> modelIds = agentConfigCacheStatusVo.getComponents().stream().filter(agentComponentCacheStatusVo -> agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Model).map(AgentConfigCacheStatusVo.AgentComponentCacheStatusVo::getTargetId).toList();
+        List<ModelConfigDto> modelConfigDtos = modelApplicationService.queryModelConfigListByIds(modelIds);
+        Map<Long, ModelConfigDto> modelConfigDtoMap = modelConfigDtos.stream().collect(Collectors.toMap(ModelConfigDto::getId, modelConfigDto -> modelConfigDto, (modelConfigDto1, modelConfigDto2) -> modelConfigDto1));
+
+        for (AgentConfigCacheStatusVo.AgentComponentCacheStatusVo agentComponentCacheStatusVo : agentConfigCacheStatusVo.getComponents()) {
+            if (agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Agent && (!agentMap.containsKey(agentComponentCacheStatusVo.getTargetId()) || agentMap.get(agentComponentCacheStatusVo.getTargetId()).getModified().getTime() > agentComponentCacheStatusVo.getLastUpdated())) {
+                return true;
+            }
+            if (agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Plugin && (!pluginMap.containsKey(agentComponentCacheStatusVo.getTargetId()) || pluginMap.get(agentComponentCacheStatusVo.getTargetId()).getModified().getTime() > agentComponentCacheStatusVo.getLastUpdated())) {
+                return true;
+            }
+            if (agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Workflow && (!workflowMap.containsKey(agentComponentCacheStatusVo.getTargetId()) || workflowMap.get(agentComponentCacheStatusVo.getTargetId()).getModified().getTime() > agentComponentCacheStatusVo.getLastUpdated())) {
+                return true;
+            }
+            if (agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Skill && (!skillMap.containsKey(agentComponentCacheStatusVo.getTargetId()) || skillMap.get(agentComponentCacheStatusVo.getTargetId()).getModified().getTime() > agentComponentCacheStatusVo.getLastUpdated())) {
+                return true;
+            }
+            if (agentComponentCacheStatusVo.getTargetType() == Published.TargetType.Model && (!modelConfigDtoMap.containsKey(agentComponentCacheStatusVo.getTargetId()) || modelConfigDtoMap.get(agentComponentCacheStatusVo.getTargetId()).getModified().getTime() > agentComponentCacheStatusVo.getLastUpdated())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void writeAgentConfigToCache(AgentConfigDto agentConfigDto, AgentConfigCacheStatusVo agentConfigCacheStatusVo) {
+        agentConfigDto.getAgentComponentConfigList().forEach(agentComponentConfigDto -> {
+            AgentConfigCacheStatusVo.AgentComponentCacheStatusVo agentComponentCacheStatusVo = new AgentConfigCacheStatusVo.AgentComponentCacheStatusVo();
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Agent) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Agent);
+                agentComponentCacheStatusVo.setTargetId(agentComponentConfigDto.getTargetId());
+                if (agentComponentConfigDto.getTargetConfig() instanceof AgentConfigDto agentConfigDto1 && agentConfigDto1.getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(agentConfigDto1.getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                    writeAgentConfigToCache(agentConfigDto1, agentConfigCacheStatusVo);
+                }
+            }
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Plugin) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Plugin);
+                agentComponentCacheStatusVo.setTargetId(agentComponentConfigDto.getTargetId());
+                if (agentComponentConfigDto.getTargetConfig() instanceof PluginDto pluginDto && pluginDto.getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(pluginDto.getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow) {
+                if (agentComponentConfigDto.getTargetConfig() instanceof WorkflowConfigDto workflowConfigDto && workflowConfigDto.getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setTargetType(Published.TargetType.Workflow);
+                    agentComponentCacheStatusVo.setTargetId(agentComponentConfigDto.getTargetId());
+                    agentComponentCacheStatusVo.setLastUpdated(workflowConfigDto.getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                    writeWorkflowConfigToCache(workflowConfigDto, agentConfigCacheStatusVo);
+                }
+            }
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Skill) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Skill);
+                agentComponentCacheStatusVo.setTargetId(agentComponentConfigDto.getTargetId());
+                if (agentComponentConfigDto.getTargetConfig() instanceof SkillConfigDto skillDto && skillDto.getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(skillDto.getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+
+            // 模型有可能配置发生变化
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Model) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Model);
+                agentComponentCacheStatusVo.setTargetId(agentComponentConfigDto.getTargetId());
+                if (agentComponentConfigDto.getTargetConfig() instanceof ModelConfigDto modelDto && modelDto.getModified() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(modelDto.getModified().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+        });
+    }
+
+    private void writeWorkflowConfigToCache(WorkflowConfigDto workflowConfigDto, AgentConfigCacheStatusVo agentConfigCacheStatusVo) {
+        if (CollectionUtils.isEmpty(workflowConfigDto.getNodes())) {
+            return;
+        }
+        workflowConfigDto.getNodes().forEach(workflowNodeDto -> {
+            AgentConfigCacheStatusVo.AgentComponentCacheStatusVo agentComponentCacheStatusVo = new AgentConfigCacheStatusVo.AgentComponentCacheStatusVo();
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Workflow && workflowNodeDto.getNodeConfig() instanceof WorkflowAsNodeConfigDto workflowAsNodeConfigDto) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Workflow);
+                agentComponentCacheStatusVo.setTargetId(workflowAsNodeConfigDto.getWorkflowId());
+                if (workflowAsNodeConfigDto.getWorkflowConfig() != null && workflowAsNodeConfigDto.getWorkflowConfig().getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(workflowAsNodeConfigDto.getWorkflowConfig().getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                    writeWorkflowConfigToCache(workflowAsNodeConfigDto.getWorkflowConfig(), agentConfigCacheStatusVo);
+                }
+            }
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Plugin && workflowNodeDto.getNodeConfig() instanceof PluginNodeConfigDto pluginNodeConfigDto) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Plugin);
+                agentComponentCacheStatusVo.setTargetId(pluginNodeConfigDto.getPluginId());
+                if (pluginNodeConfigDto.getPluginConfig() != null && pluginNodeConfigDto.getPluginConfig().getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(pluginNodeConfigDto.getPluginConfig().getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Mcp && workflowNodeDto.getNodeConfig() instanceof McpNodeConfigDto mcpNodeConfigDto) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Mcp);
+                agentComponentCacheStatusVo.setTargetId(mcpNodeConfigDto.getMcpId());
+                if (mcpNodeConfigDto.getMcp() != null && mcpNodeConfigDto.getMcp() instanceof McpDto mcpDto) {
+                    agentComponentCacheStatusVo.setLastUpdated(mcpDto.getModified().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.Agent && workflowNodeDto.getNodeConfig() instanceof AgentNodeConfigDto agentNodeConfigDto) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Agent);
+                agentComponentCacheStatusVo.setTargetId(agentNodeConfigDto.getAgentId());
+                if (agentNodeConfigDto.getAgentConfigDto() != null && agentNodeConfigDto.getAgentConfigDto().getPublishDate() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(agentNodeConfigDto.getAgentConfigDto().getPublishDate().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                    writeAgentConfigToCache(agentNodeConfigDto.getAgentConfigDto(), agentConfigCacheStatusVo);
+                }
+            }
+            if (workflowNodeDto.getType() == WorkflowNodeConfig.NodeType.LLM && workflowNodeDto.getNodeConfig() instanceof LLMNodeConfigDto llmNodeConfigDto) {
+                agentComponentCacheStatusVo.setTargetType(Published.TargetType.Model);
+                agentComponentCacheStatusVo.setTargetId(llmNodeConfigDto.getModelId());
+                if (llmNodeConfigDto.getModelConfig() != null && llmNodeConfigDto.getModelConfig().getModified() != null) {
+                    agentComponentCacheStatusVo.setLastUpdated(llmNodeConfigDto.getModelConfig().getModified().getTime());
+                    agentConfigCacheStatusVo.getComponents().add(agentComponentCacheStatusVo);
+                }
+            }
+        });
     }
 
     private AgentConfigDto queryPublishedConfig(Long agentId) {
@@ -889,7 +1166,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 agentDetailDto.setAllowCopy(agentConfigDto.getAllowCopy());
             }
         } else {
-            agentConfigDto = queryById(agentId);
+            agentConfigDto = queryByIdForDetail(agentId);
         }
         if (agentConfigDto == null) {
             return null;
@@ -943,6 +1220,11 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             return agentManualComponentDto;
         }).collect(Collectors.toList());
 
+        boolean isAgentGroup = agentConfigDto.getAgentComponentConfigList().stream().anyMatch(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Agent);
+        if (isAgentGroup) {
+            agentConfigDto.setType(AgentConfigDto.AgentType.TaskAgent.name());
+            agentConfigDto.setSubType(AgentConfigDto.AgentSubType.Group.name());
+        }
         if (agentConfigDto.getModelComponentConfig() != null) {
             ModelBindConfigDto bindConfig = (ModelBindConfigDto) agentConfigDto.getModelComponentConfig().getBindConfig();
             if (bindConfig.getReasoningModelId() != null) {
@@ -985,6 +1267,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDetailDto.setPageHomeIndex(agentConfigDto.getPageHomeIndex());
         agentDetailDto.setCustomPageMenus(agentConfigDto.getCustomPageMenus());
         agentDetailDto.setType(agentConfigDto.getType());
+        agentDetailDto.setSubType(agentConfigDto.getSubType());
         Map<String, Object> variablesMap = new HashMap<>();
         if (RequestContext.get() != null && RequestContext.get().getUser() != null) {
             UserDto userDto = (UserDto) RequestContext.get().getUser();
@@ -1002,10 +1285,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         Map<Long, AgentComponentConfigDto> pageComponentConfigMap = agentConfigDto.getAgentComponentConfigList().stream().filter(agentComponentConfigDto -> agentComponentConfigDto.getType() == AgentComponentConfig.Type.Page)
                 .collect(Collectors.toMap(AgentComponentConfigDto::getTargetId, componentConfigDto -> componentConfigDto, (old, newConfig) -> newConfig));
         if (CollectionUtils.isNotEmpty(agentConfigDto.getOpeningGuidQuestions())) {
-            agentDetailDto.setOpeningGuidQuestions(agentConfigDto.getOpeningGuidQuestions().stream().map(question -> {
-                String questionText = PlaceholderParser.resoleAndReplacePlaceholder(variablesMap, question);
-                return questionText;
-            }).collect(Collectors.toList()));
+            agentDetailDto.setOpeningGuidQuestions(agentConfigDto.getOpeningGuidQuestions().stream().map(question -> PlaceholderParser.resoleAndReplacePlaceholder(variablesMap, question)).collect(Collectors.toList()));
             List<String> newOpeningGuidQuestions = new ArrayList<>();
             agentDetailDto.setGuidQuestionDtos(agentDetailDto.getOpeningGuidQuestions().stream().map(question -> {
                 GuidQuestionDto guidQuestionDto;
@@ -1089,6 +1369,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDetailDto.setAllowAtSkill(agentConfigDto.getAllowAtSkill() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowAtSkill());
         agentDetailDto.setAllowOtherModel(agentConfigDto.getAllowOtherModel() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowOtherModel());
         agentDetailDto.setAllowPrivateSandbox(agentConfigDto.getAllowPrivateSandbox() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowPrivateSandbox());
+        agentDetailDto.setAllowChooseMode(agentConfigDto.getAllowChooseMode() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowChooseMode());
+        agentDetailDto.setEnableVersionControl(agentConfigDto.getEnableVersionControl() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getEnableVersionControl());
 
         // 是否有权限
         agentDetailDto.setHasPermission(true);
@@ -1143,6 +1425,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                     }
                 }
             }
+        }
+
+        if (agentConfigDto.getDevAgentConversationId() != null) {
+            agentDetailDto.setShowPublishBtn(true);
         }
 
         return agentDetailDto;
@@ -1316,6 +1602,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                         agentComponentConfigDto.setDeleted(true);
                         return;
                     }
+                    pluginDto.setPublishDate(publishedDto.getModified());
                     agentComponentConfigDto.setName(pluginDto.getName());
                     agentComponentConfigDto.setDescription(pluginDto.getDescription());
                     agentComponentConfigDto.setIcon(pluginDto.getIcon());
@@ -1491,6 +1778,14 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
             if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Workflow) {
                 WorkflowConfigDto workflowConfigDto = workflowApplicationService.queryPublishedWorkflowConfig(agentComponentConfigDto.getTargetId(), agentComponentConfigDto.getSpaceId(), forExecute);
+                if (workflowConfigDto == null && AgentConfigDto.AgentSubType.Flow.name().equals(agentConfig.getSubType())) {
+                    workflowConfigDto = workflowApplicationService.queryByIdWithoutNodes(agentComponentConfigDto.getTargetId());
+                    Assert.notNull(workflowConfigDto, "AgentFlow configuration is incomplete");
+                    if (forExecute) {
+                        List<WorkflowNodeDto> workflowNodes = workflowApplicationService.queryWorkflowNodeListForTestExecute(workflowConfigDto.getId());
+                        workflowConfigDto.setNodes(workflowNodes);
+                    }
+                }
                 agentComponentConfigDto.setDeleted(workflowConfigDto == null);
                 if (workflowConfigDto != null) {
                     agentComponentConfigDto.setName(workflowConfigDto.getName());
@@ -1658,6 +1953,19 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
             if (agentComponentConfigDto.getType() != AgentComponentConfig.Type.Model && agentComponentConfigDto.getType() != AgentComponentConfig.Type.Variable) {
                 agentComponentConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(agentComponentConfigDto.getIcon(), agentComponentConfigDto.getName(), agentComponentConfigDto.getType().name()));
+            }
+
+            //Agent
+            if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Agent) {
+                AgentConfigDto agentConfigDto = queryPublishedConfig(agentComponentConfigDto.getTargetId(), forExecute);
+                if (agentConfigDto != null) {
+                    agentComponentConfigDto.setTargetConfig(agentConfigDto);
+                    agentComponentConfigDto.setName(agentConfigDto.getName());
+                    agentComponentConfigDto.setDescription(agentConfigDto.getDescription());
+                    agentComponentConfigDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(agentConfigDto.getIcon(), agentConfigDto.getName(), agentComponentConfigDto.getType().name()));
+                } else {
+                    agentComponentConfigDto.setDeleted(true);
+                }
             }
         });
         return agentComponentConfigList.stream().filter(agentComponentConfigDto -> !agentComponentConfigDto.isDeleted()).collect(Collectors.toList());
@@ -2127,6 +2435,57 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
         }
         return modelConfigDtos;
+    }
+
+    @Override
+    public GenerateInfoResultDto generateInfo(GenerateInfoReqDto req) {
+        String sysPrompt = """
+                You are a professional project branding assistant. Based on the user's requirement description, generate:
+                1. A concise project name (no more than 20 characters)
+                2. A one-line project description (no more than 100 characters)
+                3. A minimal SVG icon that visually represents the project
+                
+                SVG requirements (must match the platform default logo size of 200x200 pixels):
+                - Root element must be: <svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                - The icon must be full-bleed: the first element MUST be a background rect covering the entire canvas: <rect x="0" y="0" width="100" height="100" rx="12" fill="..."/>
+                - The main icon shape (not background) must be large: roughly span x from 15 to 85 and y from 12 to 88
+                - Do NOT add low-opacity decorative lines/bars that shrink the perceived icon area
+                - Main graphic elements must occupy most of the canvas; do NOT leave large empty margins
+                - Draw all shapes within the 0-100 coordinate space; do not use width/height/viewBox values other than above
+                - Use simple geometric shapes and clean lines
+                - Use a modern color palette (gradient or solid colors)
+                - Must be a valid, self-contained SVG with no external references
+                - Keep it simple and recognizable at small sizes
+                - The SVG should be visually appealing and professional
+                
+                Identify the language based on the user's description and respond in the same language for name and description.
+                """;
+
+        GenerateInfoAiDto aiResult = modelApplicationService.call(
+                sysPrompt, req.getPrompt(), new ParameterizedTypeReference<GenerateInfoAiDto>() {
+                });
+
+        String iconUrl = null;
+        if (StringUtils.isNotBlank(aiResult.getSvgIcon())) {
+            iconUrl = uploadSvgIcon(aiResult.getSvgIcon(), aiResult.getName() + ".svg");
+        }
+
+        return GenerateInfoResultDto.builder()
+                .name(aiResult.getName())
+                .description(aiResult.getDescription())
+                .iconUrl(iconUrl)
+                .build();
+    }
+
+    public String uploadSvgIcon(String svgIcon, String fileName) {
+        byte[] svgBytes = SvgIconUtil.normalize(svgIcon).getBytes(StandardCharsets.UTF_8);
+        InMemoryMultipartFile multipartFile = new InMemoryMultipartFile(
+                "file", fileName, "image/svg+xml", svgBytes);
+        Long tenantId = RequestContext.get().getTenantId();
+        Long userId = RequestContext.get().getUserId();
+        FileRecordDomain fileRecord = fileManagementService.uploadFile(
+                multipartFile, tenantId, userId, "icon", -1L, null, true);
+        return fileRecord.getFileUrl();
     }
 
     private Map<Long, StatisticsDto> getAgentStatisticsMapByAgentIds(List<Long> agentIds) {

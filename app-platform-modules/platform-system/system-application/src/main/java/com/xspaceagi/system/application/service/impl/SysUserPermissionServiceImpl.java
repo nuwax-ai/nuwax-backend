@@ -153,6 +153,14 @@ public class SysUserPermissionServiceImpl implements SysUserPermissionService {
             MenuNode menuNode = menuNodes.get(0);
             menuNode.setChildren(null);
 
+            // 多个角色/用户组时取最大权限：ALL(1) > PART(2) > NONE(0)
+            Integer mergedMenuBindType = menuNodes.stream()
+                    .map(MenuNode::getMenuBindType)
+                    .filter(Objects::nonNull)
+                    .max(Comparator.comparingInt(SysUserPermissionServiceImpl::menuBindTypePriority))
+                    .orElse(BindTypeEnum.NONE.getCode());
+            menuNode.setMenuBindType(mergedMenuBindType);
+
             // 合并资源（先打平再按 resourceId 分组）
             List<ResourceNode> flatResources = menuNodes.stream()
                     .filter(n -> CollectionUtils.isNotEmpty(n.getResourceTree()))
@@ -191,6 +199,25 @@ public class SysUserPermissionServiceImpl implements SysUserPermissionService {
         }
 
         return result;
+    }
+
+    /**
+     * 菜单绑定类型优先级：ALL(1) > PART(2) > NONE(0)
+     */
+    private static int menuBindTypePriority(Integer bindType) {
+        if (bindType == null) {
+            return 0;
+        }
+        if (BindTypeEnum.ALL.getCode().equals(bindType)) {
+            return 3;
+        }
+        if (BindTypeEnum.PART.getCode().equals(bindType)) {
+            return 2;
+        }
+        if (BindTypeEnum.NONE.getCode().equals(bindType)) {
+            return 1;
+        }
+        return 0;
     }
 
     /**

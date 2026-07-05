@@ -35,6 +35,8 @@ public class Conversation {
 
     private String summary;
 
+    private String icon;
+
     @TableField(value = "variables", typeHandler = JsonTypeHandler.class)
     private Map<String, Object> variables;
 
@@ -53,6 +55,9 @@ public class Conversation {
     private String sandboxServerId;
 
     private String sandboxSessionId;
+    private Long devSpaceId;
+    private String devTargetType;
+    private String devTargetId;
 
     private Date modified;
 
@@ -62,7 +67,9 @@ public class Conversation {
         Chat,
         TempChat,
         TASK,
-        TaskCenter
+        TaskCenter,
+        Development,
+        DevDebug
     }
 
     public enum ConversationTaskStatus {

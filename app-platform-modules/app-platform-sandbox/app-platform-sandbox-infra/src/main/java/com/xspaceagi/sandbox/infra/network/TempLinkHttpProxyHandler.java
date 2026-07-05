@@ -4,7 +4,6 @@ import com.xspaceagi.sandbox.infra.dao.service.SandboxProxyService;
 import com.xspaceagi.sandbox.infra.dao.vo.SandboxProxyBackend;
 import com.xspaceagi.sandbox.infra.network.protocol.Constants;
 import com.xspaceagi.sandbox.infra.network.protocol.ProxyMessage;
-import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -17,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLHandshakeException;
-import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -134,6 +132,11 @@ public class TempLinkHttpProxyHandler extends ChannelInboundHandlerAdapter {
             } catch (Exception ignored) {
             }
         }
+
+        Object pending;
+        while ((pending = receivedLastMessagesWhenConnect.poll()) != null) {
+            ReferenceCountUtil.release(pending);
+        }
         super.channelInactive(ctx);
     }
 
@@ -141,6 +144,7 @@ public class TempLinkHttpProxyHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause.getCause() != null && (cause.getCause() instanceof SSLHandshakeException)) {
             logger.warn("SSLHandshakeException: {}", cause.getCause().getMessage());
+            ctx.close();
             return;
         }
         super.exceptionCaught(ctx, cause);

@@ -10,15 +10,19 @@ import com.xspaceagi.knowledge.sdk.response.KnowledgeFullTextSearchResponseVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeFullTextSearchResultVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeQaResponseVo;
 import com.xspaceagi.knowledge.sdk.response.KnowledgeQaVo;
+import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeDocumentSearchRpcService;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeFullTextSearchRpcService;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeQaSearchRpcService;
+import com.xspaceagi.knowledge.sdk.vo.DocumentAddRequestVo;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,6 +34,9 @@ public class KnowledgeBaseSearcher extends BaseComponent {
     private IKnowledgeQaSearchRpcService knowledgeQaSearchRpcService;
 
     private IKnowledgeFullTextSearchRpcService knowledgeFullTextSearchRpcService;
+
+    @Resource
+    private IKnowledgeDocumentSearchRpcService iKnowledgeDocumentSearchRpcService;
 
     private IFileAccessService iFileAccessService;
 
@@ -59,6 +66,7 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                 } else {
                     queryList.add(QueryText.builder().text(searchContext.getQuery()).searchStrategy(searchContext.getSearchStrategy()).build());
                 }
+                AtomicReference<Throwable> throwableAtomicReference = new AtomicReference<>();
                 List<KnowledgeFullTextSearchResultVo> results = new ArrayList<>();
                 //使用多线程并行调用queryList
                 queryList.parallelStream().forEach(query -> {
@@ -78,6 +86,7 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                             } catch (Exception e) {
                                 // 忽略
                                 log.error("query error: {}", e.getMessage());
+                                throwableAtomicReference.set(e);
                             }
                         });
                     } else if (query.getSearchStrategy() == SearchStrategyEnum.FULL_TEXT) {
@@ -94,6 +103,7 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                         } catch (Exception e) {
                             // 忽略
                             log.error("search error: {}", e.getMessage());
+                            throwableAtomicReference.set(e);
                         }
                     }
                 });
@@ -147,6 +157,10 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                     qaVo.setAnswer(completeFileUrlWithAk(qaVo.getAnswer()));
                     qaVo.setRawTxt(completeFileUrlWithAk(qaVo.getRawTxt()));
                 });
+                if (finalQaVoList.isEmpty() && throwableAtomicReference.get() != null) {
+                    sink.error(throwableAtomicReference.get());
+                    return;
+                }
                 sink.success(finalQaVoList);
             } catch (Throwable e) {
                 log.error("search error", e);
@@ -167,6 +181,10 @@ public class KnowledgeBaseSearcher extends BaseComponent {
         }
 
         return text;
+    }
+
+    public Long documentAdd(DocumentAddRequestVo documentAddRequestVo) {
+        return iKnowledgeDocumentSearchRpcService.documentAdd(documentAddRequestVo);
     }
 
     // 预编译一次，性能更好

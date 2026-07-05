@@ -86,6 +86,25 @@ public class CustomPageCodingApplicationServiceImpl implements ICustomPageCoding
     }
 
     @Override
+    public ReqResult<Map<String, Object>> uploadBatchFiles(Long projectId, List<MultipartFile> files,
+                                                            List<String> filePaths, UserContext userContext) {
+        log.info("[Application] project Id={},upload batch files, fileCount={}", projectId, files != null ? files.size() : 0);
+        Optional.ofNullable(projectId).filter(x -> x > 0)
+                .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("files cannot be empty");
+        }
+        if (filePaths == null || filePaths.size() != files.size()) {
+            throw new IllegalArgumentException("filePaths and files count mismatch");
+        }
+
+        ReqResult<Map<String, Object>> result = customPageCodingDomainService.uploadBatchFiles(projectId, files,
+                filePaths, userContext);
+        log.info("[Application] project Id={},upload batch files completed,result={}", projectId, result);
+        return result;
+    }
+
+    @Override
     public ReqResult<String> getFileProxyUrl(Long projectId, String filePath, UserContext userContext) {
         log.info("[Application] project Id={},getfileproxy URL,file Path={}", projectId, filePath);
         Optional.ofNullable(projectId).filter(x -> x > 0)

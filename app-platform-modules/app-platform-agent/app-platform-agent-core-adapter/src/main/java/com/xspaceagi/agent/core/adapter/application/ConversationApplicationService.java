@@ -5,7 +5,6 @@ import com.xspaceagi.agent.core.adapter.repository.entity.Conversation;
 import org.springframework.ai.chat.messages.Message;
 import reactor.core.publisher.Flux;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +24,8 @@ public interface ConversationApplicationService {
     void createConversationForPageApp(Long userId, Long agentId);
 
     ConversationDto createConversationForTaskCenter(Long tenantId, Long userId, Long agentId);
+
+    ConversationDto createConversationForProjectDevelopment(Long tenantId, Long userId, Long spaceId, Long devAgentId, String targetType, Long targetId);
 
     /**
      * 创建任务会话，返回会话
@@ -51,6 +52,8 @@ public interface ConversationApplicationService {
 
 
     void updateConversationStatus(Long cid, Conversation.ConversationTaskStatus status);
+
+    void updateConversationVariables(Long id, Map<String, Object> variables);
 
     /**
      * 删除会话
@@ -134,7 +137,15 @@ public interface ConversationApplicationService {
 
     Long nextConversationId(Long agentId, String sandboxServerId);
 
-    Collection<? extends Message> getRoundMessages(String conversationId, int i);
+    List<Message> getRoundMessages(String conversationId, int i);
+
+    List<ChatMessageDto> getRoundMessages(String conversationId, Long minId);
 
     void addRoundMessage(String conversationId, Message message);
+
+    void setChatStopStatus(String conversationId);
+
+    boolean isChatStop(String conversationId);
+
+    void clearChatStopStatus(String conversationId);
 }

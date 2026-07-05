@@ -88,6 +88,8 @@ public interface WorkflowApplicationService {
 
     WorkflowConfigDto queryPublishedWorkflowConfig(Long workflowId, Long spaceId);
 
+    List<WorkflowConfigDto> queryPublishedWorkflowConfigs(List<Long> workflowIds);
+
     /**
      * 添加节点
      */

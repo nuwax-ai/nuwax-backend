@@ -87,6 +87,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             int targetPort;
             String targetScheme;
             logger.debug("uri {}, headers {}", request.uri(), request.headers());
+            String traceId = request.headers().get("trace-id");
             //从header里通过x-api-key或Authorization获取apiKey
             String apiKey = request.headers().get("x-api-key");
             String xApiKey = apiKey;
@@ -110,7 +111,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     return;
                 }
 
-                backendModelDto = modelApiProxyConfigService.getBackendModelConfig(apiKey, extractModelId(request.uri()));
+                backendModelDto = modelApiProxyConfigService.getBackendModelConfig(apiKey, extractModelId(request.uri()), traceId);
                 if (backendModelDto == null) {
                     sendError(ctx, "Invalid API Key", msg, HttpResponseStatus.FORBIDDEN);
                     return;
@@ -362,6 +363,10 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             } catch (Exception ignored) {
             }
         }
+        Object pending;
+        while ((pending = receivedLastMsgsWhenConnect.poll()) != null) {
+            ReferenceCountUtil.release(pending);
+        }
         super.channelInactive(ctx);
     }
 
@@ -369,6 +374,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause.getCause() != null && (cause.getCause() instanceof SSLHandshakeException)) {
             logger.warn("SSLHandshakeException: {}", cause.getCause().getMessage());
+            ctx.close();
             return;
         }
         super.exceptionCaught(ctx, cause);
