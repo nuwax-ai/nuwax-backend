@@ -178,6 +178,7 @@ public class TenantConfigDto implements Serializable {
     private boolean isCommercialEdition;
     @Schema(description = "模型API根地址")
     private String baseModelApiUrl;
+    private String ecoWebUrl;
 
     public enum AuthTypeEnum {
         PHONE(1, "手机"),

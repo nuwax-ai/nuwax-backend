@@ -96,7 +96,11 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                 TenantDto tenantDto = tenantConfigApplicationService.queryTenantById(tenantId);
                 TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(tenantId);
                 tenantConfig.setTenantId(tenantId);
-                tenantConfig.setSiteUrl("https://" + tenantDto.getDomain());
+                if ("localhost".equals(tenantDto.getDomain())) {
+                    tenantConfig.setSiteUrl("http://" + tenantDto.getDomain());
+                } else {
+                    tenantConfig.setSiteUrl("https://" + tenantDto.getDomain());
+                }
                 log.info("Tenant information: {}", tenantConfig);
 
                 // tenantConfigApplicationService.getTenantConfig removed the tenant from context, must reset here

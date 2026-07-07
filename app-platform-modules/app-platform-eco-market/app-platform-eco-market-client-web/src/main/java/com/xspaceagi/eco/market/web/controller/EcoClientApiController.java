@@ -48,10 +48,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -156,6 +153,17 @@ public class EcoClientApiController {
         response.getWriter().write(callback + "(" + json + ");");
     }
 
+    @PostMapping("/client/version0")
+    public ReqResult<String> getVersion0() {
+        ReqResult<String> result;
+        try {
+            result = ReqResult.success(version);
+        } catch (Exception e) {
+            result = ReqResult.create("4030", e.getMessage(), null);
+        }
+        return result;
+    }
+
     @Operation(summary = "获取用户空间列表", description = "JSONP接口，需传callback参数")
     @ApiResponse(responseCode = "200", description = "成功",
             content = @Content(mediaType = "application/javascript",
@@ -176,6 +184,24 @@ public class EcoClientApiController {
         response.getWriter().write(callback + "(" + json + ");");
     }
 
+
+    @PostMapping("/client/user/space/list0")
+    public ReqResult<List<SpaceDto>> getUserSpaceList0() {
+        ReqResult<List<SpaceDto>> result;
+        try {
+            if (!RequestContext.get().isLogin()) {
+                return ReqResult.error("Login required");
+            }
+            UserDto userDto = (UserDto) RequestContext.get().getUser();
+            List<SpaceDto> spaces = spaceApplicationService.queryListByUserId(userDto.getId());
+            result = ReqResult.success(spaces);
+        } catch (Exception e) {
+            result = ReqResult.create("4030", e.getMessage(), null);
+        }
+        return result;
+    }
+
+
     @Operation(summary = "根据生态对象查询空间列表（含导入状态）", description = "JSONP接口，需传callback参数")
     @ApiResponse(responseCode = "200", description = "成功",
             content = @Content(mediaType = "application/javascript",
@@ -185,9 +211,27 @@ public class EcoClientApiController {
                                      @RequestParam String targetType,
                                      @RequestParam String ecoTargetId) throws IOException {
         String callback = request.getParameter("callback");
+        UserDto userDto = getRequestUser(request);
+        ReqResult<List<SpaceImportStatus>> result = getImportStatus(userDto, targetType, ecoTargetId);
+        response.setContentType("application/javascript;charset=UTF-8");
+        String json = objectMapper.writeValueAsString(result);
+        response.getWriter().write(callback + "(" + json + ");");
+    }
+
+    @PostMapping("/client/space/import/status0")
+    public ReqResult<List<SpaceImportStatus>> getSpaceImportStatus0(@RequestBody Map<String, String> params) {
+        if (!RequestContext.get().isLogin()) {
+            return ReqResult.error("Login required");
+        }
+        String targetType = params.get("targetType");
+        String ecoTargetId = params.get("ecoTargetId");
+        UserDto userDto = (UserDto) RequestContext.get().getUser();
+        return getImportStatus(userDto, targetType, ecoTargetId);
+    }
+
+    private ReqResult<List<SpaceImportStatus>> getImportStatus(UserDto userDto, String targetType, String ecoTargetId) {
         ReqResult<List<SpaceImportStatus>> result;
         try {
-            UserDto userDto = getRequestUser(request);
             List<SpaceDto> spaces = spaceApplicationService.queryListByUserId(userDto.getId());
             targetType = targetType.equals("Tool") ? "Plugin" : targetType;
             // 查询该用户针对此生态对象已导入的空间记录
@@ -216,9 +260,7 @@ public class EcoClientApiController {
         } catch (Exception e) {
             result = ReqResult.create("4030", e.getMessage(), null);
         }
-        response.setContentType("application/javascript;charset=UTF-8");
-        String json = objectMapper.writeValueAsString(result);
-        response.getWriter().write(callback + "(" + json + ");");
+        return result;
     }
 
     @Operation(summary = "导入配置", description = "JSONP接口，从生态市场导入配置到指定空间")
@@ -229,11 +271,28 @@ public class EcoClientApiController {
     public void importConfig(HttpServletRequest request, HttpServletResponse response,
                              @RequestParam String importDataKey) throws IOException {
         String callback = request.getParameter("callback");
+        UserDto userDto = getRequestUser(request);
+        ReqResult<Map<String, Object>> result = importConfigs(userDto, importDataKey);
+        response.setContentType("application/javascript;charset=UTF-8");
+        String json = objectMapper.writeValueAsString(result);
+        response.getWriter().write(callback + "(" + json + ");");
+    }
+
+    @PostMapping("/client/import/config0")
+    public ReqResult<Map<String, Object>> importConfig0(@RequestBody Map<String, String> params) {
+        if (!RequestContext.get().isLogin()) {
+            return ReqResult.error("Login required");
+        }
+        String importDataKey = params.get("importDataKey");
+        UserDto userDto = (UserDto) RequestContext.get().getUser();
+        return importConfigs(userDto, importDataKey);
+    }
+
+    private ReqResult<Map<String, Object>> importConfigs(UserDto userDto, String importDataKey) {
         ReqResult<Map<String, Object>> result;
         try {
             TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
             tenantConfigDto.setSiteUrl(tenantConfigDto.getSiteConfigUrl());
-            UserDto userDto = getRequestUser(request);
             RequestContext.get().setUserContext(UserContext.builder().userId(userDto.getId()).tenantId(userDto.getTenantId()).userName(userDto.getUserName()).build());
             String content = httpClient.get(ecoMarketProperties.getWeb().getBaseUrl() + "/api/eco/server/getImportData?dataKey=" + importDataKey);
             JSONObject importDataResponse = JSONObject.parseObject(content);
@@ -441,9 +500,8 @@ public class EcoClientApiController {
             log.error("导入失败", e);
             result = ReqResult.create("4030", e.getMessage(), null);
         }
-        response.setContentType("application/javascript;charset=UTF-8");
-        String json = objectMapper.writeValueAsString(result);
-        response.getWriter().write(callback + "(" + json + ");");
+
+        return result;
     }
 
     @Operation(summary = "跳转到生态市场", description = "跳转生态市场")

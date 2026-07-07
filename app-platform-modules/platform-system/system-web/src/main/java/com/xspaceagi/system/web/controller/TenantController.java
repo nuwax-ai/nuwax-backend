@@ -38,6 +38,9 @@ public class TenantController {
     @Value("${model-api-proxy.base-api-url:}")
     private String baseApiUrl;
 
+    @Value("${eco-market.web.base-url:}")
+    private String ecoWebUrl;
+
     @Operation(summary = "租户配置信息查询接口")
     @RequestMapping(path = "/config", method = RequestMethod.GET)
     public ReqResult<TenantConfigDto> getConfig() {
@@ -105,6 +108,7 @@ public class TenantController {
             siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
         }
         tenantConfigDto.setBaseModelApiUrl(siteUrl + "/api/proxy/model");
+        tenantConfigDto.setEcoWebUrl(ecoWebUrl);
         I18nUtil.replaceSystemMessage(tenantConfigDto);
         return ReqResult.success(tenantConfigDto);
     }

@@ -230,6 +230,10 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         if (StringUtils.isNotBlank(baseApiUrl)) {
             siteUrl = baseApiUrl;
         }
+        if (StringUtils.isBlank(siteUrl)){
+            TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(tenantId);
+            siteUrl = tenantConfig.getSiteUrl();
+        }
         if (siteUrl.endsWith("/")) {
             siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
         }
