@@ -19,14 +19,19 @@ import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Slf4j
 @Component
 public class ApiKeyInterceptor implements HandlerInterceptor {
 
@@ -117,6 +122,40 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
                 throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.apiKeyOpenApiNotFound);
             }
 
+            String nuwaxUserUid = request.getHeader("nuwax-user-uid");
+            String nuwaxUserId = request.getHeader("nuwax-user-id");
+            if (openApiDefinition.getRole() == User.Role.User && userDto.getRole() == User.Role.Admin && (StringUtils.isNotBlank(nuwaxUserUid) || StringUtils.isNotBlank(nuwaxUserId))) {
+                // 管理员可以使用用户的身份调用接口
+                UserDto user = null;
+                if (StringUtils.isNotBlank(nuwaxUserId)) {
+                    try {
+                        Long userId = Long.parseLong(nuwaxUserId);
+                        user = userApplicationService.queryById(userId);
+                    } catch (NumberFormatException e) {
+                        log.warn("nuwax-user-id {} is not number", nuwaxUserId);
+                    }
+                }
+                if (user == null && StringUtils.isNotBlank(nuwaxUserUid)) {
+                    user = userApplicationService.queryUserByUid(nuwaxUserUid);
+                    if (user != null) {
+                        user.setLangMap(userDto.getLangMap());
+                        user.setLang(userDto.getLang());
+                    }
+                }
+                if (user != null) {
+                    RequestContext.get().setUserId(user.getId());
+                    RequestContext.get().setUser(user);
+                    RequestContext.get().setUserContext(UserDto.convertToUserContext(user));
+                    log.info("use user {} identity to call api, original user {}", user.getId(), userDto.getId());
+                }
+            }
+
+            String externalUsername = request.getHeader("external-username");
+            if (StringUtils.isNotBlank(externalUsername)) {
+                externalUsername = URLDecoder.decode(externalUsername, StandardCharsets.UTF_8);
+                userDto.setUserName(externalUsername);
+                userDto.setNickName(externalUsername);
+            }
             request.setAttribute("currentAPI", openApiDefinition);
             request.setAttribute("userAccessKey", userAccessKeyDto);
 

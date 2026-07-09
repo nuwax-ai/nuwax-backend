@@ -35,14 +35,15 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Agent 进度：由 {@code /ai-session-sse} 触发订阅 Agent SSE；前端断开后仍保持 Agent 连接直至终态并落库；
+ * Agent 进度：由 {@code /ai-session-sse} 触发订阅 Agent SSE。
+ * 前端 SSE 不设服务端超时，仅在客户端断开、传输错误或采集终态 {@code complete()} 时关闭；
+ * 前端断开后仍保持 Agent 连接直至终态并落库。
  * 实时事件经内存转发给已连接的前端，不从 DB 推送给 SSE。
  */
 @Slf4j
 @Service
 public class CustomPageAgentProgressCaptureService {
 
-    private static final long SSE_TIMEOUT_MS = 10L * 60 * 1000;
     private static final long FRONTEND_ATTACH_POLL_MS = 300L;
     /** 增量落库：每 N 条可持久化事件或间隔 T 触发一次（终态事件与流结束仍立即落库）。 */
     private static final int PERSIST_EVERY_N_EVENTS = 20;
@@ -70,7 +71,8 @@ public class CustomPageAgentProgressCaptureService {
     private ScheduledExecutorService aiAgentProgressScheduler;
 
     /**
-     * 前端连接时启动（或挂接）Agent SSE 采集；断开前端连接不结束 Agent 订阅。
+     * 前端连接时启动 Agent SSE 采集。
+     * 前端 SSE 无服务端超时；客户端断开仅移除 emitter，不结束 Agent 订阅。
      *
      * @param fluxRequestId 与 ai-chat-flux 一致的 request_id，可空则从 DB 最新 USER 推断
      */
@@ -109,7 +111,7 @@ public class CustomPageAgentProgressCaptureService {
     }
 
     private SseEmitter attachEmitterToCapture(String sessionId, CaptureContext active) {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        SseEmitter emitter = new SseEmitter(-1L);
         active.emitters.add(emitter);
         replayBufferedEvents(active, emitter);
         registerEmitterCallbacks(sessionId, emitter, active);
@@ -117,7 +119,7 @@ public class CustomPageAgentProgressCaptureService {
     }
 
     private SseEmitter attachWaitingForLiveCapture(String sessionId, Long projectId) {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        SseEmitter emitter = new SseEmitter(-1L);
         String waitKey = buildSessionWaitKey(projectId, sessionId);
         pendingFrontendEmitters.computeIfAbsent(waitKey, key -> new CopyOnWriteArrayList<>()).add(emitter);
         log.info("[Agent Progress] frontend SSE waiting for live capture, project Id={}, session Id={}", projectId,
@@ -159,7 +161,6 @@ public class CustomPageAgentProgressCaptureService {
             detachPending.run();
         };
         emitter.onCompletion(cleanup);
-        emitter.onTimeout(cleanup);
         emitter.onError(ex -> cleanup.run());
         return emitter;
     }
@@ -385,16 +386,11 @@ public class CustomPageAgentProgressCaptureService {
         return projectId + ":" + fluxRequestId;
     }
 
-    /** 前端断开仅移除 emitter，不结束 Agent 订阅与采集。 */
+    /** 前端连接结束（客户端断开或传输错误）仅移除 emitter，不结束 Agent 订阅与采集。 */
     private void registerEmitterCallbacks(String sessionId, SseEmitter emitter, CaptureContext context) {
         emitter.onCompletion(() -> {
             context.emitters.remove(emitter);
             log.info("[Agent Progress] frontend SSE disconnected, agent capture continues, session Id={}, request Id={}",
-                    sessionId, context.fluxRequestId);
-        });
-        emitter.onTimeout(() -> {
-            context.emitters.remove(emitter);
-            log.warn("[Agent Progress] frontend SSE timeout, agent capture continues, session Id={}, request Id={}",
                     sessionId, context.fluxRequestId);
         });
         emitter.onError(throwable -> {
@@ -456,6 +452,7 @@ public class CustomPageAgentProgressCaptureService {
     }
 
     private void completeEmitters(CaptureContext context) {
+        // 采集终态：主动 complete 前端 SSE，属任务正常结束
         for (SseEmitter emitter : context.emitters) {
             try {
                 emitter.complete();

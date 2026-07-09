@@ -241,6 +241,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         dto.setAgentComputerCpuCores(0);
         dto.setAgentComputerMemoryGb(0);
         //dto.setAgentComputerSwapGb(0);
+        dto.setAgentComputerStorageLimitGb(BigDecimal.valueOf(-1L));
+        dto.setPageAppStorageLimitGb(BigDecimal.valueOf(-1L));
         dto.setAgentFileStorageDays(0);
         dto.setAgentDailyPromptLimit(0);
         dto.setPageDailyPromptLimit(0);
@@ -279,6 +281,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         result.setAgentComputerCpuCores(mergeNullableInt(permissions.stream().map(SysDataPermission::getAgentComputerCpuCores).toList(), 2));
         result.setAgentComputerMemoryGb(mergeNullableInt(permissions.stream().map(SysDataPermission::getAgentComputerMemoryGb).toList(), 4));
         result.setAgentComputerSwapGb(null);
+        result.setAgentComputerStorageLimitGb(mergeDecimalQuota(permissions.stream().map(SysDataPermission::getAgentComputerStorageLimitGb).toList()));
+        result.setPageAppStorageLimitGb(mergeDecimalQuota(permissions.stream().map(SysDataPermission::getPageAppStorageLimitGb).toList()));
         result.setAgentFileStorageDays(mergeQuota(permissions.stream().map(SysDataPermission::getAgentFileStorageDays).toList()));
         result.setAgentDailyPromptLimit(mergeQuota(permissions.stream().map(SysDataPermission::getAgentDailyPromptLimit).toList()));
         result.setPageDailyPromptLimit(mergeQuota(permissions.stream().map(SysDataPermission::getPageDailyPromptLimit).toList()));

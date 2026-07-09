@@ -5,6 +5,7 @@ import com.xspaceagi.file.domain.model.FileRecordDomain;
 import com.xspaceagi.file.infra.storage.FileKeyGenerator;
 import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.file.web.dto.FileRecordVO;
+import com.xspaceagi.sandbox.SandboxUtils;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -105,7 +106,9 @@ public class FileManagementController {
             String fileUrl = iFileAccessService.getFileUrlWithAk(fileRecord.getFileUrl());
             fileRecord.setFileUrl(fileUrl);
         }
-
+        if (SandboxUtils.isSandboxRequest(request)) {
+            fileRecord.setFileUrl(iFileAccessService.getFileUrlWithAk(fileRecord.getFileUrl()));
+        }
         return ReqResult.success(toVO(fileRecord));
     }
 
@@ -371,6 +374,13 @@ public class FileManagementController {
             log.error("File access failed: {}", fileKey, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/file/ak/refresh")
+    @Operation(summary = "更新AK")
+    public ReqResult<String> refreshAk(@RequestParam String url) {
+        url = iFileAccessService.getFileUrlWithAk(url);
+        return ReqResult.success(url);
     }
 
     @GetMapping("/f1/{key}")

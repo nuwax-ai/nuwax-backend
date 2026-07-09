@@ -99,7 +99,6 @@ public class DateUtil {
     /**
      * 字符串转时间，精确到秒
      *
-     * @param String dateString format is yyyy-mm-dd hh:mm:ss
      * @return long timestamp to second
      */
     public static int stringToTimeSecond(String dateString) {
@@ -117,7 +116,6 @@ public class DateUtil {
     /**
      * 字符串转时间，精确到秒
      *
-     * @param String dateString format is yyyyMMddhhmmss
      * @return long timestamp to second
      */
     public static int stringToTimeSecondNoSplit(String dateString) {
@@ -140,7 +138,8 @@ public class DateUtil {
      *
      * @return
      */
-    public static String getNowDate() {
+    public static String getNowTime() {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
     }
+
 }

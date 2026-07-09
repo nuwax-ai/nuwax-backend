@@ -11,6 +11,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.im.application.DingtalkAgentApplicationService;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
+import com.xspaceagi.im.application.util.ImUserContextHelper;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
@@ -63,7 +64,7 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
     @Override
     public AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                            String conversationType, String conversationId,
-                                                           Long tenantId, Long userId, Long agentId, String sessionName) {
+                                                           Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(senderId) || StringUtils.isBlank(message)) {
             return AgentExecuteResultWithConv.builder().text("消息内容不能为空").conversationId(null).agentId(agentId).build();
         }
@@ -83,6 +84,8 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
             if (userDto == null) {
                 return AgentExecuteResultWithConv.builder().text("系统用户不存在").conversationId(null).agentId(agentId).build();
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.DINGTALK,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.DINGTALK, conversationType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
 
@@ -126,13 +129,13 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
     @Override
     public Flux<StreamChunk> executeAgentStream(String senderId, String message, String conversationType, String conversationId,
                                                       Long tenantId, Long userId, Long agentId) {
-        return executeAgentStream(senderId, message, null, conversationType, conversationId, tenantId, userId, agentId);
+        return executeAgentStream(senderId, message, null, conversationType, conversationId, tenantId, userId, agentId, null, null);
     }
 
     @Override
     public Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
                                                       String conversationType, String conversationId,
-                                                      Long tenantId, Long userId, Long agentId) {
+                                                      Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(senderId) || StringUtils.isBlank(message)) {
             return Flux.just(new StreamChunk("消息内容不能为空", true));
         }
@@ -151,10 +154,12 @@ public class DingtalkAgentApplicationServiceImpl implements DingtalkAgentApplica
                 RequestContext.remove();
                 return Flux.just(new StreamChunk("系统用户不存在", true));
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.DINGTALK,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.DINGTALK, conversationType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
 
-            Long convId = getConversationId(senderId, conversationType, conversationId, userId, agentId, tenantId, null);
+            Long convId = getConversationId(senderId, conversationType, conversationId, userId, agentId, tenantId, sessionName);
             if (convId == null) {
                 RequestContext.remove();
                 return Flux.just(new StreamChunk("创建会话失败", true));

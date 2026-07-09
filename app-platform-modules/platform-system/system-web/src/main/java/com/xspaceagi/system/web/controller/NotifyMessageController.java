@@ -75,7 +75,7 @@ public class NotifyMessageController {
     private void pullMessage() {
         UserDto userDto = (UserDto) RequestContext.get().getUser();
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
-        if (userDto.getRole() == User.Role.Admin) {
+        if (userDto.getRole() == User.Role.Admin && StringUtils.isBlank(cancelHB)) {
             // 管理员拉取云端消息
             ClientSecretResponse clientSecretResponse = clientSecretRpcService.queryClientSecret(tenantConfigDto.getTenantId());
             if (clientSecretResponse != null) {
@@ -98,14 +98,12 @@ public class NotifyMessageController {
                             .senderId(RequestContext.get().getUserId())
                             .userIds(Arrays.asList(RequestContext.get().getUserId()))
                             .build()));
-                    if (StringUtils.isBlank(cancelHB)) {
-                        PullMessageAckDto pullMessageAckDto = new PullMessageAckDto();
-                        pullMessageAckDto.setClientId(clientSecretResponse.getClientId());
-                        pullMessageAckDto.setClientSecret(clientSecretResponse.getClientSecret());
-                        pullMessageAckDto.setUid(userDto.getUid());
-                        pullMessageAckDto.setMessageIds(pullMessageResponseDtos.getData().stream().map(PullMessageResponseDto::getMessageId).collect(Collectors.toList()));
-                        httpClient.post(cloudApi + "/api/message/ack", JSON.toJSONString(pullMessageAckDto), Map.of("Authorization", "Bearer " + clientSecretResponse.getClientSecret()));
-                    }
+                    PullMessageAckDto pullMessageAckDto = new PullMessageAckDto();
+                    pullMessageAckDto.setClientId(clientSecretResponse.getClientId());
+                    pullMessageAckDto.setClientSecret(clientSecretResponse.getClientSecret());
+                    pullMessageAckDto.setUid(userDto.getUid());
+                    pullMessageAckDto.setMessageIds(pullMessageResponseDtos.getData().stream().map(PullMessageResponseDto::getMessageId).collect(Collectors.toList()));
+                    httpClient.post(cloudApi + "/api/message/ack", JSON.toJSONString(pullMessageAckDto), Map.of("Authorization", "Bearer " + clientSecretResponse.getClientSecret()));
                 }
             }
         }

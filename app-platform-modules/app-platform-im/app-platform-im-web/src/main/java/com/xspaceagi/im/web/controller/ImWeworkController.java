@@ -1066,6 +1066,7 @@ public class ImWeworkController {
                                             WeworkBotConfig config) {
         try {
             String sessionName = resolveSessionName(senderId, chatType, chatId, config);
+            String imUserName = resolveImUserName(senderId, chatType, chatId, config);
             WeworkAgentApplicationService.AgentExecuteResultWithConv result =
                     weworkAgentApplicationService.executeAgentWithConv(
                             senderId,
@@ -1077,7 +1078,8 @@ public class ImWeworkController {
                             config.getTenantId(),
                             config.getUserId(),
                             config.getNuwaxAgentId(),
-                            sessionName);
+                            sessionName,
+                            imUserName);
 
             log.info("WeCom agent finished: senderId={}, chatType={}, chatId={}, conversationId={}, agentId={}",
                     senderId, chatType, chatId, result.getConversationId(), result.getAgentId());
@@ -1129,6 +1131,27 @@ public class ImWeworkController {
             // ignore
         }
         return StringUtils.isNotBlank(senderId) ? senderId : chatId;
+    }
+
+    /**
+     * 群聊时解析 IM 发送者展示名，用于 Agent 上下文 userName 后缀
+     */
+    private String resolveImUserName(String senderId, String chatType, String chatId, WeworkBotConfig config) {
+        if (ImChatTypeEnum.fromCode(chatType) != ImChatTypeEnum.GROUP) {
+            return null;
+        }
+        try {
+            if (config == null || StringUtils.isBlank(senderId)) {
+                return null;
+            }
+            String accessToken = getCorpAccessToken(config.getCorpId(), config.getCorpSecret());
+            if (StringUtils.isBlank(accessToken)) {
+                return null;
+            }
+            return fetchUserName(accessToken, senderId);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String fetchUserName(String accessToken, String userId) {

@@ -22,7 +22,7 @@ public class SseConfig {
     }
 
     /**
-     * SSE连接管理器，依赖Spring SseEmitter的内置断开检测机制
+     * SSE 连接管理器：无服务端超时，在连接完成、客户端断开或传输错误时清理注册表。
      */
     public static class SseConnectionManager {
         private final ConcurrentHashMap<String, SseEmitter> connections = new ConcurrentHashMap<>();
@@ -33,12 +33,7 @@ public class SseConfig {
         public void addConnection(String sessionId, SseEmitter emitter) {
             connections.put(sessionId, emitter);
 
-            // 设置连接完成和错误回调，依赖Spring的内置机制
             emitter.onCompletion(() -> {
-                connections.remove(sessionId);
-            });
-
-            emitter.onTimeout(() -> {
                 connections.remove(sessionId);
             });
 

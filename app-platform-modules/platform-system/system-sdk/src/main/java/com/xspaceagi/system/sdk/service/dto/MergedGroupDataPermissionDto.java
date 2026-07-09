@@ -47,6 +47,12 @@ public class MergedGroupDataPermissionDto implements Serializable {
     @Schema(description = "智能体电脑交换分区(GB)")
     private Integer agentComputerSwapGb;
 
+    @Schema(description = "智能体电脑存储上限(GB，保留三位小数)，-1 表示不限制")
+    private BigDecimal agentComputerStorageLimitGb;
+
+    @Schema(description = "网页应用存储上限(GB，保留三位小数)，-1 表示不限制")
+    private BigDecimal pageAppStorageLimitGb;
+
     @Schema(description = "通用智能体执行结果文件存储天数，-1 表示不限制")
     private Integer agentFileStorageDays;
 

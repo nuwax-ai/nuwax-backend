@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -70,6 +71,12 @@ public class ChatApiController {
         }
         checkPermission(publishedDto.getPublishedSpaceIds(), publishedDto.getScope());
         ConversationDto conversation = conversationApplicationService.createConversation(RequestContext.get().getUserId(), conversationCreateDto.getAgentId(), false, false, conversationCreateDto.getVariables());
+        if (StringUtils.isNotBlank(conversationCreateDto.getTopic())) {
+            ConversationUpdateDto conversationUpdateDto = new ConversationUpdateDto();
+            conversationUpdateDto.setTopic(conversationCreateDto.getTopic());
+            conversationUpdateDto.setId(conversation.getId());
+            conversationApplicationService.updateConversationTopic(RequestContext.get().getUserId(), conversationUpdateDto);
+        }
         return ReqResult.success(conversation == null ? null : conversation.getId());
     }
 

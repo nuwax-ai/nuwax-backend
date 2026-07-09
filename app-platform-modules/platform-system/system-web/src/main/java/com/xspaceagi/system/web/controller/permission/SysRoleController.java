@@ -322,6 +322,7 @@ public class SysRoleController extends BaseController {
             return ReqResult.error("角色ID不能为空");
         }
         SysDataPermissionBindDto bindDto = dto.getDataPermission();
+        SysDataPermissionConverter.validateBindDto(bindDto);
         SysDataPermission dataPermission = SysDataPermissionConverter.toEntity(bindDto);
         sysRoleApplicationService.bindDataPermission(dto.getRoleId(), dataPermission, getUser());
         return ReqResult.success();

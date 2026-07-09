@@ -55,6 +55,8 @@ public class SysDataPermissionDomainServiceImpl implements SysDataPermissionDoma
         updateObject.setAgentComputerMemoryGb(dataPermission.getAgentComputerMemoryGb());
         updateObject.setAgentComputerSwapGb(dataPermission.getAgentComputerSwapGb());
         updateObject.setAgentComputerCpuCores(dataPermission.getAgentComputerCpuCores());
+        updateObject.setAgentComputerStorageLimitGb(dataPermission.getAgentComputerStorageLimitGb());
+        updateObject.setPageAppStorageLimitGb(dataPermission.getPageAppStorageLimitGb());
         updateObject.setAgentFileStorageDays(dataPermission.getAgentFileStorageDays());
         updateObject.setAgentDailyPromptLimit(dataPermission.getAgentDailyPromptLimit());
         updateObject.setPageDailyPromptLimit(dataPermission.getPageDailyPromptLimit());

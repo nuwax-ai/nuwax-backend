@@ -32,29 +32,34 @@ public interface DingtalkAgentApplicationService {
      */
     AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                     String conversationType, String conversationId,
-                                                    Long tenantId, Long userId, Long agentId, String sessionName);
+                                                    Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
+                                                            String conversationType, String conversationId,
+                                                            Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentWithConv(senderId, message, attachments, conversationType, conversationId, tenantId, userId, agentId, sessionName, null);
+    }
 
     default AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                             String conversationType, String conversationId,
                                                             Long tenantId, Long userId, Long agentId) {
-        return executeAgentWithConv(senderId, message, attachments, conversationType, conversationId, tenantId, userId, agentId, null);
+        return executeAgentWithConv(senderId, message, attachments, conversationType, conversationId, tenantId, userId, agentId, null, null);
     }
 
-    /**
-     * 流式执行智能体，返回增量输出的 Flux
-     *
-     * @param conversationType "1" 单聊，"2" 群聊
-     * @param conversationId   会话 ID，群聊时为 openConversationId
-     */
-    Flux<StreamChunk> executeAgentStream(String senderId, String message, String conversationType, String conversationId,
-                                         Long tenantId, Long userId, Long agentId);
-
-    /**
-     * 流式执行智能体（支持附件）
-     */
     Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
                                          String conversationType, String conversationId,
-                                         Long tenantId, Long userId, Long agentId);
+                                         Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
+                                                 String conversationType, String conversationId,
+                                                 Long tenantId, Long userId, Long agentId) {
+        return executeAgentStream(senderId, message, attachments, conversationType, conversationId, tenantId, userId, agentId, null, null);
+    }
+
+    default Flux<StreamChunk> executeAgentStream(String senderId, String message, String conversationType, String conversationId,
+                                                 Long tenantId, Long userId, Long agentId) {
+        return executeAgentStream(senderId, message, null, conversationType, conversationId, tenantId, userId, agentId, null, null);
+    }
 
     /**
      * 智能体执行结果（包含会话ID）

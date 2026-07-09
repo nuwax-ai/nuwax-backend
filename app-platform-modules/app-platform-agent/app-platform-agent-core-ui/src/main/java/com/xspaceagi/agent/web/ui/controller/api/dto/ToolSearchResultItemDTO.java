@@ -22,6 +22,9 @@ public class ToolSearchResultItemDTO {
     @Schema(description = "目标对象名称")
     private String name;
 
+    @Schema(description = "工具名称")
+    private String toolName;
+
     @Schema(description = "目标对象描述")
     private String description;
 

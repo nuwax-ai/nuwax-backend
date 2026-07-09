@@ -13,6 +13,7 @@ import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.domain.service.PublishDomainService;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
 import com.xspaceagi.agent.web.ui.controller.dto.*;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.sandbox.SandboxUtils;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.dto.UserDto;
@@ -85,6 +86,9 @@ public class PublishController extends BaseController {
 
     @Resource
     private RecommendApplicationService recommendApplicationService;
+
+    @Resource
+    private IFileAccessService iFileAccessService;
 
     // 因为此接口是聚合接口，不通过@RequireResource 校验权限，在接口实现中区分类型后校验权限
     @Operation(summary = "提交发布申请")
@@ -345,6 +349,9 @@ public class PublishController extends BaseController {
         skillDetailDto.setDescription(skillConfigDto.getDescription());
         skillDetailDto.setIcon(skillConfigDto.getIcon());
         skillDetailDto.setFiles(skillConfigDto.getFiles());
+        if (skillDetailDto.getFiles()!=null){
+            skillDetailDto.getFiles().forEach(fileDto -> fileDto.setFileProxyUrl(iFileAccessService.getRealFileUrl(fileDto.getFileProxyUrl())));
+        }
         skillDetailDto.setExt(publishApply.getExt());
         skillDetailDto.setRemark(publishApply.getRemark());
         skillDetailDto.setCreated(publishApply.getCreated());

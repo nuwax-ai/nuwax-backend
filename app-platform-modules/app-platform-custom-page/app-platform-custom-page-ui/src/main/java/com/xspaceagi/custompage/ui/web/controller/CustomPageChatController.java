@@ -126,9 +126,32 @@ public class CustomPageChatController extends BaseController {
             } catch (Exception e) {
                 log.error("query Metric Current error", e);
             }
+            int perUserCpuCores = 2;
+            double perUserMemoryGB = 4;
+            String storageGB = "50Gi";
+            if (userDataPermission != null) {
+                //上限由管理员自己决定
+                if (userDataPermission.getAgentComputerMemoryGb() != null && userDataPermission.getAgentComputerMemoryGb() > 0) {
+                    perUserMemoryGB = userDataPermission.getAgentComputerMemoryGb();
+                }
+                if (userDataPermission.getAgentComputerCpuCores() != null && userDataPermission.getAgentComputerCpuCores() > 0) {
+                    perUserCpuCores = userDataPermission.getAgentComputerCpuCores();
+                }
+                if (userDataPermission.getPageAppStorageLimitGb() != null && userDataPermission.getPageAppStorageLimitGb().intValue() > 0) {
+                    storageGB = userDataPermission.getPageAppStorageLimitGb().intValue() + "Gi";
+                }
+            }
 
+            Map<String, Object> agentConfig = new HashMap<>();
+            chatBody.put("agent_config", agentConfig);
+            agentConfig.put("resource_limits", Map.of(
+                    "cpu", perUserCpuCores,
+                    "memory", perUserMemoryGB * 1024 * 1024 * 1024,
+                    "swap", perUserMemoryGB * 1024 * 1024 * 1024 * 2,
+                    "storage_size", storageGB
+            ));
 
-            SseEmitter emitter = new SseEmitter(10L * 60 * 1000);
+            SseEmitter emitter = new SseEmitter(-1L);
 
             // sendAgentChatFlux() 只是创建了一个 Flux 对象，不会立即执行
             Flux<Map<String, Object>> flux = customPageChatApplicationService.sendAgentChatFlux(chatBody, userContext);

@@ -3,6 +3,9 @@ package com.xspaceagi.system.application.converter;
 import com.xspaceagi.system.application.dto.permission.SysDataPermissionBindDto;
 import com.xspaceagi.system.infra.dao.entity.SysDataPermission;
 import com.xspaceagi.system.sdk.service.dto.TokenLimit;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +21,27 @@ import java.util.Map;
 public final class SysDataPermissionConverter {
 
     private SysDataPermissionConverter() {
+    }
+
+    /**
+     * 校验绑定入参（Controller 入口调用）
+     */
+    public static void validateBindDto(SysDataPermissionBindDto dto) {
+        if (dto == null) {
+            return;
+        }
+        validateIntegerStorageLimitGb(dto.getAgentComputerStorageLimitGb(), "Agent computer storage limit");
+        validateIntegerStorageLimitGb(dto.getPageAppStorageLimitGb(), "Page app storage limit");
+    }
+
+    private static void validateIntegerStorageLimitGb(BigDecimal value, String fieldName) {
+        if (value == null) {
+            return;
+        }
+        if (value.stripTrailingZeros().scale() > 0) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    fieldName + " must be an integer");
+        }
     }
 
     /**
@@ -72,6 +96,8 @@ public final class SysDataPermissionConverter {
         entity.setAgentComputerCpuCores(dto.getAgentComputerCpuCores() != null ? dto.getAgentComputerCpuCores() : 2);
         entity.setAgentComputerMemoryGb(dto.getAgentComputerMemoryGb() != null ? dto.getAgentComputerMemoryGb() : 4);
         entity.setAgentComputerSwapGb(null);
+        entity.setAgentComputerStorageLimitGb(dto.getAgentComputerStorageLimitGb() != null ? dto.getAgentComputerStorageLimitGb() : BigDecimal.valueOf(-1L));
+        entity.setPageAppStorageLimitGb(dto.getPageAppStorageLimitGb() != null ? dto.getPageAppStorageLimitGb() : BigDecimal.valueOf(-1L));
         return entity;
     }
 

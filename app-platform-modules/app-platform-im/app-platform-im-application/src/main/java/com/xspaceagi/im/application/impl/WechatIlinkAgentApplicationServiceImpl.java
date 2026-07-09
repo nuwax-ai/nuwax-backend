@@ -11,6 +11,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.WechatIlinkAgentApplicationService;
 import com.xspaceagi.im.application.WeworkAgentApplicationService;
+import com.xspaceagi.im.application.util.ImUserContextHelper;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
@@ -56,7 +57,8 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
             Long tenantId,
             Long userId,
             Long agentId,
-            String sessionName) {
+            String sessionName,
+            String imUserName) {
         boolean noText = StringUtils.isBlank(userMessage);
         boolean noAttachments = attachments == null || attachments.isEmpty();
         if (StringUtils.isBlank(fromUserId) || (noText && noAttachments)) {
@@ -76,6 +78,7 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
                     if (userDto == null) {
                         return Mono.just(new WeworkAgentApplicationService.AgentExecuteResultWithConv("系统用户不存在", null, agentId));
                     }
+                    ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.WECHAT_ILINK, false, null, imUserName);
                     requestContext.setUser(userDto);
                     requestContext.setUserId(userId);
 

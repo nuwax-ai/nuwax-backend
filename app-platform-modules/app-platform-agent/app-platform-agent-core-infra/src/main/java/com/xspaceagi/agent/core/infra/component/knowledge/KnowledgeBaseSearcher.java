@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.infra.component.knowledge;
 
 import com.xspaceagi.agent.core.infra.component.BaseComponent;
+import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.knowledge.dto.QueryText;
 import com.xspaceagi.agent.core.spec.enums.SearchStrategyEnum;
 import com.xspaceagi.file.sdk.IFileAccessService;
@@ -154,14 +155,28 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                     });
                 }
                 finalQaVoList.forEach(qaVo -> {
-                    qaVo.setAnswer(completeFileUrlWithAk(qaVo.getAnswer()));
-                    qaVo.setRawTxt(completeFileUrlWithAk(qaVo.getRawTxt()));
+                    qaVo.setAnswer(completeFileUrlWithAk(searchContext.getAgentContext(), qaVo.getAnswer()));
+                    qaVo.setRawTxt(completeFileUrlWithAk(searchContext.getAgentContext(), qaVo.getRawTxt()));
                 });
                 if (finalQaVoList.isEmpty() && throwableAtomicReference.get() != null) {
                     sink.error(throwableAtomicReference.get());
                     return;
                 }
-                sink.success(finalQaVoList);
+
+                List<KnowledgeQaVo> result = new ArrayList<>();
+
+                if(finalQaVoList != null) {
+                    Map<String, String> dd = new HashMap<>();
+                    for(KnowledgeQaVo entry : finalQaVoList) {
+                        if(entry.getRawTxt() != null && entry.getRawTxt().length() > 0 && !dd.containsKey(entry.getRawTxt())) {
+                            result.add(entry);
+                            dd.put(entry.getRawTxt(), "");
+                        }
+                    }
+                }
+
+                //sink.success(finalQaVoList);
+                sink.success(result);
             } catch (Throwable e) {
                 log.error("search error", e);
                 sink.error(e);
@@ -170,12 +185,17 @@ public class KnowledgeBaseSearcher extends BaseComponent {
     }
 
     //将文件地址补上AK
-    public String completeFileUrlWithAk(String text) {
+    public String completeFileUrlWithAk(AgentContext agentContext, String text) {
         //从文本中提取所有URL
         if (text != null) {
             List<String> urls = extractUrls(text);
             for (String url : urls) {
-                String fileUrlWithAk = iFileAccessService.getFileUrlWithAk(url);
+                String fileUrlWithAk;
+                if (agentContext != null && agentContext.getTenantConfig() != null) {
+                    fileUrlWithAk = iFileAccessService.getFileUrlWithAk(agentContext.getTenantConfig().getSiteUrl(), url);
+                } else {
+                    fileUrlWithAk = iFileAccessService.getFileUrlWithAk(url);
+                }
                 text = text.replace(url, fileUrlWithAk);
             }
         }

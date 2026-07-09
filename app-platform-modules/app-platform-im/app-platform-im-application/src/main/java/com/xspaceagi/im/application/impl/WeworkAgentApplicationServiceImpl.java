@@ -11,6 +11,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.WeworkAgentApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
+import com.xspaceagi.im.application.util.ImUserContextHelper;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
@@ -62,7 +63,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
     @Override
     public AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                            String chatType, String chatId, String targetType,
-                                                           Long tenantId, Long userId, Long agentId, String sessionName) {
+                                                           Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(senderId) || StringUtils.isBlank(message)) {
             return new AgentExecuteResultWithConv("消息内容不能为空", null, agentId);
         }
@@ -82,6 +83,8 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
             if (userDto == null) {
                 return new AgentExecuteResultWithConv("系统用户不存在", null, agentId);
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.WEWORK,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.WEWORK, chatType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
 
@@ -124,14 +127,14 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
 
     @Override
     public Flux<StreamChunk> executeAgentStream(String senderId, String message, String chatType, String chatId, String targetType,
-                                                Long tenantId, Long userId, Long agentId, String sessionName) {
-        return executeAgentStream(senderId, message, null, chatType, chatId, targetType, tenantId, userId, agentId, sessionName);
+                                                Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
+        return executeAgentStream(senderId, message, null, chatType, chatId, targetType, tenantId, userId, agentId, sessionName, imUserName);
     }
 
     @Override
     public Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
                                                      String chatType, String chatId, String targetType,
-                                                     Long tenantId, Long userId, Long agentId, String sessionName) {
+                                                     Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(senderId) || StringUtils.isBlank(message)) {
             return Flux.just(new StreamChunk("消息内容不能为空", true));
         }
@@ -150,6 +153,8 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
                 RequestContext.remove();
                 return Flux.just(new StreamChunk("系统用户不存在", true));
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.WEWORK,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.WEWORK, chatType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
 

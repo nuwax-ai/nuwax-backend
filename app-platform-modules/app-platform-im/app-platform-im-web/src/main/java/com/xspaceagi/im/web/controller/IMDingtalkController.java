@@ -262,22 +262,26 @@ public class IMDingtalkController {
         String conversationType = body.getString("conversationType");
         String conversationId = body.getString("conversationId");
         String senderStaffId = body.getString("senderStaffId");
-        String sessionName = StringUtils.isNotBlank(senderNick) ? senderNick : null;
-        // 群聊：查群名，失败则回退 senderNick / conversationId（不抛异常）
+        String imUserName = "2".equals(conversationType) ? senderNick : null;
+        String sessionName;
         if ("2".equals(conversationType) && StringUtils.isNotBlank(conversationId)) {
+            // 群聊：优先查群名，失败则固定展示名「群聊」（imUserName 单独承载发送者昵称）
+            sessionName = null;
             try {
                 DingtalkOpenApiClient apiClient = getApiClient(config);
                 String groupName = apiClient.queryGroupName(conversationId);
                 if (StringUtils.isNotBlank(groupName)) {
                     sessionName = groupName;
-                } else if (StringUtils.isBlank(sessionName)) {
-                    sessionName = conversationId;
                 }
             } catch (Exception ignore) {
-                if (StringUtils.isBlank(sessionName)) {
-                    sessionName = conversationId;
-                }
+                // 忽略，回退到默认群聊名
             }
+            if (StringUtils.isBlank(sessionName)) {
+                sessionName = "群聊";
+            }
+        } else {
+            // 单聊：webhook 可能不带 senderNick，回退 senderId
+            sessionName = StringUtils.isNotBlank(senderNick) ? senderNick : senderId;
         }
         if (isNewCommand(userMessage)) {
             createNewConversationForDingtalk(senderId, conversationType, conversationId, sessionName, config);
@@ -290,7 +294,7 @@ public class IMDingtalkController {
             // 一次性输出：非流式，使用 sessionWebhook 发送 Markdown（非互动卡片）
             DingtalkAgentApplicationService.AgentExecuteResultWithConv result = dingtalkAgentApplicationService.executeAgentWithConv(
                     senderId, userMessage, attachments, conversationType, conversationId,
-                    config.getTenantId(), config.getUserId(), config.getAgentId(), sessionName);
+                    config.getTenantId(), config.getUserId(), config.getAgentId(), sessionName, imUserName);
             String fileUrlDomain = getPlatformBaseUrl(config.getTenantId());
             String processed = ImOutputProcessor.processOutput(result.getText(), result.getConversationId(),
                     config.getAgentId(), fileUrlDomain, config.getUserId(), config.getTenantId(),
@@ -316,7 +320,7 @@ public class IMDingtalkController {
 
         if (cardSent) {
             streamAndPatchCard(apiClient, outTrackId, senderId, userMessage, quoteDisplayMessage, attachments, senderNick, senderStaffId,
-                    conversationType, conversationId, config);
+                    conversationType, conversationId, config, sessionName, imUserName);
         } else {
             String lastErr = apiClient.getLastError();
             boolean isCredentialError = lastErr != null && (lastErr.contains("AccessToken 为空")
@@ -340,7 +344,7 @@ public class IMDingtalkController {
                 // 其他失败（如网络等），回退到 sessionWebhook 流式回复
                 log.warn("DingTalk interactive card failed, fallback sessionWebhook: senderId={}, conversationId={}, reason={}", senderId, conversationId, lastErr);
                 streamBySessionWebhook(sessionWebhook, senderId, userMessage, quoteDisplayMessage, attachments, senderNick, senderStaffId,
-                        conversationType, conversationId, config);
+                        conversationType, conversationId, config, sessionName, imUserName);
             }
         }
 
@@ -571,13 +575,14 @@ public class IMDingtalkController {
                                     String userMessage, String quoteDisplayMessage,
                                     List<AttachmentDto> attachments,
                                     String senderNick, String senderStaffId,
-                                    String conversationType, String conversationId, DingtalkBotConfig config) {
+                                    String conversationType, String conversationId, DingtalkBotConfig config,
+                                    String sessionName, String imUserName) {
         AtomicLong lastPatchTime = new AtomicLong(0);
         AtomicInteger lastPatchLength = new AtomicInteger(0);
 
         dingtalkAgentApplicationService.executeAgentStream(
                         senderId, userMessage, attachments, conversationType, conversationId,
-                        config.getTenantId(), config.getUserId(), config.getAgentId())
+                        config.getTenantId(), config.getUserId(), config.getAgentId(), sessionName, imUserName)
                 .filter(chunk -> chunk != null && chunk.getText() != null)
                 .subscribe(
                         chunk -> {
@@ -621,7 +626,8 @@ public class IMDingtalkController {
                                         String quoteDisplayMessage,
                                         List<AttachmentDto> attachments,
                                         String senderNick, String senderStaffId,
-                                        String conversationType, String conversationId, DingtalkBotConfig config) {
+                                        String conversationType, String conversationId, DingtalkBotConfig config,
+                                        String sessionName, String imUserName) {
         if (StringUtils.isBlank(sessionWebhook)) {
             log.warn("DingTalk sessionWebhook empty, cannot reply");
             return;
@@ -632,7 +638,7 @@ public class IMDingtalkController {
 
         dingtalkAgentApplicationService.executeAgentStream(
                         senderId, userMessage, attachments, conversationType, conversationId,
-                        config.getTenantId(), config.getUserId(), config.getAgentId())
+                        config.getTenantId(), config.getUserId(), config.getAgentId(), sessionName, imUserName)
                 .filter(chunk -> chunk != null && chunk.getText() != null)
                 .subscribe(
                         chunk -> {

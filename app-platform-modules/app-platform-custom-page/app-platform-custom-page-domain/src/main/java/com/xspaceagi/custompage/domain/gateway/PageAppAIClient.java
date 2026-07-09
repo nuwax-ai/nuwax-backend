@@ -63,8 +63,8 @@ public class PageAppAIClient {
 
     private RestTemplate createRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000); // 连接超时 5秒
-        factory.setReadTimeout(60000); // 读取超时 60秒
+        factory.setConnectTimeout(30000); // 连接超时 30秒
+        factory.setReadTimeout(120_000); // 读取超时 120秒（/chat 接单响应，进度走 SSE）
         return new RestTemplate(factory);
     }
 

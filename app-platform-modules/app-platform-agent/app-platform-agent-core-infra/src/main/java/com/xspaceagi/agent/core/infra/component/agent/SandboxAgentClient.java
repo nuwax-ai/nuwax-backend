@@ -351,6 +351,7 @@ public class SandboxAgentClient {
 
                         int perUserCpuCores = sandboxServer.getPerUserCpuCores();
                         double perUserMemoryGB = sandboxServer.getPerUserMemoryGB();
+                        String storageGB = "50Gi";
                         UserDataPermissionDto userDataPermission = agentContext.getUserDataPermission();
                         if (userDataPermission != null) {
                             //上限由管理员自己决定
@@ -359,6 +360,9 @@ public class SandboxAgentClient {
                             }
                             if (userDataPermission.getAgentComputerCpuCores() != null && userDataPermission.getAgentComputerCpuCores() > 0) {
                                 perUserCpuCores = userDataPermission.getAgentComputerCpuCores();
+                            }
+                            if (userDataPermission.getAgentComputerStorageLimitGb() != null && userDataPermission.getAgentComputerStorageLimitGb().intValue() > 0) {
+                                storageGB = userDataPermission.getAgentComputerStorageLimitGb().intValue() + "Gi";
                             }
                         }
 
@@ -369,7 +373,12 @@ public class SandboxAgentClient {
                                 .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(Map.of(
                                         "user_id", agentContext.getUserId().toString(),
                                         "project_id", agentContext.getConversationId(),
-                                        "resource_limits", Map.of("cpu", perUserCpuCores, "memory", perUserMemoryGB * 1024 * 1024 * 1024, "swap", perUserMemoryGB * 1024 * 1024 * 1024 * 2)
+                                        "resource_limits", Map.of(
+                                                "cpu", perUserCpuCores,
+                                                "memory", perUserMemoryGB * 1024 * 1024 * 1024,
+                                                "swap", perUserMemoryGB * 1024 * 1024 * 1024 * 2,
+                                                "storage_size", storageGB
+                                        )
                                 )))).build();
                         log.info("Sandbox starting, userId {}, conversationId {}", agentContext.getUserId(), agentContext.getConversationId());
                         CompletableFuture<HttpResponse<String>> startHttpResponseCompletableFuture = httpClient.sendAsync(startRequest, HttpResponse.BodyHandlers.ofString());
@@ -511,6 +520,24 @@ public class SandboxAgentClient {
         if (agentContext.isUseSate()) {
             projectId = agentContext.getConversationId() + "_" + agentContext.getAgentConfig().getId();
         }
+
+        int perUserCpuCores = sandboxServer.getPerUserCpuCores();
+        double perUserMemoryGB = sandboxServer.getPerUserMemoryGB();
+        String storageGB = "50Gi";
+        UserDataPermissionDto userDataPermission = agentContext.getUserDataPermission();
+        if (userDataPermission != null) {
+            //上限由管理员自己决定
+            if (userDataPermission.getAgentComputerMemoryGb() != null && userDataPermission.getAgentComputerMemoryGb() > 0) {
+                perUserMemoryGB = userDataPermission.getAgentComputerMemoryGb();
+            }
+            if (userDataPermission.getAgentComputerCpuCores() != null && userDataPermission.getAgentComputerCpuCores() > 0) {
+                perUserCpuCores = userDataPermission.getAgentComputerCpuCores();
+            }
+            if (userDataPermission.getAgentComputerStorageLimitGb() != null && userDataPermission.getAgentComputerStorageLimitGb().intValue() > 0) {
+                storageGB = userDataPermission.getAgentComputerStorageLimitGb().intValue() + "Gi";
+            }
+        }
+
         AgentRequest agentRequest = AgentRequest.builder()
                 .user_id(agentContext.getUserId().toString())
                 .project_id(projectId)
@@ -537,9 +564,10 @@ public class SandboxAgentClient {
                         .agent_server(buildAgentServer(agentContext, sandboxServer, modelConfig))
                         .context_servers(buildContextServers(agentContext))
                         .resource_limits(AgentRequest.ResourceLimits.builder()
-                                .cpu_limit(sandboxServer.getPerUserCpuCores())
-                                .memory_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024))
-                                .swap_limit((long) (sandboxServer.getPerUserMemoryGB() * 1024 * 1024 * 1024) * 2)
+                                .cpu(sandboxServer.getPerUserCpuCores())
+                                .memory((long) (perUserMemoryGB * 1024 * 1024 * 1024))
+                                .swap((long) perUserCpuCores * 1024 * 1024 * 1024)
+                                .storage_size(storageGB)
                                 .build())
                         .build())
                 .build();

@@ -20,5 +20,17 @@ public interface WechatIlinkAgentApplicationService {
             Long tenantId,
             Long userId,
             Long agentId,
-            String sessionName);
+            String sessionName,
+            String imUserName);
+
+    default Mono<WeworkAgentApplicationService.AgentExecuteResultWithConv> executeAgentWithConv(
+            String fromUserId,
+            String userMessage,
+            List<AttachmentDto> attachments,
+            Long tenantId,
+            Long userId,
+            Long agentId,
+            String sessionName) {
+        return executeAgentWithConv(fromUserId, userMessage, attachments, tenantId, userId, agentId, sessionName, null);
+    }
 }

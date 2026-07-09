@@ -18,7 +18,6 @@ import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.agent.AgentExecutor;
 import com.xspaceagi.agent.core.infra.component.agent.SandboxAgentClient;
 import com.xspaceagi.agent.core.infra.component.agent.dto.AgentExecuteResult;
-import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecuteResult;
 import com.xspaceagi.agent.core.infra.component.workflow.handler.QANodeHandler;
 import com.xspaceagi.agent.core.infra.rpc.GitRpcClient;
 import com.xspaceagi.agent.core.infra.rpc.McpRpcService;
@@ -1598,9 +1597,6 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                 .subscribe(
                         msg -> {
                             lastActiveTime.set(System.currentTimeMillis());
-                            if (autoGitCommitEnabled && isTerminalAgentOutput(msg)) {
-                                tryAutoGitCommit(agentContext, gitAutoCommitted);
-                            }
                             Sinks.EmitResult emitResult = sink.tryEmitNext(msg);
                             if (emitResult.isFailure()) {
                                 log.error("Agent output failed, cid {}, error {}", agentContext.getConversationId(), emitResult);
@@ -1919,37 +1915,26 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
         return YesOrNoEnum.Y.getKey().equals(executingAgentConfig.getEnableVersionControl());
     }
 
-    private static boolean isTerminalAgentOutput(AgentOutputDto msg) {
-        if (msg.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT) {
-            return true;
-        }
-        if (msg.getEventType() == AgentOutputDto.EventTypeEnum.MESSAGE && msg.getData() instanceof ChatMessageDto chatMessage) {
-            return chatMessage.isFinished();
-        }
-        return false;
-    }
-
     private void tryAutoGitCommit(AgentContext agentContext, AtomicBoolean gitCommitted) {
-        if (!gitCommitted.compareAndSet(false, true)) {
+        if (gitCommitted.get()) {
             return;
         }
-        autoGitCommit(agentContext);
+        if (autoGitCommit(agentContext)) {
+            gitCommitted.set(true);
+        }
     }
 
     /**
-     * TaskAgent 执行完成后，检测是否有文件编辑操作，自动 git add + commit
+     * TaskAgent 执行完成后自动 git add + commit，由 git 服务端判断是否有可提交变更
+     *
+     * @return 是否已成功提交
      */
-    private void autoGitCommit(AgentContext agentContext) {
+    private boolean autoGitCommit(AgentContext agentContext) {
         if (!isVersionControlEnabled(agentContext.getAgentConfig())) {
-            return;
+            return false;
         }
         try {
-            log.info("Auto git commit check file edits, cid={}", agentContext.getConversationId());
-            List<ComponentExecuteResult> results = agentContext.getAgentExecuteResult().getComponentExecuteResults();
-            boolean hasFileEdits = results.stream().anyMatch(r -> "edit".equals(r.getKind()));
-            if (!hasFileEdits) {
-                return;
-            }
+            log.info("Auto git commit start, cid={}", agentContext.getConversationId());
             Long cId = Long.valueOf(agentContext.getConversationId());
             Long userId = agentContext.getUserId();
             String authorName = agentContext.getUserName();
@@ -1959,11 +1944,12 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             if (message.length() > 200) {
                 message = message.substring(0, 200);
             }
-            log.info("Auto git commit start calling, cid={}", agentContext.getConversationId());
             gitRpcClient.commitTaskAgent(cId, userId, message, null, authorName, null);
             log.info("Auto git commit success, cid={}", agentContext.getConversationId());
+            return true;
         } catch (Exception e) {
             log.warn("Auto git commit failed, cid={}", agentContext.getConversationId(), e);
+            return false;
         }
     }
 

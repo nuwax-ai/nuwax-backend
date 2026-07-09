@@ -56,11 +56,6 @@ public class Prompts {
             Your response should be in plain text without any markdown tags.
             """;
 
-    public static final String TIME_PROMPT = """
-            Current system time: ${time}
-            
-            """;
-
     public static final String JSON_FORMAT_PROMPT = """
             
             ## OutputFormat

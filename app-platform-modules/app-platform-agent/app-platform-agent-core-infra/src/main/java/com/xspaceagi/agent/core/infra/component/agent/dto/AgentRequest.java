@@ -131,8 +131,9 @@ public class AgentRequest {
     @NoArgsConstructor
     @lombok.Data
     public static class ResourceLimits {
-        private long memory_limit;
-        private int cpu_limit;
-        private long swap_limit;
+        private long memory;
+        private int cpu;
+        private long swap;
+        private String storage_size;
     }
 }

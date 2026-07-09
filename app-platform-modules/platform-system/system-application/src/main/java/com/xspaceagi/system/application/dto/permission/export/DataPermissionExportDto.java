@@ -24,6 +24,8 @@ public class DataPermissionExportDto {
     private Integer agentComputerCpuCores;
     private Integer agentComputerMemoryGb;
     private Integer agentComputerSwapGb;
+    private BigDecimal agentComputerStorageLimitGb;
+    private BigDecimal pageAppStorageLimitGb;
     private Integer agentFileStorageDays;
     private Integer agentDailyPromptLimit;
     private Integer pageDailyPromptLimit;

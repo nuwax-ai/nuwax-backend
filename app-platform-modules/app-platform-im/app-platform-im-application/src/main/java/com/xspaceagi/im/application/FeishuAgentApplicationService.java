@@ -19,19 +19,27 @@ public interface FeishuAgentApplicationService {
     /**
      * 执行智能体并返回结果和会话ID（用于内容后处理）
      */
-    AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName);
+    AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentWithConv(sessionId, chatType, message, attachments, tenantId, userId, agentId, sessionName, null);
+    }
 
     default AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId) {
-        return executeAgentWithConv(sessionId, chatType, message, attachments, tenantId, userId, agentId, null);
+        return executeAgentWithConv(sessionId, chatType, message, attachments, tenantId, userId, agentId, null, null);
     }
 
     /**
      * 流式执行智能体，返回增量输出的 Flux（支持附件）
      */
-    Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName);
+    Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentStream(sessionId, chatType, message, attachments, tenantId, userId, agentId, sessionName, null);
+    }
 
     default Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId) {
-        return executeAgentStream(sessionId, chatType, message, attachments, tenantId, userId, agentId, null);
+        return executeAgentStream(sessionId, chatType, message, attachments, tenantId, userId, agentId, null, null);
     }
 
     /**

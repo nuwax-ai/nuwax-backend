@@ -575,12 +575,13 @@ public class IMFeishuController {
 
         // topic 展示名：优先用群名/用户名（拿不到则置空，回退到 sessionKey）
         String sessionName = resolveSessionName(chatType, chatId, sender, botConfig);
+        String imUserName = resolveImUserName(chatType, sender, botConfig);
 
         try {
             if (ImOutputModeEnum.ONCE == ImOutputModeEnum.fromCode(botConfig.getOutputMode())) {
                 // 一次性输出：非流式、普通 Markdown（非互动卡片）
                 FeishuAgentApplicationService.AgentExecuteResultWithConv result = feishuAgentApplicationService.executeAgentWithConv(sessionId, chatType, userMessage, attachments,
-                        botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId(), sessionName);
+                        botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId(), sessionName, imUserName);
                 reply(messageId, buildMarkdown(result.getText(), result.getConversationId(), botConfig), botConfig);
                 return;
             }
@@ -588,13 +589,14 @@ public class IMFeishuController {
             // 流式输出：保持现有输出方式（互动卡片 + patch）
             String replyMsgId = replyAndGetMessageId(messageId, buildCard("正在思考...", true), botConfig);
             if (replyMsgId != null) {
-                streamAndPatch(messageId, replyMsgId, sessionId, chatType, userMessage, attachments, botConfig, sessionName);
+                streamAndPatch(messageId, replyMsgId, sessionId, chatType, userMessage, attachments, botConfig, sessionName, imUserName);
                 return;
             }
             // 流式失败时回退到同步模式（仍走卡片，保持兼容）
-            String replyText = feishuAgentApplicationService.executeAgent(sessionId, chatType, userMessage, attachments,
-                    botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId());
-            reply(messageId, buildCard(replyText, false), botConfig);
+            FeishuAgentApplicationService.AgentExecuteResultWithConv fallbackResult = feishuAgentApplicationService.executeAgentWithConv(
+                    sessionId, chatType, userMessage, attachments,
+                    botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId(), sessionName, imUserName);
+            reply(messageId, buildCard(fallbackResult.getText(), false), botConfig);
         } catch (Exception e) {
             String msg = e.getMessage();
             if (StringUtils.isNotBlank(msg) && msg.contains("Agent 正在执行任务")) {
@@ -897,13 +899,13 @@ public class IMFeishuController {
      * - 中间结果：需同时满足[距上次 patch ≥ 200ms] 且 [新增字符 ≥ 60] 才 patch
      */
     private void streamAndPatch(String originalMessageId, String replyMessageId, String sessionId, String chatType, String userMessage,
-                                List<AttachmentDto> attachments, FeishuBotConfig botConfig, String sessionName) {
+                                List<AttachmentDto> attachments, FeishuBotConfig botConfig, String sessionName, String imUserName) {
         if (botConfig == null) return;
         AtomicLong lastPatchTime = new AtomicLong(0);
         AtomicInteger lastPatchLength = new AtomicInteger(0);
 
         feishuAgentApplicationService.executeAgentStream(sessionId, chatType, userMessage, attachments,
-                        botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId(), sessionName)
+                        botConfig.getTenantId(), botConfig.getUserId(), botConfig.getAgentId(), sessionName, imUserName)
                 .filter(chunk -> chunk != null && chunk.getText() != null)
                 .subscribe(
                         chunk -> {
@@ -963,6 +965,29 @@ public class IMFeishuController {
                     chatType, chatId, openId, e.getMessage());
         }
         return StringUtils.isNotBlank(openId) ? openId : chatId;
+    }
+
+    /**
+     * 群聊时解析 IM 发送者展示名，用于 Agent 上下文 userName 后缀
+     */
+    private String resolveImUserName(String chatType, EventSender sender, FeishuBotConfig botConfig) {
+        if ("p2p".equals(chatType)) {
+            return null;
+        }
+        String openId = extractOpenId(sender);
+        if (StringUtils.isBlank(openId) || botConfig == null) {
+            return null;
+        }
+        try {
+            String token = fetchTenantAccessToken(botConfig);
+            if (StringUtils.isBlank(token)) {
+                return null;
+            }
+            return fetchUserName(openId, token);
+        } catch (Exception e) {
+            log.debug("Feishu imUserName failed: chatType={}, openId={}, err={}", chatType, openId, e.getMessage());
+            return null;
+        }
     }
 
     private String fetchTenantAccessToken(FeishuBotConfig botConfig) {

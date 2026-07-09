@@ -128,6 +128,11 @@ public class TenantVersionUpdateServiceImpl {
             i18nImportService.updateConfigToTenant(tenant, "1.4");
         });
 
+        tenantVersionUpgradeMap.put("3.0.2", (tenant) -> {
+            i18nImportService.addConfigToTenant(tenant, "1.5");
+            i18nImportService.updateConfigToTenant(tenant, "1.5");
+        });
+
         new Thread(() -> {
             // Customized content required for version upgrade
             while (true) {

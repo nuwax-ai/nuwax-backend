@@ -2553,6 +2553,8 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
 
     @Override
     public Flux<WorkflowExecutingDto> executeWorkflow(WorkflowExecuteRequestDto workflowExecuteRequestDto, WorkflowConfigDto workflowConfigDto) {
+        UserDto userDto = ((UserDto) RequestContext.get().getUser());
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
         AtomicReference<Disposable> disposableAtomicReference = new AtomicReference<>();
         Flux<WorkflowExecutingDto> flux = Flux.create(emitter -> {
             String requestId = "wf:" + workflowExecuteRequestDto.getRequestId();
@@ -2575,14 +2577,13 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
                 workflowExecuteRequestDto.getParams().forEach((key, value) -> {
                     if (value instanceof String fileUrl) {
                         if (fileUrl.startsWith("http")) {
-                            fileUrl = iFileAccessService.getFileUrlWithAk(fileUrl);
+                            fileUrl = iFileAccessService.getFileUrlWithAk(tenantConfigDto.getSiteUrl(), fileUrl);
                             workflowExecuteRequestDto.getParams().put(key, fileUrl);
                         }
                     }
                 });
             }
-            UserDto userDto = ((UserDto) RequestContext.get().getUser());
-            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+
             AgentConfigDto agentConfigDto = new AgentConfigDto();
             agentConfigDto.setId(workflowExecuteRequestDto.getAgentId() == null ? -1L : workflowExecuteRequestDto.getAgentId());
             agentConfigDto.setName("");

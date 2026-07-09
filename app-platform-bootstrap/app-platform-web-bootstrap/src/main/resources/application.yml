@@ -127,7 +127,7 @@ mybatis-plus:
 installation-source: saas
 
 app:
-  version: 3.0.1
+  version: 3.0.2
 
 stt:
   api:
@@ -151,6 +151,7 @@ sandbox:
         - "compose/db/table/copyTableDefinition"
         - "space/list"
         - "file/upload"
+        - "file/ak/refresh"
         - "f/**"
         - "page/target/schema"
         - "table/sql/new"

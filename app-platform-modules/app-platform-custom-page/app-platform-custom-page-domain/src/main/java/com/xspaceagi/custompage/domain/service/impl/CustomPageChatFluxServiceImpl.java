@@ -594,9 +594,14 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         modelProvider.put("name", modelConfigDto.getName());
         modelProvider.put("requires_openai_auth", true);
         chatBody.put("model_provider", modelProvider);
-        chatBody.put("agent_config", Map.of(
-                "agent_server", buildAgentServer(modelConfigDto, configModel, userContext)
-        ));
+        Object agentConfig = chatBody.get("agent_config");
+        if (agentConfig instanceof Map<?, ?>) {
+            ((Map<String, Object>) agentConfig).put("agent_server", buildAgentServer(modelConfigDto, configModel, userContext));
+        } else {
+            chatBody.put("agent_config", Map.of(
+                    "agent_server", buildAgentServer(modelConfigDto, configModel, userContext)
+            ));
+        }
         return chatModelId;
     }
 
@@ -1213,7 +1218,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 }
             }, aiChatExecutor);
 
-            long deadline = System.currentTimeMillis() + 65000;
+            long deadline = System.currentTimeMillis() + 125_000;
             while (true) {
                 if (stopRequested.get()) {
                     future.cancel(true);
@@ -1221,7 +1226,7 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
                 }
                 if (System.currentTimeMillis() > deadline) {
                     future.cancel(true);
-                    log.warn("[Flux Service] AI Agent call timeout, exceeds 65 seconds");
+                    log.warn("[Flux Service] AI Agent call timeout, exceeds 125 seconds");
                     return null;
                 }
                 try {

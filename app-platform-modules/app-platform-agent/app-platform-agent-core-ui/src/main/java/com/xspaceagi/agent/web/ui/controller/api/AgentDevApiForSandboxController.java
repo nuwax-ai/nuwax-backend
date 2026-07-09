@@ -313,6 +313,7 @@ public class AgentDevApiForSandboxController {
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
             String schema = null;
+            String toolName = null;
             try {
                 PluginConfig pluginConfig = JSON.parseObject(publishedDto.getConfig(), PluginConfig.class);
                 PluginDto pluginDto = new PluginDto();
@@ -320,12 +321,15 @@ public class AgentDevApiForSandboxController {
                 pluginDto.setConfig(PluginDto.convertToPluginConfigDto(pluginDto, pluginConfig.getConfig()));
                 PluginConfigDto pluginConfigDto = (PluginConfigDto) pluginDto.getConfig();
                 schema = buildPluginSchema(pluginConfigDto);
+                JSONObject jsonObject = JSON.parseObject(publishedDto.getConfig());
+                toolName = jsonObject.getString("functionName");
             } catch (Exception e) {
                 // Ignore
                 log.warn("Failed to parse plugin config {}", publishedDto.getConfig());
             }
             toolSearchResultItemDTOS.add(ToolSearchResultItemDTO.builder()
                     .name(publishedDto.getName())
+                    .toolName(toolName)
                     .description(publishedDto.getDescription())
                     .targetId(publishedDto.getTargetId())
                     .targetType(Published.TargetType.Plugin)
@@ -337,6 +341,7 @@ public class AgentDevApiForSandboxController {
         page = publishApplicationService.queryPublishedList(publishedQueryDto);
         page.getRecords().forEach(publishedDto -> {
             String schema = null;
+            String toolName = null;
             try {
                 JSONObject jsonObject = JSON.parseObject(publishedDto.getConfig());
                 List<WorkflowNodeDto> nodes = jsonObject.getJSONArray("nodes").stream().map(node -> {
@@ -351,12 +356,14 @@ public class AgentDevApiForSandboxController {
                 if (startNode != null && endNode != null) {
                     schema = buildWorkflowSchema(startNode.getNodeConfig().getInputArgs(), endNode.getNodeConfig().getOutputArgs());
                 }
+                toolName = jsonObject.getString("functionName");
             } catch (Exception e) {
                 log.warn("Failed to parse workflow config {}", publishedDto.getConfig());
             }
 
             toolSearchResultItemDTOS.add(ToolSearchResultItemDTO.builder()
                     .name(publishedDto.getName())
+                    .toolName(toolName)
                     .description(publishedDto.getDescription())
                     .targetId(publishedDto.getTargetId())
                     .targetType(Published.TargetType.Workflow)
@@ -380,6 +387,7 @@ public class AgentDevApiForSandboxController {
             String schema = buildKnowledgeSchema();
             toolSearchResultItemDTOS.add(ToolSearchResultItemDTO.builder()
                     .name(knowledgeConfigVo.getName())
+                    .toolName("query_knowledge_" + knowledgeConfigVo.getId())
                     .description(knowledgeConfigVo.getDescription())
                     .targetId(knowledgeConfigVo.getId())
                     .targetType(Published.TargetType.Knowledge)

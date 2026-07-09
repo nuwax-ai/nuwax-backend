@@ -1078,32 +1078,34 @@ CREATE TABLE `system_config`
 
 CREATE TABLE `sys_data_permission`
 (
-    `id`                         bigint(20) NOT NULL COMMENT '主键ID',
-    `target_type`                tinyint(4) NOT NULL COMMENT '目标类型，对应 PermissionTargetTypeEnum',
-    `target_id`                  bigint(20) NOT NULL COMMENT '目标ID',
-    `token_limit`                json                                   DEFAULT NULL COMMENT 'token 限制（JSON）',
-    `max_space_count`            int(11) DEFAULT NULL COMMENT '可创建工作空间数量，-1 表示不限制',
-    `max_agent_count`            int(11) DEFAULT NULL COMMENT '可创建智能体数量，-1 表示不限制',
-    `max_page_app_count`         int(11) DEFAULT NULL COMMENT '可创建网页应用数量，-1 表示不限制',
-    `max_knowledge_count`        int(11) DEFAULT NULL COMMENT '可创建知识库数量，-1 表示不限制',
-    `knowledge_storage_limit_gb` decimal(10, 3)                         DEFAULT NULL COMMENT '知识库存储空间上限(GB)，-1 表示不限制',
-    `max_data_table_count`       int(11) DEFAULT NULL COMMENT '可创建数据表数量，-1 表示不限制',
-    `max_scheduled_task_count`   int(11) DEFAULT NULL COMMENT '可创建定时任务数量，-1 表示不限制',
-    `allow_api_external_call`    tinyint(4) DEFAULT NULL COMMENT '是否允许API外部调用，1-允许，0-不允许',
-    `agent_computer_cpu_cores`   int(11) DEFAULT NULL COMMENT '智能体电脑CPU核心数',
-    `agent_computer_memory_gb`   int(11) DEFAULT NULL COMMENT '智能体电脑内存(GB)',
-    `agent_computer_swap_gb`     int(11) DEFAULT NULL COMMENT '智能体电脑交换分区(GB)',
-    `agent_file_storage_days`    int(11) DEFAULT NULL COMMENT '通用智能体执行结果文件存储天数(仅云端电脑受限)，-1 表示不限制',
-    `agent_daily_prompt_limit`   int(11) DEFAULT NULL COMMENT '通用智能体每天对话次数(含编排调试，问答智能体不限)，-1 表示不限制',
-    `page_daily_prompt_limit`    int(11) DEFAULT NULL COMMENT '页面应用每天对话次数，-1表示不限制',
-    `_tenant_id`                 bigint(20) NOT NULL COMMENT '租户ID',
-    `creator_id`                 bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`                    varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
-    `created`                    datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `modifier_id`                bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`                   varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
-    `modified`                   datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `yn`                         tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
+    `id`                              bigint(20) NOT NULL COMMENT '主键ID',
+    `target_type`                     tinyint(4) NOT NULL COMMENT '目标类型，对应 PermissionTargetTypeEnum',
+    `target_id`                       bigint(20) NOT NULL COMMENT '目标ID',
+    `token_limit`                     json                                   DEFAULT NULL COMMENT 'token 限制（JSON）',
+    `max_space_count`                 int(11) DEFAULT NULL COMMENT '可创建工作空间数量，-1 表示不限制',
+    `max_agent_count`                 int(11) DEFAULT NULL COMMENT '可创建智能体数量，-1 表示不限制',
+    `max_page_app_count`              int(11) DEFAULT NULL COMMENT '可创建网页应用数量，-1 表示不限制',
+    `max_knowledge_count`             int(11) DEFAULT NULL COMMENT '可创建知识库数量，-1 表示不限制',
+    `knowledge_storage_limit_gb`      decimal(10, 3)                         DEFAULT NULL COMMENT '知识库存储空间上限(GB)，-1 表示不限制',
+    `max_data_table_count`            int(11) DEFAULT NULL COMMENT '可创建数据表数量，-1 表示不限制',
+    `max_scheduled_task_count`        int(11) DEFAULT NULL COMMENT '可创建定时任务数量，-1 表示不限制',
+    `allow_api_external_call`         tinyint(4) DEFAULT NULL COMMENT '是否允许API外部调用，1-允许，0-不允许',
+    `agent_computer_cpu_cores`        int(11) DEFAULT NULL COMMENT '智能体电脑CPU核心数',
+    `agent_computer_memory_gb`        int(11) DEFAULT NULL COMMENT '智能体电脑内存(GB)',
+    `agent_computer_swap_gb`          int(11) DEFAULT NULL COMMENT '智能体电脑交换分区(GB)',
+    `agent_computer_storage_limit_gb` decimal(10, 3)                         DEFAULT NULL COMMENT '智能体电脑存储上限(GB)，-1 表示不限制',
+    `page_app_storage_limit_gb`       decimal(10, 3)                         DEFAULT NULL COMMENT '网页应用存储上限(GB)，-1 表示不限制',
+    `agent_file_storage_days`         int(11) DEFAULT NULL COMMENT '通用智能体执行结果文件存储天数(仅云端电脑受限)，-1 表示不限制',
+    `agent_daily_prompt_limit`        int(11) DEFAULT NULL COMMENT '通用智能体每天对话次数(含编排调试，问答智能体不限)，-1 表示不限制',
+    `page_daily_prompt_limit`         int(11) DEFAULT NULL COMMENT '页面应用每天对话次数，-1表示不限制',
+    `_tenant_id`                      bigint(20) NOT NULL COMMENT '租户ID',
+    `creator_id`                      bigint(20) DEFAULT NULL COMMENT '创建人ID',
+    `creator`                         varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `created`                         datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modifier_id`                     bigint(20) DEFAULT NULL COMMENT '修改人ID',
+    `modifier`                        varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modified`                        datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `yn`                              tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据权限';
 
 -- --------------------------------------------------------
@@ -3387,3 +3389,6 @@ CREATE TABLE `knowledge_recall_verification`
     KEY               `idx_id_kb_id_index` (`space_id`, `kb_id`),
     KEY               `idx_kb_id` (`kb_id`)
 );
+
+ALTER TABLE sys_data_permission
+    ADD COLUMN agent_computer_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '智能体电脑存储上限(GB)，-1 表示不限制', ADD COLUMN page_app_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '网页应用存储上限(GB)，-1 表示不限制';

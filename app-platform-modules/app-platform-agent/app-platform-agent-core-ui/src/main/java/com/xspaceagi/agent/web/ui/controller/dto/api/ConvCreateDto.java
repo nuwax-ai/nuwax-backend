@@ -12,6 +12,9 @@ public class ConvCreateDto implements Serializable {
     @Schema(description = "智能体ID")
     private Long agentId;
 
+    @Schema(description = "会话主题")
+    private String topic;
+
     @Schema(description = "会话变量内容")
     private Map<String, Object> variables;
 

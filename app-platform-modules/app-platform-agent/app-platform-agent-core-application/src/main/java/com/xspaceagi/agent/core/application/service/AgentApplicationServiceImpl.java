@@ -947,6 +947,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             tenantConfig.getDefaultAgentIds().remove(agentId);
             for (Long defaultAgentId : tenantConfig.getDefaultAgentIds()) {
                 AgentConfigDto defaultAgentConfigDto = queryPublishedConfig(defaultAgentId, execute);
+                if (defaultAgentConfigDto == null) {
+                    continue;
+                }
                 AgentComponentConfigDto agentComponentConfigDto = new AgentComponentConfigDto();
                 agentConfigDto.getAgentComponentConfigList().add(agentComponentConfigDto);
                 agentComponentConfigDto.setAgentId(agentId);

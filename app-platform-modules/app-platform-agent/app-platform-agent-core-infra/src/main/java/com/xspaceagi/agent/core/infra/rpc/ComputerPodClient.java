@@ -10,7 +10,9 @@ import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigValue;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
+import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
@@ -44,6 +46,9 @@ public class ComputerPodClient {
     @Resource
     private SpacePermissionService spacePermissionService;
 
+    @Resource
+    private IUserDataPermissionRpcService iUserDataPermissionRpcService;
+
     @Value("${custom-page.ai-agent.base-url:}")
     private String configuredBaseUrl;
 
@@ -55,6 +60,7 @@ public class ComputerPodClient {
         String baseUrl;
         SandboxServerConfig.SandboxServer sandboxServer;
         Map<String, Object> extraBody = new HashMap<>();
+        boolean isAgentComputer = conversationByCid != null;
         if (conversationByCid == null) {
             // 同一个ID兼容适配网页应用
             CustomPageDto customPageDto = iCustomPageRpcService.queryDetail(cId);
@@ -95,11 +101,34 @@ public class ComputerPodClient {
         }
         String url = baseUrl + "/computer/pod/ensure";
         log.info("[ComputerPodClient] ensurePod userId={} cId={} , url={}", userId, cId, url);
-
+        int perUserCpuCores = sandboxServer.getPerUserCpuCores();
+        double perUserMemoryGB = sandboxServer.getPerUserMemoryGB();
+        String storageGB = "50Gi";
+        UserDataPermissionDto userDataPermission = iUserDataPermissionRpcService.getUserDataPermission(userId);
+        if (userDataPermission != null) {
+            //上限由管理员自己决定
+            if (userDataPermission.getAgentComputerMemoryGb() != null && userDataPermission.getAgentComputerMemoryGb() > 0) {
+                perUserMemoryGB = userDataPermission.getAgentComputerMemoryGb();
+            }
+            if (userDataPermission.getAgentComputerCpuCores() != null && userDataPermission.getAgentComputerCpuCores() > 0) {
+                perUserCpuCores = userDataPermission.getAgentComputerCpuCores();
+            }
+            if (isAgentComputer && userDataPermission.getAgentComputerStorageLimitGb() != null && userDataPermission.getAgentComputerStorageLimitGb().intValue() > 0) {
+                storageGB = userDataPermission.getAgentComputerStorageLimitGb().intValue() + "Gi";
+            }
+            if (!isAgentComputer && userDataPermission.getPageAppStorageLimitGb() != null && userDataPermission.getPageAppStorageLimitGb().intValue() > 0) {
+                storageGB = userDataPermission.getPageAppStorageLimitGb().intValue() + "Gi";
+            }
+        }
         Map<String, Object> body = new HashMap<>();
         body.put("project_id", String.valueOf(cId));
         body.put("user_id", String.valueOf(userId));
-        body.put("resource_limits", null);
+        body.put("resource_limits", Map.of(
+                "cpu", perUserCpuCores,
+                "memory", perUserMemoryGB * 1024 * 1024 * 1024,
+                "swap", perUserMemoryGB * 1024 * 1024 * 1024 * 2,
+                "storage_size", storageGB
+        ));
         body.putAll(extraBody);
         return doPost(url, body, sandboxServer, userId + "_" + cId + "_ensure");
     }

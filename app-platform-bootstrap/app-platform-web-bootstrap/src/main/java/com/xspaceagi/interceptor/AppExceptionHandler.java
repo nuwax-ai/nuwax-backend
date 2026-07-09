@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -82,6 +83,9 @@ public class AppExceptionHandler {
                 responseData = ReqResult.error(ErrorCodeEnum.INVALID_PARAM.getCode(), ex.getMessage());
             } else if (ex instanceof NoResourceFoundException) {
                 responseData = ReqResult.error(ErrorCodeEnum.API_NOT_FOUND.getCode(), ex.getMessage());
+            } else if (ex instanceof AsyncRequestTimeoutException) {
+                log.warn("Async request timeout ", ex);
+                responseData = ReqResult.error(ErrorCodeEnum.SYS_ERROR.getCode(), "请求超时");
             } else {
                 log.error("System error ", ex);
                 responseData = ReqResult.error(ErrorCodeEnum.SYS_ERROR.getCode(), "系统开小差啦，请稍后重试");

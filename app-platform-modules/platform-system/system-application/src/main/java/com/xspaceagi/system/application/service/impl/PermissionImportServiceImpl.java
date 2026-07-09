@@ -886,6 +886,8 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         entity.setAgentComputerCpuCores(dp.getAgentComputerCpuCores());
         entity.setAgentComputerMemoryGb(dp.getAgentComputerMemoryGb());
         entity.setAgentComputerSwapGb(dp.getAgentComputerSwapGb());
+        entity.setAgentComputerStorageLimitGb(dp.getAgentComputerStorageLimitGb());
+        entity.setPageAppStorageLimitGb(dp.getPageAppStorageLimitGb());
         entity.setAgentFileStorageDays(dp.getAgentFileStorageDays());
         entity.setAgentDailyPromptLimit(dp.getAgentDailyPromptLimit());
         entity.setPageDailyPromptLimit(dp.getPageDailyPromptLimit());

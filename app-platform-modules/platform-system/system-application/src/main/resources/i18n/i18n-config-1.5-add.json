@@ -1,0 +1,92 @@
+[
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Intervention",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Intervention.McpAsk.eyebrow",
+    "fieldValue": "Additional Reply",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Constants.Menus.systemVersion",
+    "fieldValue": "System Version",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Setting.currentSystemVersion",
+    "fieldValue": "Current System Version",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Intervention",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Intervention.McpAsk.eyebrow",
+    "fieldValue": "补充回复",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Constants.Menus.systemVersion",
+    "fieldValue": "系统版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Setting.currentSystemVersion",
+    "fieldValue": "当前系统版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Intervention",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Intervention.McpAsk.eyebrow",
+    "fieldValue": "補充回覆",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Constants",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Constants.Menus.systemVersion",
+    "fieldValue": "系統版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Setting.currentSystemVersion",
+    "fieldValue": "當前系統版本",
+    "remark": null
+  }
+]

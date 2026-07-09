@@ -283,6 +283,7 @@ public class SysGroupController extends BaseController {
             return ReqResult.error("用户组ID不能为空");
         }
         SysDataPermissionBindDto bindDto = dto.getDataPermission();
+        SysDataPermissionConverter.validateBindDto(bindDto);
         SysDataPermission dataPermission = SysDataPermissionConverter.toEntity(bindDto);
         sysGroupApplicationService.bindDataPermission(dto.getGroupId(), dataPermission, getUser());
         return ReqResult.success();

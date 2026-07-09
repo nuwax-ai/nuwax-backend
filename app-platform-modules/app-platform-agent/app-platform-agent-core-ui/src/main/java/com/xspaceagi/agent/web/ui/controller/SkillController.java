@@ -13,6 +13,7 @@ import com.xspaceagi.agent.web.ui.dto.SkillCopyDto;
 import com.xspaceagi.agent.web.ui.dto.SkillDto;
 import com.xspaceagi.agent.web.ui.dto.SkillUpdateDto;
 import com.xspaceagi.custompage.sdk.dto.CopyTypeEnum;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.sandbox.SandboxUtils;
 import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
@@ -72,6 +73,8 @@ public class SkillController {
     private ConversationApplicationService conversationApplicationService;
     @Resource
     private RecommendApplicationService recommendApplicationService;
+    @Resource
+    private IFileAccessService iFileAccessService;
 
     @RequireResource(SKILL_CREATE)
     @Operation(summary = "新增技能")
@@ -319,10 +322,13 @@ public class SkillController {
         SkillConfigDto skillConfigDto = checkSkillPermission(skillId);
         SkillDto skillDto = new SkillDto();
         BeanUtils.copyProperties(skillConfigDto, skillDto);
+        if (skillDto.getFiles() != null) {
+            skillDto.getFiles().forEach(file -> file.setFileProxyUrl(iFileAccessService.getRealFileUrl(file.getFileProxyUrl())));
+        }
         skillDto.setUsageScenarios(parseUsageScenarios(skillConfigDto.getExt()));
         skillDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(skillConfigDto.getIcon(), skillConfigDto.getName()));
         SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(skillConfigDto.getSpaceId(), RequestContext.get().getUserId());
-        skillDto.setPermissions(SpaceObjectPermissionUtil.generatePermissionList(spaceUserDto, skillConfigDto.getCreatorId()).stream().map(permission -> permission.name()).collect(Collectors.toList()));
+        skillDto.setPermissions(SpaceObjectPermissionUtil.generatePermissionList(spaceUserDto, skillConfigDto.getCreatorId()).stream().map(Enum::name).collect(Collectors.toList()));
         return ReqResult.success(skillDto);
     }
 

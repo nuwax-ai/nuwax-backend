@@ -11,6 +11,7 @@ import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
 import com.xspaceagi.im.application.FeishuAgentApplicationService;
 import com.xspaceagi.im.application.ImSessionApplicationService;
 import com.xspaceagi.im.application.dto.StreamChunk;
+import com.xspaceagi.im.application.util.ImUserContextHelper;
 import com.xspaceagi.im.infra.dao.enitity.ImSession;
 import com.xspaceagi.im.infra.enums.ImChannelEnum;
 import com.xspaceagi.im.infra.enums.ImChatTypeEnum;
@@ -56,7 +57,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
     }
 
     @Override
-    public AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName) {
+    public AgentExecuteResultWithConv executeAgentWithConv(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(sessionId) || StringUtils.isBlank(message)) {
             return AgentExecuteResultWithConv.builder().text("消息内容不能为空").conversationId(null).agentId(agentId).build();
         }
@@ -79,6 +80,8 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
             if (userDto == null) {
                 return AgentExecuteResultWithConv.builder().text("系统用户不存在").conversationId(null).agentId(agentId).build();
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.FEISHU,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.FEISHU, chatType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
             // 防止外部组件/拦截器在中途清理 ThreadLocal，执行关键链路前再次写入
@@ -122,7 +125,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
     }
 
     @Override
-    public Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName) {
+    public Flux<StreamChunk> executeAgentStream(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId, String sessionName, String imUserName) {
         if (StringUtils.isBlank(sessionId) || StringUtils.isBlank(message)) {
             return Flux.just(new StreamChunk("消息内容不能为空", true));
         }
@@ -141,6 +144,8 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
                 RequestContext.remove();
                 return Flux.just(new StreamChunk("系统用户不存在", true));
             }
+            ImUserContextHelper.rewriteUserForIm(userDto, ImChannelEnum.FEISHU,
+                    ImUserContextHelper.isGroupChat(ImChannelEnum.FEISHU, chatType), sessionName, imUserName);
             requestContext.setUser(userDto);
             requestContext.setUserId(userId);
             // 防止外部组件/拦截器在中途清理 ThreadLocal，执行关键链路前再次写入

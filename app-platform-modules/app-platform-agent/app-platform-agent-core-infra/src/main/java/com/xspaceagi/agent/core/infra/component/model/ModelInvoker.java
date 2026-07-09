@@ -44,6 +44,7 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.AgentInterruptException;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.utils.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -1131,7 +1132,7 @@ public class ModelInvoker extends BaseComponent {
 
     private static SystemMessage buildSystemMessage(ModelContext modelContext) {
         if (StringUtils.isBlank(modelContext.getModelCallConfig().getSystemPrompt())) {
-            return new SystemMessage(Prompts.TIME_PROMPT.replace("${time}", new Date().toString()));
+            return new SystemMessage("");
         }
 
         return new SystemMessage(modelContext.getModelCallConfig().getSystemPrompt());
@@ -1198,6 +1199,7 @@ public class ModelInvoker extends BaseComponent {
         }
         String userPrompt = modelContext.getModelCallConfig().getUserPrompt();
         userPrompt = userPrompt == null ? "" : userPrompt;
+        userPrompt = userPrompt + "\n<current-time>" + DateUtil.getNowTime() + "</current-time>\n";
         if (modelContext.getModelCallConfig().getOutputType() == OutputTypeEnum.JSON) {
             Map<String, Object> map = buildFunctionParams(convertToArgList(modelContext.getModelCallConfig().getOutputArgs()));
             map.put("$schema", "https://json-schema.org/draft/2020-12/schema");

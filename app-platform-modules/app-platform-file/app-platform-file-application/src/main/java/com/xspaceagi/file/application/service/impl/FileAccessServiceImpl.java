@@ -34,9 +34,18 @@ public class FileAccessServiceImpl implements IFileAccessService {
         return getFileUrlWithAk(fileUrl, false);
     }
 
+    @Override
+    public String getFileUrlWithAk(String siteUrl, String fileUrl) {
+        return getRealFileUrl(siteUrl, fileUrl, false, false);
+    }
+
     public String getFileUrlWithAk(String fileUrl, boolean returnOriginalUrl) {
         if (fileUrl == null) {
             return null;
+        }
+        if (RequestContext.get() != null && RequestContext.get().getTenantConfig() != null) {
+            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+            fileUrl = getRealFileUrl(tenantConfigDto.getSiteUrl(), fileUrl, false, false);
         }
         String path;
         try {
@@ -128,8 +137,7 @@ public class FileAccessServiceImpl implements IFileAccessService {
             redisUtil.set("file.ak:" + path, ak.toString(), 60 * 60 * 24);
             return fileUrl + "?ak=" + ak;
         }
-        String url = fileManagementService.generatePresignedUrlByType(fileKey, extractStorageTypeFromFileKey(fileKey), 60 * 60 * 24, 0);
-        return url;
+        return fileManagementService.generatePresignedUrlByType(fileKey, extractStorageTypeFromFileKey(fileKey), 60 * 60 * 24, 0);
     }
 
     public void checkFileUrlAk(String uri, String ak) {
@@ -148,6 +156,35 @@ public class FileAccessServiceImpl implements IFileAccessService {
         if (ak0 == null || !ak0.equals(ak)) {
             throw new IllegalArgumentException("Invalid file URL");
         }
+    }
+
+    @Override
+    public String getRealFileUrl(String siteUrl, String fileUrl, boolean withAk, boolean returnOriginalUrl) {
+        fileUrl = replaceUrl(fileUrl, siteUrl);
+        if (withAk || returnOriginalUrl) {
+            return getFileUrlWithAk(fileUrl, returnOriginalUrl);
+        }
+        return fileUrl;
+    }
+
+    @Override
+    public String getRealFileUrl(String fileUrl) {
+        if (RequestContext.get() == null) {
+            return fileUrl;
+        }
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        return getRealFileUrl(tenantConfigDto.getSiteUrl(), fileUrl, false, false);
+    }
+
+    private static String replaceUrl(String url, String newBase) {
+        if (url == null || url.isEmpty()) return url;
+
+        // 只匹配包含 /api/f/ 的完整 URL
+        int idx = url.indexOf("/api/f/");
+        if (idx == -1) return url;
+
+        String path = url.substring(idx);           // /api/f/xxx
+        return newBase.replaceAll("/+$", "") + path;
     }
 
     private static String getUrlPath(String fileUrl) throws MalformedURLException {

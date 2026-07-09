@@ -25,6 +25,7 @@ import com.xspaceagi.agent.web.ui.dto.PublishedComposeTableQueryDto;
 import com.xspaceagi.agent.web.ui.dto.PublishedKnowledgeQueryDto;
 import com.xspaceagi.compose.sdk.request.QueryDorisTableDefinePageRequest;
 import com.xspaceagi.compose.sdk.service.IComposeDbTableRpcService;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.knowledge.sdk.request.KnowledgeConfigRequestVo;
 import com.xspaceagi.knowledge.sdk.sevice.IKnowledgeConfigRpcService;
 import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
@@ -119,6 +120,9 @@ public class PublishedController extends BaseController {
 
     @Resource
     private RecommendApplicationService recommendApplicationService;
+
+    @Resource
+    private IFileAccessService iFileAccessService;
 
     @Operation(summary = "广场-智能体与插件分类")
     @RequestMapping(path = "/category/list", method = RequestMethod.GET)
@@ -762,6 +766,9 @@ public class PublishedController extends BaseController {
         skillDetailDto.setDescription(skillConfigDto.getDescription());
         skillDetailDto.setIcon(skillConfigDto.getIcon());
         skillDetailDto.setFiles(skillConfigDto.getFiles());
+        if (skillDetailDto.getFiles() != null) {
+            skillDetailDto.getFiles().forEach(file -> file.setFileProxyUrl(iFileAccessService.getRealFileUrl(file.getFileProxyUrl())));
+        }
         skillDetailDto.setExt(publishedDto.getExt());
         skillDetailDto.setUsageScenarios(parseUsageScenariosFromExt(publishedDto.getExt()));
         skillDetailDto.setRemark(publishedDto.getRemark());

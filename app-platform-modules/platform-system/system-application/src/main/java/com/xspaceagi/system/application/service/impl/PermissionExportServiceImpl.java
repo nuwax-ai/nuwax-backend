@@ -16,6 +16,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -234,16 +235,28 @@ public class PermissionExportServiceImpl implements PermissionExportService {
         dp.setMaxAgentCount(e.getMaxAgentCount());
         dp.setMaxPageAppCount(e.getMaxPageAppCount());
         dp.setMaxKnowledgeCount(e.getMaxKnowledgeCount());
-        dp.setKnowledgeStorageLimitGb(e.getKnowledgeStorageLimitGb());
+        dp.setKnowledgeStorageLimitGb(normalizeExportDecimal(e.getKnowledgeStorageLimitGb()));
         dp.setMaxDataTableCount(e.getMaxDataTableCount());
         dp.setMaxScheduledTaskCount(e.getMaxScheduledTaskCount());
         dp.setAgentComputerCpuCores(e.getAgentComputerCpuCores());
         dp.setAgentComputerMemoryGb(e.getAgentComputerMemoryGb());
         dp.setAgentComputerSwapGb(e.getAgentComputerSwapGb());
+        dp.setAgentComputerStorageLimitGb(normalizeExportDecimal(e.getAgentComputerStorageLimitGb()));
+        dp.setPageAppStorageLimitGb(normalizeExportDecimal(e.getPageAppStorageLimitGb()));
         dp.setAgentFileStorageDays(e.getAgentFileStorageDays());
         dp.setAgentDailyPromptLimit(e.getAgentDailyPromptLimit());
         dp.setPageDailyPromptLimit(e.getPageDailyPromptLimit());
         return dp;
+    }
+
+    /**
+     * 导出时去掉 BigDecimal 末尾无意义的 0
+     */
+    private static BigDecimal normalizeExportDecimal(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        return value.stripTrailingZeros();
     }
 
     /**

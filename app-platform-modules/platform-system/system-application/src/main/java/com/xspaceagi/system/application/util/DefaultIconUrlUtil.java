@@ -40,6 +40,7 @@ public class DefaultIconUrlUtil {
             } catch (Exception e) {
             }
         }
+        originalIcon = iFileAccessService.getRealFileUrl(originalIcon);
         return originalIcon;
     }
 

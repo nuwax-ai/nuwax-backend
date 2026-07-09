@@ -33,23 +33,34 @@ public interface WeworkAgentApplicationService {
      */
     AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                      String chatType, String chatId, String targetType,
-                                                     Long tenantId, Long userId, Long agentId, String sessionName);
+                                                     Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
+                                                           String chatType, String chatId, String targetType,
+                                                           Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentWithConv(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, sessionName, null);
+    }
 
     default AgentExecuteResultWithConv executeAgentWithConv(String senderId, String message, List<AttachmentDto> attachments,
                                                            String chatType, String chatId, String targetType,
                                                            Long tenantId, Long userId, Long agentId) {
-        return executeAgentWithConv(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, null);
+        return executeAgentWithConv(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, null, null);
     }
 
     /**
      * 流式执行智能体，返回增量输出的 Flux
      */
     Flux<StreamChunk> executeAgentStream(String senderId, String message, String chatType, String chatId, String targetType,
-                                         Long tenantId, Long userId, Long agentId, String sessionName);
+                                         Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default Flux<StreamChunk> executeAgentStream(String senderId, String message, String chatType, String chatId, String targetType,
+                                                 Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentStream(senderId, message, chatType, chatId, targetType, tenantId, userId, agentId, sessionName, null);
+    }
 
     default Flux<StreamChunk> executeAgentStream(String senderId, String message, String chatType, String chatId, String targetType,
                                                  Long tenantId, Long userId, Long agentId) {
-        return executeAgentStream(senderId, message, chatType, chatId, targetType, tenantId, userId, agentId, null);
+        return executeAgentStream(senderId, message, chatType, chatId, targetType, tenantId, userId, agentId, null, null);
     }
 
     /**
@@ -57,12 +68,18 @@ public interface WeworkAgentApplicationService {
      */
     Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
                                          String chatType, String chatId, String targetType,
-                                         Long tenantId, Long userId, Long agentId, String sessionName);
+                                         Long tenantId, Long userId, Long agentId, String sessionName, String imUserName);
+
+    default Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
+                                                 String chatType, String chatId, String targetType,
+                                                 Long tenantId, Long userId, Long agentId, String sessionName) {
+        return executeAgentStream(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, sessionName, null);
+    }
 
     default Flux<StreamChunk> executeAgentStream(String senderId, String message, List<AttachmentDto> attachments,
                                                  String chatType, String chatId, String targetType,
                                                  Long tenantId, Long userId, Long agentId) {
-        return executeAgentStream(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, null);
+        return executeAgentStream(senderId, message, attachments, chatType, chatId, targetType, tenantId, userId, agentId, null, null);
     }
 
     /**
