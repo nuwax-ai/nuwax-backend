@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
@@ -90,6 +91,8 @@ public class UserController {
     @Operation(summary = "发送验证码")
     @RequestMapping(path = "/code/send", method = RequestMethod.POST)
     public ReqResult<Void> sendCode(@RequestBody CodeSendDto codeSendDto) {
+        Assert.notNull(codeSendDto, "codeSendDto is null");
+        Assert.notNull(codeSendDto.getType(), "type is null");
         if (!RequestContext.get().isLogin()) {
             verifyCodeSendAndCheckService.checkCaptchaVerifyParam(buildCaptchaConfig(), codeSendDto.getCaptchaVerifyParam());
         }

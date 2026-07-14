@@ -627,7 +627,11 @@ public class ModelInvoker extends BaseComponent {
         String traceId = UUID.randomUUID().toString().replace("-", "");
         modelContext.setTraceId(traceId);
         if (modelContext.getModelCallConfig().getMaxTokens() != null && modelContext.getModelCallConfig().getMaxTokens() > 0) {
-            modelContext.getModelConfig().setMaxTokens(modelContext.getModelCallConfig().getMaxTokens());
+            if (modelContext.getModelConfig().getMaxTokens() != null && modelContext.getModelConfig().getMaxTokens() > modelContext.getModelCallConfig().getMaxTokens()) {
+                modelContext.getModelConfig().setMaxTokens(modelContext.getModelCallConfig().getMaxTokens());
+            } else if (modelContext.getModelConfig().getMaxTokens() == null) {
+                modelContext.getModelConfig().setMaxTokens(modelContext.getModelCallConfig().getMaxTokens());
+            }
         }
         modelContext.getModelConfig().setTemperature(modelContext.getModelCallConfig().getTemperature());
         modelContext.getModelConfig().setTopP(modelContext.getModelCallConfig().getTopP());

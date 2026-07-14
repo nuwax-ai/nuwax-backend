@@ -161,6 +161,25 @@ public class CustomPageConversationRepositoryImpl implements ICustomPageConversa
     }
 
     @Override
+    public CustomPageConversationModel findUserByProjectIdAndRequestId(Long projectId, String requestId) {
+        if (projectId == null || requestId == null || requestId.isBlank()) {
+            return null;
+        }
+        var wrapper = Wrappers.<CustomPageConversation>lambdaQuery()
+                .eq(CustomPageConversation::getProjectId, projectId)
+                .eq(CustomPageConversation::getRequestId, requestId)
+                .eq(CustomPageConversation::getRole, "USER")
+                .eq(CustomPageConversation::getYn, YnEnum.Y.getKey())
+                .orderByDesc(CustomPageConversation::getCreated)
+                .last("LIMIT 1");
+        CustomPageConversation entity = customPageConversationService.getOne(wrapper, false);
+        if (entity == null) {
+            return null;
+        }
+        return customPageConversationTranslator.convertToModel(entity);
+    }
+
+    @Override
     public CustomPageConversationModel findById(Long id) {
         if (id == null) {
             return null;

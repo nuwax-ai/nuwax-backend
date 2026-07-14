@@ -327,7 +327,7 @@ public class MemoryApplicationServiceImpl implements MemoryApplicationService {
     }
 
     public List<MemoryExtractDto> createMemory0(MemoryMetaData memoryData) {
-        if(StringUtils.isBlank(memoryData.getContext())){
+        if (StringUtils.isBlank(memoryData.getContext())) {
             return Collections.emptyList();
         }
         String userPrompt = MEMORY_EXTRACT_PROMPT.replace("{{user_input}}", memoryData.getUserInput()).replace("{{conversation_context}}", memoryData.getContext());
@@ -428,6 +428,9 @@ public class MemoryApplicationServiceImpl implements MemoryApplicationService {
     }
 
     private void updateMemory(Long userId, Long memoryId, List<String> updateTags, Map<String, String> keyValues, Boolean isSensitive) {
+        if (keyValues == null || keyValues.isEmpty()) {
+            return;
+        }
         MemoryUnitDTO memoryUnitDTO = memoryUnitService.getById(memoryId);
         if (memoryUnitDTO != null && memoryUnitDTO.getUserId().equals(userId)) {
             JSONObject jsonObject = JSON.parseObject(memoryUnitDTO.getContentJson());

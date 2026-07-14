@@ -494,6 +494,17 @@ public class SkillController {
         return ReqResult.success(id);
     }
 
+    @RequireResource(SKILL_MODIFY)
+    @Operation(summary = "将文件服务技能转为 AI 对话式开发技能")
+    @PostMapping(value = "/convert-to-ai-dev/{skillId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ReqResult<ProjectCreateResultDTO> convertToAiDev(@PathVariable Long skillId) {
+        SkillConfigDto exist = checkSkillPermission(skillId);
+        if (isSandboxSkill(exist)) {
+            throw new IllegalArgumentException("Skill is already a conversational development skill");
+        }
+        return ReqResult.success(skillApplicationService.convertToConversationalDev(skillId));
+    }
+
     @RequireResource(SKILL_QUERY_DETAIL)
     @Operation(summary = "查询技能历史配置信息接口")
     @RequestMapping(path = "/config/history/list/{skillId}", method = RequestMethod.GET)

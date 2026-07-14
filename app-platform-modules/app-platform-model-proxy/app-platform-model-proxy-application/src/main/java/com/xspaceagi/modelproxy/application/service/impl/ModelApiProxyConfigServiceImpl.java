@@ -76,7 +76,7 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
 
     @Override
     public BackendModelDto getBackendModelConfig(String userApiKey, Long id, String traceId) {
-        String cacheKey = BACKEND_MODEL_KEY_PREFIX + userApiKey + (id == null ? "-" : id);
+        String cacheKey = BACKEND_MODEL_KEY_PREFIX + userApiKey + (id == null ? "" : id);
         Object val = redisUtil.get(cacheKey);
         if (val != null) {
             try {
@@ -195,9 +195,10 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                 return frontendModelDto;
             }
         }
-        UserAccessKeyDto userAccessKeyDto = userAccessKeyRpcService.queryAgentModelAccessKey(userId, agentId, backendModel.getModelId());
+        String agentConversation = agentId + "-" + backendModel.getConversationId();
+        UserAccessKeyDto userAccessKeyDto = userAccessKeyRpcService.queryAgentModelAccessKey(userId, agentConversation, backendModel.getModelId());
         if (userAccessKeyDto == null) {
-            userAccessKeyDto = userAccessKeyRpcService.newAccessKey(tenantId, userId, UserAccessKeyDto.AKTargetType.AgentModel, agentId.toString(),
+            userAccessKeyDto = userAccessKeyRpcService.newAccessKey(tenantId, userId, UserAccessKeyDto.AKTargetType.AgentModel, agentConversation,
                     UserAccessKeyDto.UserAccessKeyConfig.builder()
                             .modelId(backendModel.getModelId())
                             .modelApiKey(backendModel.getApiKey())
@@ -225,12 +226,12 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                     .requestId(backendModel.getRequestId())
                     .traceContext(backendModel.getTraceContext())
                     .build());
-            redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), -1);
+            redisUtil.expire(BACKEND_MODEL_KEY_PREFIX + userAccessKeyDto.getAccessKey(), 0);
         }
         if (StringUtils.isNotBlank(baseApiUrl)) {
             siteUrl = baseApiUrl;
         }
-        if (StringUtils.isBlank(siteUrl)){
+        if (StringUtils.isBlank(siteUrl)) {
             TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(tenantId);
             siteUrl = tenantConfig.getSiteUrl();
         }

@@ -8,6 +8,8 @@ public interface IFileAccessService {
 
     String getFileUrlWithAk(String fileUrl, boolean returnOriginalUrl);
 
+    String getFileUrlWithAk(String fileUrl, boolean returnOriginalUrl, int download);
+
     void checkFileUrlAk(String uri, String ak);
 
     void checkFileUrlAk0(String uri, String ak);

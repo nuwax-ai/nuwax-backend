@@ -1,13 +1,17 @@
-package com.xspaceagi.agent.web.ui.controller.base;
+package com.xspaceagi.agent.core.application.service;
 
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
+import com.xspaceagi.agent.core.adapter.repository.entity.AgentConfig;
+import com.xspaceagi.agent.core.domain.service.AgentDomainService;
 import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
+import com.xspaceagi.system.spec.cache.SimpleJvmHashCache;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
@@ -23,6 +27,9 @@ public class ConversationPermissionChecker {
     private SpacePermissionService spacePermissionService;
     @Resource
     private ISandboxConfigRpcService sandboxConfigRpcService;
+
+    @Resource
+    private AgentDomainService agentDomainService;
 
     /**
      * 校验当前用户对会话的访问权限：
@@ -55,13 +62,35 @@ public class ConversationPermissionChecker {
         if (RequestContext.get().getUserId().equals(conversationUserId)) {
             return conversationUserId;
         }
+        checkUserConversationPermission(RequestContext.get().getUserId(), conversation);
+        return conversationUserId;
+    }
+
+    public void checkUserConversationPermission(Long userId, ConversationDto conversation) {
+        if (conversation.getUserId().equals(userId)) {
+            return;
+        }
+        String cacheKey = "ucp:" + RequestContext.get().getUserId() + "-" + conversation.getId();
+        Object o = SimpleJvmHashCache.getHash("conversation.permission.check", cacheKey);
+        if (o != null) {
+            return;
+        }
         Long devSpaceId = conversation.getDevSpaceId();
         if (devSpaceId != null) {
-            spacePermissionService.checkSpaceUserPermission(devSpaceId, RequestContext.get().getUserId());
+            spacePermissionService.checkSpaceUserPermission(devSpaceId, userId);
+        } else if (YesOrNoEnum.Y.getKey().equals(conversation.getDevMode())) {
+            AgentConfig agentConfig = agentDomainService.queryById(conversation.getAgentId());
+            if (agentConfig != null) {
+                spacePermissionService.checkSpaceUserPermission(agentConfig.getSpaceId(), userId);
+            } else {
+                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
+            }
         } else {
             throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
         }
-        return conversationUserId;
+
+        // 临时缓存权限1分钟，避免段时间内过多的重复校验
+        SimpleJvmHashCache.putHash("conversation.permission.check", cacheKey, conversation.getId(), 60);
     }
 
     /**

@@ -117,7 +117,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
 
                 // permissionImportService.importToTenant removed the tenant from context, must reset here
                 RequestContext.setThreadTenantId(tenantId);
-
+                RequestContext.get().setTenantConfig(tenantConfig);
                 // Get model list
                 ModelQueryDto modelQueryDto = new ModelQueryDto();
                 modelQueryDto.setModelType(ModelTypeEnum.Chat);
@@ -165,7 +165,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                         agentConfigDto.setDescription("Default agent for the site");
                         agentConfigDto.setSystemPrompt("You are a helpful assistant.");
                         agentConfigDto.setOpeningChatMsg("Hello {{USER_NAME}}, how can I help you?");
-                        Long agentId = addAndPublishAgent(tenantId, agentConfigDto);
+                        Long agentId = addAndPublishAgent(spaceId, agentConfigDto);
                         tenantConfig.setDefaultAgentId(agentId);
                         // Initialize default agents
                         List<Long> longs = initDefaultChatBot(tenantId, userId, spaceId);
@@ -269,7 +269,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/77ba864646a94d019059240c3fbf2a3c.png");
         agentConfigDto.setDescription("I am an experienced product manager with deep technical background and keen insight into market and user needs. I excel at solving complex problems, developing effective product strategies, and optimally balancing resources to achieve product objectives.");
         agentConfigDto.setSystemPrompt(prompt);
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //市场营销 - Marketing
@@ -282,7 +282,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/697d544783114c05b6448e4cb14dd170.png");
         agentConfigDto.setDescription("I am a professional marketing expert with deep understanding of marketing strategies and brand promotion. I know how to effectively use different channels and tools to achieve marketing goals, and have deep understanding of consumer psychology.");
         agentConfigDto.setSystemPrompt("You are now a professional marketing expert. You have deep understanding of marketing strategies and brand promotion. You know how to effectively use different channels and tools to achieve marketing goals, and have deep understanding of consumer psychology. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //项目管理 - Project Management
@@ -295,7 +295,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/4ff6d9e2e264456ca262a831c0795b68.png");
         agentConfigDto.setDescription("I am a senior project manager proficient in all aspects of project management, including planning, organizing, execution, and control. I excel at handling project risks, solving problems, and effectively coordinating team members to achieve project goals.");
         agentConfigDto.setSystemPrompt("You are now a senior project manager. You are proficient in all aspects of project management, including planning, organizing, execution, and control. You excel at handling project risks, solving problems, and effectively coordinating team members to achieve project goals. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //前端工程师 - Frontend Engineer
@@ -308,7 +308,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/73634a7e0cef40f6a527fee20ab807e8.png");
         agentConfigDto.setDescription("I am a professional frontend engineer with deep understanding of frontend technologies such as HTML, CSS, and JavaScript. I can create and optimize user interfaces. I can solve browser compatibility issues, improve web performance, and achieve excellent user experience.");
         agentConfigDto.setSystemPrompt("You are now a professional frontend engineer. You have deep understanding of frontend technologies such as HTML, CSS, and JavaScript, and can create and optimize user interfaces. You can solve browser compatibility issues, improve web performance, and achieve excellent user experience. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //开发工程师 - Software Engineer
@@ -321,7 +321,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/2d3d8211b3d44f95ba314d3b9f301707.png");
         agentConfigDto.setDescription("As a software engineer, I have deep understanding of computer system operation, performance, and availability.");
         agentConfigDto.setSystemPrompt("You are now a software engineer. You are responsible for developing, testing, and optimizing software systems. You are familiar with various development tools and can efficiently complete project tasks. You also know how to perform code optimization and performance testing, ensuring high-quality software products. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //测试工程师 - Test Engineer
@@ -334,7 +334,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setDescription("As a test engineer, I have deep understanding of computer system operation, performance, and availability.");
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/b163c0e41d0d4fd497ccf0c6be0a6659.png");
         agentConfigDto.setSystemPrompt("You are now a test engineer. You are responsible for testing the functionality, performance, and availability of software systems. You are familiar with various testing tools and can efficiently complete project tasks. You also know how to perform code optimization and performance testing, ensuring high-quality software products. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //HR人力资源管理 - Human Resources Management
@@ -347,7 +347,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/5f03892a684a4ce6b9d63f2c8e02008e.png");
         agentConfigDto.setDescription("As an HR management professional, I have deep understanding of human resource management.");
         agentConfigDto.setSystemPrompt("You are now an HR management professional. You are responsible for human resource management. You are familiar with various HR tools and can efficiently complete project tasks. You also know how to optimize human resources and conduct performance assessments, ensuring high-quality organizational management. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //财务顾问 - Financial Advisor
@@ -360,7 +360,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/ef705a85de9f409ebaff02f5dca79365.png");
         agentConfigDto.setDescription("As a financial advisor, I have deep understanding of finance.");
         agentConfigDto.setSystemPrompt("You are now a financial advisor. You are responsible for company daily affairs. You are familiar with various financial tools and can efficiently complete project tasks. You also know how to perform financial optimization and risk assessment, ensuring high-quality financial management. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //法务 - Legal Affairs
@@ -373,7 +373,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/b179c49d805947c18610f457d227b6f2.png");
         agentConfigDto.setDescription("I am a legal expert. I understand corporate law, contract law, and other related laws. I can provide legal consultation and risk assessment for enterprises. I am also skilled in handling legal disputes and can draft and review contracts.");
         agentConfigDto.setSystemPrompt("You are now a legal expert. You understand corporate law, contract law, and other related laws. You can provide legal consultation and risk assessment for enterprises. You are also skilled in handling legal disputes and can draft and review contracts. Please answer the following questions in this role.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //翻译助手 - Chinese & English Translator
@@ -386,7 +386,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
         agentConfigDto.setIcon("https://s3.nuwax.com:9443/nuwax-public/icons/v3-release-icons/03a4bc05e39c401db66ee97475f90871.png");
         agentConfigDto.setDescription("As a translation assistant, I can translate various languages into Chinese, and also translate Chinese into English.");
         agentConfigDto.setSystemPrompt("You are a helpful translation assistant. Please determine the language sent by the user, translate English into Chinese, and translate all non-Chinese text into Chinese; if the user sends Chinese, please translate it into English. Everything I send you is content that needs translation, you only need to answer with the translation result. The translation result should conform to the habits of the relevant language.");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //爆款文案 - Viral Copywriting
@@ -413,7 +413,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                 - Only start answering when the user asks a question. When the user doesn't ask a question, please don't answer
                 """);
         agentConfigDto.setOpeningChatMsg("I can generate viral internet copy for you. You can tell me any requirements for the theme and content of the copy~");
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //心理模型专家 - Psychological Model Expert
@@ -473,7 +473,7 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                 - Step 6: Summarize experience, refine character building methodology, and provide reference for subsequent projects
                 """
         );
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 
     //提示词专家 - Prompt Expert
@@ -595,6 +595,6 @@ public class TenantCreatedTaskServiceImpl extends AbstractTaskExecuteService {
                             Please avoid discussing the content I send. Only output the optimized Prompt. Do not output extra explanations or guiding words. Do not surround with code blocks.
                 """
         );
-        return addAndPublishAgent(tenantId, agentConfigDto);
+        return addAndPublishAgent(spaceId, agentConfigDto);
     }
 }

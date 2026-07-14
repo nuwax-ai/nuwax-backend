@@ -151,7 +151,7 @@ public class BillCalculateTaskServiceImpl extends AbstractTaskExecuteService {
         Long salerId = -1L;
         if (traceTarget.getTargetType() == TraceContext.TraceTargetType.Workflow) {
             ReqResult<WorkflowInfoDto> publishedWorkflowInfo = iAgentRpcService.getPublishedWorkflowInfo(Long.parseLong(traceTarget.getTargetId()), null);
-            if (publishedWorkflowInfo == null) {
+            if (publishedWorkflowInfo == null || publishedWorkflowInfo.getData() == null) {
                 log.warn("getPublishedWorkflowInfo error {}", traceTarget.getTargetId());
                 return;
             }
@@ -159,7 +159,7 @@ public class BillCalculateTaskServiceImpl extends AbstractTaskExecuteService {
         }
         if (traceTarget.getTargetType() == TraceContext.TraceTargetType.Plugin) {
             ReqResult<PluginInfoDto> publishedPluginInfo = iAgentRpcService.getPublishedPluginInfo(Long.parseLong(traceTarget.getTargetId()), null);
-            if (publishedPluginInfo == null) {
+            if (publishedPluginInfo == null || publishedPluginInfo.getData() == null) {
                 log.warn("getPublishedPluginInfo error {}", traceTarget.getTargetId());
                 return;
             }

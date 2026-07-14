@@ -208,6 +208,20 @@ public class AccuracyTestService {
                     item.setContent(entry.getRawTxt());
                     item.setAnswer(entry.getAnswer());
                     results.add(item);
+                } else {
+                    AccuracyTestSearchResponse.SearchResultItem  item = new AccuracyTestSearchResponse.SearchResultItem();
+                    item.setDocName("手动添加");
+
+                    //BigDecimal bd = BigDecimal.valueOf(entry.getScore());
+                    //bd = bd.setScale(2, RoundingMode.HALF_UP);
+                    DecimalFormat df = new DecimalFormat("0.00"); // "0.00" 表示保留两位，不足补零
+                    Double score = Double.parseDouble(df.format(entry.getScore()));
+
+                    item.setScore(score);
+                    item.setDocId(entry.getDocId());
+                    item.setContent(entry.getRawTxt());
+                    item.setAnswer(entry.getAnswer());
+                    results.add(item);
                 }
 
             }

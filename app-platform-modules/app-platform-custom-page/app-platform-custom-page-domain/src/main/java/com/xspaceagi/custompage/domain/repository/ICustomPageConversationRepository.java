@@ -47,6 +47,11 @@ public interface ICustomPageConversationRepository {
      */
     CustomPageConversationModel findAssistantByProjectIdAndRequestId(Long projectId, String requestId);
 
+    /**
+     * 按 requestId 查询本轮用户消息
+     */
+    CustomPageConversationModel findUserByProjectIdAndRequestId(Long projectId, String requestId);
+
     CustomPageConversationModel findById(Long id);
 
     /**

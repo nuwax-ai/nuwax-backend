@@ -36,10 +36,14 @@ public class FileAccessServiceImpl implements IFileAccessService {
 
     @Override
     public String getFileUrlWithAk(String siteUrl, String fileUrl) {
-        return getRealFileUrl(siteUrl, fileUrl, false, false);
+        return getRealFileUrl(siteUrl, fileUrl, true, false);
     }
 
     public String getFileUrlWithAk(String fileUrl, boolean returnOriginalUrl) {
+        return getFileUrlWithAk(fileUrl, returnOriginalUrl, 0);
+    }
+
+    public String getFileUrlWithAk(String fileUrl, boolean returnOriginalUrl, int download) {
         if (fileUrl == null) {
             return null;
         }
@@ -131,13 +135,13 @@ public class FileAccessServiceImpl implements IFileAccessService {
         if (!returnOriginalUrl || isLocalFile) {
             Object ak = redisUtil.get("file.ak:" + path);
             if (Objects.nonNull(ak)) {
-                return fileUrl + "?ak=" + ak;
+                return fileUrl + "?ak=" + ak + (download == 1 ? "&download=1" : "");
             }
             ak = UUID.randomUUID().toString().replace("-", "");
             redisUtil.set("file.ak:" + path, ak.toString(), 60 * 60 * 24);
-            return fileUrl + "?ak=" + ak;
+            return fileUrl + "?ak=" + ak + (download == 1 ? "&download=1" : "");
         }
-        return fileManagementService.generatePresignedUrlByType(fileKey, extractStorageTypeFromFileKey(fileKey), 60 * 60 * 24, 0);
+        return fileManagementService.generatePresignedUrlByType(fileKey, extractStorageTypeFromFileKey(fileKey), 60 * 60 * 24, download);
     }
 
     public void checkFileUrlAk(String uri, String ak) {
@@ -169,7 +173,7 @@ public class FileAccessServiceImpl implements IFileAccessService {
 
     @Override
     public String getRealFileUrl(String fileUrl) {
-        if (RequestContext.get() == null) {
+        if (RequestContext.get() == null || RequestContext.get().getTenantConfig() == null) {
             return fileUrl;
         }
         TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();

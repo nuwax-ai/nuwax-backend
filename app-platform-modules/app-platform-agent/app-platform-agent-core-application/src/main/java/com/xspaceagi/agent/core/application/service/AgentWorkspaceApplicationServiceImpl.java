@@ -614,11 +614,23 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.agentTemplateInitFailed, "Downloaded zip is empty");
         }
 
-        // 2. 如果压缩包只有一个顶层目录，去掉顶层目录后再上传
+        uploadZipBytesToWorkspace(userId, cId, zipBytes);
+    }
+
+    @Override
+    public void uploadZipBytesToWorkspace(Long userId, Long cId, byte[] zipBytes) {
+        if (userId == null || cId == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "userId/cId");
+        }
+        if (zipBytes == null || zipBytes.length == 0) {
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.agentTemplateInitFailed, "Zip is empty");
+        }
+
+        log.info("[uploadZipBytesToWorkspace] userId={} cId={} 开始上传 zip 到工作空间", userId, cId);
+
         zipBytes = stripTopLevelDirIfNeeded(zipBytes);
 
-        // 3. 包装为 MultipartFile 并推送到工作空间，按版本开关决定是否初始化 git
-        InMemoryMultipartFile zipFile = new InMemoryMultipartFile("file", "skill.zip", "application/zip", zipBytes);
+        InMemoryMultipartFile zipFile = new InMemoryMultipartFile("file", "workspace.zip", "application/zip", zipBytes);
         boolean enableGit = resolveEnableGit(cId);
         Map<String, Object> initResult = workspaceRpcClient.initProjectTemplate(userId, cId, zipFile, enableGit);
 
@@ -628,11 +640,11 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         Object successObj = initResult.get("success");
         if (successObj instanceof Boolean && !(Boolean) successObj) {
             String message = String.valueOf(initResult.getOrDefault("message", "initProjectTemplate failed"));
-            log.error("[uploadZipToWorkspace] userId={} cId={} initProjectTemplate失败, message={}", userId, cId, message);
+            log.error("[uploadZipBytesToWorkspace] userId={} cId={} initProjectTemplate失败, message={}", userId, cId, message);
             throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.agentTemplateInitFailed, message);
         }
 
-        log.info("[uploadZipToWorkspace] userId={} cId={} 上传 zip 到工作空间完成", userId, cId);
+        log.info("[uploadZipBytesToWorkspace] userId={} cId={} 上传 zip 到工作空间完成", userId, cId);
     }
 
     //

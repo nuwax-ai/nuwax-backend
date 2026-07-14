@@ -60,8 +60,13 @@ public interface AgentWorkspaceApplicationService {
     void copySandboxWorkspace(Long srcUserId, Long srcCId, Long destUserId, Long destCId);
 
     /**
-     * 从指定 url 地址下载 zip 文件并上传到工作空间，初始化项目模板
+     * 从指定 url 地址下载 zip 文件并上传到工作空间
      */
     void uploadZipToWorkspace(Long userId, Long cId, String zipFileUrl);
+
+    /**
+     * 将 zip 字节上传到工作空间，按版本开关决定是否初始化 git
+     */
+    void uploadZipBytesToWorkspace(Long userId, Long cId, byte[] zipBytes);
 
 }

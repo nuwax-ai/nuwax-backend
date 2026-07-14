@@ -580,6 +580,10 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
                         conversationDto.setTopic(agentDetailDto.getName());
                         conversationDto.setSummary(agentDetailDto.getDescription());
                         conversationDto.setIcon(agentDetailDto.getIcon());
+                    } else {
+                        // 项目已经被删除，对应的会话也删除
+                        conversationDomainService.deleteConversation(userId, conversationDto.getId());
+                        return null;
                     }
                 }
                 if (Published.TargetType.PageApp.name().equals(conversationDto.getDevTargetType()) && conversationDto.getDevTargetId() != null) {
@@ -2000,6 +2004,9 @@ public class ConversationApplicationServiceImpl extends AbstractTaskExecuteServi
             SimpleJvmHashCache.removeHashAll(agentContext.getRequestId());
             if (agentExecuteResult == null) {
                 agentExecuteResult = new AgentExecuteResult();
+                agentExecuteResult.setSuccess(true);
+            }
+            if (agentExecuteResult.getSuccess() == null) {
                 agentExecuteResult.setSuccess(true);
             }
             LogDocument logDocument = LogDocument.builder()

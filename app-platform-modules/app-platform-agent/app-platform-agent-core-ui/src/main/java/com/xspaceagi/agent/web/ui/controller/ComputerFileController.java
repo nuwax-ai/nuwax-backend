@@ -2,7 +2,7 @@ package com.xspaceagi.agent.web.ui.controller;
 
 import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationService;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
-import com.xspaceagi.agent.web.ui.controller.base.ConversationPermissionChecker;
+import com.xspaceagi.agent.core.application.service.ConversationPermissionChecker;
 import com.xspaceagi.agent.web.ui.controller.dto.ComputerFileListRes;
 import com.xspaceagi.agent.web.ui.controller.dto.ComputerFilesUpdateReq;
 import com.xspaceagi.system.spec.common.UserContext;

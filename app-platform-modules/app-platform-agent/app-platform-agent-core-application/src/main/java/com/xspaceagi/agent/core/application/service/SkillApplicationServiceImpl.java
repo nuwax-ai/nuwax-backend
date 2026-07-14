@@ -6,6 +6,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.application.SkillApplicationService;
+import com.xspaceagi.agent.core.adapter.application.AgentWorkspaceApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.application.RecommendApplicationService;
+import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
+import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
 import com.xspaceagi.agent.core.adapter.constant.SkillFileFormatConstants;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.repository.CopyIndexRecordRepository;
@@ -81,6 +86,12 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     private FileManagementService fileManagementService;
     @Resource
     private IFileAccessService iFileAccessService;
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
+    @Resource
+    private AgentWorkspaceApplicationService agentWorkspaceApplicationService;
+    @Resource
+    private RecommendApplicationService recommendApplicationService;
 
     public static final Long MAX_SKILL_FILE_SIZE = 100L * 1024 * 1024;
 
@@ -718,6 +729,80 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         skillConfigDto.setName(newName);
         skillConfigDto.setSpaceId(targetSpaceId);
         return this.add(skillConfigDto);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProjectCreateResultDTO convertToConversationalDev(Long skillId) {
+        SkillConfigDto skillConfigDto = queryById(skillId, true);
+        if (skillConfigDto == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillNotFound);
+        }
+        if (skillConfigDto.getDevAgentConversationId() != null) {
+            throw new IllegalArgumentException("Skill is already a conversational development skill");
+        }
+
+        TargetRecommendResponse recommendResponse = recommendApplicationService.list(
+                TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name()
+        ).stream()
+                .filter(r -> TargetRecommend.FunctionType.SkillDev.name().equals(r.getFunctionType()))
+                .findFirst()
+                .orElse(null);
+        if (recommendResponse == null) {
+            throw new IllegalArgumentException("Develop agent not config");
+        }
+
+        Long userId = RequestContext.get().getUserId();
+        Long devConversationId = conversationApplicationService.createConversationForProjectDevelopment(
+                RequestContext.get().getTenantId(),
+                userId,
+                skillConfigDto.getSpaceId(),
+                recommendResponse.getTargetId(),
+                Published.TargetType.Skill.name(),
+                skillId
+        ).getId();
+
+        boolean hasFiles = CollectionUtils.isNotEmpty(skillConfigDto.getFiles());
+        try {
+            if (!hasFiles) {
+                agentWorkspaceApplicationService.initProjectTemplate(InitProjectTemplateDto.builder()
+                        .cId(devConversationId)
+                        .projectType(InitProjectTemplateDto.ProjectType.SKILL)
+                        .userId(userId)
+                        .build());
+            } else {
+                SkillExportResultDto exportResult = exportSkill(skillConfigDto);
+                agentWorkspaceApplicationService.uploadZipBytesToWorkspace(userId, devConversationId, exportResult.getData());
+            }
+        } catch (Exception e) {
+            log.error("Failed to init sandbox workspace for skill conversion, skillId={}, cId={}", skillId, devConversationId, e);
+            try {
+                agentWorkspaceApplicationService.deleteWorkspace(userId, devConversationId);
+            } catch (Exception cleanupEx) {
+                log.warn("Failed to cleanup sandbox workspace after skill conversion failure, skillId={}, cId={}", skillId, devConversationId, cleanupEx);
+            }
+            if (e instanceof BizException) {
+                throw e;
+            }
+            if (e instanceof IllegalArgumentException) {
+                throw (IllegalArgumentException) e;
+            }
+            throw BizException.of(ErrorCodeEnum.ERROR_REQUEST, BizExceptionCodeEnum.agentTemplateInitFailed, e.getMessage());
+        }
+
+        SkillConfigDto updateDto = new SkillConfigDto();
+        updateDto.setId(skillId);
+        updateDto.setDevAgentConversationId(devConversationId);
+        updateDto.setFiles(List.of());
+        update(updateDto, true);
+
+        deleteFilesByTarget(RequestContext.get().getTenantId(), TARGET_TYPE_SKILL_DEV, skillId);
+
+        ProjectCreateResultDTO result = new ProjectCreateResultDTO();
+        result.setTargetId(skillId.toString());
+        result.setTargetType(Published.TargetType.Skill);
+        result.setConversationId(devConversationId);
+        return result;
     }
 
     @Override

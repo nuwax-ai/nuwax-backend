@@ -2,7 +2,7 @@ package com.xspaceagi.agent.web.ui.controller;
 
 import com.xspaceagi.agent.core.infra.rpc.GitRpcClient;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
-import com.xspaceagi.agent.web.ui.controller.base.ConversationPermissionChecker;
+import com.xspaceagi.agent.core.application.service.ConversationPermissionChecker;
 import com.xspaceagi.agent.web.ui.controller.dto.git.*;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
 import com.xspaceagi.custompage.sdk.dto.CustomPageDto;

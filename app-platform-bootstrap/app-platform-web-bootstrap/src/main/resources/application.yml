@@ -157,3 +157,5 @@ sandbox:
         - "table/sql/new"
         - "table/sql/update"
         - "pay/general/**"
+        - "agent/conversation/**"
+        - "agent/*"

@@ -566,7 +566,7 @@ public class SandboxAgentClient {
                         .resource_limits(AgentRequest.ResourceLimits.builder()
                                 .cpu(sandboxServer.getPerUserCpuCores())
                                 .memory((long) (perUserMemoryGB * 1024 * 1024 * 1024))
-                                .swap((long) perUserCpuCores * 1024 * 1024 * 1024)
+                                .swap((long) perUserMemoryGB * 1024 * 1024 * 1024 * 2)
                                 .storage_size(storageGB)
                                 .build())
                         .build())
@@ -984,6 +984,10 @@ public class SandboxAgentClient {
                 env.put("ANTHROPIC_BASE_URL", "{MODEL_PROVIDER_BASE_URL}");
                 env.put("OPENCODE_MODEL", "anthropic-compatible/" + modelConfig.getModel());
             }
+            if (CollectionUtils.isNotEmpty(modelConfig.getTypes())) {
+                env.put("OPENCODE_FORCE_INPUT_MODALITIES", String.join(",", modelConfig.getTypes().stream().map(t -> t.name().toLowerCase()).toList()));
+            }
+
             return AgentRequest.AgentServer.builder()
                     .agent_id("nuwaxcode")
                     .command("nuwaxcode")

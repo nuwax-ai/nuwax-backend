@@ -87,6 +87,11 @@ public interface SkillApplicationService {
     Long copySkill(SkillConfigDto skillConfigDto, Long targetSpaceId);
 
     /**
+     * 将文件服务中的技能转为对话式开发技能（沙箱工作空间）
+     */
+    ProjectCreateResultDTO convertToConversationalDev(Long skillId);
+
+    /**
      * 查询技能模板
      */
     SkillConfigDto getSkillTemplate(InputStream inputStream);

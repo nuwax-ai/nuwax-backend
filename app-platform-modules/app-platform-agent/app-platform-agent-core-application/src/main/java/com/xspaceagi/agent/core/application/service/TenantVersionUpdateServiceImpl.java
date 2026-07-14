@@ -139,6 +139,9 @@ public class TenantVersionUpdateServiceImpl {
                 try {
                     tenantService.list().forEach(tenant -> {
                         try {
+                            if (tenant.getVersion() == null) {
+                                return;
+                            }
                             RequestContext.setThreadTenantId(tenant.getId());
                             redisUtil.expire("tenant_config:" + tenant.getId(), 0);
                             tenantVersionUpgradeMap.forEach((version, upgrade) -> {

@@ -241,7 +241,7 @@ public class EcoClientApiController {
                     .map(EcoMarketImportRecordModel::getSpaceId)
                     .collect(Collectors.toSet());
             if ((targetType.equals("Plugin") || targetType.equals("Skill")) && !importRecords.isEmpty()) {
-                PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Plugin, importRecords.get(0).getTargetId());
+                PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.valueOf(targetType), importRecords.get(0).getTargetId());
                 if (publishedDto != null && publishedDto.getPublishedSpaceIds() != null) {
                     importedSpaceIds.addAll(publishedDto.getPublishedSpaceIds());
                 }
@@ -386,8 +386,9 @@ public class EcoClientApiController {
                             PluginDto pluginDto1 = pluginApplicationService.queryById(pluginId);
                             if (pluginDto1 == null) {
                                 pluginId = null;
+                                iEcoMarketImportApplicationService.deleteImportRecord(imported.getId());
+                                imported = null;
                             }
-                            iEcoMarketImportApplicationService.deleteImportRecord(imported.getId());
                         }
                         if (pluginId == null) {
                             PluginAddDto pluginAddDto = new PluginAddDto();

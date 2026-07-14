@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xspaceagi.custompage.domain.gateway.PageAppAIClient;
 import com.xspaceagi.custompage.domain.gateway.PageAppFileClient;
 import com.xspaceagi.custompage.domain.model.CustomPageConversationModel;
+import com.xspaceagi.custompage.domain.repository.ICustomPageConversationRepository;
 import com.xspaceagi.custompage.domain.util.AgentProgressContextUtil;
 import com.xspaceagi.custompage.domain.util.AgentProgressEventUtil;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -64,6 +65,8 @@ public class CustomPageAgentProgressCaptureService {
     private PageAppFileClient pageAppFileClient;
     @Resource
     private ICustomPageConversationDomainService customPageConversationDomainService;
+    @Resource
+    private ICustomPageConversationRepository customPageConversationRepository;
     @Resource
     private AgentProgressSessionCoordinator sessionCoordinator;
     @Resource
@@ -340,12 +343,66 @@ public class CustomPageAgentProgressCaptureService {
             try {
                 pageAppFileClient.gitAutoCommit(
                         context.projectId,
-                        "auto commit: AI development changes",
+                        buildAutoCommitMessage(context),
                         null, null);
             } catch (Exception e) {
                 log.warn("[Agent Progress] auto git commit failed, project Id={}", context.projectId, e);
             }
         });
+    }
+
+    private String buildAutoCommitMessage(CaptureContext context) {
+        String userMessage = resolveUserMessage(context);
+        String message = "auto commit: " + (StringUtils.isNotBlank(userMessage)
+                ? userMessage.replaceAll("[\\r\\n]+", " ").trim()
+                : "AI development changes");
+        if (message.length() > 200) {
+            message = message.substring(0, 200);
+        }
+        return message;
+    }
+
+    private String resolveUserMessage(CaptureContext context) {
+        if (StringUtils.isNotBlank(context.fluxRequestId)) {
+            CustomPageConversationModel user = customPageConversationRepository
+                    .findUserByProjectIdAndRequestId(context.projectId, context.fluxRequestId);
+            if (user != null) {
+                String text = extractUserInputText(user.getContent());
+                if (StringUtils.isNotBlank(text)) {
+                    return text;
+                }
+            }
+        }
+        CustomPageConversationModel latestUser = customPageConversationRepository
+                .findLatestUserBySessionId(context.projectId, context.sessionId);
+        if (latestUser != null) {
+            String text = extractUserInputText(latestUser.getContent());
+            if (StringUtils.isNotBlank(text)) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    /** 用户消息 content 可能是 JSON（含 text 字段）或纯文本，提取可读的输入文本。 */
+    private String extractUserInputText(String content) {
+        if (StringUtils.isBlank(content)) {
+            return null;
+        }
+        if (!JSON.isValidObject(content)) {
+            return content;
+        }
+        try {
+            Map<String, Object> payload = objectMapper.readValue(content, new TypeReference<Map<String, Object>>() {
+            });
+            Object text = payload.get("text");
+            if (text != null && StringUtils.isNotBlank(String.valueOf(text))) {
+                return String.valueOf(text);
+            }
+            return content;
+        } catch (Exception e) {
+            return content;
+        }
     }
 
     private void onSubscribeFailed(Long projectId, String fluxRequestId, String errorMessage) {

@@ -18,9 +18,9 @@ public class UserAccessKeyRpcService {
         return TenantFunctions.callWithIgnoreCheck(() -> userAccessKeyApiService.newAccessKey(tenantId, userId, targetType, targetId, userAccessKeyConfig));
     }
 
-    public UserAccessKeyDto queryAgentModelAccessKey(Long userId, Long agentId, Long modelId) {
+    public UserAccessKeyDto queryAgentModelAccessKey(Long userId, String agentId, Long modelId) {
         return TenantFunctions.callWithIgnoreCheck(() -> {
-            List<UserAccessKeyDto> userAccessKeys = userAccessKeyApiService.queryAccessKeyList(userId, UserAccessKeyDto.AKTargetType.AgentModel, agentId.toString());
+            List<UserAccessKeyDto> userAccessKeys = userAccessKeyApiService.queryAccessKeyList(userId, UserAccessKeyDto.AKTargetType.AgentModel, agentId);
             return userAccessKeys.stream().filter(userAccessKeyDto -> userAccessKeyDto.getConfig().getModelId().equals(modelId)).findFirst().orElse(null);
         });
     }

@@ -120,6 +120,14 @@ public class KnowledgeBaseSearcher extends BaseComponent {
                     finalQaVoList.addAll(newQaVoList);
                 }
 
+                for (KnowledgeQaVo qaVo : finalQaVoList) {
+                    if(qaVo.getRawTxt() != null && qaVo.getAnswer() != null && qaVo.getQuestion() != null) {
+                        if(qaVo.getRawTxt().isEmpty() && !qaVo.getAnswer().isEmpty() && !qaVo.getQuestion().isEmpty()) {
+                            qaVo.setRawTxt(qaVo.getAnswer());
+                        }
+                    }
+                }
+
                 Map<String, KnowledgeQaVo> rawTextMap = finalQaVoList.stream().collect(Collectors.toMap(qaVo -> qaVo.getRawTxt(), qaVo -> qaVo, (v1, v2) -> v1));
                 Set<String> rawTextSet = new HashSet<>();
                 results.removeIf(knowledgeFullTextSearchResultVo -> {

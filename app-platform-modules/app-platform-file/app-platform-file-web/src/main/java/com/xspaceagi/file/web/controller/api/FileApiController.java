@@ -60,10 +60,10 @@ public class FileApiController {
     }
 
     @GetMapping("/api/v1/file/ak")
-    public ReqResult<String> fileAk(@RequestParam(name = "fileUrl") String fileUrl) {
+    public ReqResult<String> fileAk(@RequestParam(name = "fileUrl") String fileUrl, @RequestParam(required = false) Integer download) {
         fileUrl = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
         //fileUrl中移除ak参数
         fileUrl = fileUrl.replaceAll("([?&])ak(?:=[^&]*)?&?", "$1").replaceAll("\\?$", "");
-        return ReqResult.success(iFileAccessService.getFileUrlWithAk(fileUrl,  true));
+        return ReqResult.success(iFileAccessService.getFileUrlWithAk(fileUrl, true, download != null ? download : 0));
     }
 }

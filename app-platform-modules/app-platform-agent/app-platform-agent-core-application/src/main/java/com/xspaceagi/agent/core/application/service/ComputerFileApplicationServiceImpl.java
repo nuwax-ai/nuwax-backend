@@ -62,6 +62,8 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     private AuthService authService;
     @Resource
     private SpacePermissionService spacePermissionService;
+    @Resource
+    private ConversationPermissionChecker conversationPermissionChecker;
 
     @Override
     public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir) {
@@ -356,7 +358,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         // URL decode
         String decodedPath = relativePath;
         try {
-            decodedPath = URLDecoder.decode(relativePath, "UTF-8");
+            decodedPath = URLDecoder.decode(relativePath, StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.warn("[Web] URL decode failed, relativePath={}, using raw path", relativePath, e);
         }
@@ -593,14 +595,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return new AuthResult(null, null, null, redirectUrl);
         }
 
-        if (!currentUserId.equals(conversationUserId)) {
-            Long devSpaceId = currentConversation.getDevSpaceId();
-            if (devSpaceId != null) {
-                spacePermissionService.checkSpaceUserPermission(devSpaceId, RequestContext.get().getUserId());
-            } else {
-                throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
-            }
-        }
+        conversationPermissionChecker.checkUserConversationPermission(currentUserId, currentConversation);
 
         return new AuthResult(conversationUserId, null, null, null);
     }
