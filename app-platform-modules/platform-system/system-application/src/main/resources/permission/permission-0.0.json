@@ -1,5 +1,5 @@
 {
-  "version": "1.6",
+  "version": "1.9",
   "resources": [
     {
       "code": "space",
@@ -232,6 +232,54 @@
       "source": 1,
       "type": 1,
       "sortIndex": 26,
+      "status": 1
+    },
+    {
+      "code": "user_app_dev",
+      "name": "网站应用开发模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 27,
+      "status": 1
+    },
+    {
+      "code": "normal_project_dev",
+      "name": "常规项目开发模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 28,
+      "status": 1
+    },
+    {
+      "code": "third_app_dev",
+      "name": "三方应用开发模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 29,
+      "status": 1
+    },
+    {
+      "code": "sensitive_word_manage",
+      "name": "敏感词管控模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 30,
+      "status": 1
+    },
+    {
+      "code": "auth_method_manage",
+      "name": "登录方式管理模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 31,
+      "status": 1
+    },
+    {
+      "code": "oauth2_scope_audit",
+      "name": "OAuth2范围审核模块",
+      "source": 1,
+      "type": 1,
+      "sortIndex": 32,
       "status": 1
     },
     {
@@ -525,26 +573,6 @@
       "status": 1
     },
     {
-      "code": "published_manage_offline",
-      "name": "下架",
-      "description": "下架",
-      "source": 1,
-      "type": 2,
-      "parentCode": "published_manage",
-      "sortIndex": 0,
-      "status": 1
-    },
-    {
-      "code": "published_manage_query_list",
-      "name": "查询列表",
-      "description": "查询列表",
-      "source": 1,
-      "type": 2,
-      "parentCode": "published_manage",
-      "sortIndex": 0,
-      "status": 1
-    },
-    {
       "code": "publish_audit_pass",
       "name": "通过",
       "description": "通过",
@@ -571,6 +599,26 @@
       "source": 1,
       "type": 2,
       "parentCode": "publish_audit",
+      "sortIndex": 0,
+      "status": 1
+    },
+    {
+      "code": "published_manage_offline",
+      "name": "下架",
+      "description": "下架",
+      "source": 1,
+      "type": 2,
+      "parentCode": "published_manage",
+      "sortIndex": 0,
+      "status": 1
+    },
+    {
+      "code": "published_manage_query_list",
+      "name": "查询列表",
+      "description": "查询列表",
+      "source": 1,
+      "type": 2,
+      "parentCode": "published_manage",
       "sortIndex": 0,
       "status": 1
     },
@@ -855,6 +903,15 @@
       "status": 1
     },
     {
+      "code": "auth_method_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "auth_method_manage",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
       "code": "component_lib_create",
       "name": "创建",
       "description": "创建",
@@ -904,22 +961,30 @@
       "status": 1
     },
     {
+      "code": "normal_project_create",
+      "name": "创建",
+      "source": 1,
+      "type": 2,
+      "parentCode": "normal_project_dev",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
+      "code": "oauth2_scope_audit_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "oauth2_scope_audit",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
       "code": "pay_earnings_query",
       "name": "查询",
       "description": "查询",
       "source": 1,
       "type": 2,
       "parentCode": "pay_earnings",
-      "sortIndex": 1,
-      "status": 1
-    },
-    {
-      "code": "published_manage_query_detail",
-      "name": "查看",
-      "description": "查看详情",
-      "source": 1,
-      "type": 2,
-      "parentCode": "published_manage",
       "sortIndex": 1,
       "status": 1
     },
@@ -934,12 +999,31 @@
       "status": 1
     },
     {
+      "code": "published_manage_query_detail",
+      "name": "查看",
+      "description": "查看详情",
+      "source": 1,
+      "type": 2,
+      "parentCode": "published_manage",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
       "code": "sandbox_config_query",
       "name": "查询",
       "description": "查询",
       "source": 1,
       "type": 2,
       "parentCode": "sandbox_config",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
+      "code": "sensitive_word_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "sensitive_word_manage",
       "sortIndex": 1,
       "status": 1
     },
@@ -984,12 +1068,39 @@
       "status": 1
     },
     {
+      "code": "third_app_create",
+      "name": "创建",
+      "source": 1,
+      "type": 2,
+      "parentCode": "third_app_dev",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
+      "code": "user_app_create",
+      "name": "创建",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
       "code": "agent_create_task_agent",
       "name": "创建智能体-通用型",
       "description": "创建智能体-问答型",
       "source": 1,
       "type": 2,
       "parentCode": "agent_dev",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
+      "code": "auth_method_add",
+      "name": "添加",
+      "source": 1,
+      "type": 2,
+      "parentCode": "auth_method_manage",
       "sortIndex": 2,
       "status": 1
     },
@@ -1043,6 +1154,24 @@
       "status": 1
     },
     {
+      "code": "normal_project_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "normal_project_dev",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
+      "code": "oauth2_scope_audit_pass",
+      "name": "通过",
+      "source": 1,
+      "type": 2,
+      "parentCode": "oauth2_scope_audit",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
       "code": "pay_earnings_modify",
       "name": "编辑",
       "description": "编辑",
@@ -1059,6 +1188,15 @@
       "source": 1,
       "type": 2,
       "parentCode": "sandbox_config",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
+      "code": "sensitive_word_add",
+      "name": "添加",
+      "source": 1,
+      "type": 2,
+      "parentCode": "sensitive_word_manage",
       "sortIndex": 2,
       "status": 1
     },
@@ -1093,12 +1231,39 @@
       "status": 1
     },
     {
+      "code": "third_app_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "third_app_dev",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
+      "code": "user_app_query",
+      "name": "查询",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
       "code": "agent_publish",
       "name": "发布",
       "description": "发布",
       "source": 1,
       "type": 2,
       "parentCode": "agent_dev",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "code": "auth_method_modify",
+      "name": "编辑",
+      "source": 1,
+      "type": 2,
+      "parentCode": "auth_method_manage",
       "sortIndex": 3,
       "status": 1
     },
@@ -1172,12 +1337,39 @@
       "status": 1
     },
     {
+      "code": "normal_project_modify",
+      "name": "编辑",
+      "source": 1,
+      "type": 2,
+      "parentCode": "normal_project_dev",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "code": "oauth2_scope_audit_reject",
+      "name": "拒绝",
+      "source": 1,
+      "type": 2,
+      "parentCode": "oauth2_scope_audit",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
       "code": "sandbox_config_modify",
       "name": "编辑",
       "description": "编辑",
       "source": 1,
       "type": 2,
       "parentCode": "sandbox_config",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "code": "sensitive_word_modify",
+      "name": "编辑",
+      "source": 1,
+      "type": 2,
+      "parentCode": "sensitive_word_manage",
       "sortIndex": 3,
       "status": 1
     },
@@ -1222,12 +1414,39 @@
       "status": 1
     },
     {
+      "code": "third_app_modify",
+      "name": "编辑",
+      "source": 1,
+      "type": 2,
+      "parentCode": "third_app_dev",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "code": "user_app_modify",
+      "name": "编辑",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
       "code": "agent_import",
       "name": "导入配置",
       "description": "导入配置",
       "source": 1,
       "type": 2,
       "parentCode": "agent_dev",
+      "sortIndex": 4,
+      "status": 1
+    },
+    {
+      "code": "auth_method_delete",
+      "name": "删除",
+      "source": 1,
+      "type": 2,
+      "parentCode": "auth_method_manage",
       "sortIndex": 4,
       "status": 1
     },
@@ -1281,12 +1500,30 @@
       "status": 1
     },
     {
+      "code": "normal_project_delete",
+      "name": "删除",
+      "source": 1,
+      "type": 2,
+      "parentCode": "normal_project_dev",
+      "sortIndex": 4,
+      "status": 1
+    },
+    {
       "code": "sandbox_config_save",
       "name": "保存",
       "description": "保存配置",
       "source": 1,
       "type": 2,
       "parentCode": "sandbox_config",
+      "sortIndex": 4,
+      "status": 1
+    },
+    {
+      "code": "sensitive_word_delete",
+      "name": "删除",
+      "source": 1,
+      "type": 2,
+      "parentCode": "sensitive_word_manage",
       "sortIndex": 4,
       "status": 1
     },
@@ -1321,6 +1558,24 @@
       "status": 1
     },
     {
+      "code": "third_app_delete",
+      "name": "删除",
+      "source": 1,
+      "type": 2,
+      "parentCode": "third_app_dev",
+      "sortIndex": 4,
+      "status": 1
+    },
+    {
+      "code": "user_app_delete",
+      "name": "删除",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
+      "sortIndex": 4,
+      "status": 1
+    },
+    {
       "code": "withdraw_audit",
       "name": "提现审核",
       "description": "提现审核",
@@ -1337,6 +1592,15 @@
       "source": 1,
       "type": 2,
       "parentCode": "agent_dev",
+      "sortIndex": 5,
+      "status": 1
+    },
+    {
+      "code": "auth_method_enable",
+      "name": "启用/禁用/未登录自动跳转",
+      "source": 1,
+      "type": 2,
+      "parentCode": "auth_method_manage",
       "sortIndex": 5,
       "status": 1
     },
@@ -1410,6 +1674,15 @@
       "status": 1
     },
     {
+      "code": "sensitive_word_enable",
+      "name": "启用/禁用",
+      "source": 1,
+      "type": 2,
+      "parentCode": "sensitive_word_manage",
+      "sortIndex": 5,
+      "status": 1
+    },
+    {
       "code": "space_delete",
       "name": "删除空间",
       "description": "删除空间",
@@ -1426,6 +1699,24 @@
       "source": 1,
       "type": 2,
       "parentCode": "system_task_manage",
+      "sortIndex": 5,
+      "status": 1
+    },
+    {
+      "code": "third_app_publish",
+      "name": "发布",
+      "source": 1,
+      "type": 2,
+      "parentCode": "third_app_dev",
+      "sortIndex": 5,
+      "status": 1
+    },
+    {
+      "code": "user_app_deploy",
+      "name": "部署",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
       "sortIndex": 5,
       "status": 1
     },
@@ -1476,6 +1767,15 @@
       "source": 1,
       "type": 2,
       "parentCode": "system_task_manage",
+      "sortIndex": 6,
+      "status": 1
+    },
+    {
+      "code": "user_app_publish",
+      "name": "发布",
+      "source": 1,
+      "type": 2,
+      "parentCode": "user_app_dev",
       "sortIndex": 6,
       "status": 1
     },
@@ -2279,17 +2579,40 @@
       "openType": 1,
       "icon": "",
       "sortIndex": 1,
-      "status": 1
+      "status": 0
     },
     {
       "code": "homepage",
-      "name": "主页",
+      "name": "新建任务",
       "description": "主页",
       "source": 1,
       "path": "/home",
       "openType": 1,
+      "icon": "",
       "sortIndex": 2,
       "status": 1
+    },
+    {
+      "code": "message",
+      "name": "伙伴",
+      "description": "伙伴",
+      "source": 1,
+      "path": "/instant-message",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 3,
+      "status": 0
+    },
+    {
+      "code": "repo",
+      "name": "资料库",
+      "description": "资料库",
+      "source": 1,
+      "path": "/repo",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 4,
+      "status": 0
     },
     {
       "code": "workspace",
@@ -2299,7 +2622,7 @@
       "path": "/space",
       "openType": 1,
       "icon": "",
-      "sortIndex": 3,
+      "sortIndex": 5,
       "status": 1
     },
     {
@@ -2310,7 +2633,7 @@
       "path": "/square?cate_type=Agent",
       "openType": 1,
       "icon": "",
-      "sortIndex": 4,
+      "sortIndex": 6,
       "status": 1
     },
     {
@@ -2321,18 +2644,7 @@
       "path": "%siteUrl%/api/eco/redirect",
       "openType": 1,
       "icon": "",
-      "sortIndex": 5,
-      "status": 1
-    },
-    {
-      "code": "system_manage",
-      "name": "系统管理",
-      "description": "系统管理",
-      "source": 1,
-      "path": "",
-      "openType": 1,
-      "icon": "",
-      "sortIndex": 6,
+      "sortIndex": 7,
       "status": 1
     },
     {
@@ -2343,7 +2655,7 @@
       "path": "https://nuwax.com/user-manual.html",
       "openType": 1,
       "icon": "",
-      "sortIndex": 7,
+      "sortIndex": 8,
       "status": 1
     },
     {
@@ -2353,7 +2665,7 @@
       "source": 1,
       "openType": 1,
       "icon": "",
-      "sortIndex": 8,
+      "sortIndex": 9,
       "status": 1
     },
     {
@@ -2364,7 +2676,7 @@
       "path": "/my-computer-manage",
       "openType": 1,
       "icon": "",
-      "sortIndex": 9,
+      "sortIndex": 10,
       "status": 1
     },
     {
@@ -2374,19 +2686,18 @@
       "path": "/more-page",
       "openType": 1,
       "icon": "",
-      "sortIndex": 10,
+      "sortIndex": 11,
       "status": 1
     },
     {
-      "parentCode": "workspace",
-      "code": "agent_dev",
-      "name": "智能体开发",
-      "description": "智能体开发",
+      "code": "system_manage",
+      "name": "系统管理",
+      "description": "系统管理",
       "source": 1,
-      "path": "/space/:spaceId/develop",
+      "path": "",
       "openType": 1,
       "icon": "",
-      "sortIndex": 1,
+      "sortIndex": 15,
       "status": 1
     },
     {
@@ -2396,6 +2707,17 @@
       "description": "我的订阅",
       "source": 1,
       "path": "/more-page/my-subscriptions",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
+      "parentCode": "workspace",
+      "code": "project_dev",
+      "name": "项目&应用",
+      "source": 1,
+      "path": "/space/:spaceId/project-manage",
       "openType": 1,
       "icon": "",
       "sortIndex": 1,
@@ -2414,24 +2736,24 @@
       "status": 1
     },
     {
-      "parentCode": "more_page",
-      "code": "my_orders",
-      "name": "我的订单",
-      "description": "我的订单",
+      "parentCode": "workspace",
+      "code": "agent_dev",
+      "name": "智能体开发",
+      "description": "智能体开发",
       "source": 1,
-      "path": "/more-page/my-orders",
+      "path": "/space/:spaceId/develop",
       "openType": 1,
       "icon": "",
       "sortIndex": 2,
       "status": 1
     },
     {
-      "parentCode": "workspace",
-      "code": "page_app_dev",
-      "name": "网页应用开发",
-      "description": "网页应用开发",
+      "parentCode": "more_page",
+      "code": "my_orders",
+      "name": "我的订单",
+      "description": "我的订单",
       "source": 1,
-      "path": "/space/:spaceId/page-develop",
+      "path": "/more-page/my-orders",
       "openType": 1,
       "icon": "",
       "sortIndex": 2,
@@ -2450,24 +2772,24 @@
       "status": 1
     },
     {
-      "parentCode": "workspace",
-      "code": "component_lib_dev",
-      "name": "组件资源",
-      "description": "组件资源",
-      "source": 1,
-      "path": "/space/:spaceId/library",
-      "openType": 1,
-      "icon": "",
-      "sortIndex": 3,
-      "status": 1
-    },
-    {
       "parentCode": "more_page",
       "code": "my_earnings",
       "name": "我的收益",
       "description": "我的收益",
       "source": 1,
       "path": "/more-page/my-earnings",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "parentCode": "workspace",
+      "code": "page_app_dev",
+      "name": "网页开发",
+      "description": "网页开发",
+      "source": 1,
+      "path": "/space/:spaceId/page-develop",
       "openType": 1,
       "icon": "",
       "sortIndex": 3,
@@ -2486,24 +2808,24 @@
       "status": 1
     },
     {
-      "parentCode": "system_manage",
-      "code": "published_manage",
-      "name": "已发布管理",
-      "description": "已发布管理",
+      "parentCode": "workspace",
+      "code": "component_lib_dev",
+      "name": "组件资源",
+      "description": "组件资源",
       "source": 1,
-      "path": "/system/published/manage",
+      "path": "/space/:spaceId/library",
       "openType": 1,
       "icon": "",
       "sortIndex": 4,
       "status": 1
     },
     {
-      "parentCode": "workspace",
-      "code": "skill_dev",
-      "name": "技能管理",
-      "description": "技能管理",
+      "parentCode": "system_manage",
+      "code": "published_manage",
+      "name": "已发布管理",
+      "description": "已发布管理",
       "source": 1,
-      "path": "/space/:spaceId/skill-manage",
+      "path": "/system/published/manage",
       "openType": 1,
       "icon": "",
       "sortIndex": 4,
@@ -2519,18 +2841,6 @@
       "openType": 1,
       "icon": "",
       "sortIndex": 4,
-      "status": 1
-    },
-    {
-      "parentCode": "workspace",
-      "code": "mcp_dev",
-      "name": "MCP管理",
-      "description": "MCP管理",
-      "source": 1,
-      "path": "/space/:spaceId/mcp",
-      "openType": 1,
-      "icon": "",
-      "sortIndex": 5,
       "status": 1
     },
     {
@@ -2558,6 +2868,18 @@
       "status": 1
     },
     {
+      "parentCode": "workspace",
+      "code": "skill_dev",
+      "name": "技能管理",
+      "description": "技能管理",
+      "source": 1,
+      "path": "/space/:spaceId/skill-manage",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 5,
+      "status": 1
+    },
+    {
       "parentCode": "more_page",
       "code": "api_key",
       "name": "API Key",
@@ -2570,11 +2892,11 @@
     },
     {
       "parentCode": "workspace",
-      "code": "resource_pricing",
-      "name": "资源定价",
-      "description": "资源定价",
+      "code": "mcp_dev",
+      "name": "MCP管理",
+      "description": "MCP管理",
       "source": 1,
-      "path": "/space/:spaceId/resource-pricing",
+      "path": "/space/:spaceId/mcp",
       "openType": 1,
       "icon": "",
       "sortIndex": 6,
@@ -2603,24 +2925,24 @@
       "status": 1
     },
     {
-      "parentCode": "workspace",
-      "code": "im_channel",
-      "name": "IM 机器人",
-      "description": "IM 机器人",
-      "source": 1,
-      "path": "/space/:spaceId/im-channel",
-      "openType": 1,
-      "icon": "",
-      "sortIndex": 7,
-      "status": 1
-    },
-    {
       "parentCode": "system_manage",
       "code": "pay_and_earnings",
       "name": "支付与收益",
       "description": "支付与收益",
       "source": 1,
       "path": "",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 7,
+      "status": 1
+    },
+    {
+      "parentCode": "workspace",
+      "code": "resource_pricing",
+      "name": "资源定价",
+      "description": "资源定价",
+      "source": 1,
+      "path": "/space/:spaceId/resource-pricing",
       "openType": 1,
       "icon": "",
       "sortIndex": 7,
@@ -2639,11 +2961,11 @@
     },
     {
       "parentCode": "workspace",
-      "code": "space_task_dev",
-      "name": "任务中心",
-      "description": "任务中心",
+      "code": "im_channel",
+      "name": "IM 机器人",
+      "description": "IM 机器人",
       "source": 1,
-      "path": "/space/:spaceId/task-center",
+      "path": "/space/:spaceId/im-channel",
       "openType": 1,
       "icon": "",
       "sortIndex": 8,
@@ -2662,11 +2984,11 @@
     },
     {
       "parentCode": "workspace",
-      "code": "space_log_query",
-      "name": "日志查询",
-      "description": "日志查询",
+      "code": "space_task_dev",
+      "name": "任务中心",
+      "description": "任务中心",
       "source": 1,
-      "path": "/space/:spaceId/library-log",
+      "path": "/space/:spaceId/task-center",
       "openType": 1,
       "icon": "",
       "sortIndex": 9,
@@ -2685,11 +3007,11 @@
     },
     {
       "parentCode": "workspace",
-      "code": "space_square",
-      "name": "空间广场",
-      "description": "空间广场",
+      "code": "space_log_query",
+      "name": "日志查询",
+      "description": "日志查询",
       "source": 1,
-      "path": "/space/:spaceId/space-square?activeKey=Agent",
+      "path": "/space/:spaceId/library-log",
       "openType": 1,
       "icon": "",
       "sortIndex": 10,
@@ -2697,10 +3019,11 @@
     },
     {
       "parentCode": "workspace",
-      "code": "member_setting",
-      "name": "成员与设置",
+      "code": "space_square",
+      "name": "空间广场",
+      "description": "空间广场",
       "source": 1,
-      "path": "/space/:spaceId/team",
+      "path": "/space/:spaceId/space-square?activeKey=Agent",
       "openType": 1,
       "icon": "",
       "sortIndex": 11,
@@ -2719,6 +3042,17 @@
       "status": 1
     },
     {
+      "parentCode": "workspace",
+      "code": "member_setting",
+      "name": "成员与设置",
+      "source": 1,
+      "path": "/space/:spaceId/team",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 12,
+      "status": 1
+    },
+    {
       "parentCode": "system_manage",
       "code": "system_log_query",
       "name": "日志查询",
@@ -2727,6 +3061,18 @@
       "openType": 1,
       "icon": "",
       "sortIndex": 12,
+      "status": 1
+    },
+    {
+      "parentCode": "workspace",
+      "code": "connector",
+      "name": "连接器",
+      "description": "工作空间连接器",
+      "source": 1,
+      "path": "/space/:spaceId/connector",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 13,
       "status": 1
     },
     {
@@ -2759,6 +3105,18 @@
       "description": "模型配置",
       "source": 1,
       "path": "/system/model/manage",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 1,
+      "status": 1
+    },
+    {
+      "parentCode": "project_dev",
+      "code": "normal_project_dev",
+      "name": "常规项目",
+      "description": "常规项目",
+      "source": 1,
+      "path": "/space/:spaceId/normal-project",
       "openType": 1,
       "icon": "",
       "sortIndex": 1,
@@ -2909,6 +3267,18 @@
       "status": 1
     },
     {
+      "parentCode": "project_dev",
+      "code": "user_app_dev",
+      "name": "网站应用开发",
+      "description": "网站应用开发",
+      "source": 1,
+      "path": "/space/:spaceId/userapp-project",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 2,
+      "status": 1
+    },
+    {
       "parentCode": "permission_manage",
       "code": "user_group_manage",
       "name": "用户组管理",
@@ -3023,6 +3393,18 @@
       "description": "沙盒配置",
       "source": 1,
       "path": "/system/config/sandbox",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 3,
+      "status": 1
+    },
+    {
+      "parentCode": "project_dev",
+      "code": "third_app_dev",
+      "name": "三方应用接入",
+      "description": "三方应用接入",
+      "source": 1,
+      "path": "/space/:spaceId/third-app-integration",
       "openType": 1,
       "icon": "",
       "sortIndex": 3,
@@ -3185,6 +3567,28 @@
       "status": 1
     },
     {
+      "parentCode": "system_config",
+      "code": "sensitive_word_config",
+      "name": "敏感词管控",
+      "source": 1,
+      "path": "/system/config/sensitive-word",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 6,
+      "status": 1
+    },
+    {
+      "parentCode": "system_config",
+      "code": "auth_method_config",
+      "name": "登录方式管理",
+      "source": 1,
+      "path": "/system/config/auth-method",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 7,
+      "status": 1
+    },
+    {
       "parentCode": "content_manage",
       "code": "content_plugin",
       "name": "插件",
@@ -3218,6 +3622,30 @@
       "openType": 1,
       "icon": "",
       "sortIndex": 9,
+      "status": 1
+    },
+    {
+      "parentCode": "content_manage",
+      "code": "official_connector",
+      "name": "官方连接器",
+      "description": "官方连接器",
+      "source": 1,
+      "path": "/system/content/official-connector",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 10,
+      "status": 1
+    },
+    {
+      "parentCode": "content_manage",
+      "code": "oauth2_scope_audit",
+      "name": "授权范围审核",
+      "description": "审核 OAuth2 应用授权范围变更申请",
+      "source": 1,
+      "path": "/system/oauth2/scope-audit",
+      "openType": 1,
+      "icon": "",
+      "sortIndex": 11,
       "status": 1
     }
   ],
@@ -3497,6 +3925,36 @@
       "menuCode": "recommend_manage",
       "resourceCode": "display_recommend_manage",
       "resourceBindType": 1
+    },
+    {
+      "menuCode": "normal_project_dev",
+      "resourceCode": "normal_project_dev",
+      "resourceBindType": 1
+    },
+    {
+      "menuCode": "user_app_dev",
+      "resourceCode": "user_app_dev",
+      "resourceBindType": 1
+    },
+    {
+      "menuCode": "third_app_dev",
+      "resourceCode": "third_app_dev",
+      "resourceBindType": 1
+    },
+    {
+      "menuCode": "sensitive_word_config",
+      "resourceCode": "sensitive_word_manage",
+      "resourceBindType": 1
+    },
+    {
+      "menuCode": "auth_method_config",
+      "resourceCode": "auth_method_manage",
+      "resourceBindType": 1
+    },
+    {
+      "menuCode": "oauth2_scope_audit",
+      "resourceCode": "oauth2_scope_audit",
+      "resourceBindType": 1
     }
   ],
   "roleMenus": [
@@ -3514,9 +3972,60 @@
     },
     {
       "roleCode": "super_admin",
+      "menuCode": "message",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "repo",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
       "menuCode": "workspace",
       "menuBindType": 1,
       "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "project_dev",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "normal_project_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "normal_project_dev",
+          "resourceBindType": 1
+        }
+      ]
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "user_app_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "user_app_dev",
+          "resourceBindType": 1
+        }
+      ]
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "third_app_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "third_app_dev",
+          "resourceBindType": 1
+        }
+      ]
     },
     {
       "roleCode": "super_admin",
@@ -3661,6 +4170,12 @@
     },
     {
       "roleCode": "super_admin",
+      "menuCode": "connector",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
       "menuCode": "system_square",
       "menuBindType": 1,
       "resourceTree": []
@@ -3668,6 +4183,72 @@
     {
       "roleCode": "super_admin",
       "menuCode": "eco_market",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "documents",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "notification",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "my_computer",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "more_page",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "my_subscriptions",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "my_orders",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "my_earnings",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "usage_statistics",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "model_permissions",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "api_key",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "history_conversation",
       "menuBindType": 1,
       "resourceTree": []
     },
@@ -4004,6 +4585,23 @@
     },
     {
       "roleCode": "super_admin",
+      "menuCode": "official_connector",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "roleCode": "super_admin",
+      "menuCode": "oauth2_scope_audit",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "oauth2_scope_audit",
+          "resourceBindType": 1
+        }
+      ]
+    },
+    {
+      "roleCode": "super_admin",
       "menuCode": "recommend_manage",
       "menuBindType": 1,
       "resourceTree": [
@@ -4190,69 +4788,25 @@
     },
     {
       "roleCode": "super_admin",
-      "menuCode": "documents",
+      "menuCode": "sensitive_word_config",
       "menuBindType": 1,
-      "resourceTree": []
+      "resourceTree": [
+        {
+          "code": "sensitive_word_manage",
+          "resourceBindType": 1
+        }
+      ]
     },
     {
       "roleCode": "super_admin",
-      "menuCode": "notification",
+      "menuCode": "auth_method_config",
       "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "my_computer",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "more_page",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "my_subscriptions",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "my_orders",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "my_earnings",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "usage_statistics",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "model_permissions",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "api_key",
-      "menuBindType": 1,
-      "resourceTree": []
-    },
-    {
-      "roleCode": "super_admin",
-      "menuCode": "history_conversation",
-      "menuBindType": 1,
-      "resourceTree": []
+      "resourceTree": [
+        {
+          "code": "auth_method_manage",
+          "resourceBindType": 1
+        }
+      ]
     }
   ],
   "groupMenus": [
@@ -4270,9 +4824,60 @@
     },
     {
       "groupCode": "default_group",
+      "menuCode": "message",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "groupCode": "default_group",
+      "menuCode": "repo",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "groupCode": "default_group",
       "menuCode": "workspace",
       "menuBindType": 1,
       "resourceTree": []
+    },
+    {
+      "groupCode": "default_group",
+      "menuCode": "project_dev",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "groupCode": "default_group",
+      "menuCode": "normal_project_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "normal_project_dev",
+          "resourceBindType": 1
+        }
+      ]
+    },
+    {
+      "groupCode": "default_group",
+      "menuCode": "user_app_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "user_app_dev",
+          "resourceBindType": 1
+        }
+      ]
+    },
+    {
+      "groupCode": "default_group",
+      "menuCode": "third_app_dev",
+      "menuBindType": 1,
+      "resourceTree": [
+        {
+          "code": "third_app_dev",
+          "resourceBindType": 1
+        }
+      ]
     },
     {
       "groupCode": "default_group",
@@ -4417,6 +5022,12 @@
     },
     {
       "groupCode": "default_group",
+      "menuCode": "connector",
+      "menuBindType": 1,
+      "resourceTree": []
+    },
+    {
+      "groupCode": "default_group",
       "menuCode": "system_square",
       "menuBindType": 1,
       "resourceTree": []
@@ -4504,12 +5115,16 @@
       "maxSpaceCount": -1,
       "maxAgentCount": -1,
       "maxPageAppCount": -1,
+      "maxUserAppCount": 1,
+      "userAppIdleTimeoutSeconds": -1,
       "maxKnowledgeCount": -1,
       "knowledgeStorageLimitGb": -1,
       "maxDataTableCount": -1,
       "maxScheduledTaskCount": -1,
       "agentComputerCpuCores": 2,
       "agentComputerMemoryGb": 4,
+      "agentComputerStorageLimitGb": -1,
+      "pageAppStorageLimitGb": -1,
       "agentFileStorageDays": -1,
       "agentDailyPromptLimit": -1,
       "pageDailyPromptLimit": -1
@@ -4523,12 +5138,16 @@
       "maxSpaceCount": -1,
       "maxAgentCount": -1,
       "maxPageAppCount": -1,
+      "maxUserAppCount": 1,
+      "userAppIdleTimeoutSeconds": -1,
       "maxKnowledgeCount": -1,
       "knowledgeStorageLimitGb": -1,
       "maxDataTableCount": -1,
       "maxScheduledTaskCount": -1,
       "agentComputerCpuCores": 2,
       "agentComputerMemoryGb": 4,
+      "agentComputerStorageLimitGb": -1,
+      "pageAppStorageLimitGb": -1,
       "agentFileStorageDays": -1,
       "agentDailyPromptLimit": -1,
       "pageDailyPromptLimit": -1

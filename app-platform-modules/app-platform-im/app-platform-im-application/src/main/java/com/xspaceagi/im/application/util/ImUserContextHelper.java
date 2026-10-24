@@ -30,6 +30,17 @@ public final class ImUserContextHelper {
         }
     }
 
+    /**
+     * 三方渠道回调里的「这次是不是群聊」判定。
+     *
+     * <p>★每个渠道的 {@code chatType} 取值口径各不相同（见各 case），没有统一约定，所以这里只能逐个写死。
+     *
+     * <p>★{@link ImChannelEnum#NUWAX_IM} <b>不走这个方法</b>：它的群/私聊真值在智能体上下文里
+     * （{@code IS_GROUP_MESSAGE} / {@code imMode}，以及 {@code GROUP_CONV_ID} 这组键在不在），
+     * 平台侧不靠一个 {@code chatType} 字符串去猜。这里刻意抛异常而不是返回一个 {@code false}：
+     * 返回值只用来拼展示名后缀，猜错不会报错、只会悄悄给私聊消息挂上「群聊」字样 —— 静默的错答案
+     * 比一次明确的失败难查得多。目前没有任何调用方传 NUWAX_IM，所以这条分支正常情况下不可达。
+     */
     public static boolean isGroupChat(ImChannelEnum channel, String chatType) {
         if (channel == null || StringUtils.isBlank(chatType)) {
             return false;
@@ -39,6 +50,8 @@ public final class ImUserContextHelper {
             case DINGTALK -> "2".equals(chatType);
             case WEWORK -> ImChatTypeEnum.GROUP == ImChatTypeEnum.fromCode(chatType);
             case WECHAT_ILINK -> false;
+            case NUWAX_IM -> throw new IllegalArgumentException(
+                    "NUWAX_IM 渠道的群/私聊判定不走 chatType，请读智能体上下文里的 IS_GROUP_MESSAGE / imMode");
         };
     }
 

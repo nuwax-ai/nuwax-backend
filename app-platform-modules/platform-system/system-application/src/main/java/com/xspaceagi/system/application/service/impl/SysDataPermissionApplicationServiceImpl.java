@@ -233,6 +233,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         dto.setMaxSpaceCount(0);
         dto.setMaxAgentCount(0);
         dto.setMaxPageAppCount(0);
+        dto.setMaxUserAppCount(0);
+        dto.setUserAppIdleTimeoutSeconds(-1);
         dto.setMaxKnowledgeCount(0);
         dto.setKnowledgeStorageLimitGb(BigDecimal.valueOf(-1L));
         dto.setMaxDataTableCount(0);
@@ -269,6 +271,8 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
         result.setMaxSpaceCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxSpaceCount).toList()));
         result.setMaxAgentCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxAgentCount).toList()));
         result.setMaxPageAppCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxPageAppCount).toList()));
+        result.setMaxUserAppCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxUserAppCount).toList()));
+        result.setUserAppIdleTimeoutSeconds(mergeIdleTimeoutSeconds(permissions.stream().map(SysDataPermission::getUserAppIdleTimeoutSeconds).toList()));
         result.setMaxKnowledgeCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxKnowledgeCount).toList()));
         result.setKnowledgeStorageLimitGb(mergeDecimalQuota(permissions.stream().map(SysDataPermission::getKnowledgeStorageLimitGb).toList()));
         result.setMaxDataTableCount(mergeQuota(permissions.stream().map(SysDataPermission::getMaxDataTableCount).toList()));
@@ -416,6 +420,23 @@ public class SysDataPermissionApplicationServiceImpl implements SysDataPermissio
             return -1;
         }
         return valid.stream().mapToInt(Integer::intValue).max().orElse(-1);
+    }
+
+    /**
+     * userapp 闲置回收超时合并（宽松者优先，与配额同政策但取值序不同）：
+     * - 0 = 常驻（不回收），是最宽松取值，数值上却最小，不能直接套 mergeQuota 的 max
+     * - 正数取最大（闲置窗口最长更宽松）
+     * - -1/未配置 = 不限制（沿用下游默认），视同无主见，不覆盖显式配置的有限值
+     */
+    private Integer mergeIdleTimeoutSeconds(List<Integer> values) {
+        List<Integer> valid = values.stream().filter(v -> v != null && v >= 0).toList();
+        if (valid.isEmpty()) {
+            return -1;
+        }
+        if (valid.contains(0)) {
+            return 0;
+        }
+        return valid.stream().mapToInt(Integer::intValue).max().getAsInt();
     }
 
     /**

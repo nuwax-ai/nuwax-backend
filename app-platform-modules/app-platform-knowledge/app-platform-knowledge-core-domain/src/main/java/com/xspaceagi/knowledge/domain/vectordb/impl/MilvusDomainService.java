@@ -13,8 +13,6 @@ import com.xspaceagi.knowledge.domain.dto.qa.QAResDto;
 import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeConfigRepository;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeDocumentRepository;
-import com.xspaceagi.knowledge.domain.repository.IKnowledgeQaSegmentRepository;
-import com.xspaceagi.knowledge.domain.repository.IKnowledgeRawSegmentRepository;
 import com.xspaceagi.knowledge.domain.vectordb.VectorDBService;
 import com.xspaceagi.knowledge.sdk.enums.KnowledgePubStatusEnum;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -54,12 +52,6 @@ public class MilvusDomainService implements VectorDBService {
 
         @Resource
         private IKnowledgeDocumentRepository knowledgeDocumentRepository;
-
-        @Resource
-        private IKnowledgeQaSegmentRepository knowledgeQaSegmentRepository;
-
-        @Resource
-        private IKnowledgeRawSegmentRepository knowledgeRawSegmentRepository;
 
         @Resource
         private ModelApplicationService modelApplicationService;

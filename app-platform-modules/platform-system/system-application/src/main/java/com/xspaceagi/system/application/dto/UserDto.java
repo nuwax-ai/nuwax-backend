@@ -64,6 +64,12 @@ public class UserDto {
     @Schema(description = "语言环境对应的值，仅类型为System")
     private Map<String, String> langMap;
 
+    private String accountType;
+    /**
+     * 身份关联标识：account_type=agent 时为 agent id；=group 时为 channel:sessionKey。
+     * <p>虚拟身份行必须填写，否则唯一键 uk_tenant_account_ref 对 NULL 不生效，并发下会重复创建主体。
+     */
+    private String principalRefId;
     /**
      * 转换为对象 UserContext,用于上下文
      */

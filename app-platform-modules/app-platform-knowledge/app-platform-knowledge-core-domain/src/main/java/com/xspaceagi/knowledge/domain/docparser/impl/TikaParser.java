@@ -9,12 +9,17 @@ import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowExecutor;
 import com.xspaceagi.agent.core.spec.enums.DataTypeEnum;
 import com.xspaceagi.knowledge.core.spec.enums.KnowledgeDataTypeEnum;
+import com.xspaceagi.knowledge.core.spec.utils.Constants;
+import com.xspaceagi.knowledge.domain.docparser.FileParseExtService;
 import com.xspaceagi.knowledge.domain.docparser.FileParseRequest;
 import com.xspaceagi.knowledge.domain.docparser.FileParseService;
 import com.xspaceagi.knowledge.domain.docparser.parse.DocParser;
+import com.xspaceagi.knowledge.domain.knowledgeimageanalysis.DocumentImageParseResult;
+import com.xspaceagi.knowledge.domain.knowledgeimageanalysis.DocumentImageParseService;
 import com.xspaceagi.knowledge.domain.model.KnowledgeConfigModel;
 import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeConfigRepository;
+import com.xspaceagi.knowledge.sdk.enums.SegmentEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
@@ -62,6 +67,12 @@ public class TikaParser implements DocParser {
     @Resource
     private WorkflowExecutor workflowExecutor;
 
+    @Resource
+    private DocumentImageParseService documentImageParseService;
+
+    @Resource
+    private FileParseExtService fileParseExtService;
+
     @Override
     public void chunk(
             KnowledgeDocumentModel documentDto,
@@ -99,7 +110,11 @@ public class TikaParser implements DocParser {
                         .segmentConfig(documentDto.getSegmentConfig())
                         .build();
 
-                fileParseService.parseRawTxt(fileParseRequest, userContext);
+                if (documentDto != null && documentDto.getSegmentConfig() != null && documentDto.getSegmentConfig().getSegment().equals(SegmentEnum.SMART)) {
+                    fileParseExtService.parseRawTxt(fileParseRequest, userContext, docUrl);
+                } else {
+                    fileParseService.parseRawTxt(fileParseRequest, userContext);
+                }
                 return;
             }
 
@@ -107,15 +122,31 @@ public class TikaParser implements DocParser {
             URL url = new URL(docUrl);
             URLConnection connection = url.openConnection();
             try (InputStream stream = connection.getInputStream()) {
-                // 使用 Apache Tika 解析文件内容
-                Parser parser = new AutoDetectParser();
-                BodyContentHandler handler = new BodyContentHandler(-1);
-                Metadata metadata = new Metadata();
-                ParseContext context = new ParseContext();
-
-                parser.parse(stream, handler, metadata, context);
-
-                String content = handler.toString();
+                String content;
+                if (isPdfFile(docUrl) || isDocxFile(docUrl)) {
+                    // 确保 RequestContext 携带用户信息, 供 SpringDocumentImageUploader 上传图片
+                    if (RequestContext.get().getUserId() == null) {
+                        UserDto userDto = new UserDto();
+                        userDto.setId(userContext.getUserId());
+                        userDto.setTenantId(userContext.getTenantId());
+                        userDto.setUserName(userContext.getUserName());
+                        userDto.setNickName(userContext.getNickName());
+                        RequestContext.get().setUser(userDto);
+                    }
+                    // 走支持图片提取的解析器: PDF 仅统计实际绘制的图片(修复重复), DOCX 按 POI 顺序
+                    byte[] data = stream.readAllBytes();
+                    DocumentImageParseResult imageResult = documentImageParseService.parse(
+                            new java.io.ByteArrayInputStream(data), simpleFileName(docUrl));
+                    content = imageResult.getContent() != null ? imageResult.getContent() : "";
+                } else {
+                    // 其它类型仍使用 Apache Tika 解析
+                    Parser parser = new AutoDetectParser();
+                    BodyContentHandler handler = new BodyContentHandler(Constants.TIKA_TEXT_WRITE_LIMIT);
+                    Metadata metadata = new Metadata();
+                    ParseContext context = new ParseContext();
+                    parser.parse(stream, handler, metadata, context);
+                    content = handler.toString();
+                }
 
                 // 构建 FileParseRequest 并调用 fileParseService 进行解析
                 FileParseRequest fileParseRequest = FileParseRequest.builder()
@@ -125,7 +156,12 @@ public class TikaParser implements DocParser {
                         .content(content)
                         .segmentConfig(documentDto.getSegmentConfig())
                         .build();
-                fileParseService.parseRawTxt(fileParseRequest, userContext);
+                //fileParseService.parseRawTxt(fileParseRequest, userContext);
+                if (documentDto != null && documentDto.getSegmentConfig() != null && documentDto.getSegmentConfig().getSegment().equals(SegmentEnum.SMART)) {
+                    fileParseExtService.parseRawTxt(fileParseRequest, userContext, docUrl);
+                } else {
+                    fileParseService.parseRawTxt(fileParseRequest, userContext);
+                }
 
             }
         } catch (IOException | SAXException | TikaException e) {
@@ -200,6 +236,24 @@ public class TikaParser implements DocParser {
     /**
      * 检查是否应该使用工作流解析
      */
+    private boolean isDocxFile(String docUrl) {
+        if (StringUtils.isBlank(docUrl)) {
+            return false;
+        }
+        String lower = docUrl.toLowerCase();
+        return lower.endsWith(".docx") || lower.contains(".docx?");
+    }
+
+    private String simpleFileName(String docUrl) {
+        if (docUrl == null) {
+            return "";
+        }
+        String noQuery = docUrl.contains("?") ? docUrl.substring(0, docUrl.indexOf('?')) : docUrl;
+        int slash = noQuery.lastIndexOf('/');
+        String name = slash >= 0 ? noQuery.substring(slash + 1) : noQuery;
+        return name.toLowerCase();
+    }
+
     private boolean shouldUseWorkflowParsing(Long kbId) {
         if (kbId == null) {
             return false;

@@ -50,9 +50,16 @@ public class ScheduleTaskApplicationServiceImpl implements ScheduleTaskApiServic
         scheduleTask.setExecTimes(0L);
         try {
             return scheduleTaskDomainService.start(scheduleTask);
+        } catch (RuntimeException | Error e) {
+            // 不能吞掉异常返回 0：调用方通常会拿返回值去 queryById(0)，得到 null 后继续处理，
+            // 任务没注册成功却没有任何失败信号。这里记录并向上抛，由调用方决定如何降级。
+            log.error("start schedule task failed, taskId={}, beanId={}",
+                    scheduleTask.getTaskId(), scheduleTask.getBeanId(), e);
+            throw e;
         } catch (Throwable e) {
-            log.warn("start task error", e);
-            return 0L;
+            log.error("start schedule task failed, taskId={}, beanId={}",
+                    scheduleTask.getTaskId(), scheduleTask.getBeanId(), e);
+            throw new IllegalStateException("start schedule task failed: " + scheduleTask.getTaskId(), e);
         }
     }
 

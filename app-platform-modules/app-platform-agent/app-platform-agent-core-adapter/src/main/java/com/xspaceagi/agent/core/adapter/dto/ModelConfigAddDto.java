@@ -30,6 +30,15 @@ public class ModelConfigAddDto implements Serializable {
     @Schema(description = "模型描述")
     private String description; // 模型描述
 
+    @Schema(description = "模型标签")
+    private String tag; // 模型标签
+
+    @Schema(description = "模型标签颜色，如 #FF5733")
+    private String tagColor; // 模型标签颜色
+
+    @Schema(description = "计费倍率，不传默认 1.00")
+    private String cost; // 计费倍率
+
     @Schema(description = "模型标识", requiredMode = Schema.RequiredMode.REQUIRED, example = "gpt-3.5-turbo")
     @NotNull(message = "Model key is required")
     private String model; // 模型标识

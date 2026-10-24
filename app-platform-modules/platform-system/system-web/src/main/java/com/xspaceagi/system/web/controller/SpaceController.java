@@ -133,7 +133,9 @@ public class SpaceController {
     @Operation(summary = "查询用户空间列表")
     @RequestMapping(path = "/list", method = RequestMethod.GET)
     public ReqResult<List<SpaceDto>> list() {
-        List<SpaceDto> spaceDtoList = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
+        // 只展示个人空间与团队空间：私聊（DM）与群组（Group）由内部服务创建、供外部系统维护，不进本列表。
+        // 过滤实现在 SpaceApplicationService#queryVisibleListByUserId（与开放 API、内部 4.5 共用同一口径）。
+        List<SpaceDto> spaceDtoList = spaceApplicationService.queryVisibleListByUserId(RequestContext.get().getUserId());
         spaceDtoList.forEach(spaceDto -> {
             SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(spaceDto.getId(), RequestContext.get().getUserId());
             if (spaceUserDto != null) {

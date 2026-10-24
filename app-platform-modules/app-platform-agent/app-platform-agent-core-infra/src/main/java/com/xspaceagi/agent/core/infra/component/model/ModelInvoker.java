@@ -7,6 +7,7 @@ import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
 import com.xspaceagi.agent.core.adapter.dto.KnowledgeSearchConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.PluginExecuteResultDto;
 import com.xspaceagi.agent.core.adapter.dto.config.Arg;
+import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.PageArgConfig;
 import com.xspaceagi.agent.core.adapter.dto.config.bind.*;
 import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
@@ -17,6 +18,7 @@ import com.xspaceagi.agent.core.infra.component.ArgExtractUtil;
 import com.xspaceagi.agent.core.infra.component.BaseComponent;
 import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
 import com.xspaceagi.agent.core.infra.component.agent.AgentExecutor;
+import com.xspaceagi.agent.core.infra.component.im.ImChatToolExecutor;
 import com.xspaceagi.agent.core.infra.component.knowledge.KnowledgeBaseSearcher;
 import com.xspaceagi.agent.core.infra.component.knowledge.SearchContext;
 import com.xspaceagi.agent.core.infra.component.mcp.McpContext;
@@ -53,6 +55,7 @@ import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -99,6 +102,21 @@ public class ModelInvoker extends BaseComponent {
 
     private TableExecutor tableExecutor;
 
+    /**
+     * IM 原生工具（{@link ComponentTypeEnum#Im}）的执行侧。清单侧在
+     * {@code HybridAgentLoop#buildIMTools} → {@code ImChatToolProvider}。
+     *
+     * <p>★{@code required = false}：它依赖的 5 个 IM RPC 接口 bean 来自 im-infra，
+     * 装配不上时工具也不会被挂载（{@code ImChatToolProvider#shouldMount} 同样问 IM 侧的
+     * {@code IImRpcAvailability#enabled()}），这里宽松只是为了不因缺 bean 而启动失败。
+     */
+    private ImChatToolExecutor imChatToolExecutor;
+
+    @Autowired(required = false)
+    public void setImChatToolExecutor(ImChatToolExecutor imChatToolExecutor) {
+        this.imChatToolExecutor = imChatToolExecutor;
+    }
+
     @Autowired
     public void setModelPageRequest(ModelPageRequest modelPageRequest) {
         this.modelPageRequest = modelPageRequest;
@@ -143,6 +161,10 @@ public class ModelInvoker extends BaseComponent {
         if (modelContext.getModelConfig() == null) {
             return Flux.error(new IllegalArgumentException("The model is not configured or has been deleted."));
         }
+        //避免字段污染
+        ModelConfigDto modelConfigDto = new ModelConfigDto();
+        BeanUtils.copyProperties(modelContext.getModelConfig(), modelConfigDto);
+        modelContext.setModelConfig(modelConfigDto);
         log.info("invoke id {}, model: {}, call config: {}", modelContext.getModelConfig().getId(), modelContext.getModelConfig().getName(), modelContext.getModelCallConfig());
         if (modelContext.getTraceContext() == null) {
             boolean enableSubscription = false;
@@ -210,8 +232,10 @@ public class ModelInvoker extends BaseComponent {
             tempMessages = new ArrayList<>();
             modelContext.getAgentContext().setContextMessages(tempMessages);
         }
-        // User message
-        tempMessages.add(buildUserMessage(modelContext));
+        // User message（MasterAgentLoop 已构造完整消息链含本轮 user 时不再追加，避免在 tool 链之后重复追加破坏顺序）
+        if (!modelContext.getAgentContext().isExecutionMessagesComplete()) {
+            tempMessages.add(buildUserMessage(modelContext));
+        }
         // Append tool auto-call context
         if (modelContext.getAgentContext().getAutoToolCallMessages() != null) {
             tempMessages.addAll(modelContext.getAgentContext().getAutoToolCallMessages());
@@ -542,7 +566,9 @@ public class ModelInvoker extends BaseComponent {
         modelContext.getModelCallResult().setPromptTokens(promptTokens.get());
         modelContext.getModelCallResult().setTotalTokens(totalTokens.get());
         modelContext.getModelCallResult().setResponseText(text);
-        modelContext.getModelCallResult().setData(parseText(modelContext, text));
+        if (modelContext.getModelCallResult().getData() == null || !(modelContext.getModelCallResult().getData() instanceof Map<?, ?>)) {
+            modelContext.getModelCallResult().setData(parseText(modelContext, text));
+        }
         modelContext.getModelCallResult().setEndTime(System.currentTimeMillis());
     }
 
@@ -767,8 +793,17 @@ public class ModelInvoker extends BaseComponent {
                     toolMetadata = DefaultToolMetadata.builder().returnDirect(true).build();
                 }
             }
+            // Control 类型：总控智能体的路由控制工具，始终 returnDirect（执行后直接返回，不喂回模型）
+            if (componentConfig.getType() == ComponentTypeEnum.Control) {
+                toolMetadata = DefaultToolMetadata.builder().returnDirect(true).build();
+            }
             switch (componentConfig.getType()) {
                 case Plugin, Workflow, Page -> inputSchema = buildFunctionParams(componentConfig.getInputArgs());
+                case Control -> inputSchema = buildFunctionParams(componentConfig.getInputArgs());
+                // Im：chatbot 原生 IM 工具。schema 完全由清单侧的 inputArgs 决定（无 targetConfig 可查），
+                // ★且这里绝不能留下 inputSchema == null —— 下面那句 `if (... || inputSchema == null) return null;`
+                //   会把工具【静默丢弃】，表现是「模型根本不知道有这个能力」，而不是一个报错。
+                case Im -> inputSchema = buildFunctionParams(componentConfig.getInputArgs());
                 case Mcp -> {
                     McpDto mcpDto = (McpDto) componentConfig.getTargetConfig();
                     // Get MCP configuration
@@ -820,9 +855,10 @@ public class ModelInvoker extends BaseComponent {
                 return null;
             }
             functionNames.add(name);
+            componentConfig.setFunctionName(name);
             String description = StringUtils.isBlank(componentConfig.getDescription()) ? componentConfig.getName() : componentConfig.getDescription();
             return FunctionToolCallback
-                    .builder(name, (input, context) -> componentExecute(modelContext, componentConfig, input))
+                    .builder(name, (input, context) -> componentExecute(modelContext, componentConfig, input, context))
                     .description(description)
                     .inputSchema((inputSchema instanceof String) ? inputSchema.toString() : ModelOptionsUtils.toJsonString(inputSchema))
                     .inputType(HashMap.class)
@@ -836,15 +872,21 @@ public class ModelInvoker extends BaseComponent {
         return toolCallbacks;
     }
 
-    private Object componentExecute(ModelContext modelContext, ComponentConfig componentConfig, Object input) {
+    private Object componentExecute(ModelContext modelContext, ComponentConfig componentConfig, Object input, ToolContext context) {
         if (modelContext.getAgentContext().isInterrupted()) {
             throw new AgentInterruptException("Execution interrupted, since spring-ai does not currently have an interrupt execution interface, the current method will log error messages, which can be ignored");
         }
         if (input == null) {
             input = new HashMap<>();
         }
+        String toolCallId;
+        if (context != null && context.getContext().get("toolCall") != null && context.getContext().get("toolCall") instanceof AssistantMessage.ToolCall toolCall) {
+            toolCallId = toolCall.id();
+        } else {
+            toolCallId = UUID.randomUUID().toString().replace("-", "");
+        }
         ComponentExecuteResult componentExecuteResult = new ComponentExecuteResult();
-        componentExecuteResult.setExecuteId(UUID.randomUUID().toString().replace("-", ""));
+        componentExecuteResult.setExecuteId(toolCallId);
         componentExecuteResult.setStartTime(System.currentTimeMillis());
         componentExecuteResult.setId(componentConfig.getTargetId());
         componentExecuteResult.setName(componentConfig.getName());
@@ -867,11 +909,15 @@ public class ModelInvoker extends BaseComponent {
             log.info("tool-call component executing: {}", componentExecutingDto);
             modelContext.getComponentExecutingConsumer().accept(componentExecutingDto0);
         }
+        // 执行前记录 tool_use（非 Control 工具：轨迹由总控收集并入执行链持久化；Control 工具由总控手动记录，跳过避免重复）
+        recordToolCallTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(), input);
         try {
-            List<String> errorMessages = new ArrayList<>();
-            ArgExtractUtil.setArgDefaultValue(modelContext.getAgentContext(), componentConfig.getInputArgs(), input, componentConfig.getParams(), errorMessages);
-            if (!errorMessages.isEmpty()) {
-                throw new IllegalArgumentException(String.join("\n", errorMessages));
+            if (componentConfig.getType() != ComponentTypeEnum.Control) {
+                List<String> errorMessages = new ArrayList<>();
+                ArgExtractUtil.setArgDefaultValue(modelContext.getAgentContext(), componentConfig.getInputArgs(), input, componentConfig.getParams(), errorMessages);
+                if (!errorMessages.isEmpty()) {
+                    throw new IllegalArgumentException(String.join("\n", errorMessages));
+                }
             }
             Object res = null;
             switch (componentConfig.getType()) {
@@ -882,6 +928,16 @@ public class ModelInvoker extends BaseComponent {
                 case Table -> res = queryTable(modelContext, componentConfig, input, componentExecutingDto);
                 case Agent -> res = callAgent(modelContext, componentConfig, input);
                 case Page -> res = callPageResult(componentConfig, input);
+                // Im：chatbot 原生 IM 工具（身份口径 / 闸门 / RPC / 错误码翻译都在 ImChatToolExecutor 里）
+                case Im -> res = executeIm(modelContext, componentConfig, input);
+                // Control：总控路由工具，直接将入参序列化为 JSON 返回（配合 returnDirect 终止模型循环）
+                case Control -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> ctrlResult = new HashMap<>((Map<String, Object>) input);
+                    ctrlResult.put("action", componentConfig.getFunctionName());
+                    res = "";
+                    modelContext.getModelCallResult().setData(ctrlResult);
+                }
             }
             componentExecuteResult.setSuccess(true);
             componentExecuteResult.setEndTime(System.currentTimeMillis());
@@ -895,11 +951,18 @@ public class ModelInvoker extends BaseComponent {
             if (modelContext.getAgentContext().isInterrupted()) {
                 throw new AgentInterruptException("Execution interrupted, since spring-ai does not currently have an interrupt execution interface, the current method will log error messages, which can be ignored");
             }
+            // 执行成功：记录 tool_result（与 tool_use 通过 executeId 配对）
+            recordToolResultTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(),
+                    res == null ? "" : (res instanceof String ? (String) res : JSON.toJSONString(res)));
             return res;
         } catch (Throwable e) {
             // Internal logic requires interruption
             if (e instanceof AgentInterruptException) {
                 modelContext.getAgentContext().setInterrupted(true);
+                // 中断同样补记 tool_result：执行前的 recordToolCallTrace 已记录 tool_use，
+                // 若不配对则轨迹累积器留下孤儿 tool_use，被总控收集入执行链后触发 Anthropic 协议校验 400
+                recordToolResultTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(),
+                        "tool execution interrupted");
                 throw e;
             }
             log.warn("component invoke error", e);
@@ -911,12 +974,78 @@ public class ModelInvoker extends BaseComponent {
                 modelContext.getComponentExecutingConsumer().accept(componentExecutingDto);
             }
             if (componentConfig.getExceptionOut() != null && componentConfig.getExceptionOut().equals(YesOrNoEnum.Y.getKey())) {
+                // 异常上抛：先记录 tool_result，保证执行链中 tool_use 有对应结果
+                recordToolResultTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(),
+                        "tool execution failed:" + e.getMessage());
                 throw e;
             } else if (StringUtils.isNotBlank(componentConfig.getFallbackMsg())) {
+                recordToolResultTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(),
+                        componentConfig.getFallbackMsg());
                 return componentConfig.getFallbackMsg();
             }
+            recordToolResultTrace(modelContext.getAgentContext(), componentConfig, componentExecuteResult.getExecuteId(),
+                    "tool execution failed:" + e.getMessage());
             return "tool execution failed:" + e.getMessage();
         }
+    }
+
+    /**
+     * 执行一个 IM 原生工具（{@link ComponentTypeEnum#Im}）。
+     *
+     * <p>★bean 缺失时<b>抛错</b>，不返回空串：空串会被记成 SUCCESS，模型据此认为「消息发出去了」，
+     * 用户什么也没收到 —— 那是这条链路上最坏的一种失败。抛出去则走上面的 FAILED 分支，
+     * 模型看到 {@code "tool execution failed:…"} 的真实原因。
+     *
+     * <p>★返回值是 {@code ImChatToolExecutor} 自己用 Jackson 写好的 JSON <b>字符串</b>，
+     * 因此 {@code toolCallResultConverter} 原样透传。刻意不让它落进那个 converter 的
+     * {@code JSON.toJSONString}（fastjson）：IM 的 DTO 全是 record、还可能带 {@code JsonNode} 字段，
+     * fastjson 对这两者的输出不可控，赌输的表现同样是「模型收到空对象」。
+     */
+    private Object executeIm(ModelContext modelContext, ComponentConfig componentConfig, Object input) {
+        if (imChatToolExecutor == null) {
+            throw new IllegalStateException("IM 工具执行器未装配（ImChatToolExecutor bean 缺失），无法执行工具 "
+                    + componentConfig.getFunctionName());
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> args = input instanceof Map ? (Map<String, Object>) input : new HashMap<>();
+        return imChatToolExecutor.execute(modelContext.getAgentContext(), componentConfig, args);
+    }
+
+    /**
+     * 记录组件工具调用声明（role=assistant + tool_use）到轨迹累积器。
+     * Control 工具跳过（由总控 MasterAgentLoop 手动记录，避免重复）。
+     */
+    private void recordToolCallTrace(AgentContext agentContext, ComponentConfig componentConfig,
+                                     String executeId, Object input) {
+        if (agentContext == null || componentConfig.getType() == ComponentTypeEnum.Control) {
+            return;
+        }
+        String toolName = StringUtils.isNotBlank(componentConfig.getFunctionName())
+                ? componentConfig.getFunctionName() : componentConfig.getName();
+        ToolExecRecord record = new ToolExecRecord();
+        record.setRole("assistant");
+        record.setToolName(toolName);
+        record.setToolArgs(input == null ? "{}" : JSON.toJSONString(input));
+        record.setToolCallId(executeId);
+        agentContext.getToolTraceAccum().add(record);
+    }
+
+    /**
+     * 记录组件工具执行结果（role=tool）到轨迹累积器，与 {@link #recordToolCallTrace} 通过 executeId 配对。
+     */
+    private void recordToolResultTrace(AgentContext agentContext, ComponentConfig componentConfig,
+                                       String executeId, String resultText) {
+        if (agentContext == null || componentConfig.getType() == ComponentTypeEnum.Control) {
+            return;
+        }
+        String toolName = StringUtils.isNotBlank(componentConfig.getFunctionName())
+                ? componentConfig.getFunctionName() : componentConfig.getName();
+        ToolExecRecord record = new ToolExecRecord();
+        record.setRole("tool");
+        record.setToolName(toolName);
+        record.setText(resultText == null ? "" : resultText);
+        record.setToolCallId(executeId);
+        agentContext.getToolTraceAccum().add(record);
     }
 
     private Object callPageResult(ComponentConfig componentConfig, Object input) {
@@ -1030,7 +1159,10 @@ public class ModelInvoker extends BaseComponent {
                 StringUtils.isNotBlank(knowledgeSearchConfigDto.getNoneRecallReply())) {
             return knowledgeSearchConfigDto.getNoneRecallReply();
         }
-        return "No relevant information found";
+        // 空结果带终止语义：防止模型以相同关键词反复重试造成死循环
+        Object query = ((Map<String, Object>) input).get("query");
+        return "[no_result] 知识库未检索到与「" + (query == null ? "" : query.toString()) + "」相关的内容。" +
+                "请勿使用相同关键词重复调用本工具：若无新的检索思路，请直接基于已有上下文回答用户；若确实没有相关信息，请如实告知。";
     }
 
     private Object executeWorkflow(ModelContext modelContext, ComponentConfig componentConfig, Object input, ComponentExecutingDto componentExecutingDto) {

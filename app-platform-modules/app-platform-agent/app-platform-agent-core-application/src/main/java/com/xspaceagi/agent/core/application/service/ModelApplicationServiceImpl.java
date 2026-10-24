@@ -16,6 +16,8 @@ import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.infra.component.model.FunctionToolCallback;
 import com.xspaceagi.agent.core.infra.component.model.ModelClientFactory;
 import com.xspaceagi.agent.core.infra.component.model.ModelInvoker;
+import com.xspaceagi.agent.core.infra.modelproviders.ModelProviderParser;
+import com.xspaceagi.agent.core.infra.modelproviders.vo.ModelProviderVo;
 import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.constant.Prompts;
 import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
@@ -79,6 +81,9 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
 
     private static final Long DEFAULT_EMBED_MODEL_ID = 2L;
 
+    /** 供应商 pid 非法时的兜底值，对应 ModelProviderParser 内置的 custom 供应商 */
+    private static final String DEFAULT_MODEL_PID = "custom";
+
     @Resource
     private ModelConfigRepository modelRepository;
 
@@ -112,6 +117,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     @Override
     public void addOrUpdate(ModelConfigDto modelDto) {
         modelDto.setTenantId(RequestContext.get().getTenantId());
+        normalizePid(modelDto);
         ModelConfig model = new ModelConfig();
         BeanUtils.copyProperties(modelDto, model);
         if (CollectionUtils.isNotEmpty(modelDto.getTypes())) {
@@ -155,6 +161,22 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             modelRepository.save(model);
             modelDto.setId(model.getId());
         }
+    }
+
+    /**
+     * 归一化供应商 pid：先去除首尾空白，再校验是否存在于 providers 配置中；非法值静默回退 custom。
+     * pid 为 null 时保持原样——新增走数据库默认值 custom，更新时 MyBatis-Plus 忽略 null 字段、不覆盖原值。
+     */
+    private void normalizePid(ModelConfigDto modelDto) {
+        if (modelDto.getPid() == null) {
+            return;
+        }
+        String pid = modelDto.getPid().trim();
+        Map<String, ModelProviderVo> providerMap = ModelProviderParser.getModelProviderMap();
+        if (providerMap == null || !providerMap.containsKey(pid)) {
+            pid = DEFAULT_MODEL_PID;
+        }
+        modelDto.setPid(pid);
     }
 
     @Override
@@ -252,6 +274,88 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     }
 
     @Override
+    public List<ModelConfigDto> queryPersonalModelList(Long userId) {
+        SpaceDto personalSpace = querySpaceListByUserId(userId).stream()
+                .filter(space -> space.getType() == Space.Type.Personal)
+                .findFirst().orElse(null);
+        if (personalSpace == null) {
+            return new ArrayList<>();
+        }
+        return queryModelConfigLisBySpaceId(personalSpace.getId());
+    }
+
+    @Override
+    public List<ModelConfigDto> queryTeamModelList(Long userId) {
+        List<SpaceDto> teamSpaces = querySpaceListByUserId(userId).stream()
+                .filter(space -> space.getType() == Space.Type.Team)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(teamSpaces)) {
+            return new ArrayList<>();
+        }
+        Map<Long, String> spaceNameMap = teamSpaces.stream()
+                .collect(Collectors.toMap(SpaceDto::getId, SpaceDto::getName, (name1, name2) -> name1));
+        LambdaQueryWrapper<ModelConfig> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(ModelConfig::getSpaceId, spaceNameMap.keySet());
+        List<ModelConfigDto> modelList = queryModelConfigList(queryWrapper);
+        // 标注模型所属团队名称，前端按团队维度分组展示
+        modelList.forEach(model -> model.setSpaceName(spaceNameMap.get(model.getSpaceId())));
+        return modelList;
+    }
+
+    @Override
+    public List<ModelConfigDto> queryAllSpaceModelList(Long userId) {
+        List<SpaceDto> teamSpaces = querySpaceListByUserId(userId);
+        Map<Long, SpaceDto> spaceNameMap = teamSpaces.stream().collect(Collectors.toMap(SpaceDto::getId, spaceDto -> spaceDto, (s, s1) -> s));
+        LambdaQueryWrapper<ModelConfig> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ModelConfig::getEnabled, YesOrNoEnum.Y.getKey());
+        if (CollectionUtils.isEmpty(teamSpaces)) {
+            queryWrapper.eq(ModelConfig::getScope, Published.PublishScope.Tenant);
+        } else {
+            queryWrapper.and(publishedLambdaQueryWrapper -> publishedLambdaQueryWrapper.in(ModelConfig::getSpaceId, spaceNameMap.keySet()).or().eq(ModelConfig::getScope, Published.PublishScope.Tenant));
+        }
+        List<ModelConfigDto> modelList = queryModelConfigList(queryWrapper);
+
+        // Embedding models are not selectable here, drop them from the result.
+        modelList.removeIf(ModelApplicationServiceImpl::isEmbeddingModel);
+
+        // 标注模型所属团队名称，前端按团队维度分组展示；权限过滤
+        modelList.forEach(model -> {
+            if (model.getScope() == ModelConfig.ModelScopeEnum.Tenant) {
+                return;
+            }
+            SpaceDto spaceDto = spaceNameMap.get(model.getSpaceId());
+            if (spaceDto != null) {
+                model.setSpaceName(spaceDto.getName());
+                model.setSpaceType(spaceDto.getType().name());
+            }
+        });
+
+        UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(userId);
+        modelList.removeIf(modelConfigDto -> {
+            if (modelConfigDto.getScope() == ModelConfig.ModelScopeEnum.Space || modelConfigDto.getAccessControl() == null || !modelConfigDto.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
+                return false;
+            }
+            return userDataPermission.getModelIds() == null || !userDataPermission.getModelIds().contains(modelConfigDto.getId());
+        });
+        return modelList;
+    }
+
+    /**
+     * Whether the model is a vector (embedding) model, which is not selectable in this list.
+     * Judge by type only: types is not a reliable signal here (most embedding rows carry no types
+     * at all, while multimodal models may list TextEmbedding among their capabilities), so a types
+     * based check both misses real embedding models and drops usable multimodal ones.
+     */
+    private static boolean isEmbeddingModel(ModelConfigDto modelConfigDto) {
+        return modelConfigDto.getType() == ModelTypeEnum.Embeddings;
+    }
+
+    private List<SpaceDto> querySpaceListByUserId(Long userId) {
+        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
+        return spaceDtos == null ? List.of() : spaceDtos;
+    }
+
+    @Override
     public ModelConfigDto queryModelConfigById(Long modelId) {
         ModelConfig model = modelRepository.getById(modelId);
         if (model == null) {
@@ -295,6 +399,24 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
         }
         modelDto.setApiInfoList(convert(model.getApiInfo()));
         modelDto.setNatInfoList(convertNatInfo(model.getNatInfo()));
+        Map<String, ModelProviderVo> modelProviderMap = ModelProviderParser.getModelProviderMap();
+        if (modelProviderMap != null && model.getPid() != null && model.getModel() != null) {
+            String modelId = model.getModel().toLowerCase();
+            if (modelId.startsWith("deepseek") && modelProviderMap.containsKey("deepseek")) {
+                modelDto.setProviderIcon(modelProviderMap.get("deepseek").getIcon());
+            } else if (modelId.startsWith("qwen") && modelProviderMap.containsKey("alibaba-cn")) {
+                modelDto.setProviderIcon(modelProviderMap.get("alibaba-cn").getIcon());
+            } else if (modelId.startsWith("kimi") && modelProviderMap.containsKey("moonshotai-cn")) {
+                modelDto.setProviderIcon(modelProviderMap.get("moonshotai-cn").getIcon());
+            } else if (modelId.startsWith("glm") && modelProviderMap.containsKey("zhipuai")) {
+                modelDto.setProviderIcon(modelProviderMap.get("zhipuai").getIcon());
+            } else {
+                ModelProviderVo provider = modelProviderMap.get(model.getPid());
+                if (provider != null) {
+                    modelDto.setProviderIcon(provider.getIcon());
+                }
+            }
+        }
         return modelDto;
     }
 
@@ -337,6 +459,7 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
             apiInfo.setUrl(obj.getString("url"));
             apiInfo.setKey(obj.getString("key"));
             apiInfo.setWeight(obj.getInteger("weight"));
+            apiInfo.setUseProxy(obj.getInteger("useProxy"));
             apiInfoList.add(apiInfo);
         }
         return apiInfoList;
@@ -427,14 +550,35 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     }
 
     public <T> T call(String sysPrompt, String userPrompt, ParameterizedTypeReference<T> type) {
-        ModelConfigDto modelConfig = queryDefaultModelConfig();
+        ModelConfigDto modelConfig = requireDefaultModelConfig("call(sysPrompt,userPrompt,type)");
         return call(modelConfig, sysPrompt, userPrompt, type, 0);
     }
 
     @Override
     public <T> T call(Long modelId, String sysPrompt, String userPrompt, ParameterizedTypeReference<T> type) {
         ModelConfigDto modelConfig = queryModelConfigById(modelId);
+        if (modelConfig == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentModelConfigMissing, modelId);
+        }
         return call(modelConfig, sysPrompt, userPrompt, type, 0);
+    }
+
+    /**
+     * 获取租户默认对话模型,配置指向不存在的模型时立即失败(Fail Fast):
+     * 租户的 defaultChatModelId 指向已删除模型(或未配置)时,queryDefaultModelConfig 返回 null,
+     * 若无判空会在下游调用处以 NPE 形式爆炸、难以定位(典型场景: 知识库智能分段的 LLM 调用)。
+     * 注意: 不回退平台全局默认模型——该模型不向租户开放,配置缺失属于业务配置错误,应快速失败并提示配置
+     *
+     * @param scene 调用场景标识,仅用于日志定位问题入口,不进入用户可见的异常消息
+     */
+    private ModelConfigDto requireDefaultModelConfig(String scene) {
+        ModelConfigDto modelConfig = queryDefaultModelConfig();
+        if (modelConfig == null) {
+            Long tenantId = RequestContext.get() != null ? RequestContext.get().getTenantId() : null;
+            log.warn("[ModelApplicationService] 租户[{}]的默认对话模型不可用, 调用场景: {}", tenantId, scene);
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentTenantDefaultModelMissing);
+        }
+        return modelConfig;
     }
 
     private <T> T call(ModelConfigDto modelConfig, String sysPrompt, String userPrompt, ParameterizedTypeReference<T> type, int retry) {
@@ -512,12 +656,12 @@ public class ModelApplicationServiceImpl implements ModelApplicationService {
     }
 
     public <T> T call(String userPrompt, ParameterizedTypeReference<T> type) {
-        ModelConfigDto modelConfig = queryDefaultModelConfig();
+        ModelConfigDto modelConfig = requireDefaultModelConfig("call(userPrompt,type)");
         return call(modelConfig, null, userPrompt, type, 0);
     }
 
     public String call(String userPrompt) {
-        ModelConfigDto modelConfig = queryDefaultModelConfig();
+        ModelConfigDto modelConfig = requireDefaultModelConfig("call(userPrompt)");
         return modelClientFactory.createChatClient(modelConfig, List.of()).prompt()
                 .user(userPrompt)
                 .call().content();

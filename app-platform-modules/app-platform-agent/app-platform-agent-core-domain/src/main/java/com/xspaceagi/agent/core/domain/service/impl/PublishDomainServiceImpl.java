@@ -169,13 +169,21 @@ public class PublishDomainServiceImpl implements PublishDomainService {
 
     @Override
     public SuperPage<Published> queryPublishedList(PublishedQueryDto publishedQueryDto) {
-        Assert.notNull(publishedQueryDto.getTargetType(), "targetType不能为空");
+        //多类型联合查询（如应用列表的网页应用+全栈应用）时使用targetTypes
+        boolean multiTypeQuery = !CollectionUtils.isEmpty(publishedQueryDto.getTargetTypes());
+        if (!multiTypeQuery) {
+            Assert.notNull(publishedQueryDto.getTargetType(), "targetType不能为空");
+        }
         if (publishedQueryDto.getSpaceId() != null) {
             publishedQueryDto.setSpaceIds(Collections.singletonList(publishedQueryDto.getSpaceId()));
         }
         boolean justReturnSpaceData = publishedQueryDto.getJustReturnSpaceData() != null && publishedQueryDto.getJustReturnSpaceData();
         LambdaQueryWrapper<Published> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Published::getTargetType, publishedQueryDto.getTargetType());
+        if (multiTypeQuery) {
+            queryWrapper.in(Published::getTargetType, publishedQueryDto.getTargetTypes());
+        } else {
+            queryWrapper.eq(Published::getTargetType, publishedQueryDto.getTargetType());
+        }
 
         if (!CollectionUtils.isEmpty(publishedQueryDto.getSpaceIds())) {
             if (!justReturnSpaceData) {
@@ -190,14 +198,27 @@ public class PublishDomainServiceImpl implements PublishDomainService {
             queryWrapper.eq(Published::getCategory, publishedQueryDto.getCategory());
         }
         if (StringUtils.isNotBlank(publishedQueryDto.getKw())) {
-            queryWrapper.apply("MATCH(name, description) AGAINST({0} IN BOOLEAN MODE)", publishedQueryDto.getKw());
+            String kw = publishedQueryDto.getKw().trim();
+            queryWrapper.and(wrapper -> wrapper
+                    .apply("MATCH(name, description) AGAINST({0} IN BOOLEAN MODE)", kw)
+                    .or().likeRight(Published::getName, kw));
         }
-        if (publishedQueryDto.getTargetSubType() != null) {
+        if (multiTypeQuery && !CollectionUtils.isEmpty(publishedQueryDto.getTargetSubTypes())) {
+            //多类型查询时按子类型列表过滤（如应用列表的PageApp+UserApp）
+            queryWrapper.in(Published::getTargetSubType, publishedQueryDto.getTargetSubTypes());
+        } else if (publishedQueryDto.getTargetSubType() != null) {
             if (Published.TargetSubType.ChatBot == publishedQueryDto.getTargetSubType()) {
                 queryWrapper.in(Published::getTargetSubType, Published.TargetSubType.ChatBot, Published.TargetSubType.Single, Published.TargetSubType.TaskAgent);
             } else {
                 queryWrapper.eq(Published::getTargetSubType, publishedQueryDto.getTargetSubType());
             }
+        }
+        if (!CollectionUtils.isEmpty(publishedQueryDto.getExcludeTargetSubTypes())) {
+            // 排除子类型（如智能体列表排除网页应用）。必须写成 (IS NULL OR NOT IN ...)：
+            // target_sub_type 对未分子类型的发布行为 NULL，MySQL 下 NULL <> 'PageApp' 的结果是 NULL，
+            // 直接用 notIn 会把这些行一起排掉——那不是「排除 PageApp」，而是「只保留已分子类型的行」
+            queryWrapper.and(wrapper -> wrapper.isNull(Published::getTargetSubType)
+                    .or().notIn(Published::getTargetSubType, publishedQueryDto.getExcludeTargetSubTypes()));
         }
 
         if (publishedQueryDto.getAllowCopy() != null && publishedQueryDto.getAllowCopy().equals(YesOrNoEnum.Y.getKey())) {
@@ -211,6 +232,24 @@ public class PublishDomainServiceImpl implements PublishDomainService {
         }
         if (!CollectionUtils.isEmpty(publishedQueryDto.getTargetIds())) {
             queryWrapper.in(Published::getTargetId, publishedQueryDto.getTargetIds());
+        }
+        //多类型查询时按类型限定targetId（各类型ID为独立自增空间，扁平IN会跨类型数值误匹配）
+        if (multiTypeQuery && publishedQueryDto.getTargetTypeIds() != null && !publishedQueryDto.getTargetTypeIds().isEmpty()) {
+            queryWrapper.and(w -> {
+                boolean first = true;
+                for (Map.Entry<Published.TargetType, List<Long>> entry : publishedQueryDto.getTargetTypeIds().entrySet()) {
+                    List<Long> ids = entry.getValue() == null ? List.of() : entry.getValue();
+                    if (ids.isEmpty()) {
+                        ids = List.of(-1L);//空集合用不可能命中的ID占位，保证该类型无结果
+                    }
+                    if (first) {
+                        first = false;
+                    } else {
+                        w.or();
+                    }
+                    w.eq(Published::getTargetType, entry.getKey()).in(Published::getTargetId, ids);
+                }
+            });
         }
         if (!CollectionUtils.isEmpty(publishedQueryDto.getExcludeIds())) {
             queryWrapper.notIn(Published::getTargetId, publishedQueryDto.getExcludeIds());
@@ -246,10 +285,6 @@ public class PublishDomainServiceImpl implements PublishDomainService {
                 && !justReturnSpaceData && publishedQueryDto.getAccessControl() == null) {
             //广场中排除站点默认智能体
             List<Long> excludeAgentIds = new ArrayList<>();
-            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
-            if (tenantConfigDto.getDefaultAgentId() != null) {
-                excludeAgentIds.add(tenantConfigDto.getDefaultAgentId());
-            }
             //未选择分类时排除推荐的智能体，后续会统一展示在最前面
             if (StringUtils.isBlank(publishedQueryDto.getCategory()) && !CollectionUtils.isEmpty(publishedQueryDto.getRecommendIds())) {
                 excludeAgentIds.addAll(publishedQueryDto.getRecommendIds());

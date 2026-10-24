@@ -1,11 +1,16 @@
 package com.xspaceagi.agent.web.ui.controller.api;
 
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.*;
+import com.xspaceagi.agent.core.adapter.repository.entity.Conversation;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.agent.core.infra.component.agent.SandboxAgentClient;
+import com.xspaceagi.agent.core.application.service.ConversationPermissionChecker;
 import com.xspaceagi.agent.web.ui.controller.dto.ComputerFileListRes;
+import com.xspaceagi.agent.web.ui.controller.dto.PermissionRequestResponseDto;
 import com.xspaceagi.agent.web.ui.controller.dto.api.ConvCreateDto;
 import com.xspaceagi.system.application.dto.SpaceDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
@@ -15,8 +20,8 @@ import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.I18nUtil;
-import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.xspaceagi.agent.web.ui.controller.ConversationController.DEFAULT_TOPIC;
 
 @Tag(name = "开放API-会话相关接口")
 @RestController
@@ -50,6 +54,9 @@ public class ChatApiController {
     private ConversationApplicationService conversationApplicationService;
 
     @Resource
+    private ChatApplicationService chatApplicationService;
+
+    @Resource
     private IComputerFileApplicationService computerFileApplicationService;
 
     @Resource
@@ -59,7 +66,10 @@ public class ChatApiController {
     private SpaceApplicationService spaceApplicationService;
 
     @Resource
-    private RedisUtil redisUtil;
+    private ConversationPermissionChecker conversationPermissionChecker;
+
+    @Resource
+    private SandboxAgentClient sandboxAgentClient;
 
     @Operation(summary = "创建会话")
     @RequestMapping(path = "/conversation/add", method = RequestMethod.POST)
@@ -92,7 +102,7 @@ public class ChatApiController {
     @RequestMapping(path = "/conversation/{id}", method = RequestMethod.GET)
     public ReqResult<ConversationDto> conversation(@PathVariable Long id) {
         ConversationDto conversationDto = checkConversation(id);
-        if (DEFAULT_TOPIC.equals(conversationDto.getTopic())) {
+        if (conversationDto.isDefaultTopic()) {
             if (conversationDto.getAgent() != null) {
                 conversationDto.setTopic(I18nUtil.systemMessage("Backend.Conversation.DefaultTopic", conversationDto.getAgent().getName()));
             }
@@ -129,6 +139,14 @@ public class ChatApiController {
         return ReqResult.success(messageDtos);
     }
 
+    @Operation(summary = "删除会话历史消息列表")
+    @RequestMapping(path = "/{conversationId}/messages/delete", method = RequestMethod.POST)
+    public ReqResult<Void> clearConversationMessages(@PathVariable Long conversationId) {
+        checkConversation(conversationId);
+        conversationApplicationService.clearConversationMessages(conversationId);
+        return ReqResult.success();
+    }
+
     @Operation(summary = "智能体会话接口")
     @RequestMapping(path = "/{conversationId}", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<AgentOutputDto> chat(@PathVariable Long conversationId, @RequestBody @Valid TryReqDto tryReqDto, HttpServletRequest request, HttpServletResponse response) {
@@ -137,23 +155,71 @@ public class ChatApiController {
         Map<String, String> headersFromRequest = getHeadersFromRequest(request);
         tryReqDto.setFrom("api");
         tryReqDto.setFilterSensitive(null);
-        return conversationApplicationService.chat(tryReqDto, headersFromRequest, false, false);
+        tryReqDto.setAgentConfig(null);
+        return chatApplicationService.chat(tryReqDto, headersFromRequest, false, false);
     }
 
     @Operation(summary = "智能体会话停止接口")
     @RequestMapping(path = "/{conversationId}/stop", method = RequestMethod.POST)
-    public ReqResult<Void> chatStop(@PathVariable Long conversationId) {
-        checkConversation(conversationId);
-        redisUtil.set("chat.stop." + conversationId, String.valueOf(System.currentTimeMillis()), 60);
+    public ReqResult<Void> chatStop(@PathVariable String conversationId) {
+        long cid;
+        try {
+            cid = Long.parseLong(conversationId);
+        } catch (NumberFormatException e) {
+            // Compatible with previous API calls
+            chatApplicationService.setChatStopStatus(conversationId);
+            return ReqResult.success();
+        }
+        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), cid);
+        if (conversation == null) {
+            return ReqResult.error("Conversation not found");
+        }
+
+        if ("TaskAgent".equals(conversation.getAgent().getType())) {
+            sandboxAgentClient.chatCancel(conversationId);
+        }
+        chatApplicationService.setChatStopStatus(conversationId);
+        conversationApplicationService.updateConversationStatus(conversation.getId(), Conversation.ConversationTaskStatus.CANCEL);
+        return ReqResult.success();
+    }
+
+    @Operation(summary = "订阅会话消息")
+    @RequestMapping(path = "/{conversationId}/subscribe", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<AgentOutputDto> sub(@PathVariable Long conversationId, HttpServletResponse response) {
+        response.setCharacterEncoding("utf-8");
+        return chatApplicationService.subscribe(conversationId);
+    }
+
+    @Operation(summary = "权限请求回复")
+    @RequestMapping(path = "/{conversationId}/permission-request/response", method = RequestMethod.POST)
+    public ReqResult<Void> notifyResolved(@PathVariable Long conversationId, @RequestBody PermissionRequestResponseDto permissionRequestResponseDto) {
+        permissionRequestResponseDto.setConversationId(conversationId);
+        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), permissionRequestResponseDto.getConversationId());
+        if (conversation == null) {
+            return ReqResult.error("Conversation not found");
+        }
+
+        if ("TaskAgent".equals(conversation.getAgent().getType())) {
+            Assert.notNull(permissionRequestResponseDto.getOption(), "Option is null");
+            sandboxAgentClient.notifyResolved(permissionRequestResponseDto.getConversationId().toString(), permissionRequestResponseDto.getToolId(), Map.of(
+                    "optionId", permissionRequestResponseDto.getOption().getOptionId(),
+                    "outcome", "selected"
+            ));
+        }
         return ReqResult.success();
     }
 
 
-    @Operation(summary = "会话文件列表查询", description = "查询文件列表")
+    @Operation(summary = "会话文件列表查询", description = "默认 recursive=true 全量扁平（原逻辑）；recursive=false 时按 relativePath 只列当前一层")
     @GetMapping("/{conversationId}/files")
-    public ReqResult<ComputerFileListRes> getFileList(@PathVariable Long conversationId) {
+    public ReqResult<ComputerFileListRes> getFileList(@PathVariable Long conversationId,
+                                                       @RequestParam(value = "relativePath", required = false) String relativePath,
+                                                       @Parameter(description = "是否递归全量。不传默认 true（全量递归）；false 为单层浏览")
+                                                       @RequestParam(value = "recursive", required = false) Boolean recursive) {
         String proxyPath = String.format("/api/v1/chat/%s/file", conversationId);
-        Map<String, Object> result = computerFileApplicationService.getFileList(RequestContext.get().getUserId(), conversationId, proxyPath, null, null);
+        Boolean effectiveRecursive = recursive == null ? Boolean.TRUE : recursive;
+        Map<String, Object> result = computerFileApplicationService.getFileList(
+                RequestContext.get().getUserId(), conversationId, proxyPath, null, null, relativePath, effectiveRecursive, null, null, null);
         if (result == null) {
             return ReqResult.error("Failed to query file list");
         }
@@ -175,9 +241,7 @@ public class ChatApiController {
             return ReqResult.create(code, message, null);
         }
 
-        ComputerFileListRes res = new ComputerFileListRes();
-        res.setFiles(result.get("files"));
-        return ReqResult.success(res);
+        return ReqResult.success(ComputerFileListRes.from(result));
     }
 
     @Operation(summary = "会话文件访问", description = "静态文件访问，返回二进制流（图片、文件等）")
@@ -189,6 +253,8 @@ public class ChatApiController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         String customTargetDir = request.getParameter("customTargetDir");
+        // customTargetDir 仅会话属主本人的个人沙箱可用（云端/协作者/匿名拒绝）
+        conversationPermissionChecker.checkCustomTargetDir(cId, customTargetDir);
         return computerFileApplicationService.getStaticFile(cId, request, customTargetDir);
     }
 

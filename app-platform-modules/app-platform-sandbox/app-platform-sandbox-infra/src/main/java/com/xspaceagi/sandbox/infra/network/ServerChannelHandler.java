@@ -241,6 +241,7 @@ public class ServerChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
             logger.info("set port => channel, {}, {}, {}", clientKey, ports, ctx.channel());
             ProxyChannelManager.addCmdChannel(ports, clientKey, ctx.channel());
             reverseServerContainer.userSandboxOnlineTouch(clientKey);
+            reverseServerContainer.publishOnlineEvent(sandboxConfig);
         } catch (Exception e) {
             if (agentInnerPort != null) {
                 reverseServerContainer.getPortPoolManager().release(agentInnerPort);

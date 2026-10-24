@@ -39,6 +39,16 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-pricing-sdk</artifactId>
         </dependency>
+
+        <!-- production dependencies -->
+
+        <!-- Content-Encoding: zstd 解压。选纯 Java 实现而非 zstd-jni：后者 jar 内不含 musl native，
+             镜像基础库不匹配时会 UnsatisfiedLinkError -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+            <version>0.27</version>
+        </dependency>
     </dependencies>
 
     <build>

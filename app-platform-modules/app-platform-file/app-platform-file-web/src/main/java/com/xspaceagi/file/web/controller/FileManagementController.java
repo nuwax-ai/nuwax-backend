@@ -6,6 +6,8 @@ import com.xspaceagi.file.infra.storage.FileKeyGenerator;
 import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.file.web.dto.FileRecordVO;
 import com.xspaceagi.sandbox.SandboxUtils;
+import com.xspaceagi.system.application.dto.UserDto;
+import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.sdk.service.UserAccessKeyApiService;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -74,6 +76,8 @@ public class FileManagementController {
                                               @RequestParam(value = "targetType", required = false) String targetType,
                                               @RequestParam(value = "targetId", required = false, defaultValue = "-1") Long targetId,
                                               @RequestParam(value = "metadata", required = false) String metadata) {
+        // SVG 可携带脚本，同源内联展示存在存储型 XSS 风险：仅管理员可上传
+        checkSvgUploadPermission(file);
         if (!RequestContext.get().isLogin()) {
             UserAccessKeyDto userAccessKeyDto = ChatKeyCheck.check(request, userAccessKeyApiService);
             RequestContext.get().setUserId(userAccessKeyDto.getUserId());
@@ -378,9 +382,9 @@ public class FileManagementController {
 
     @GetMapping("/file/ak/refresh")
     @Operation(summary = "更新AK")
-    public ReqResult<String> refreshAk(@RequestParam String url) {
+    public ReqResult<String> refreshAk(@RequestParam String url, @RequestParam(name = "download", required = false) Integer download) {
         url = iFileAccessService.getFileUrlWithAk(url);
-        return ReqResult.success(url);
+        return ReqResult.success(url + (download != null ? "&download=1" : ""));
     }
 
     @GetMapping("/f1/{key}")
@@ -434,6 +438,43 @@ public class FileManagementController {
         }
 
         return null;
+    }
+
+    /**
+     * SVG 上传限制：SVG 可内嵌脚本（{@code <script>}、事件属性），且平台以同源 inline 方式回显
+     * （/api/f/、/api/file/），上传 SVG 是典型的存储型 XSS 入口，故仅管理员允许上传，其余用户直接拒绝。
+     * <p>
+     * SVG 判定：文件名扩展名为 .svg/.svgz（忽略大小写）或 Content-Type 为 image/svg*，两者任一命中即视为 SVG，
+     * 避免只伪装其一流绕过。管理员判定沿用平台通用口径：RequestContext 中 UserDto.role == Admin
+     * （AK 链路由 ApiKeyInterceptor 填充同一上下文；chat-key/匿名链路无 UserDto，一律按非管理员处理）。
+     */
+    public static void checkSvgUploadPermission(MultipartFile file) {
+        if (file == null || !isSvgFile(file)) {
+            return;
+        }
+        Object user = RequestContext.get() == null ? null : RequestContext.get().getUser();
+        if (user instanceof UserDto userDto && userDto.getRole() == User.Role.Admin) {
+            return;
+        }
+        log.warn("SVG upload rejected for non-admin, fileName: {}, contentType: {}, userId: {}",
+                file.getOriginalFilename(), file.getContentType(),
+                RequestContext.get() == null ? null : RequestContext.get().getUserId());
+        throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.fileSvgUploadAdminOnly);
+    }
+
+    /**
+     * 是否为 SVG：扩展名与 Content-Type 任一命中即判定
+     */
+    private static boolean isSvgFile(MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        if (StringUtils.isNotBlank(fileName)) {
+            String lower = fileName.toLowerCase();
+            if (lower.endsWith(".svg") || lower.endsWith(".svgz")) {
+                return true;
+            }
+        }
+        String contentType = file.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith("image/svg");
     }
 
     public static FileRecordVO toVO(FileRecordDomain domain) {

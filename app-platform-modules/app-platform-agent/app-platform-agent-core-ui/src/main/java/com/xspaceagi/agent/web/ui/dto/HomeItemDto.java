@@ -40,4 +40,6 @@ public class HomeItemDto {
 
     @Schema(description = "最后一次会话ID")
     private Long lastConversationId;
+
+    private Object extra;
 }

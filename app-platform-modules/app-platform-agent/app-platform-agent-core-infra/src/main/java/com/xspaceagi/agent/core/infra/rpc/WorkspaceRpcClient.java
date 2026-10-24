@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +27,7 @@ public class WorkspaceRpcClient {
     @Resource
     private SandboxServerConfigService sandboxServerConfigService;
 
-    private String getBaseUrl(Long cId) {
+    private SandboxServerConfig.SandboxServer requireServer(Long cId) {
         SandboxServerConfig.SandboxServer sandboxServer = null;
         try {
             sandboxServer = sandboxServerConfigService.selectServer(cId);
@@ -40,27 +41,35 @@ public class WorkspaceRpcClient {
         if (sandboxServer == null) {
             throw BizException.of(BizExceptionCodeEnum.agentSandboxNotFound);
         }
-        String serverUrl = sandboxServer.getServerFileUrl();
-        if (serverUrl == null) {
+        if (sandboxServer.getServerFileUrl() == null) {
             throw BizException.of(BizExceptionCodeEnum.agentSandboxNotFound);
         }
-        return serverUrl + "/api";
+        return sandboxServer;
+    }
+
+    private String fileUrl(SandboxServerConfig.SandboxServer sandboxServer, String path) {
+        return sandboxServer.getServerFileUrl() + "/api" + path;
     }
 
     /**
      * 创建工作空间
      */
     public Map<String, Object> createWorkSpace(Long userId, Long cId, MultipartFile file) {
-        String url = getBaseUrl(cId) + "/computer/create-workspace";
-        log.info("[workspace-client] userId={} cId={} , url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/create-workspace");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         // 创建MultiValueMap来存储文件和其他参数
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        WorkspaceServiceSupport.applyServiceParams(body, serviceContext);
         if (file != null) {
             body.add("file", file.getResource());
         }
@@ -81,23 +90,67 @@ public class WorkspaceRpcClient {
 
     /**
      * 创建工作空间v2
+     *
+     * @param skillUrls        技能 zip 的 url 数组（旧 FS 依赖此字段；必须是 url 列表）
+     * @param skillUrlMap      技能名→url（新 FS 下载前按名跳过；旧 FS 可忽略）；技能名=skill.md 的 name
+     * @param skillNames       配置技能名全集（新 FS prune；旧 FS 可忽略）
+     * @param updateSkillNames 强制更新的技能名（新 FS 按需安装；旧 FS 可忽略）
      */
-    public Map<String, Object> createWorkSpaceV2(Long userId, Long cId, MultipartFile file, List<String> skillUrls, String mcpServersConfig, String permissionsConfig, String hooksConfig, String hookScripts) {
-        String url = getBaseUrl(cId) + "/computer/create-workspace-v2";
-        log.info("[workspace-client] userId={}, cId={}, url={}", userId, cId, url);
+    public Map<String, Object> createWorkSpaceV2(Long userId, Long cId, Long agentId, MultipartFile file,
+                                                 List<String> skillUrls, Map<String, String> skillUrlMap,
+                                                 List<String> skillNames, List<String> updateSkillNames,
+                                                 String mcpServersConfig, String permissionsConfig,
+                                                 String hooksConfig, String hookScripts) {
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/create-workspace-v2");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={}, agentId={}, cId={} serviceType={} appId={}, url={}", userId, agentId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
-        // 创建MultiValueMap来存储文件和其他参数
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        WorkspaceServiceSupport.applyServiceParams(body, serviceContext);
+        if (agentId != null) {
+            body.add("agentId", String.valueOf(agentId));
+        }
         if (file != null) {
             body.add("file", file.getResource());
         }
+        ObjectMapper objectMapper = new ObjectMapper();
         if (skillUrls != null && !skillUrls.isEmpty()) {
-            body.add("skillUrls", skillUrls);
+            try {
+                body.add("skillUrls", objectMapper.writeValueAsString(skillUrls));
+            } catch (Exception e) {
+                for (String skillUrl : skillUrls) {
+                    body.add("skillUrls", skillUrl);
+                }
+            }
+        }
+        if (skillUrlMap != null && !skillUrlMap.isEmpty()) {
+            try {
+                body.add("skillUrlMap", objectMapper.writeValueAsString(skillUrlMap));
+            } catch (Exception e) {
+                log.warn("[workspace-client] serialize skillUrlMap failed", e);
+            }
+        }
+        if (skillNames != null && !skillNames.isEmpty()) {
+            try {
+                body.add("skillNames", objectMapper.writeValueAsString(skillNames));
+            } catch (Exception e) {
+                body.add("skillNames", String.join(",", skillNames));
+            }
+        }
+        if (updateSkillNames != null) {
+            try {
+                body.add("updateSkillNames", objectMapper.writeValueAsString(updateSkillNames));
+            } catch (Exception e) {
+                body.add("updateSkillNames", String.join(",", updateSkillNames));
+            }
         }
         if (mcpServersConfig != null && !mcpServersConfig.isBlank()) {
             body.add("mcpServersConfig", mcpServersConfig);
@@ -119,10 +172,10 @@ public class WorkspaceRpcClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[workspace-client] userId={} cId={} 创建工作空间v2, 响应结果={}", userId, cId, responseBody);
+            log.info("[workspace-client] userId={} agentId={} cId={} 创建工作空间v2, 响应结果={}", userId, agentId, cId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[workspace-client] userId={} cId={} 创建工作空间v2失败, status={}, responseBody={}", userId, cId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[workspace-client] userId={} agentId={} cId={} 创建工作空间v2失败, status={}, responseBody={}", userId, agentId, cId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(userId + "_" + cId, e);
         }
     }
@@ -130,21 +183,27 @@ public class WorkspaceRpcClient {
     /**
      * 推送skill到空间
      * zip 结构与 create-workspace 一致，包含 skills/ 目录
+     * 老版本接口：通过压缩包传文件
      */
     public Map<String, Object> pushSkillsToWorkspace(Long userId, Long cId, MultipartFile zipFile) {
         if (zipFile == null) {
             throw new IllegalArgumentException("No skill files to push");
         }
 
-        String url = getBaseUrl(cId) + "/computer/push-skills-to-workspace";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/push-skills-to-workspace");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        WorkspaceServiceSupport.applyServiceParams(body, serviceContext);
         body.add("file", zipFile.getResource());
         HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
@@ -164,26 +223,41 @@ public class WorkspaceRpcClient {
     /**
      * 推送skill到空间
      * zip 结构与 create-workspace 一致，包含 skills/ 目录
+     * 新版本接口：通过技能url传技能，老技能（无url）还是通过压缩包传输
      */
-    public Map<String, Object> pushSkillsToWorkspaceV2(Long userId, Long cId, MultipartFile zipFile, List<String> skillUrls) {
+    public Map<String, Object> pushSkillsToWorkspaceV2(Long userId, Long cId, Long agentId, MultipartFile zipFile, List<String> skillUrls) {
         if (zipFile == null && (skillUrls == null || skillUrls.isEmpty())) {
             throw new IllegalArgumentException("No skill files to push");
         }
 
-        String url = getBaseUrl(cId) + "/computer/push-skills-to-workspace-v2";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/push-skills-to-workspace-v2");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} agentId={} cId={} serviceType={} appId={}, url={}", userId, agentId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        WorkspaceServiceSupport.applyServiceParams(body, serviceContext);
+        if (agentId != null) {
+            body.add("agentId", String.valueOf(agentId));
+        }
         if (zipFile != null) {
             body.add("file", zipFile.getResource());
         }
         if (skillUrls != null && !skillUrls.isEmpty()) {
-            body.add("skillUrls", skillUrls);
+            try {
+                body.add("skillUrls", new ObjectMapper().writeValueAsString(skillUrls));
+            } catch (Exception e) {
+                for (String skillUrl : skillUrls) {
+                    body.add("skillUrls", skillUrl);
+                }
+            }
         }
 
         HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
@@ -193,10 +267,10 @@ public class WorkspaceRpcClient {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
             Map<String, Object> responseBody = entity.getBody();
-            log.info("[workspace-client] userId={} cId={} 推送技能文件v2, 响应结果={}", userId, cId, responseBody);
+            log.info("[workspace-client] userId={} agentId={} cId={} 推送技能文件v2, 响应结果={}", userId, agentId, cId, responseBody);
             return responseBody;
         } catch (HttpClientErrorException e) {
-            log.warn("[workspace-client] userId={} cId={} 调用推送技能文件v2失败, status={}, responseBody={}", userId, cId, e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("[workspace-client] userId={} agentId={} cId={} 调用推送技能文件v2失败, status={}, responseBody={}", userId, agentId, cId, e.getStatusCode(), e.getResponseBodyAsString());
             return parseClientErr(userId + "_" + cId, e);
         }
     }
@@ -205,18 +279,23 @@ public class WorkspaceRpcClient {
      * 初始化项目模板
      */
     public Map<String, Object> initProjectTemplate(Long userId, Long cId, MultipartFile file, Boolean enableGit) {
-        String url = getBaseUrl(cId) + "/computer/init-project-template";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/init-project-template");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
         if (file == null) {
             throw new IllegalArgumentException("No template file to init");
         }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("userId", String.valueOf(userId));
         body.add("cId", String.valueOf(cId));
+        WorkspaceServiceSupport.applyServiceParams(body, serviceContext);
         body.add("file", file.getResource());
         body.add("enableGit", String.valueOf(Boolean.TRUE.equals(enableGit)));
         HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
@@ -238,15 +317,20 @@ public class WorkspaceRpcClient {
      * 安装项目依赖
      */
     public Map<String, Object> installProject(Long userId, Long cId, String programmingLanguage) {
-        String url = getBaseUrl(cId) + "/computer/install-project";
-        log.info("[workspace-client] userId={} cId={}, url={}, programmingLanguage={}", userId, cId, url, programmingLanguage);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/install-project");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}, programmingLanguage={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url, programmingLanguage);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         requestBody.put("programmingLanguage", programmingLanguage);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
@@ -267,15 +351,20 @@ public class WorkspaceRpcClient {
      * 在沙箱工作空间中执行命令
      */
     public Map<String, Object> executeCommand(Long userId, Long cId, String command) {
-        String url = getBaseUrl(cId) + "/computer/execute-command";
-        log.info("[workspace-client] userId={} cId={}, url={}, command={}", userId, cId, url, command);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/execute-command");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}, command={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url, command);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         requestBody.put("command", command);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
@@ -296,18 +385,27 @@ public class WorkspaceRpcClient {
      * 删除工作空间目录
      */
     public Map<String, Object> deleteWorkspace(Long userId, Long cId) {
-        String url = getBaseUrl(cId) + "/computer/delete-workspace";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/delete-workspace");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-        RestTemplate restTemplate = new RestTemplate();
+        // 带超时：该调用可能发生在项目删除事务内，file-server 挂起时不能无限占用数据库连接
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(10_000);
+        requestFactory.setReadTimeout(60_000);
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Map<String, Object>>() {
             });
@@ -328,16 +426,21 @@ public class WorkspaceRpcClient {
      * @return zip 字节数组
      */
     public byte[] zipWorkspace(Long userId, Long cId, List<String> excludeDirs) {
-        String url = getBaseUrl(cId) + "/computer/zip-workspace";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/zip-workspace");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(java.util.Collections.singletonList(MediaType.APPLICATION_OCTET_STREAM));
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         if (excludeDirs != null) {
             requestBody.put("excludeDirs", excludeDirs);
         }
@@ -365,15 +468,20 @@ public class WorkspaceRpcClient {
      * @return 响应体，包含 success 和 artifacts 数组
      */
     public Map<String, Object> buildAgentPackage(Long userId, Long cId, Long agentId, String version) {
-        String url = getBaseUrl(cId) + "/computer/build-agent-package";
-        log.info("[workspace-client] userId={} cId={}, url={}, agentId={}, version={}", userId, cId, url, agentId, version);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/build-agent-package");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}, agentId={}, version={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url, agentId, version);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         requestBody.put("agentId", agentId);
         requestBody.put("version", version);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
@@ -398,15 +506,20 @@ public class WorkspaceRpcClient {
      * @return 响应体，包含 success 和 cleaned
      */
     public Map<String, Object> cleanupBuildArtifacts(Long userId, Long cId) {
-        String url = getBaseUrl(cId) + "/computer/cleanup-build-artifacts";
-        log.info("[workspace-client] userId={} cId={}, url={}", userId, cId, url);
+        SandboxServerConfig.SandboxServer sandboxServer = requireServer(cId);
+        String url = fileUrl(sandboxServer, "/computer/cleanup-build-artifacts");
+        WorkspaceServiceContext serviceContext = WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer);
+        log.info("[workspace-client] userId={} cId={} serviceType={} appId={}, url={}", userId, cId,
+                serviceContext.getServiceType().getWorkspaceType(), serviceContext.getAppId(), url);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        WorkspaceServiceSupport.applyContainerRouteHeaders(headers, serviceContext, sandboxServer);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", userId);
         requestBody.put("cId", cId);
+        WorkspaceServiceSupport.applyServiceParams(requestBody, serviceContext);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         RestTemplate restTemplate = new RestTemplate();

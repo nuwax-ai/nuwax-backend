@@ -11,6 +11,7 @@ public enum KnowledgeTaskRunTypeEnum {
     FULLTEXT_SYNC(15, "全文检索同步"),
     QA(2, "生成Q&A"),
     EMBEDDING(3, "生成嵌入"),
+    GRAPH(4, "知识库"),
     SUCCESS(10, "任务完毕");
 
     KnowledgeTaskRunTypeEnum(int type, String desc) {

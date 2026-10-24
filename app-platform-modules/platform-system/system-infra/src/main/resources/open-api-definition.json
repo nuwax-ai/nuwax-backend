@@ -191,6 +191,55 @@
     ]
   },
   {
+    "name": "定时任务管理",
+    "key": "api.schedule.task",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.v1.schedule.task.create",
+        "name": "创建定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/create"
+      },
+      {
+        "key": "api.v1.schedule.task.update",
+        "name": "更新定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/update"
+      },
+      {
+        "key": "api.v1.schedule.task.delete",
+        "name": "删除定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/:id/delete"
+      },
+      {
+        "key": "api.v1.schedule.task.execute",
+        "name": "执行定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/:id/execute"
+      },
+      {
+        "key": "api.v1.schedule.task.cancel",
+        "name": "取消定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/:id/cancel"
+      },
+      {
+        "key": "api.v1.schedule.task.enable",
+        "name": "启用定时任务",
+        "role": "User",
+        "path": "/api/v1/schedule/task/:id/enable"
+      },
+      {
+        "key": "api.v1.schedule.task.list",
+        "name": "查询任务列表",
+        "role": "User",
+        "path": "/api/v1/schedule/task/list"
+      }
+    ]
+  },
+  {
     "name": "智能体会话",
     "key": "api.chat",
     "role": "User",
@@ -232,6 +281,12 @@
         "path": "/api/v1/chat/:conversationId"
       },
       {
+        "key": "api.v1.chat.subscribe",
+        "name": "订阅已发起会话消息",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId/subscribe"
+      },
+      {
         "key": "api.v1.chat.stop",
         "name": "停止会话",
         "role": "User",
@@ -242,6 +297,12 @@
         "name": "查询会话历史消息",
         "role": "User",
         "path": "/api/v1/chat/:conversationId/messages"
+      },
+      {
+        "key": "api.v1.chat.messages.delete",
+        "name": "删除会话历史消息",
+        "role": "User",
+        "path": "/api/v1/chat/:conversationId/messages/delete"
       },
       {
         "key": "api.v1.chat.files",
@@ -273,6 +334,98 @@
         "name": "生成包含认证信息的文件地址",
         "role": "User",
         "path": "/api/v1/file/ak"
+      }
+    ]
+  },
+  {
+    "name": "IM消息通知",
+    "key": "api.im.notify",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.im.notify.bind.start",
+        "name": "IM账号绑定开始",
+        "role": "User",
+        "path": "/api/v1/im-notify/bind/start"
+      },
+      {
+        "key": "api.im.notify.bind.confirm",
+        "name": "IM账号绑定确认",
+        "role": "User",
+        "path": "/api/v1/im-notify/bind/confirm"
+      },
+      {
+        "key": "api.im.notify.bind.status",
+        "name": "IM账号绑定状态",
+        "role": "User",
+        "path": "/api/v1/im-notify/bind/status"
+      },
+      {
+        "key": "api.im.notify.binding",
+        "name": "查询IM账号绑定",
+        "role": "User",
+        "path": "/api/v1/im-notify/binding"
+      },
+      {
+        "key": "api.im.notify.bindings",
+        "name": "查询IM账号绑定列表",
+        "role": "User",
+        "path": "/api/v1/im-notify/bindings"
+      },
+      {
+        "key": "api.im.notify.unbind",
+        "name": "解绑IM账号",
+        "role": "User",
+        "path": "/api/v1/im-notify/unbind"
+      },
+      {
+        "key": "api.im.notify.send",
+        "name": "IM消息推送",
+        "role": "User",
+        "path": "/api/v1/im-notify/send"
+      }
+    ]
+  },
+  {
+    "name": "支付开放接口",
+    "key": "api.pay.open",
+    "role": "User",
+    "apiList": [
+      {
+        "key": "api.pay.open.cashier",
+        "name": "收银台下单（PC/通用）",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/cashier"
+      },
+      {
+        "key": "api.pay.open.h5.create",
+        "name": "H5下单（移动端浏览器）",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/h5/create"
+      },
+      {
+        "key": "api.pay.open.h5.pay",
+        "name": "H5调起渠道",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/h5/pay"
+      },
+      {
+        "key": "api.pay.open.app.create",
+        "name": "App下单（原生）",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/app/create"
+      },
+      {
+        "key": "api.pay.open.app.pay",
+        "name": "App调起渠道",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/app/pay"
+      },
+      {
+        "key": "api.pay.open.status",
+        "name": "查单（支付状态）",
+        "role": "User",
+        "path": "/api/v1/pay/open/orders/status"
       }
     ]
   }

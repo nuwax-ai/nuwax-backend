@@ -29,8 +29,16 @@ import com.xspaceagi.file.application.service.FileManagementService;
 import com.xspaceagi.file.domain.model.FileRecordDomain;
 import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.pricing.sdk.dto.PricingConfigDTO;
+import com.xspaceagi.userapp.sdk.IUserAppRpcService;
+import com.xspaceagi.userapp.sdk.IUserProjectRpcService;
+import com.xspaceagi.userapp.sdk.dto.BuildVersionDto;
+import com.xspaceagi.userapp.sdk.dto.UserAppDto;
+import com.xspaceagi.userapp.sdk.dto.UserAppPublishStatus;
+import com.xspaceagi.userapp.sdk.dto.UserProjectDto;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.application.dto.*;
 import com.xspaceagi.system.application.service.NotifyMessageApplicationService;
+import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.SysUserPermissionCacheService;
 import com.xspaceagi.system.application.service.UserApplicationService;
@@ -38,6 +46,7 @@ import com.xspaceagi.system.infra.dao.entity.NotifyMessage;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
@@ -146,12 +155,119 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     @Resource
     private AgentWorkspaceApplicationService agentWorkspaceApplicationService;
 
+    @Resource
+    private IUserAppRpcService iUserAppRpcService;
+
+    @Resource
+    private IUserProjectRpcService iUserProjectRpcService;
+
     @Override
     public SuperPage<PublishedDto> queryPublishedList(PublishedQueryDto publishedQueryDto) {
         SuperPage<Published> publishedList = publishDomainService.queryPublishedList(publishedQueryDto);
-        var dataList = convertPublishedList(publishedQueryDto.getTargetType(), publishedList.getRecords(), publishedQueryDto.isReturnConfig());
+        var dataList = convertPublishedList(publishedQueryDto.getTargetType(), publishedList.getRecords(), publishedQueryDto.isReturnConfig(), true);
 
         return SuperPage.build(publishedList, dataList);
+    }
+
+    @Override
+    public SuperPage<PublishedDto> queryAppList(PublishedQueryDto publishedQueryDto) {
+        SuperPage<Published> publishedPage = publishDomainService.queryPublishedList(publishedQueryDto);
+        List<PublishedDto> dataList = convertAppPublishedList(publishedPage.getRecords(), publishedQueryDto.isReturnConfig());
+        return SuperPage.build(publishedPage, dataList);
+    }
+
+    /**
+     * 应用列表混合了网页应用（Agent的PageApp子类型）与全栈应用（UserApp），统计、收藏、定价等信息需按目标类型分组补齐
+     */
+    private List<PublishedDto> convertAppPublishedList(List<Published> publishedList, boolean returnConfig) {
+        if (CollectionUtils.isEmpty(publishedList)) {
+            return List.of();
+        }
+        Map<Published.TargetType, List<Published>> publishedGroupMap = publishedList.stream()
+                .collect(Collectors.groupingBy(Published::getTargetType, LinkedHashMap::new, Collectors.toList()));
+        Map<Published.TargetType, Iterator<PublishedDto>> dtoIteratorMap = new HashMap<>();
+        publishedGroupMap.forEach((targetType, groupList) ->
+                dtoIteratorMap.put(targetType, convertPublishedList(targetType, groupList, returnConfig, true).iterator()));
+        //convertPublishedList按组内顺序一一转换，这里按原列表顺序合并，保持按modified排序的结果
+        return publishedList.stream()
+                .map(published -> dtoIteratorMap.get(published.getTargetType()).next())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PublishedDto> queryRecentlyUsedApps(String kw, Integer size) {
+        Long userId = RequestContext.get() != null ? RequestContext.get().getUserId() : null;
+        if (userId == null) {
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.userNotLoggedIn);
+        }
+        //分别查询最近使用的网页应用（Agent的PageApp子类型）、全栈应用（UserApp）与三方应用（ThirdApp），按使用时间合并取前size条
+        List<UserTargetRelation> relations = new ArrayList<>();
+        relations.addAll(userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, size, 1, "PageApp"));
+        relations.addAll(userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.UserApp, size, 1, null));// targetSubType传null即可
+        relations.addAll(userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.ThirdApp, size, 1, null));// targetSubType传null即可
+        if (CollectionUtils.isEmpty(relations)) {
+            return List.of();
+        }
+        relations.sort(Comparator.comparing(UserTargetRelation::getModified, Comparator.nullsLast(Comparator.reverseOrder())));
+        // kw 搜索时不能先截断：名称在发布行上，关系列表本身无法预过滤，匹配可能落在 size 之外；
+        // 无 kw 时维持按使用时间取前 size 条
+        if (relations.size() > size && StringUtils.isBlank(kw)) {
+            relations = relations.subList(0, size);
+        }
+        //按类型分组查询已发布记录，同一targetId可能发布到多个空间，去重保留一条
+        Map<Published.TargetType, List<UserTargetRelation>> relationGroupMap = relations.stream()
+                .collect(Collectors.groupingBy(UserTargetRelation::getTargetType, LinkedHashMap::new, Collectors.toList()));
+        Map<Published.TargetType, Map<Long, Published>> publishedGroupMap = new HashMap<>();
+        relationGroupMap.forEach((targetType, groupList) -> {
+            List<Long> targetIds = groupList.stream().map(UserTargetRelation::getTargetId).distinct().toList();
+            publishedGroupMap.put(targetType, publishDomainService.queryPublishedListWithoutConfig(targetType, targetIds).stream()
+                    .collect(Collectors.toMap(Published::getTargetId, published -> published, (a, b) -> a)));
+        });
+        //按使用时间倒序输出，已下架的跳过
+        List<PublishedDto> result = new ArrayList<>();
+        for (UserTargetRelation relation : relations) {
+            Published published = publishedGroupMap.getOrDefault(relation.getTargetType(), Map.of()).get(relation.getTargetId());
+            if (published == null) {
+                continue;
+            }
+            if (StringUtils.isNotBlank(kw) && (published.getName() == null || !published.getName().contains(kw))) {
+                continue;
+            }
+            PublishedDto publishedDto = new PublishedDto();
+            BeanUtils.copyProperties(published, publishedDto);
+            publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(published.getIcon(), published.getName(),
+                    published.getTargetType() == Published.TargetType.Agent ? "agent" : published.getTargetType().name()));
+            // 三方应用：补齐主页地址（发布时快照在 ext，市场列表跳转用）
+            if (published.getTargetType() == Published.TargetType.ThirdApp) {
+                publishedDto.setHomepageUrl(parseExtString(published.getExt(), "homepageUrl"));
+            }
+            result.add(publishedDto);
+        }
+        // 补齐使用统计（convCount 等）：混合类型列表按目标类型分组批量查询（各类ID独立，扁平查会跨类型误配），无统计行的给空对象
+        Map<Published.TargetType, Map<Long, StatisticsDto>> statisticsByType = new HashMap<>();
+        result.stream()
+                .collect(Collectors.groupingBy(PublishedDto::getTargetType))
+                .forEach((targetType, group) -> {
+                    List<Long> targetIds = group.stream().map(PublishedDto::getTargetId).distinct().toList();
+                    statisticsByType.put(targetType, publishDomainService.queryStatisticsCountList(targetType, targetIds).stream()
+                            .collect(Collectors.toMap(StatisticsDto::getTargetId, statisticsDto -> statisticsDto, (a, b) -> a)));
+                });
+        result.forEach(dto -> dto.setStatistics(statisticsByType
+                .getOrDefault(dto.getTargetType(), Map.of())
+                .getOrDefault(dto.getTargetId(), new StatisticsDto())));
+        // kw 场景下截断延后到结果层，保证 size 之外的匹配先经过滤再保留前 size 条
+        return result.size() > size ? new ArrayList<>(result.subList(0, size)) : result;
+    }
+
+    @Override
+    public void addOrUpdateRecentUsed(Long userId, Published.TargetType targetType, Long targetId, String targetSubType) {
+        userTargetRelationDomainService.addOrUpdateRecentUsed(UserTargetRelation.builder()
+                .userId(userId)
+                .targetType(targetType)
+                .targetId(targetId)
+                .type(UserTargetRelation.OpType.Conversation)
+                .targetSubType(targetSubType)
+                .build());
     }
 
     public List<ResourceGroupDto> queryGroupedPublishedList(PublishedQueryDto publishedQueryDto) {
@@ -178,7 +294,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             }
             index++;
         }
-        List<PublishedDto> dataList = convertPublishedList(publishedQueryDto.getTargetType(), resultList, false);
+        List<PublishedDto> dataList = convertPublishedList(publishedQueryDto.getTargetType(), resultList, false, true);
         //补齐资源分组信息
         List<Long> groupIdList = dataList.stream().map(PublishedDto::getGroupId).filter(Objects::nonNull).toList();
         List<ResourceGroupDto> resourceGroups;
@@ -267,31 +383,38 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         return new SuperPage<>(publishedPage.getCurrent(), publishedPage.getSize(), publishedPage.getTotal(), dtoList);
     }
 
-    private List<PublishedDto> convertPublishedList(Published.TargetType targetType, List<Published> publishedList, boolean returnConfig) {
+    private List<PublishedDto> convertPublishedList(Published.TargetType targetType, List<Published> publishedList, boolean returnConfig, boolean returnFullInfo) {
         // 从agentPublishedList中获取agentIds
         List<Long> targetIds = publishedList.stream().map(Published::getTargetId).collect(Collectors.toList());
-        List<StatisticsDto> statisticsList = publishDomainService.queryStatisticsCountList(targetType, targetIds);
-        Map<Long, StatisticsDto> statisticsMap = statisticsList.stream()
-                .collect(Collectors.toMap(StatisticsDto::getTargetId, statisticsDto -> statisticsDto, (k1, k2) -> k1));
-
-        // 从agentPublishedList中获取userIds
-        List<Long> userIds = publishedList.stream().map(Published::getUserId).collect(Collectors.toList());
-        Map<Long, UserDto> userMap = userApplicationService.queryUserListByIds(userIds).stream()
-                .collect(Collectors.toMap(UserDto::getId, userDto -> userDto));
-
-        // 补齐收藏状态
+        Map<Long, StatisticsDto> statisticsMap;
+        Map<Long, UserDto> userMap;
         Map<Long, UserTargetRelation> userTargetRelationMap;
-        if (RequestContext.get() != null && RequestContext.get().getUserId() != null && targetType != null) {
-            List<UserTargetRelation> userTargetRelationList = userTargetRelationDomainService
-                    .queryUserTargetRelationByTargetIds(RequestContext.get().getUserId(), targetType,
-                            UserTargetRelation.OpType.Collect, targetIds);
-            // 转map
-            userTargetRelationMap = userTargetRelationList.stream().collect(
-                    Collectors.toMap(UserTargetRelation::getTargetId, userTargetRelation -> userTargetRelation));
+        if (returnFullInfo) {
+            List<StatisticsDto> statisticsList = publishDomainService.queryStatisticsCountList(targetType, targetIds);
+            statisticsMap = statisticsList.stream()
+                    .collect(Collectors.toMap(StatisticsDto::getTargetId, statisticsDto -> statisticsDto, (k1, k2) -> k1));
+
+            // 从agentPublishedList中获取userIds
+            List<Long> userIds = publishedList.stream().map(Published::getUserId).collect(Collectors.toList());
+            userMap = userApplicationService.queryUserListByIds(userIds).stream()
+                    .collect(Collectors.toMap(UserDto::getId, userDto -> userDto));
+
+            // 补齐收藏状态
+            if (RequestContext.get() != null && RequestContext.get().getUserId() != null && targetType != null) {
+                List<UserTargetRelation> userTargetRelationList = userTargetRelationDomainService
+                        .queryUserTargetRelationByTargetIds(RequestContext.get().getUserId(), targetType,
+                                UserTargetRelation.OpType.Collect, targetIds);
+                // 转map
+                userTargetRelationMap = userTargetRelationList.stream().collect(
+                        Collectors.toMap(UserTargetRelation::getTargetId, userTargetRelation -> userTargetRelation));
+            } else {
+                userTargetRelationMap = Map.of();
+            }
         } else {
+            statisticsMap = Map.of();
+            userMap = Map.of();
             userTargetRelationMap = Map.of();
         }
-
         // 补齐封面图
         List<Long> agentIdList = publishedList.stream().filter(p -> p.getTargetType() == Published.TargetType.Agent && p.getTargetSubType() == PageApp)
                 .map(Published::getTargetId).toList();
@@ -339,6 +462,10 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
                     }
                 }
             }
+            // 三方应用：补齐主页地址（发布时快照在 ext，市场列表跳转用）
+            if (published.getTargetType() == Published.TargetType.ThirdApp) {
+                publishedDto.setHomepageUrl(parseExtString(published.getExt(), "homepageUrl"));
+            }
             // 不返回config
             if (!returnConfig) {
                 publishedDto.setConfig(null);
@@ -351,6 +478,27 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             }
             return publishedDto;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 从 ext 中提取字段；ext 可能是 JsonTypeHandler 反序列化后的 Map，也可能是未走类型处理器的 JSON 字符串
+     */
+    private String parseExtString(Object ext, String key) {
+        Object value = ext;
+        if (value instanceof String extStr) {
+            if (extStr.isBlank()) {
+                return null;
+            }
+            try {
+                value = JSON.parse(extStr);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+        if (value instanceof Map<?, ?> extMap && extMap.get(key) != null) {
+            return extMap.get(key).toString();
+        }
+        return null;
     }
 
     @Override
@@ -385,19 +533,19 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             List<Published> publishedList = publishDomainService.queryPublishedList(targetType, targetIds, kw);
             //去重publishedList
             publishedList = publishedList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Published::getTargetId))), ArrayList::new));
-            return convertPublishedList(targetType, publishedList, false);
+            return convertPublishedList(targetType, publishedList, false, true);
         } finally {
             RequestContext.removeTenantIgnoreEntity(Published.class);
         }
     }
 
     @Override
-    public List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw, boolean returnConfig) {
+    public List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw, boolean returnConfig, boolean returnFullInfo) {
         return TenantFunctions.callWithIgnoreCheck(() -> {
             List<Published> publishedList = publishDomainService.queryPublishedList(targetType, targetIds, kw);
             //去重publishedList
             publishedList = publishedList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Published::getTargetId))), ArrayList::new));
-            return convertPublishedList(targetType, publishedList, returnConfig);
+            return convertPublishedList(targetType, publishedList, returnConfig, returnFullInfo);
         });
     }
 
@@ -405,7 +553,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     public IPage<PublishedDto> queryPublishedListForManage(PublishedQueryDto publishedQueryDto) {
         IPage<Published> publishedIPage = publishDomainService.queryPublishedListForManage(publishedQueryDto);
         List<Published> publishedList = publishedIPage.getRecords();
-        List<PublishedDto> publishedDtos = convertPublishedList(publishedQueryDto.getTargetType(), publishedList, false);
+        List<PublishedDto> publishedDtos = convertPublishedList(publishedQueryDto.getTargetType(), publishedList, false, true);
         Map<Long, Published> publishedMap = publishedList.stream().collect(Collectors.toMap(Published::getId, published -> published));
         publishedDtos.forEach(publishedDto -> {
             if (publishedDto.getTargetType() == Published.TargetType.Plugin) {
@@ -480,6 +628,29 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     @Override
     public PublishedDto queryPublished(Published.TargetType targetType, Long targetId) {
         return queryPublished(targetType, targetId, true);
+    }
+
+    @Override
+    public PublishedDto queryPublishedBrief(Published.TargetType targetType, Long targetId) {
+        if (targetId == null) {
+            return null;
+        }
+        List<Published> publishedList = publishDomainService.queryPublishedListWithoutConfig(targetType, List.of(targetId));
+        if (CollectionUtils.isEmpty(publishedList)) {
+            return null;
+        }
+        // 与 queryPublished 同一可见口径与 scope 优先级，仅不富化（config/统计/发布者/收藏）
+        publishedList.sort(Comparator.comparing(published -> {
+            Published.PublishScope scope = published.getScope();
+            return switch (scope) {
+                case Global -> 0;
+                case Tenant -> 1;
+                case Space -> 2;
+            };
+        }));
+        PublishedDto publishedDto = new PublishedDto();
+        publishedDto.setTargetSubType(publishedList.get(0).getTargetSubType());
+        return publishedDto;
     }
 
     @Override
@@ -560,6 +731,14 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         Assert.notNull(publishApplyDto.getTargetConfig(), "targetConfig cannot be null");
         if (publishApplyDto.getChannels() == null) {
             publishApplyDto.setChannels(new ArrayList<>());
+        }
+        //程序化入口与publishOrApply共用同一前置校验：全栈应用必须已部署生产环境
+        if (publishApplyDto.getTargetType() == Published.TargetType.UserApp) {
+            iUserAppRpcService.checkPublishPrecondition(publishApplyDto.getTargetId());
+        }
+        //三方应用：OAuth2 凭证已生成才可提交发布
+        if (publishApplyDto.getTargetType() == Published.TargetType.ThirdApp) {
+            iUserProjectRpcService.checkThirdAppPublishPrecondition(publishApplyDto.getTargetId());
         }
         List<PublishApply> publishApplyList = publishDomainService
                 .queryPublishApplyingList(publishApplyDto.getTargetType(), publishApplyDto.getTargetId());
@@ -651,6 +830,16 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             skillDomainService.update(skillConfig);
         }
 
+        if (publishApply.getTargetType() == Published.TargetType.UserApp) {
+            iUserAppRpcService.updatePublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Applying,
+                    currentUserContext());
+        }
+
+        if (publishApply.getTargetType() == Published.TargetType.ThirdApp) {
+            iUserProjectRpcService.updateThirdAppPublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Applying,
+                    currentUserContext());
+        }
+
         return publishApply.getId();
     }
 
@@ -680,6 +869,22 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             });
             return;
         }
+        //审核通过/直接发布路径的前置复检（防提交后部署状态变化或守卫上线前的存量单子），先于任何写入与通知
+        if (targetType == Published.TargetType.UserApp) {
+            iUserAppRpcService.checkPublishPrecondition(targetId);
+        }
+        //三方应用复检：防提交后凭证被清或源行被删
+        if (targetType == Published.TargetType.ThirdApp) {
+            iUserProjectRpcService.checkThirdAppPublishPrecondition(targetId);
+        }
+        //网页应用（PageApp）复检：防提交后页面项目被删或从未构建
+        AgentConfig targetAgentConfig = null;
+        if (targetType == Published.TargetType.Agent) {
+            targetAgentConfig = agentDomainService.queryById(targetId);
+            if (targetAgentConfig != null && Published.TargetSubType.PageApp.name().equals(targetAgentConfig.getType())) {
+                customPageRpcService.checkPageAppPublishPrecondition(targetId);
+            }
+        }
 
         Long groupId;
         ResourceGroupRelation resourceGroupRelation = resourceGroupApplicationService.queryResourceGroupRelation(targetType.name(), targetId);
@@ -690,13 +895,8 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         }
 
         Integer accessControlStatus;
-        if (targetType == Published.TargetType.Agent) {
-            AgentConfig agentConfig = agentDomainService.queryById(targetId);
-            if (agentConfig != null) {
-                accessControlStatus = agentConfig.getAccessControl();
-            } else {
-                accessControlStatus = 0;
-            }
+        if (targetAgentConfig != null) {
+            accessControlStatus = targetAgentConfig.getAccessControl();
         } else {
             accessControlStatus = 0;
         }
@@ -830,11 +1030,21 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             skillConfig.setModified(now);
             skillDomainService.update(skillConfig);
         }
+
+        if (publishApply.getTargetType() == Published.TargetType.UserApp) {
+            iUserAppRpcService.updatePublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Published,
+                    currentUserContext());
+        }
+
+        if (publishApply.getTargetType() == Published.TargetType.ThirdApp) {
+            iUserProjectRpcService.updateThirdAppPublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Published,
+                    currentUserContext());
+        }
     }
 
     @Override
     public String publishOrApply(PublishApplySubmitDto publishApplySubmitDto) {
-        //整体有两个地方做权限校验，一是校验有没有权限发布出去；而是校验有没有目标空间的发布权限
+        //整体有两个地方做权限校验，一是校验有没有权限发布出去；二是校验有没有目标空间的发布权限
         Object targetConfig = checkPermissionAndReturnTargetConfig(publishApplySubmitDto.getTargetType(), publishApplySubmitDto.getTargetId());
         // 按目标类型校验资源权限
         checkPublishResourcePermission(publishApplySubmitDto.getTargetType(), targetConfig);
@@ -898,6 +1108,10 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
                     && publishApplySubmitDto.getItems().stream().anyMatch(item -> item.getScope() == Published.PublishScope.Tenant)) {
                 throw new BizException(I18nUtil.systemMessage("Backend.Publish.AgentPrivateCannotPublishToSquare"));
             }
+            //网页应用（PageApp）发布前置校验：须已成功构建（build_running=1）
+            if (AgentConfigDto.AgentType.PageApp.name().equals(agentConfigDto.getType())) {
+                customPageRpcService.checkPageAppPublishPrecondition(publishApplySubmitDto.getTargetId());
+            }
             Map<String, Object> ext0 = new HashMap<>();
             ext0.put("agentType", agentConfigDto.getSubType());
             ext = ext0;
@@ -960,6 +1174,45 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             spaceId = skillConfigDto.getSpaceId();
             publishAudit = tenantConfigDto.getSkillPublishAudit();
         }
+        if (publishApplySubmitDto.getTargetType() == Published.TargetType.UserApp) {
+            assert targetConfig instanceof UserAppDto;
+            UserAppDto userAppDto = (UserAppDto) targetConfig;
+            // 发布前提：已部署生产环境，发布当前部署的版本（不要求最新版本：
+            BuildVersionDto deployedVersion = iUserAppRpcService.checkPublishPrecondition(publishApplySubmitDto.getTargetId());
+            name = userAppDto.getName();
+            description = userAppDto.getDescription();
+            icon = userAppDto.getIcon();
+            spaceId = userAppDto.getSpaceId();
+            publishAudit = tenantConfigDto.getAgentPublishAudit();
+            Map<String, Object> ext0 = new HashMap<>();
+            ext0.put("releaseId", deployedVersion.getVersion());
+            ext0.put("packageUrl", deployedVersion.getPackageUrl());
+            ext = ext0;
+            // 自建应用不支持复制/仅模板
+            for (PublishApplySubmitDto.PublishItem publishItem : publishApplySubmitDto.getItems()) {
+                publishItem.setAllowCopy(0);
+                publishItem.setOnlyTemplate(0);
+            }
+        }
+        if (publishApplySubmitDto.getTargetType() == Published.TargetType.ThirdApp) {
+            assert targetConfig instanceof UserProjectDto;
+            UserProjectDto thirdAppDto = (UserProjectDto) targetConfig;
+            // 前置校验（OAuth2 凭证已生成）统一在 publishApply/publish 两个咽喉点执行，此处不再重复
+            name = thirdAppDto.getName();
+            description = thirdAppDto.getDescription();
+            icon = thirdAppDto.getIcon();
+            spaceId = thirdAppDto.getSpaceId();
+            publishAudit = tenantConfigDto.getAgentPublishAudit();
+            Map<String, Object> ext0 = new HashMap<>();
+            ext0.put("clientId", thirdAppDto.getOauthClientId());
+            ext0.put("homepageUrl", thirdAppDto.getHomepageUrl());
+            ext = ext0;
+            // 三方应用不支持复制/仅模板
+            for (PublishApplySubmitDto.PublishItem publishItem : publishApplySubmitDto.getItems()) {
+                publishItem.setAllowCopy(0);
+                publishItem.setOnlyTemplate(0);
+            }
+        }
 
         List<Long> userSpaceIds = obtainAuthSpaceIds();
         //参数检查
@@ -1019,6 +1272,14 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             publishApplyDto.setTargetType(publishApplySubmitDto.getTargetType());
             if (agentType != null) {
                 publishApplyDto.setTargetSubType(Published.TargetSubType.valueOf(agentType));
+            }
+            if (publishApplySubmitDto.getTargetType() == Published.TargetType.UserApp) {
+                //全栈应用发布时记录子类型UserApp
+                publishApplyDto.setTargetSubType(Published.TargetSubType.UserApp);
+            }
+            if (publishApplySubmitDto.getTargetType() == Published.TargetType.ThirdApp) {
+                //三方应用发布时记录子类型ThirdApp
+                publishApplyDto.setTargetSubType(Published.TargetSubType.ThirdApp);
             }
             publishApplyDto.setTargetId(publishApplySubmitDto.getTargetId());
             publishApplyDto.setChannels(List.of(Published.PublishChannel.System));
@@ -1202,6 +1463,16 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             skillDomainService.update(skillConfig);
         }
 
+        if (publishApply.getTargetType() == Published.TargetType.UserApp) {
+            iUserAppRpcService.updatePublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Developing,
+                    currentUserContext());
+        }
+
+        if (publishApply.getTargetType() == Published.TargetType.ThirdApp) {
+            iUserProjectRpcService.updateThirdAppPublishStatus(publishApply.getTargetId(), UserAppPublishStatus.Developing,
+                    currentUserContext());
+        }
+
     }
 
     @Override
@@ -1210,11 +1481,12 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
         if (published == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishIdInvalid);
         }
-        publishDomainService.deleteByPublishedId(offShelfDto.getPublishId());
 
-        // 判断是否已全部下架，如果所有渠道都已下架，则修改状态为开发中
+        // 判断删掉本条后是否已全部下架
+        // 全下架时先回写源状态（UserApp 含停生产），成功后再删发布记录：
+        // 回写失败时记录未动，下架可整体重试；两侧更新均幂等，重试不会重复执行副作用
         List<Published> publishedList = publishDomainService.queryPublishedList(published.getTargetType(), List.of(published.getTargetId()));
-        if (publishedList.size() == 0) {
+        if (publishedList.size() <= 1) {
             if (published.getTargetType() == Published.TargetType.Agent) {
                 agentDomainService.update(AgentConfig.builder().id(published.getTargetId()).publishStatus(Published.PublishStatus.Developing).build());
             }
@@ -1238,7 +1510,18 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
                 skillConfig.setId(published.getTargetId());
                 skillDomainService.update(skillConfig);
             }
+
+            if (published.getTargetType() == Published.TargetType.UserApp) {
+                iUserAppRpcService.updatePublishStatus(published.getTargetId(), UserAppPublishStatus.Developing,
+                        currentUserContext());
+            }
+
+            if (published.getTargetType() == Published.TargetType.ThirdApp) {
+                iUserProjectRpcService.updateThirdAppPublishStatus(published.getTargetId(), UserAppPublishStatus.Developing,
+                        currentUserContext());
+            }
         }
+        publishDomainService.deleteByPublishedId(offShelfDto.getPublishId());
 
         UserDto userDto = userApplicationService.queryById(published.getUserId());
         Map<String, String> langMap = userDto == null ? RequestContext.get().getLangMap() : userDto.getLangMap();
@@ -1333,9 +1616,27 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
     }
 
     @Override
+    public void deleteByTarget(Published.TargetType targetType, Long targetId) {
+        publishDomainService.deleteByTargetId(targetType, targetId);
+    }
+
+    @Override
+    public int deleteTargetRelations(Published.TargetType targetType, Long targetId) {
+        return userTargetRelationDomainService.deleteByTarget(targetType, targetId);
+    }
+
+    @Override
     public PublishedPermissionDto hasPermission(Published.TargetType targetType, Long targetId) {
-        PublishedPermissionDto publishedPermissionDto = new PublishedPermissionDto();
         if (RequestContext.get() == null || RequestContext.get().getUserId() == null) {
+            return new PublishedPermissionDto();
+        }
+        return hasPermission(RequestContext.get().getUserId(), targetType, targetId);
+    }
+
+    @Override
+    public PublishedPermissionDto hasPermission(Long userId, Published.TargetType targetType, Long targetId) {
+        PublishedPermissionDto publishedPermissionDto = new PublishedPermissionDto();
+        if (userId == null) {
             return publishedPermissionDto;
         }
         UserDto userDto = (UserDto) RequestContext.get().getUser();
@@ -1345,7 +1646,7 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             publishedPermissionDto.setCopy(true);
             return publishedPermissionDto;
         }
-        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
+        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(userId);
         //提取spaceDtos中的id转set
         Set<Long> spaceIds = spaceDtos.stream().map(SpaceDto::getId).collect(Collectors.toSet());
         List<Published> publishedList = publishDomainService.queryPublishedList(targetType, List.of(targetId));
@@ -1411,11 +1712,25 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             resourceCode = COMPONENT_LIB_PUBLISH.getCode();
         } else if (targetType == Published.TargetType.Skill) {
             resourceCode = SKILL_PUBLISH.getCode();
+        } else if (targetType == Published.TargetType.UserApp) {
+            resourceCode = USER_APP_PUBLISH.getCode();
+        } else if (targetType == Published.TargetType.ThirdApp) {
+            resourceCode = THIRD_APP_PUBLISH.getCode();
         }
 
         if (resourceCode != null) {
             sysUserPermissionCacheService.checkResourcePermissionAny(userId, List.of(resourceCode));
         }
+    }
+
+    /**
+     * 跨模块回写 UserApp 发布状态用的用户上下文
+     */
+    private UserContext currentUserContext() {
+        return UserContext.builder()
+                .userId(RequestContext.get().getUserId())
+                .tenantId(RequestContext.get().getTenantId())
+                .build();
     }
 
     public Object checkPermissionAndReturnTargetConfig(Published.TargetType targetType, Long targetId) {
@@ -1459,6 +1774,24 @@ public class PublishApplicationServiceImpl implements PublishApplicationService 
             spaceId = skillConfigDto.getSpaceId();
             creatorId = skillConfigDto.getCreatorId();
             targetConfig = skillConfigDto;
+        }
+        if (targetType == Published.TargetType.UserApp) {
+            UserAppDto userAppDto = iUserAppRpcService.queryById(targetId);
+            if (userAppDto == null) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.userappProjectNotFound);
+            }
+            spaceId = userAppDto.getSpaceId();
+            creatorId = userAppDto.getCreatorId();
+            targetConfig = userAppDto;
+        }
+        if (targetType == Published.TargetType.ThirdApp) {
+            UserProjectDto thirdAppDto = iUserProjectRpcService.queryById(targetId);
+            if (thirdAppDto == null || thirdAppDto.getProjectType() != ProjectTypeEnum.ThirdApp) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.userappProjectNotFound);
+            }
+            spaceId = thirdAppDto.getSpaceId();
+            creatorId = thirdAppDto.getCreatorId();
+            targetConfig = thirdAppDto;
         }
         Assert.notNull(spaceId, "spaceId is required");
         SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(spaceId, RequestContext.get().getUserId());

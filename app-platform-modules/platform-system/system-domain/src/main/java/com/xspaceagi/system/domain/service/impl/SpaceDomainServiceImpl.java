@@ -92,6 +92,19 @@ public class SpaceDomainServiceImpl implements SpaceDomainService {
     }
 
     @Override
+    public List<Space> queryListByIdsAndTypes(List<Long> spaceIds, List<Space.Type> types) {
+        Assert.notNull(spaceIds, "spaceIds must be non-null");
+        if (spaceIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Assert.notEmpty(types, "types must be non-empty");
+        LambdaQueryWrapper<Space> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Space::getId, spaceIds);
+        queryWrapper.in(Space::getType, types);
+        return spaceService.list(queryWrapper);
+    }
+
+    @Override
     public List<SpaceUser> querySpaceUserList(Long spaceId) {
         Assert.notNull(spaceId, "spaceId must be non-null");
         LambdaQueryWrapper<SpaceUser> queryWrapper = new LambdaQueryWrapper<>();

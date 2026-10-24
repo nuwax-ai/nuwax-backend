@@ -7,6 +7,7 @@ import com.xspaceagi.credit.sdk.dto.CreditRequest;
 import com.xspaceagi.credit.sdk.dto.UserCreditSummary;
 import com.xspaceagi.credit.sdk.rpc.ICreditRpcService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,11 @@ public class CreditRpcService implements ICreditRpcService {
 
     @Resource
     private CreditService creditService;
+
+    @Override
+    public boolean bizNoAdded(String bizNo) {
+        return TenantFunctions.callWithIgnoreCheck(() -> creditService.bizNoAdded(bizNo));
+    }
 
     @Override
     public String addCredit(CreditAddRequest request) {

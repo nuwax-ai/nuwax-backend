@@ -20,30 +20,30 @@ public class ComputerPodDomainServiceImpl implements ComputerPodDomainService {
     private ComputerPodClient computerPodClient;
 
     @Override
-    public ComputerPodResultDto ensurePod(Long cId, Long userId) {
+    public ComputerPodResultDto ensurePod(Long cId, Long userId, String appStage) {
         checkParams(cId, userId, "ensurePod");
-        Map<String, Object> result = computerPodClient.ensurePod(cId, userId);
+        Map<String, Object> result = computerPodClient.ensurePod(cId, userId, appStage);
         return parseResult(result, "ensurePod", cId, userId);
     }
 
     @Override
-    public ComputerPodResultDto keepalive(Long cId, Long userId) {
+    public ComputerPodResultDto keepalive(Long cId, Long userId, String appStage) {
         checkParams(cId, userId, "keepalive");
-        Map<String, Object> result = computerPodClient.keepalive(cId, userId);
+        Map<String, Object> result = computerPodClient.keepalive(cId, userId, appStage);
         return parseResult(result, "keepalive", cId, userId);
     }
 
     @Override
-    public ComputerPodResultDto restart(Long cId, Long userId) {
+    public ComputerPodResultDto restart(Long cId, Long userId, String appStage) {
         checkParams(cId, userId, "restart");
-        Map<String, Object> result = computerPodClient.restart(cId, userId);
+        Map<String, Object> result = computerPodClient.restart(cId, userId, appStage);
         return parseResult(result, "restart", cId, userId);
     }
 
     @Override
-    public ComputerPodResultDto getVncStatus(Long cId, Long userId) {
+    public ComputerPodResultDto getVncStatus(Long cId, Long userId, String appStage) {
         checkParams(cId, userId, "getVncStatus");
-        Map<String, Object> result = computerPodClient.getVncStatus(cId, userId);
+        Map<String, Object> result = computerPodClient.getVncStatus(cId, userId, appStage);
         return parseResult(result, "getVncStatus", cId, userId);
     }
 

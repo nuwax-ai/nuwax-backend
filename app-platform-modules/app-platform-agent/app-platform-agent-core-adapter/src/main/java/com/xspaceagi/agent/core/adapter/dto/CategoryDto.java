@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.adapter.dto;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.xspaceagi.agent.core.spec.enums.AgentCategoryEnum;
 import com.xspaceagi.agent.core.spec.enums.PageAppCategoryEnum;
+import com.xspaceagi.agent.core.spec.enums.SkillCategoryEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -50,6 +51,16 @@ public class CategoryDto implements Serializable {
             categoryDto.setName(pluginCategoryEnum.getName());
             categoryDto.setDescription(pluginCategoryEnum.getDesc());
             return categoryDto;
+        }).collect(Collectors.toList());
+    }
+
+    public static List<CategoryDto> convertSkillCategoryList() {
+        SkillCategoryEnum[] skillCategoryEnums = SkillCategoryEnum.values();
+        return List.of(skillCategoryEnums).stream().map(skillCategoryEnum -> {
+            CategoryDto skillCategoryDto = new CategoryDto();
+            skillCategoryDto.setName(skillCategoryEnum.getName());
+            skillCategoryDto.setDescription(skillCategoryEnum.getDesc());
+            return skillCategoryDto;
         }).collect(Collectors.toList());
     }
 

@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.core.application.service;
 
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
@@ -35,6 +36,9 @@ public class ConversationTaskExecuteServiceImpl implements TaskExecuteService {
     private ConversationApplicationService conversationApplicationService;
 
     @Resource
+    private ChatApplicationService chatApplicationService;
+
+    @Resource
     private UserApplicationService userApplicationService;
 
     @Resource
@@ -54,6 +58,9 @@ public class ConversationTaskExecuteServiceImpl implements TaskExecuteService {
         RequestContext requestContext = new RequestContext<>();
         requestContext.setTenantId(Long.parseLong(params.getOrDefault("tenantId", "1").toString()));
         requestContext.setTenantConfig(tenantConfigApplicationService.getTenantConfig(requestContext.getTenantId()));
+        // 任务到点执行时平台不注入任何 IM_* 变量，下游要靠这个来源标记认出「这是一次任务触发的运行」，
+        // 才能从会话变量里复原建任务时存下的 IM 上下文（见 ChatApplicationServiceImpl 对 imVars 的分流）。
+        requestContext.setFrom("task");
         RequestContext.set(requestContext);
         ConversationDto conversation = conversationApplicationService.getConversation(null, Long.parseLong(params.get("id").toString()));
         if (conversation == null) {
@@ -83,7 +90,7 @@ public class ConversationTaskExecuteServiceImpl implements TaskExecuteService {
             requestContext.setUser(userDto);
             RequestContext.get().setUserId(userDto.getId());
             AtomicBoolean retry = new AtomicBoolean(false);
-            conversationApplicationService.chat(tryReqDto, new HashMap<>(), false).doOnComplete(() -> {
+            chatApplicationService.chat(tryReqDto, new HashMap<>(), false).doOnComplete(() -> {
                 log.debug("ConversationTaskExecuteServiceImpl.execute() - doOnComplete {}=>{}", conversation.getId(), conversation.getTopic());
                 if (!retry.get()) {
                     sink.success(false);

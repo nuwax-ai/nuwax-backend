@@ -20,6 +20,8 @@ public class UsageDto {
     private Usage newAgentUsage;
     @Schema(description = "可创建网页应用数量")
     private Usage newPageAppUsage;
+    @Schema(description = "可创建全栈应用数量")
+    private Usage newUserAppUsage;
     @Schema(description = "可创建知识库数量")
     private Usage newKnowledgeBaseUsage;
     @Schema(description = "知识库存储上限")

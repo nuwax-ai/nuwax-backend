@@ -7,7 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum BizTypeEnum {
     CREDIT_PURCHASE("CreditPurchase", "积分购买"),
-    SUBSCRIPTION("Subscription", "订阅");
+    SUBSCRIPTION("Subscription", "订阅"),
+    DESK_BUDDY("DeskBuddy", " 桌搭");
 
     private final String code;
     private final String desc;

@@ -56,8 +56,21 @@ public class Conversation {
 
     private String sandboxSessionId;
     private Long devSpaceId;
+    /** 开发目标类型，@com.xspaceagi.system.spec.enums.ProjectTypeEnum */
     private String devTargetType;
     private String devTargetId;
+
+    /** 文件访问路径（file server/主容器视角；NULL=老数据走兼容逻辑） */
+    private String fileWorkspacePath;
+
+    /** agent 执行路径（执行容器内视角；NULL=老数据走兼容逻辑） */
+    private String agentWorkspacePath;
+
+    /** 置顶标记 */
+    private Boolean pinned;
+
+    /** 归档标记 */
+    private Boolean archived;
 
     private Date modified;
 
@@ -69,7 +82,9 @@ public class Conversation {
         TASK,
         TaskCenter,
         Development,
-        DevDebug
+        DevDebug,
+        IM,
+        Repo
     }
 
     public enum ConversationTaskStatus {

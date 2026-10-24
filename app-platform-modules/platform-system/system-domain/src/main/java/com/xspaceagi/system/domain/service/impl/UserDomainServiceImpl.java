@@ -37,7 +37,7 @@ public class UserDomainServiceImpl implements UserDomainService {
         if (StringUtils.isNotBlank(user.getPassword())) {
             user.setPassword(MD5.StrongMD5Encode(user.getPassword()));
         }
-        userService.updateById(user);
+        TenantFunctions.runWithIgnoreCheck(() -> userService.updateById(user));
     }
 
     @Override
@@ -47,12 +47,7 @@ public class UserDomainServiceImpl implements UserDomainService {
 
     @Override
     public User queryById(Long userId) {
-        RequestContext.addTenantIgnoreEntity(User.class);
-        try {
-            return userService.getById(userId);
-        } finally {
-            RequestContext.removeTenantIgnoreEntity(User.class);
-        }
+        return TenantFunctions.callWithIgnoreCheck(() -> userService.getById(userId));
     }
 
     @Override
@@ -107,9 +102,36 @@ public class UserDomainServiceImpl implements UserDomainService {
     }
 
     @Override
+    public List<User> searchUsers(String kw, int limit) {
+        if (StringUtils.isBlank(kw) || limit <= 0) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.and(w -> w.like(User::getUserName, kw.trim())
+                .or().like(User::getNickName, kw.trim()));
+        // 只返回自然人：选人场景（仓库分享/沙箱仓库）不应出现智能体或群代理等虚拟主体
+        queryWrapper.eq(User::getAccountType, User.ACCOUNT_TYPE_USER);
+        queryWrapper.orderByAsc(User::getId);
+        queryWrapper.last("limit " + limit);
+        return userService.list(queryWrapper);
+    }
+
+    @Override
+    public User queryByPrincipal(Long tenantId, String accountType, String principalRefId) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getTenantId, tenantId);
+        queryWrapper.eq(User::getAccountType, accountType);
+        queryWrapper.eq(User::getPrincipalRefId, principalRefId);
+        return userService.getOne(queryWrapper, false);
+    }
+
+    @Override
     public List<Long> queryUserIdList(Long lastId, Integer size) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.lt(User::getId, lastId);
+        // 只返回自然人：本方法用于全量广播遍历，会按返回的 id 逐个写通知行并推送事件，
+        // 虚拟身份（智能体/群代理）不接收站内通知
+        queryWrapper.eq(User::getAccountType, User.ACCOUNT_TYPE_USER);
         queryWrapper.orderByDesc(User::getId);
         queryWrapper.select(User::getId, User::getUserName);
         queryWrapper.last("limit " + size);

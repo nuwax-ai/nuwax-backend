@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Builder
@@ -22,6 +23,8 @@ public class TargetRecommendResponse {
     private String label;
     private String icon;
     private String placeholder;
+    private String category;
+    private List<RecommendPrompt> prompts;
     private Integer sort;
     private Date modified;
     private Date created;

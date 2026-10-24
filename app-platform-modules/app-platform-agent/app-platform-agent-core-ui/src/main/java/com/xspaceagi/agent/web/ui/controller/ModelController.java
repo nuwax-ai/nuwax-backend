@@ -102,6 +102,24 @@ public class ModelController {
         return ReqResult.success(modelDtos);
     }
 
+    @RequireResource(COMPONENT_LIB_QUERY_LIST)
+    @Operation(summary = "查询个人空间下模型列表接口")
+    @RequestMapping(path = "/list/personal", method = RequestMethod.POST)
+    public ReqResult<List<ModelConfigDto>> queryPersonalModelList() {
+        // 个人空间由当前登录用户解析，无需额外空间权限校验
+        List<ModelConfigDto> modelDtos = modelApplicationService.queryPersonalModelList(RequestContext.get().getUserId());
+        return ReqResult.success(modelDtos);
+    }
+
+    @RequireResource(COMPONENT_LIB_QUERY_LIST)
+    @Operation(summary = "查询全部团队空间下模型列表接口（含团队名称）")
+    @RequestMapping(path = "/list/team", method = RequestMethod.POST)
+    public ReqResult<List<ModelConfigDto>> queryTeamModelList() {
+        // 只返回当前用户所属团队空间的模型，越权范围由成员关系天然收敛
+        List<ModelConfigDto> modelDtos = modelApplicationService.queryTeamModelList(RequestContext.get().getUserId());
+        return ReqResult.success(modelDtos);
+    }
+
     @Operation(summary = "测试模型连通性")
     @RequestMapping(path = "/test-connectivity", method = RequestMethod.POST)
     public ReqResult<Boolean> testConnectivity(@RequestBody @Valid ModelConfigAddDto modelConfigAddDto) {

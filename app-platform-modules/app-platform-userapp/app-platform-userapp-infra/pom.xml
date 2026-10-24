@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-userapp</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-userapp-infra</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-spec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-adapter</artifactId>
+        </dependency>
+        <!-- ICommonTranslator + MyBatis-Plus -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-infra</artifactId>
+        </dependency>
+        <!-- SandboxServerConfigService（云端沙箱分配） -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-infra</artifactId>
+        </dependency>
+        <!-- ISandboxConfigRpcService（沙箱配置查询） -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-sandbox-sdk</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -19,6 +19,7 @@
         <module>app-platform-eco-market</module>
         <module>app-platform-mcp</module>
         <module>app-platform-custom-page</module>
+        <module>app-platform-userapp</module>
         <module>app-platform-sandbox</module>
         <module>app-platform-model-proxy</module>
         <module>app-platform-memory</module>
@@ -29,6 +30,8 @@
         <module>app-platform-pay</module>
         <module>app-platform-bill</module>
         <module>app-platform-file</module>
+        <module>app-platform-connector</module>
+        <module>app-platform-repo</module>
     </modules>
     <dependencies>
         <dependency>

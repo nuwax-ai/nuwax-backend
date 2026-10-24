@@ -310,7 +310,7 @@ public class AgentExecutor extends BaseComponent {
         Consumer<AgentOutputDto> outputConsumer = agentContext.getOutputConsumer();
         agentContext.setOutputConsumer((agentOutputDto) -> {
             if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.MESSAGE && agentOutputDto.getData() instanceof ChatMessageDto) {
-                msgSb.append(((ChatMessageDto) agentOutputDto.getData()).getText());
+                msgSb.append(StringUtils.defaultString(((ChatMessageDto) agentOutputDto.getData()).getText()));
             }
             if (outputConsumer != null) {
                 outputConsumer.accept(agentOutputDto);
@@ -337,9 +337,9 @@ public class AgentExecutor extends BaseComponent {
                         return;
                     }
                     if (res.getType() == MessageTypeEnum.THINK) {
-                        reasoningText.append(res.getText());
+                        reasoningText.append(StringUtils.defaultString(res.getText()));
                     } else {
-                        msgSb.append(res.getText());
+                        msgSb.append(StringUtils.defaultString(res.getText()));
                     }
                     Sinks.EmitResult emitResult = sink.tryEmitNext(buildOutputMessage(agentContext, res));
                     if (emitResult.isFailure()) {
@@ -379,6 +379,10 @@ public class AgentExecutor extends BaseComponent {
             return;
         }
         agentContext.getFinished().set(true);
+        // TimeoutException 等异常的 message 可能为 null，这里兜底为可读文案，避免正文出现字面量 "null"
+        String errorMessage = StringUtils.defaultIfBlank(e.getMessage(),
+                I18nUtil.systemMessage(agentContext.getUser() == null ? null : agentContext.getUser().getLangMap(),
+                        "Backend.Sandbox.Error.InternalError"));
         if (StringUtils.isNotBlank(message)) {
             ChatMessageDto assistantMessage = ChatMessageDto.builder()
                     .tenantId(agentContext.getAgentConfig().getTenantId())
@@ -397,7 +401,7 @@ public class AgentExecutor extends BaseComponent {
             addRoundMessage(agentContext, assistantMessage);
         } else {
             CallMessage callMessage = new CallMessage();
-            callMessage.setText("```\n" + e.getMessage() + "\n```");
+            callMessage.setText("```\n" + errorMessage + "\n```");
             callMessage.setType(MessageTypeEnum.CHAT);
             callMessage.setRole(ChatMessageDto.Role.ASSISTANT);
             callMessage.setId(agentContext.getRequestId());
@@ -417,10 +421,10 @@ public class AgentExecutor extends BaseComponent {
         log.error("Agent execution failed", e);
         agentContext.getAgentExecuteResult().setEndTime(System.currentTimeMillis());
         agentContext.getAgentExecuteResult().setSuccess(false);
-        agentContext.getAgentExecuteResult().setError(e.getMessage());
+        agentContext.getAgentExecuteResult().setError(errorMessage);
         agentContext.getAgentExecuteResult().setOutputText(message);
         AgentOutputDto agentOutputDto = buildFinalResultOutput(agentContext);
-        agentOutputDto.setError(e.getMessage());
+        agentOutputDto.setError(errorMessage);
         sink.tryEmitNext(agentOutputDto);
         sink.tryEmitError(e);
     }

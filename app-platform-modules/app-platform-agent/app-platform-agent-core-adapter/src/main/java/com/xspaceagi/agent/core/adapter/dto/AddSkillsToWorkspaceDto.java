@@ -21,11 +21,14 @@ public class AddSkillsToWorkspaceDto implements Serializable {
     @Schema(description = "用户ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long userId;
 
+    @Schema(description = "智能体ID", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Long agentId;
+
     @NotNull
     @JsonProperty("cId")
     @Schema(description = "会话ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long cId;
 
-    @Schema(description = "技能ID列表", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "技能列表", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<SkillConfigDto> skillConfigs;
 }

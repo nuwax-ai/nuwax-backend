@@ -8,8 +8,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -183,7 +185,8 @@ public class ImOutputProcessor {
     }
 
     private static List<FileEntry> fetchFileEntries(Long userId, Long conversationId,
-                                                    IComputerFileApplicationService computerFileApplicationService) {
+                                                    IComputerFileApplicationService computerFileApplicationService,
+                                                    boolean recursive) {
         List<FileEntry> entries = new ArrayList<>();
         if (conversationId == null || userId == null || computerFileApplicationService == null) {
             return entries;
@@ -191,7 +194,8 @@ public class ImOutputProcessor {
 
         try {
             String proxyPath = String.format("/api/computer/static/%s", conversationId);
-            Map<String, Object> result = computerFileApplicationService.getFileList(userId, conversationId, proxyPath, null, null);
+            Map<String, Object> result = computerFileApplicationService.getFileList(
+                    userId, conversationId, proxyPath, null, null, null, Boolean.valueOf(recursive), null, null, null);
             if (result == null) {
                 return entries;
             }
@@ -235,10 +239,170 @@ public class ImOutputProcessor {
                 entries.add(new FileEntry(normalizedName, basename, proxyUrl));
             }
         } catch (Exception e) {
-            log.warn("[fetchFileEntries] Failed to list files: userId={}, conversationId={}, error={}",
-                    userId, conversationId, e.getMessage());
+            log.warn("[fetchFileEntries] Failed to list files: userId={}, conversationId={}, recursive={}, error={}",
+                    userId, conversationId, recursive, e.getMessage());
         }
         return entries;
+    }
+
+    /**
+     * 从文本中收集文件候选 token（与后续替换用的正则一致）
+     */
+    private static Set<String> collectFileCandidateTokens(String text) {
+        Set<String> tokens = new LinkedHashSet<>();
+        if (StringUtils.isBlank(text)) {
+            return tokens;
+        }
+        Matcher tagMatcher = FILE_TAG_PATTERN.matcher(text);
+        while (tagMatcher.find()) {
+            tokens.add(tagMatcher.group(1));
+        }
+        Matcher pathMatcher = FILE_PATH_PATTERN.matcher(text);
+        while (pathMatcher.find()) {
+            tokens.add(pathMatcher.group());
+        }
+        Matcher nameMatcher = FILE_NAME_PREFIX_PATTERN.matcher(text);
+        while (nameMatcher.find()) {
+            tokens.add(nameMatcher.group(2));
+        }
+        Matcher backtickMatcher = BACKTICK_FILE_PATTERN.matcher(text);
+        while (backtickMatcher.find()) {
+            tokens.add(backtickMatcher.group(1));
+        }
+        Matcher markdownLinkMatcher = MARKDOWN_LINK_CAPTURE_PATTERN.matcher(text);
+        while (markdownLinkMatcher.find()) {
+            String href = markdownLinkMatcher.group(2);
+            if (StringUtils.isBlank(href)) {
+                continue;
+            }
+            String hrefTrim = href.trim();
+            if (hrefTrim.startsWith("http://") || hrefTrim.startsWith("https://")
+                    || hrefTrim.startsWith("mailto:") || hrefTrim.startsWith("#")) {
+                continue;
+            }
+            tokens.add(hrefTrim);
+        }
+        return tokens;
+    }
+
+    private static boolean looksLikeFilePath(String token) {
+        if (StringUtils.isBlank(token)) {
+            return false;
+        }
+        String t = token.trim();
+        return t.contains("/") || t.contains("\\") || t.matches("(?i)^[A-Z]:[\\\\/].*");
+    }
+
+    /**
+     * 直出：调用 resolve-file，文件存在则返回 FileEntry
+     */
+    private static FileEntry tryResolveDirect(Long userId, Long conversationId, String proxyPath, String rawToken,
+                                              IComputerFileApplicationService computerFileApplicationService) {
+        if (userId == null || conversationId == null || computerFileApplicationService == null || StringUtils.isBlank(rawToken)) {
+            return null;
+        }
+        String token = stripWrapping(rawToken);
+        if (StringUtils.isBlank(token)) {
+            return null;
+        }
+        try {
+            Map<String, Object> result = computerFileApplicationService.resolveExistingFile(
+                    userId, conversationId, proxyPath, token, null);
+            if (result == null || !isTruthyExists(result.get("exists"))) {
+                return null;
+            }
+            Object nameObj = result.get("name");
+            Object proxyObj = result.get("fileProxyUrl");
+            if (nameObj == null || proxyObj == null) {
+                return null;
+            }
+            String name = normalizeRelativePathForCompare(String.valueOf(nameObj));
+            String proxyUrl = String.valueOf(proxyObj);
+            String basename = extractFilename(name);
+            if (StringUtils.isBlank(name) || StringUtils.isBlank(proxyUrl) || StringUtils.isBlank(basename)) {
+                return null;
+            }
+            return new FileEntry(name, basename, proxyUrl);
+        } catch (Exception e) {
+            log.debug("[tryResolveDirect] resolve failed: token={}, error={}", token, e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean isTruthyExists(Object existsObj) {
+        if (existsObj instanceof Boolean) {
+            return (Boolean) existsObj;
+        }
+        if (existsObj instanceof Number) {
+            return ((Number) existsObj).intValue() != 0;
+        }
+        if (existsObj != null) {
+            return "true".equalsIgnoreCase(String.valueOf(existsObj).trim())
+                    || "1".equals(String.valueOf(existsObj).trim());
+        }
+        return false;
+    }
+
+    /**
+     * 先按路径直出；存在纯文件名候选、或路径直出失败时，再 recursive list 走原匹配逻辑。
+     * 若已有 basename-only 候选，跳过全部 resolve，直接 list，避免无谓 N 次 RPC。
+     */
+    private static void buildFileLookupMaps(String text, Long userId, Long conversationId,
+                                            IComputerFileApplicationService computerFileApplicationService,
+                                            List<FileEntry> fileEntries,
+                                            Map<String, String> proxyByExactName,
+                                            Map<String, String> proxyByBasename) {
+        String proxyPath = String.format("/api/computer/static/%s", conversationId);
+        Set<String> candidates = collectFileCandidateTokens(text);
+
+        List<String> pathCandidates = new ArrayList<>();
+        boolean hasBasenameOnly = false;
+        for (String rawToken : candidates) {
+            String token = stripWrapping(rawToken);
+            if (StringUtils.isBlank(token)) {
+                continue;
+            }
+            if (looksLikeFilePath(token)) {
+                pathCandidates.add(token);
+            } else {
+                hasBasenameOnly = true;
+            }
+        }
+
+        boolean needListFallback = hasBasenameOnly;
+        if (!hasBasenameOnly) {
+            for (String token : pathCandidates) {
+                FileEntry direct = tryResolveDirect(userId, conversationId, proxyPath, token, computerFileApplicationService);
+                if (direct == null) {
+                    needListFallback = true;
+                    break;
+                }
+                fileEntries.add(direct);
+                proxyByExactName.putIfAbsent(direct.name, direct.fileProxyUrl);
+                proxyByBasename.putIfAbsent(direct.basename, direct.fileProxyUrl);
+            }
+        }
+
+        if (!needListFallback) {
+            log.debug("[buildFileLookupMaps] all path candidates resolved directly, skip recursive list");
+            return;
+        }
+
+        // fallback：以 list 结果为准，避免与直出条目重复
+        fileEntries.clear();
+        proxyByExactName.clear();
+        proxyByBasename.clear();
+
+        log.debug("[buildFileLookupMaps] fallback to recursive file-list match, hasBasenameOnly={}", hasBasenameOnly);
+        List<FileEntry> listed = fetchFileEntries(userId, conversationId, computerFileApplicationService, true);
+        for (FileEntry entry : listed) {
+            if (entry == null || StringUtils.isBlank(entry.name) || StringUtils.isBlank(entry.fileProxyUrl)) {
+                continue;
+            }
+            fileEntries.add(entry);
+            proxyByExactName.putIfAbsent(entry.name, entry.fileProxyUrl);
+            proxyByBasename.putIfAbsent(entry.basename, entry.fileProxyUrl);
+        }
     }
 
     private static String toMarkdownLinkIfMatched(String originalToken, List<FileEntry> entries,
@@ -679,8 +843,8 @@ public class ImOutputProcessor {
      * - `文件名:xxx.md`（或 `file name:xxx.md`）
      * <p>
      * 匹配策略：
-     * - 先调用 `file-list` 获取空间下所有文件的 `name` 与 `fileProxyUrl`
-     * - 将识别到的“路径/文件名”与文件列表的 `name`（以及其 basename 后缀）做匹配
+     * - 优先对路径型候选直出（resolve-file 校验存在后生成 fileProxyUrl）
+     * - 直出失败或仅有文件名时，再 recursive file-list 按 name / basename 匹配
      * - 匹配不到时保持原样（不会生成 Markdown 链接）
      * <p>
      */
@@ -701,21 +865,13 @@ public class ImOutputProcessor {
             return text;
         }
 
-        // 预先拉取空间下所有文件名 -> 代理地址，用于后续匹配替换
         // 注意：tenantId/userId/fileShareService 在新逻辑中不再参与“文件链接生成”，保留参数用于兼容老方法签名
-        log.debug("[replaceFileTagsWithUrl] file-list match mode. tenantId={}, userId={}", tenantId, userId);
-        List<FileEntry> fileEntries = fetchFileEntries(userId, conversationId, computerFileApplicationService);
-
+        log.debug("[replaceFileTagsWithUrl] direct-resolve then file-list fallback. tenantId={}, userId={}", tenantId, userId);
+        List<FileEntry> fileEntries = new ArrayList<>();
         Map<String, String> proxyByExactName = new HashMap<>();
         Map<String, String> proxyByBasename = new HashMap<>();
-        for (FileEntry entry : fileEntries) {
-            if (entry == null || StringUtils.isBlank(entry.name) || StringUtils.isBlank(entry.fileProxyUrl)) {
-                continue;
-            }
-            // 同名取第一个，避免覆盖导致不确定行为
-            proxyByExactName.putIfAbsent(entry.name, entry.fileProxyUrl);
-            proxyByBasename.putIfAbsent(entry.basename, entry.fileProxyUrl);
-        }
+        buildFileLookupMaps(text, userId, conversationId, computerFileApplicationService,
+                fileEntries, proxyByExactName, proxyByBasename);
 
         String processed = text;
 

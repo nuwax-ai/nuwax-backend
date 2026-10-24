@@ -19,31 +19,31 @@ public class ComputerPodApplicationServiceImpl implements ComputerPodApplication
     private ComputerPodDomainService computerPodDomainService;
 
     @Override
-    public ComputerPodResultDto ensurePod(Long cId) {
+    public ComputerPodResultDto ensurePod(Long cId, String appStage) {
         Long userId = getCurrentUserId();
-        log.info("[ComputerPodApplication] ensurePod, cId={}, userId={}", cId, userId);
-        return computerPodDomainService.ensurePod(cId, userId);
+        log.info("[ComputerPodApplication] ensurePod, cId={}, userId={}, appStage={}", cId, userId, appStage);
+        return computerPodDomainService.ensurePod(cId, userId, appStage);
     }
 
     @Override
-    public ComputerPodResultDto keepalive(Long cId) {
+    public ComputerPodResultDto keepalive(Long cId, String appStage) {
         Long userId = getCurrentUserId();
-        log.info("[ComputerPodApplication] keepalive, cId={}, userId={}", cId, userId);
-        return computerPodDomainService.keepalive(cId, userId);
+        log.info("[ComputerPodApplication] keepalive, cId={}, userId={}, appStage={}", cId, userId, appStage);
+        return computerPodDomainService.keepalive(cId, userId, appStage);
     }
 
     @Override
-    public ComputerPodResultDto restart(Long cId) {
+    public ComputerPodResultDto restart(Long cId, String appStage) {
         Long userId = getCurrentUserId();
-        log.info("[ComputerPodApplication] restart, cId={}, userId={}", cId, userId);
-        return computerPodDomainService.restart(cId, userId);
+        log.info("[ComputerPodApplication] restart, cId={}, userId={}, appStage={}", cId, userId, appStage);
+        return computerPodDomainService.restart(cId, userId, appStage);
     }
 
     @Override
-    public ComputerPodResultDto getVncStatus(Long cId) {
+    public ComputerPodResultDto getVncStatus(Long cId, String appStage) {
         Long userId = getCurrentUserId();
-        log.info("[ComputerPodApplication] getVncStatus, cId={}, userId={}", cId, userId);
-        return computerPodDomainService.getVncStatus(cId, userId);
+        log.info("[ComputerPodApplication] getVncStatus, cId={}, userId={}, appStage={}", cId, userId, appStage);
+        return computerPodDomainService.getVncStatus(cId, userId, appStage);
     }
 
     private Long getCurrentUserId() {

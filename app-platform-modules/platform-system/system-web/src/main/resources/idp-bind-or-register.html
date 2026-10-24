@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>关联账号</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; color: #1f2329; -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    background: #fff; width: 100%; max-width: 420px; border-radius: 16px; padding: 36px 36px 28px;
+    box-shadow: 0 6px 24px rgba(31, 35, 41, .08), 0 1px 2px rgba(31, 35, 41, .04);
+  }
+  /* 品牌区：居中竖排 */
+  .brand { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 22px; }
+  .brand-icon {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+  }
+  .brand-icon svg { width: 22px; height: 22px; display: block; }
+  .brand-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .brand-text { min-width: 0; }
+  .brand-name { font-size: 15px; font-weight: 600; color: #1f2329; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brand-label { font-size: 11px; color: #8f959e; letter-spacing: .5px; margin-top: 3px; }
+  /* 身份卡片 */
+  .who {
+    display: flex; align-items: center; gap: 12px; background: #f7f8fa; border: 1px solid #f0f1f4;
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 18px;
+  }
+  .who img.avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+  .who .fallback-avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #e8e9ee; color: #646a73; font-size: 14px; font-weight: 600;
+  }
+  .who .info { min-width: 0; }
+  .who .name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who .sub { font-size: 12px; color: #8f959e; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 信息透明区（借鉴授权页的权限明示） */
+  .perms { margin: -8px 0 20px; }
+  .perms-title { font-size: 12px; color: #8f959e; margin-bottom: 4px; }
+  .perms-list { list-style: none; }
+  .perms-list li { font-size: 12px; color: #646a73; line-height: 2; padding-left: 14px; position: relative; }
+  .perms-list li::before {
+    content: ''; position: absolute; left: 2px; top: 11px;
+    width: 4px; height: 4px; border-radius: 50%; background: #c9cbd1;
+  }
+  /* 双行按钮 */
+  .btn {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    border-radius: 10px; border: 1px solid transparent; cursor: pointer;
+    padding: 12px 16px; transition: all .15s ease; margin-bottom: 12px; background: transparent;
+  }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn .btn-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .btn .btn-text { flex: 1; min-width: 0; }
+  .btn .btn-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .btn .btn-desc { font-size: 12px; margin-top: 2px; }
+  .btn-primary { background: #5147ff; color: #fff; }
+  .btn-primary:not(:disabled):hover { background: #433de8; }
+  .btn-primary .btn-icon { background: rgba(255,255,255,.18); }
+  .btn-primary .btn-desc { color: rgba(255,255,255,.72); }
+  .btn-ghost { background: #fff; border-color: #dee0e3; color: #1f2329; }
+  .btn-ghost:not(:disabled):hover { border-color: #5147ff; color: #5147ff; }
+  .btn-ghost .btn-icon { background: #f2f3f5; color: #5147ff; }
+  .btn-ghost:hover .btn-icon { background: #eeeaff; }
+  .btn-ghost .btn-desc { color: #8f959e; }
+  .btn-ghost:hover .btn-desc { color: #7a6ff0; }
+  .badge-rec {
+    font-size: 11px; line-height: 1; padding: 3px 6px; border-radius: 4px;
+    background: rgba(255,255,255,.2); font-weight: 400;
+  }
+  /* 提示与错误 */
+  .tips { border-top: 1px solid #f0f1f4; margin-top: 6px; padding-top: 14px; }
+  .tips p { font-size: 12px; color: #8f959e; line-height: 1.9; }
+  .error-box {
+    display: none; background: #fef1f1; color: #d9394a; border-radius: 8px;
+    font-size: 13px; padding: 10px 12px; margin-bottom: 16px; line-height: 1.6; word-break: break-all;
+  }
+  /* 状态页 */
+  .state { text-align: center; padding: 16px 0 8px; }
+  .state .state-icon {
+    width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    background: #f2f3f5; color: #8f959e;
+  }
+  .state h1 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .state p { font-size: 13px; color: #8f959e; line-height: 1.7; margin-bottom: 24px; }
+  .state .btn-inline {
+    display: inline-block; height: 40px; line-height: 40px; padding: 0 22px; border-radius: 8px;
+    background: #5147ff; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .spinner {
+    width: 26px; height: 26px; margin: 40px auto; border-radius: 50%;
+    border: 3px solid #e8e9ee; border-top-color: #5147ff; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 480px) {
+    .card { padding: 28px 22px 22px; border-radius: 12px; }
+    body { padding: 14px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="spinner" id="loading"></div>
+
+  <div id="content" style="display:none">
+    <div class="brand">
+      <div class="brand-icon" id="brand-icon"></div>
+      <div class="brand-text">
+        <div class="brand-name" id="brand-name"></div>
+        <div class="brand-label">第三方登录</div>
+      </div>
+    </div>
+    <div class="who" id="who"></div>
+    <div class="perms" id="perms" style="display:none">
+      <div class="perms-title">关联后将获取以下信息：</div>
+      <ul class="perms-list" id="perms-list"></ul>
+    </div>
+    <div class="error-box" id="error-box"></div>
+    <button class="btn btn-primary" id="btn-bind">
+      <span class="btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <span class="btn-text">
+        <span class="btn-title">绑定已有账号<span class="badge-rec">推荐</span></span>
+        <span class="btn-desc">已有平台账号，登录后自动关联</span>
+      </span>
+    </button>
+    <button class="btn btn-ghost" id="btn-register">
+      <span class="btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+      <span class="btn-text">
+        <span class="btn-title">注册新账号并登录</span>
+        <span class="btn-desc">以该外部身份创建一个新账号</span>
+      </span>
+    </button>
+    <div class="tips">
+      <p>绑定后，您仍可使用平台账号密码 / 手机号登录；<br>同一个外部账号只能绑定一个平台账号。</p>
+    </div>
+  </div>
+
+  <div id="expired" class="state" style="display:none">
+    <div class="state-icon">⏱</div>
+    <h1>页面已过期</h1>
+    <p>登录会话已失效（30 分钟内未完成），<br>请重新发起登录。</p>
+    <button class="btn-inline" onclick="location.href='/login'">返回登录</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var qs = new URLSearchParams(location.search);
+  var token = qs.get('token') || '';
+  var state = 'loading';
+
+  function $(id) { return document.getElementById(id); }
+
+  function show(which) {
+    $('loading').style.display = which === 'loading' ? 'block' : 'none';
+    $('content').style.display = which === 'content' ? 'block' : 'none';
+    $('expired').style.display = which === 'expired' ? 'block' : 'none';
+  }
+
+  function showError(msg) {
+    var box = $('error-box');
+    if (!msg) { box.style.display = 'none'; return; }
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  function busy(b) {
+    $('btn-bind').disabled = b;
+    $('btn-register').disabled = b;
+  }
+
+  // 仅放行本站相对路径，防开放重定向
+  function safeTarget(target) {
+    if (target && target.charAt(0) === '/' && target.charAt(1) !== '/' && target.charAt(1) !== '\\') {
+      return target;
+    }
+    return '/';
+  }
+
+  function finish(target) {
+    location.replace(safeTarget(target));
+  }
+
+  function api(path, options) {
+    return fetch(path, Object.assign({ credentials: 'include' }, options))
+      .then(function (res) { return res.json(); })
+      .catch(function () { return { code: '-1', message: '网络异常，请稍后重试' }; });
+  }
+
+  // ===== 品牌图标：配置图标 > GitHub 官方 mark > 品牌色块 > 首字符 =====
+  var GITHUB_MARK = '<svg viewBox="0 0 16 16" fill="#24292f"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-2.92-.88-2.92-2.86 0-.63.23-1.15.6-1.55-.06-.15-.26-.77.06-1.6 0 0 .61-.19 1.99.75.57-.16 1.19-.24 1.8-.24.61 0 1.23.08 1.8.24 1.38-.94 1.99-.75 1.99-.75.32.83.12 1.45.06 1.6.37.4.6.92.6 1.55 0 1.99-1.15 2.66-2.93 2.86.3.26.56.76.56 1.54 0 1.11-.01 2.01-.01 2.29 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+
+  var BRAND_CHIPS = [
+    { match: /企业微信|wecom/i, char: '企', color: '#0082ef' },
+    { match: /飞书|feishu/i, char: '飞', color: '#3370ff' },
+    { match: /钉钉|dingtalk/i, char: '钉', color: '#0089ff' },
+    { match: /微信|wechat/i, char: '微', color: '#07c160' }
+  ];
+
+  function renderBrand(info) {
+    var box = $('brand-icon');
+    $('brand-name').textContent = info.providerName || '外部账号';
+    if (info.icon) {
+      var img = document.createElement('img');
+      img.src = info.icon; img.alt = '';
+      img.onerror = function () { renderBrandFallback(info, box); };
+      box.appendChild(img);
+      return;
+    }
+    renderBrandFallback(info, box);
+  }
+
+  function renderBrandFallback(info, box) {
+    var label = (info.providerName || '') ;
+    if (/github/i.test(label)) {
+      box.innerHTML = '<div style="background:#f2f3f5;width:100%;height:100%;display:flex;align-items:center;justify-content:center">' + GITHUB_MARK + '</div>';
+      return;
+    }
+    for (var i = 0; i < BRAND_CHIPS.length; i++) {
+      var chip = BRAND_CHIPS[i];
+      if (chip.match.test(label)) {
+        box.style.background = chip.color;
+        box.style.color = '#fff';
+        box.style.fontSize = '15px';
+        box.style.fontWeight = '600';
+        box.textContent = chip.char;
+        return;
+      }
+    }
+    box.style.background = '#5147ff';
+    box.style.color = '#fff';
+    box.style.fontSize = '15px';
+    box.style.fontWeight = '600';
+    box.textContent = (label.trim().charAt(0) || '·').toUpperCase();
+  }
+
+  function render(info) {
+    renderBrand(info);
+    $('brand-name').textContent = info.providerName || '外部账号';
+    var who = $('who');
+    var name = info.userName;
+    var line = document.createElement('div');
+    line.className = 'info';
+    if (name) {
+      var avatar = document.createElement(info.avatar ? 'img' : 'div');
+      avatar.className = info.avatar ? 'avatar' : 'fallback-avatar';
+      if (info.avatar) {
+        avatar.src = info.avatar;
+        avatar.onerror = function () { avatar.style.display = 'none'; };
+      } else {
+        avatar.textContent = (name.charAt(0) || '·');
+      }
+      var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = name;
+      var sub = document.createElement('div'); sub.className = 'sub';
+      sub.textContent = '将以该' + brandShort(info) + '身份继续';
+      line.appendChild(nm); line.appendChild(sub);
+      who.appendChild(avatar); who.appendChild(line);
+    } else {
+      var nm2 = document.createElement('div'); nm2.className = 'name';
+      nm2.textContent = info.providerName || '外部账号';
+      var sub2 = document.createElement('div'); sub2.className = 'sub';
+      sub2.textContent = '将以该' + brandShort(info) + '身份继续';
+      line.appendChild(nm2); line.appendChild(sub2);
+      var fa = document.createElement('div'); fa.className = 'fallback-avatar';
+      fa.textContent = (info.providerName || '·').charAt(0);
+      who.appendChild(fa); who.appendChild(line);
+    }
+    renderPerms(info);
+  }
+
+  /** 品牌短名：去掉配置名里的「登录」后缀 */
+  function brandShort(info) {
+    return (info.providerName || '外部').replace(/登录\s*$/, '');
+  }
+
+  /** 信息透明区：按外部身份实际携带的信息动态列出（不展示值） */
+  function renderPerms(info) {
+    var items = ['昵称与头像（展示）', '外部用户标识（账号关联）'];
+    if (info.hasEmail) { items.push('邮箱（账号匹配）'); }
+    if (info.hasPhone) { items.push('手机号（账号匹配）'); }
+    var list = $('perms-list');
+    for (var i = 0; i < items.length; i++) {
+      var li = document.createElement('li');
+      li.textContent = items[i];
+      list.appendChild(li);
+    }
+    $('perms').style.display = 'block';
+  }
+
+  function loadInfo() {
+    api('/api/auth/idp/pending/info?token=' + encodeURIComponent(token)).then(function (res) {
+      if (res.code !== '0000' || !res.data) {
+        show('expired');
+        return;
+      }
+      render(res.data);
+      show('content');
+      state = 'ready';
+      // 登录回跳（URL 带 bind=1）：已登录则自动完成绑定，无需再点一次按钮
+      if (qs.get('bind') === '1') {
+        submitBind(true);
+      }
+    });
+  }
+
+  $('btn-register').addEventListener('click', function () {
+    if (state !== 'ready') return;
+    showError('');
+    busy(true);
+    api('/api/auth/idp/pending/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    }).then(function (res) {
+      if (res.code === '0000') {
+        finish(res.data && res.data.redirect);
+      } else {
+        busy(false);
+        showError(res.message || '注册失败，请稍后重试');
+      }
+    });
+  });
+
+  // 绑定提交：auto=登录回跳自动完成（4010 只渲染页面防循环）；手动点击 4010 跳登录并带 bind=1 标记
+  function submitBind(auto) {
+    showError('');
+    busy(true);
+    api('/api/auth/idp/pending/bind', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    }).then(function (res) {
+      if (res.code === '0000') {
+        finish(res.data && res.data.redirect);
+      } else if (res.code === '4010' || res.code === '4011') {
+        if (auto) {
+          // 匿名直达带了 bind=1 的链接：不自动跳登录（防循环），正常渲染页面由用户操作
+          busy(false);
+          return;
+        }
+        // 未登录：跳登录页（local=1 防自动跳 IdP；bind=1 标记登录回跳后自动完成绑定）
+        location.href = '/login?local=1&redirect='
+          + encodeURIComponent(location.pathname + location.search + '&bind=1');
+      } else {
+        busy(false);
+        showError(res.message || '绑定失败，请稍后重试');
+      }
+    });
+  }
+
+  $('btn-bind').addEventListener('click', function () {
+    if (state !== 'ready') return;
+    submitBind(false);
+  });
+
+  if (!token) {
+    show('expired');
+  } else {
+    loadInfo();
+  }
+})();
+</script>
+</body>
+</html>

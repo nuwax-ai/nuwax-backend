@@ -1,0 +1,1142 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.description",
+    "fieldValue": "Auth method config",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.name",
+    "fieldValue": "Auth method config",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.description",
+    "fieldValue": "OAuth2 scope audit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.name",
+    "fieldValue": "OAuth2 scope audit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.description",
+    "fieldValue": "Sensitive word config",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.name",
+    "fieldValue": "Sensitive word config",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.description",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.name",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.description",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.name",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.description",
+    "fieldValue": "Enable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.name",
+    "fieldValue": "Enable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.description",
+    "fieldValue": "Auth method manage module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.name",
+    "fieldValue": "Auth method manage module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.description",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.name",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.description",
+    "fieldValue": "OAuth2 scope audit module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.name",
+    "fieldValue": "OAuth2 scope audit module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.description",
+    "fieldValue": "Pass",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.name",
+    "fieldValue": "Pass",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.description",
+    "fieldValue": "Reject",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.name",
+    "fieldValue": "Reject",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.description",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.name",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.description",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.name",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.description",
+    "fieldValue": "Enable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.name",
+    "fieldValue": "Enable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.description",
+    "fieldValue": "Sensitive word manage module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.name",
+    "fieldValue": "Sensitive word manage module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.description",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.name",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.description",
+    "fieldValue": "登录方式管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.name",
+    "fieldValue": "登录方式管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.description",
+    "fieldValue": "授权范围审核",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.name",
+    "fieldValue": "授权范围审核",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.description",
+    "fieldValue": "敏感词管控",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.name",
+    "fieldValue": "敏感词管控",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.description",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.name",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.description",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.name",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.description",
+    "fieldValue": "启用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.name",
+    "fieldValue": "启用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.description",
+    "fieldValue": "登录方式管理模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.name",
+    "fieldValue": "登录方式管理模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.description",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.name",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.description",
+    "fieldValue": "OAuth2范围审核模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.name",
+    "fieldValue": "OAuth2范围审核模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.description",
+    "fieldValue": "通过",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.name",
+    "fieldValue": "通过",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.description",
+    "fieldValue": "拒绝",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.name",
+    "fieldValue": "拒绝",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.description",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.name",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.description",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.name",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.description",
+    "fieldValue": "启用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.name",
+    "fieldValue": "启用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.description",
+    "fieldValue": "敏感词管控模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.name",
+    "fieldValue": "敏感词管控模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.description",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.name",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.description",
+    "fieldValue": "登錄方式管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.auth_method_config.name",
+    "fieldValue": "登錄方式管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.description",
+    "fieldValue": "授權範圍審核",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.oauth2_scope_audit.name",
+    "fieldValue": "授權範圍審核",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.description",
+    "fieldValue": "敏感詞管控",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.sensitive_word_config.name",
+    "fieldValue": "敏感詞管控",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.description",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_add.name",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.description",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_delete.name",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.description",
+    "fieldValue": "啟用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_enable.name",
+    "fieldValue": "啟用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.description",
+    "fieldValue": "登錄方式管理模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_manage.name",
+    "fieldValue": "登錄方式管理模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.description",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_modify.name",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.auth_method_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.description",
+    "fieldValue": "OAuth2範圍審核模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit.name",
+    "fieldValue": "OAuth2範圍審核模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.description",
+    "fieldValue": "通過",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_pass.name",
+    "fieldValue": "通過",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.description",
+    "fieldValue": "拒絕",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.oauth2_scope_audit_reject.name",
+    "fieldValue": "拒絕",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.description",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_add.name",
+    "fieldValue": "添加",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.description",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_delete.name",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.description",
+    "fieldValue": "啟用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_enable.name",
+    "fieldValue": "啟用/禁用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.description",
+    "fieldValue": "敏感詞管控模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_manage.name",
+    "fieldValue": "敏感詞管控模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.description",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_modify.name",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.sensitive_word_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  }
+]

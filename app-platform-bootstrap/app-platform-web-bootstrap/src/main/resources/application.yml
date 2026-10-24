@@ -6,6 +6,14 @@ spring:
   # 默认为false。如果开启的话在事务真正物理提交doCommit失败后会进行回滚。
   transaction:
     rollback-on-commit-failure: true
+  mvc:
+    async:
+      # StreamingResponseBody（沙箱文件下载 /static/{cId}/**、download-all-files 等）走 MVC 异步，
+      # 未配置时用容器默认（Tomcat 30s）。该超时是【整个异步操作的总时长预算】（读写活动不重置），
+      # 超大文件下载 30s 到点被干净截断且无错误（zip 残缺、IoUtil.copy 正常返回的静默截断问题）。
+      # 1h 覆盖慢客户端拉大文件（如 1.5GB @ 0.5MB/s ≈ 50min）。链路其余超时均为空闲语义
+      #（nginx/WebClient 读空闲 60s、file-server 读写不活动 10min），活跃流不触发，无需联动调整。
+      request-timeout: 1h
     # [可选]配置,自行判断是否使用Spring Cache注解(@Cacheable 等)选项,如果不启用,在启动类上注释: @EnableCaching
   cache:
     type: CAFFEINE
@@ -54,8 +62,12 @@ auth:
     - /api/user/codeLogin
     - /api/user/mp/codeLogin
     - /api/user/code/send
+    - /api/user/captcha/image
     - /api/user/email/check
     - /api/user/password/reset
+    # 按 userId 重定向到头像地址：三方应用（IM 卡片、邮件、OAuth2 客户端）只拿得到 userId，
+    # 没有平台登录态，故免登录。只读、只按当前域名解析出的租户查，跨租户一律 404（见 UserController#avatar）
+    - /api/user/avatar/
     - /api/tenant/config
     - /api/system/eco/market/server
     - /api/temp/chat/conversation
@@ -75,9 +87,11 @@ auth:
     - /api/page/p
     - /api/published/category
     - /api/published/agent/list
-    - /api/computer/static
+    # 静态文件仅数字会话段匿名；模式条目走 Ant 匹配，\d+ 约束不可省（裸 {cId} 会匹配 fs 等任意段）
+    - /api/computer/static/{cId:\d+}/**
     - /api/agent/conversation/share/detail
     - /api/sys/v
+    - /api/sys/edition
     - /api/sandbox/config/reg
     - /api/sandbox/config/health/
     - /api/sandbox/config/redirect/
@@ -91,6 +105,106 @@ auth:
     - /api/pay/general/h5/front-notify
     - /api/wechat/oa/callback
     - /api/eco/client
+    # 连接器 OAuth 回调：IdP 重定向回跳，浏览器此时可能没有、或已过期平台登录态
+    # （换浏览器/无痕/长时间停在授权页）。用户身份由 state 承载——32B 随机值、sha256 落库、
+    # 15 分钟过期、一次性消费，回调时按 state 里记录的用户建连，故不依赖登录态。
+    # 同一套处理逻辑的两个入口都放行，因为它俩做的是同一件事、只是出口不同：
+    #   callback = IdP 重定向回跳，回 HTML 完成页（给人看）；
+    #   exchange = 程序提交同一组 code+state，回 JSON 成败（授权页开在别的浏览器里时，
+    #              把地址栏的 code+state 贴过来即可建连，调用方自己未必有登录态）。
+    # 放行 exchange 不扩大攻击面：它和 callback 共用 handleCallback，凭据同为 state；
+    # 能匿名跑到 callback 的调用方，本来就能匿名跑 exchange。
+    # 只放行这两条叶子路径，不写成 /api/connector/**，别把连接器其它接口一并放开。
+    - /api/connector/oauth/callback
+    - /api/connector/oauth/exchange
+    # App 实时 ASR/TTS WebSocket：握手由 AppBearerHandshakeInterceptor 自行鉴权
+    - /api/speech/asr/ws
+    - /api/speech/tts/ws
+    - /api/auth/idp/logout
+    # 文档协作 Sidecar 内部回调：由共享密钥 X-Collab-Secret 保护，不依赖登录态
+    - /api/internal/collab/
+    # 内部服务间 API（用户/智能体/空间查询、租户配置读取，InternalApiController）：由静态密钥
+    # X-Api-Key 保护（InternalApiInterceptor，internal.api.key 未配置时一律拒绝）。注意：新增
+    # /api/internal/** 子路径不会自动豁免登录，须在此显式登记（fail-closed，避免忘记鉴权的内部接口裸奔）
+    - /api/internal/user/
+    - /api/internal/agent/
+    - /api/internal/space/
+    - /api/internal/tenant/
+    # 资料库匿名分享只读访问：安全边界由分享链接 token 承载
+    - /api/repo/public/
+    # OAuth2 令牌 / 撤销端点：由客户端凭证（client_id + secret）自行认证，不依赖登录态；
+    # /api/oauth2/authorize 与 /api/oauth2/userinfo 必须保留登录/令牌校验，故不在此列
+    - /api/oauth2/token
+    - /api/oauth2/revoke
+    # 外部登录（CAS/OAuth2/微信）：登录页列表、发起授权、IdP 回跳与中间页公开端点。
+    # /api/auth/idp/pending/bind 依赖登录态（中间页绑定已有账号），必须保持不在白名单内
+    - /api/auth/idp/list
+    - /api/auth/idp/authorize
+    - /api/auth/idp/callback
+    - /api/auth/idp/pending/info
+    - /api/auth/idp/pending/register
+  # antiXSS 白名单：受限 referer 上下文（页面应用 /page/、电脑使用 /api/computer/）除各自命名空间
+  # （/api/page/**、/api/computer/**）外，额外放行的 API。前缀匹配，以 ** 结尾按前缀放行。
+  # 以下为初始清单，需按页面应用/电脑使用实际调用情况增删（放行过宽会削弱防护）。
+  antiXssApiWhitelist:
+    - /api/published/category
+    - /api/published/agent/list
+    - /api/file
+    - /api/f/
+    - /api/logo/
+    - /api/i18n/
+    - /api/tenant/config
+    # 页面应用 / 电脑使用里用 <img src="/api/user/avatar/{userId}"> 显示头像，referer 落在受限上下文
+    - /api/user/avatar/
+  # Sec-Fetch 元数据校验（浏览器自动附加、脚本无法伪造/删除的请求头），堵住 antiXSS 的两类规避：
+  # R1 跨站收紧（cross-site + cors/no-cors/websocket + 带登录 Cookie，CSRF 特征）→ secFetchPolicy
+  # R2 同源无 Referer（same-origin + fetch/XHR + 带登录 Cookie + 无 Referer，no-referrer 规避特征）→ secFetchNoRefererPolicy
+  # 档位：off=关闭 / log=只记日志 / enforce=拒绝（4030）。
+  # 自动豁免：无 Sec-Fetch 头（非浏览器/老浏览器/服务端回调，App 原生栈不发该头，天然豁免）、
+  # 导航请求、无 ticket Cookie、excludePath（例外：SEC_FETCH_MUTATING_ENFORCE_PREFIXES 前缀下的
+  # 变更请求不豁免，防免登录前缀下挂写操作端点——第二道防线）、secFetchAllow。
+  # same-site 不拦（前端拆子域名部署不受影响）；误伤接口加 secFetchAllow（前缀匹配，** 结尾按前缀放行）。
+  secFetchPolicy: enforce
+  secFetchNoRefererPolicy: enforce
+  secFetchAllow: []
+
+# 平台作为 OAuth2 授权方的配置
+oauth2:
+  # access_token 有效期（秒），每次校验通过后滑动续期
+  access-token-ttl: 7200
+  # refresh_token 有效期（秒）
+  refresh-token-ttl: 2592000
+  # 授权码有效期（秒），一次性使用
+  code-ttl: 300
+  # 授权关系（用户对客户端的授权）有效期（秒）
+  grant-ttl: 2592000
+  # 是否跳过用户同意页直接签发授权码。首版无同意页（原型未覆盖、前端契约未定），故置 true；
+  # 置 false 时授权请求一律以 temporarily_unavailable 拒绝（不会静默放行）
+  auto-consent: true
+
+# 内部服务间 HTTP API（/api/internal/user/**、/api/internal/agent/**、/api/internal/space/**、
+# /api/internal/tenant/**，供其他项目 server-to-server 调用）
+internal:
+  api:
+    # 静态共享密钥：调用方以请求头 X-Api-Key 携带，InternalApiInterceptor 常量时间比较。
+    # 留空视为内部 API 未启用，所有请求一律拒绝（fail-closed）；生产建议用环境变量 INTERNAL_API_KEY 注入
+    key: ${INTERNAL_API_KEY:}
+
+# App 实时语音（流式 ASR/TTS WebSocket）
+speech:
+  app:
+    asr-websocket-path: /api/speech/asr/ws
+    tts-websocket-path: /api/speech/tts/ws
+    allowed-origins:
+      - "*"
+
+# 文档协作（repo）：Sidecar 内部回调共享密钥，必须与 nuwax-repo-collab 的 COLLAB_INTERNAL_SECRET 一致；
+# 未配置时回调接口一律 401（fail-closed）
+repo:
+  collab:
+    internal-secret: change-me-collab-secret
+    # Sidecar 地址（nuwax-repo-collab :9090），供沙箱文档 API 转发导入/读取/修改/导出；生产按环境覆盖
+    base-url: http://127.0.0.1:9090
 
 # DataSource Config
 mybatis-plus:
@@ -126,8 +240,47 @@ mybatis-plus:
 # nuwax-cli、saas、manual
 installation-source: saas
 
+# 三方登录内置品牌图标
+auth-idp:
+  brand-icons:
+    github: https://s3.nuwax.com/nuwax-public/third/icons/github.svg
+    wechat: https://s3.nuwax.com/nuwax-public/third/icons/wechat.svg
+    feishu: https://s3.nuwax.com/nuwax-public/third/icons/feishu.ico
+    dingtalk: https://s3.nuwax.com/nuwax-public/third/icons/dingtalk.svg
+    wecom: https://s3.nuwax.com/nuwax-public/third/icons/wecom.svg
+
 app:
-  version: 3.0.2
+  version: 3.0.7
+  # 产品版本（同一套代码交付的两个形态）：aios=AIOS、aisp=AI 服务平台
+  # ★版本不在这里定：以【授权串里声明的 edition】为准（验签通过才算数、客户改不了），
+  #   取值见 ILicenseRpcService.getLicensedEdition()；没配授权串（社区版）时取不到版本，
+  #   两个商业版开关都为 false。
+  # ★这个配置项当前没有任何代码读取（授权码声明的 edition 是唯一来源）：留着是给「无授权时要
+  #   回落一个版本」预留的位置 —— 真要用得先在取值处读它。临时指定可用启动参数
+  #   --app.edition=aisp 或环境变量 APP_EDITION=aisp（同上，当前也不生效）。
+  # edition: aios
+
+# 授权码（License）验证侧配置。授权串从【系统配置项 licenseContent】读（管理后台-系统设置里填，
+# 按租户存），不是 yml 里的键 —— 早先那版顶层 `license:` 已不再被任何代码读取。
+#   串形态：NUWAX1.<base64url(payload)>.<base64url(Ed25519 签名)>，签发工具见 tools/license-issuer
+# 平台只持有公钥 ⇒ 能验不能签，客户改不出新授权；验签失败/被篡改按授权内容无效处理。
+# ★不兼容旧式 AES 授权串：不是 NUWAX1. 开头的值一律判为无效（旧格式对称密钥已随历史 jar 公开、
+#   且不含产品版本位）。存量客户须用签发工具换发，没有过渡开关。
+license-verify:
+  # 验签公钥（Base64 SPKI，kid=k1）。公钥可以公开，写配置里是为了不重新打包也能换密钥 ——
+  # 留空则回落到 LicenseVerifier.BUILTIN_PUBLIC_KEY（同一把，见 system-spec）。
+  # 换密钥：用 tools/license-issuer gen-key 生成新对 → 私钥留签发机、公钥填这里 → 用新私钥换发授权串。
+  # ★它必须与签发授权串的私钥配对，否则客户拿到串一律「验签失败」。
+  public-key: "MCowBQYDK2VwAyEAlmP9vncOcOriQ4pP/fIf6fr1E4V1kpt1Fb0v3GTHexI="
+
+  # 授权校验不通过（过期/无效/设备绑定不符）时仍予放行的「自救通道」，逗号分隔。
+  # 为什么需要：授权串本身存在系统配置里，若把管理面一并拦掉，客户填错串、换机器后就再也进不去
+  # 改回来 —— 只能直接改数据库才能恢复。命中时按 ERROR 记日志，方便事后核对是否被当成后门在用。
+  # 条目按前缀（startsWith）匹配，与 auth.excludePath 第一段同口径；含通配符的条目走 Ant 匹配。
+  # 当前清单 = 登录相关 + 读租户配置（前端判断是否跳授权页要用）+ 系统配置读写（管理后台改授权串）。
+  # 留空 = 完全 fail-closed（连管理面一起拦）。用第三方登录（/api/auth/idp/**，见 auth.excludePath）的
+  # 部署自行把对应前缀追加进来，否则改错授权串后第三方登录用户也进不来。
+  recovery-paths: /api/user/passwordLogin,/api/user/codeLogin,/api/user/mp/codeLogin,/api/user/code/send,/api/user/captcha/image,/api/user/logout,/api/tenant/config,/api/system/
 
 stt:
   api:
@@ -157,5 +310,82 @@ sandbox:
         - "table/sql/new"
         - "table/sql/update"
         - "pay/general/**"
+        # 支付开放接口：/api/v1/4sandbox/v1/pay/open/** → /api/v1/pay/open/**
+        - "v1/pay/open/**"
         - "agent/conversation/**"
         - "agent/*"
+        - "connector/**"
+        # 广场分类列表（连接器建连时取可选分类）。只放 list 这一条，
+        # 不写成 published/**，免得把广场其他匿名接口一并从沙箱侧暴露出去。
+        - "published/category/list"
+        - "system/connector/providers"
+        - "system/connector/providers/order"
+        - "system/connector/providers/export"
+        - "system/connector/providers/*/meta"
+        - "system/connector/providers/*/actions"
+        - "system/connector/providers/*/actions/*"
+        - "system/connector/providers/*"
+        - "system/connector/actions/*"
+        - "system/connector/actions/*/status"
+        # OAuth App 配置读写口（含 client_secret）。**已按用户决定长期放行**（2026-09-18）：
+        # 目的是让沙箱里的 AI 能自助跑通「建连接器 → 配 App → 授权建连 → 执行动作」全流程，
+        # 不必每次配 App 都找平台侧改配置 + 重启。
+        #
+        # 放行前请知悉真实边界（这三处都不构成兜底，`allow-path` 是沙箱侧**唯一**一道闸）：
+        #   · ApiKeyInterceptor:177 —— 沙箱 AK（targetType=Sandbox）只校验 AK 本身有效就 return true，
+        #     不做任何路径级或角色级限制；
+        #   · AuthInterceptor:221 —— 那段 `role != Admin` 检查比对的是改写**前**的 URI，
+        #     而沙箱请求的 originalRequestUri 形如 /api/v1/4sandbox/…，不命中 /api/system/ 前缀；
+        #   · ConnectorSystemController 自身也未挂权限资源码。
+        # 因此放行后，凡持有沙箱 AK 者即可读写**任意**连接器的 OAuth App 配置；其中写入能替换
+        # client_id —— 换成他人 App 即可劫持后续 OAuth 授权拿到 token。本平台为测试环境，
+        # 接受该取舍以换取 AI 全流程自助。
+        - "system/connector/oauth-config"
+        # Nuwax IM 技能 API：/api/v1/4sandbox/nuwax-im/** → /api/nuwax-im/**
+        # 落地实现见 app-platform-im-web 的 NuwaxImSandboxController。
+        # ★新增该前缀下的接口时不用改这里（** 已覆盖）；但新增【别的】前缀时必须两处都改，
+        #   漏改的表现是 404（而不是静默放行）—— 这份清单就是「沙箱 AK 能打到哪些接口」的审计面。
+        - "nuwax-im/**"
+        # nuwax-oauth2 技能：三方应用（OAuth2 client）自助接入
+        #   /api/v1/4sandbox/user-project/oauth2/** → /api/user-project/oauth2/**
+        #   复用 app-platform-userapp-web 的 ThirdAppOAuth2Controller，不新建 controller；
+        #   该 controller 逐方法自带 requireAccess(projectId)=requireThirdApp+空间成员校验，权限语义与前端页面一致。
+        # ★刻意逐条精确列出而非 user-project/oauth2/**：
+        #   不放开 delete/*（沙箱 AK 不应能删应用）、不放开 update（改名不是接入必需）。
+        #   credential/regenerate/* 会让旧 client_secret 立即失效（打断既有集成），只在显式子命令下调用。
+        - "user-project/oauth2/create"
+        - "user-project/oauth2/info/*"
+        # 同时覆盖 GET /setting/{projectId}（读配置，首次访问自动生成凭证）与 POST /setting/save
+        - "user-project/oauth2/setting/*"
+        - "user-project/oauth2/secret/*"
+        - "user-project/oauth2/scopes"
+        - "user-project/oauth2/credential/regenerate/*"
+        # 列出当前用户名下的三方应用：没有专用 service 方法，借道既有分页查询（不传 spaceId 时按用户所属空间集合过滤）
+        - "user-project/page-query"
+        # nuwax-oauth2 技能：查全栈应用已绑定的域名（userapp_domain 表），用来拼 OAuth2 回调地址。
+        #   /api/v1/4sandbox/userapp/domain/list?appId=N → /api/userapp/domain/list?appId=N
+        #   复用 app-platform-userapp-web 的 UserAppDomainController#listByApp。
+        # ★只放开 list：create/update/delete 是绑定与解绑域名（写操作，且要 CNAME 校验），沙箱 AK 不该能改。
+        #   listByApp 本身就【刻意不校验空间权限】（原注释：查询域名不限制访问，前端要先查域名才能访问应用），
+        #   所以这里放开不放大任何既有权限语义。
+        - "userapp/domain/list"
+        - "user/info"
+
+# IM OAuth：默认回跳为租户 siteUrl + return-path（域名 Universal Link）
+im:
+  bind:
+    return-path: /api/v1/im-notify/bind/return
+    # 生产保持 false；本地调试可用 true 允许 http 回跳
+    allow-http-return-url: false
+    # 额外白名单（URI：精确 host + path 前缀）；默认已允许 siteUrl+return-path
+    return-url-allow-prefixes: []
+  # ★Nuwax IM（独立 IM 系统）内部 RPC 适配，见 app-platform-im-infra 的 ImRpcProperties。
+  #
+  #  base-url 必须是【内网直连】IM 业务平面的地址（IM 的 IM_HTTP_PORT，默认 18092）。
+  #  ★填对外域名一定不通：nginx 只挂了 /api/instant-message/** 等业务前缀，/internal/** 没有出口，
+  #    表现为 HTTP 405（而不是 401/404）—— 看到 405 就是 base-url 填错了。
+  #
+  #  secret 必须与 IM 侧 im.rpc.secrets.<app-id> 的值逐字一致，否则每次调用都返回不区分原因的
+  #  IM_90004（验签失败按契约不透露细节，别指望从错误信息里看出是密钥配错了）。
+  #  ★绝不写进仓库：生产用环境变量 IM_RPC_SECRET_PLATFORM_IM 注入（留空 = 适配未就绪，
+  #    调用时报「IM 服务未配置」而不是静默失败）。

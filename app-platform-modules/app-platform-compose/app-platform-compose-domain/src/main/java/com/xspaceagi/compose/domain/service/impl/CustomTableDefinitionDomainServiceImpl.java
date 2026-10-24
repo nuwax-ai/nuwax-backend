@@ -9,6 +9,8 @@ import com.baomidou.dynamic.datasource.tx.DsPropagation;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.compose.domain.dto.CustomEmptyTableVo;
 import com.xspaceagi.compose.domain.dto.FieldCreationResult;
+import com.xspaceagi.compose.domain.dto.TableHeaderVo;
+import com.xspaceagi.compose.domain.dto.TableHeadersVo;
 import com.xspaceagi.compose.domain.model.CustomFieldDefinitionModel;
 import com.xspaceagi.compose.domain.model.CustomTableDefinitionModel;
 import com.xspaceagi.compose.domain.repository.ICustomDorisTableRepository;
@@ -708,10 +710,13 @@ public class CustomTableDefinitionDomainServiceImpl implements CustomTableDefini
         String userPrompt = "请处理以下中文表头列表，并严格按照系统提示中定义的JSON格式返回结果：\n" + jsonData;
 
         // 调用大模型
-        Map<String, String> result = modelApplicationService.call(sysPrompt, userPrompt,
-                new org.springframework.core.ParameterizedTypeReference<Map<String, String>>() {
+        TableHeadersVo result = modelApplicationService.call(sysPrompt, userPrompt,
+                new org.springframework.core.ParameterizedTypeReference<TableHeadersVo>() {
                 });
-        return result;
+        if (result == null || result.getHeaders() == null) {
+            return new HashMap<>();
+        }
+        return result.getHeaders().stream().collect(Collectors.toMap(TableHeaderVo::getOriginName, TableHeaderVo::getEnName, (k1, k2) -> k1));
     }
 
     /**

@@ -77,11 +77,26 @@ public class ConversationDto {
     private String devTargetType;
     @Schema(description = "开发模式目标ID")
     private String devTargetId;
+    @Schema(description = "文件访问路径（file server/主容器视角；空=老数据走兼容逻辑）")
+    private String fileWorkspacePath;
+    @Schema(description = "agent 执行路径（执行容器内视角；空=老数据走兼容逻辑）")
+    private String agentWorkspacePath;
+    @Schema(description = "置顶标记")
+    private Boolean pinned;
+    @Schema(description = "归档标记")
+    private Boolean archived;
+    @Schema(description = "当前用户收藏标记")
+    private Boolean collected;
 
     @Schema(description = "已分享的URI地址，比对上了则不需要认证")
     private List<String> sharedUris;
 
     public Integer getDevMode() {
         return devMode == null ? 0 : devMode;
+    }
+
+    /** 是否默认名 */
+    public boolean isDefaultTopic() {
+        return "Unnamed conversation".equals(topic) || "未命名会话".equals(topic);
     }
 }

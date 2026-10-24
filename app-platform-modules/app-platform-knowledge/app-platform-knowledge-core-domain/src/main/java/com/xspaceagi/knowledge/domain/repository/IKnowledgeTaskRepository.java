@@ -58,6 +58,14 @@ public interface IKnowledgeTaskRepository {
     KnowledgeTaskModel queryOneByDocId(Long docId);
 
     /**
+     * 根据文档id查询最新的一条记录（按创建时间倒序）
+     *
+     * @param docId 文档id
+     * @return 最新任务记录
+     */
+    KnowledgeTaskModel queryLatestOneByDocId(Long docId);
+
+    /**
      * 更新
      *
      * @param model entity

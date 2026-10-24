@@ -1,6 +1,6 @@
 package com.xspaceagi.im.application.impl;
 
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
@@ -44,7 +44,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
-    private ConversationApplicationService conversationApplicationService;
+    private ChatApplicationService chatApplicationService;
 
     @Override
     public String executeAgent(String senderId, String message, String chatType, String chatId, String targetType,
@@ -69,7 +69,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
         }
 
         if (agentId == null || agentId <= 0) {
-            log.warn("WeCom agent-id not configured");
+            log.warn("WeWork agent-id not configured");
             return new AgentExecuteResultWithConv("企业微信智能体未配置，请联系管理员", null, agentId);
         }
 
@@ -99,7 +99,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
             tryReqDto.setAttachments(attachments != null ? attachments : new ArrayList<>());
             tryReqDto.setFrom(ImChannelEnum.WEWORK.getCode());
 
-            Flux<AgentOutputDto> flux = conversationApplicationService.chat(tryReqDto, new HashMap<>(), false);
+            Flux<AgentOutputDto> flux = chatApplicationService.chat(tryReqDto, new HashMap<>(), false);
 
             AgentExecuteResult finalResult = flux
                     .filter(o -> o.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT)
@@ -117,7 +117,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
             String outputText = StringUtils.isNotBlank(finalResult.getOutputText()) ? finalResult.getOutputText() : "模型终止执行";
             return new AgentExecuteResultWithConv(outputText, convId, agentId);
         } catch (Exception e) {
-            log.error("WeCom agent execution error: senderId={}", senderId, e);
+            log.error("WeWork agent execution error: senderId={}", senderId, e);
             String errorText = e.getMessage() != null ? e.getMessage() : "模型执行异常";
             return new AgentExecuteResultWithConv(errorText, null, agentId);
         } finally {
@@ -170,7 +170,7 @@ public class WeworkAgentApplicationServiceImpl implements WeworkAgentApplication
             tryReqDto.setAttachments(attachments != null ? attachments : new ArrayList<>());
             tryReqDto.setFrom(ImChannelEnum.WEWORK.getCode());
 
-            Flux<AgentOutputDto> chatFlux = conversationApplicationService.chat(tryReqDto, new HashMap<>(), false);
+            Flux<AgentOutputDto> chatFlux = chatApplicationService.chat(tryReqDto, new HashMap<>(), false);
             StringBuilder accumulated = new StringBuilder();
 
             return chatFlux

@@ -65,4 +65,13 @@ public interface IKnowledgeConfigApplicationService {
      * @return 文件大小
      */
     Long queryTotalFileSize(Long kbId);
+
+    /**
+     * 全量重建向量库(用于迁移到全新的空 Milvus):
+     * 跨租户补建所有知识库的 collection → 全表重置问答向量化状态(has_embedding=0、created=当天0点)
+     * → 异步触发一轮重新向量化(手动QA+文档QA),现有定时任务并行兜底。
+     * <p>
+     * 注意:属一次性迁移操作,重复调用会导致已重灌的数据被重复向量化。
+     */
+    void rebuildVectorDb();
 }

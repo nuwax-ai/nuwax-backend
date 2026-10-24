@@ -63,7 +63,7 @@ public class WeworkAttachmentService {
             // 1. 获取 access_token
             String accessToken = getAccessToken(corpId, corpSecret);
             if (StringUtils.isBlank(accessToken)) {
-                log.warn("WeCom access_token failed: corpId={}", corpId);
+                log.warn("WeWork access_token failed: corpId={}", corpId);
                 result.getUnsupportedKeys().add(mediaId);
                 return result;
             }
@@ -71,12 +71,12 @@ public class WeworkAttachmentService {
             // 2. 下载附件
             byte[] fileBytes = downloadMedia(accessToken, mediaId);
             if (fileBytes == null || fileBytes.length == 0) {
-                log.warn("WeCom attachment download failed: mediaId={}, type={}", mediaId, type);
+                log.warn("WeWork attachment download failed: mediaId={}, type={}", mediaId, type);
                 result.getUnsupportedKeys().add(mediaId);
                 return result;
             }
 
-            log.info("WeCom attachment download OK: mediaId={}, type={}, size={}", mediaId, type, fileBytes.length);
+            log.info("WeWork attachment download OK: mediaId={}, type={}, size={}", mediaId, type, fileBytes.length);
 
             // 3. 使用统一服务检测文件类型并上传
             ImFileUploadHelper.UploadResult uploadResult = fileUploadHelperService.detectAndUpload(
@@ -100,15 +100,15 @@ public class WeworkAttachmentService {
                         imUploadResult.getMimeType()
                 );
                 result.getAttachments().add(dto);
-                log.info("WeCom attachment OK: mediaId={}, url={}, detectionSource={}",
+                log.info("WeWork attachment OK: mediaId={}, url={}, detectionSource={}",
                         mediaId, dto.getFileUrl(), uploadResult.getDetection().getDetectionSource());
             } else {
-                log.warn("WeCom attachment failed: mediaId={}, error={}", mediaId, uploadResult.getErrorMessage());
+                log.warn("WeWork attachment failed: mediaId={}, error={}", mediaId, uploadResult.getErrorMessage());
                 result.getUnsupportedKeys().add(mediaId);
             }
 
         } catch (Exception e) {
-            log.error("WeCom attachment error: mediaId={}", mediaId, e);
+            log.error("WeWork attachment error: mediaId={}", mediaId, e);
             result.getUnsupportedKeys().add(mediaId);
         }
 
@@ -138,7 +138,7 @@ public class WeworkAttachmentService {
             DownloadResult downloadResult = downloadFromUrl(url);
             byte[] encryptedBytes = downloadResult != null ? downloadResult.bytes : null;
             if (encryptedBytes == null || encryptedBytes.length == 0) {
-                log.warn("WeCom attachment download failed: url={}, type={}", url, type);
+                log.warn("WeWork attachment download failed: url={}, type={}", url, type);
                 result.getUnsupportedKeys().add(url);
                 return result;
             }
@@ -146,7 +146,7 @@ public class WeworkAttachmentService {
             String headerContentType = downloadResult != null ? downloadResult.contentType : null;
             String headerFileName = downloadResult != null ? downloadResult.fileName : null;
 
-            log.info("WeCom encrypted attachment download OK: url={}, type={}, size={}", url, type, encryptedBytes.length);
+            log.info("WeWork encrypted attachment download OK: url={}, type={}, size={}", url, type, encryptedBytes.length);
             log.info("First 16 bytes of ciphertext: {}", bytesToHex(encryptedBytes, Math.min(16, encryptedBytes.length)));
 
             // 2. 尝试解密附件数据（如果可能）
@@ -154,16 +154,16 @@ public class WeworkAttachmentService {
             if (StringUtils.isBlank(aesKey)) {
                 // 自建应用回调的 PicUrl 通常是明文可下载图片，无需 AES 解密
                 fileBytes = encryptedBytes;
-                log.info("WeCom attachment uses plain bytes (no aesKey): url={}, type={}, size={}", url, type, fileBytes.length);
+                log.info("WeWork attachment uses plain bytes (no aesKey): url={}, type={}, size={}", url, type, fileBytes.length);
             } else {
                 try {
                     // 企业微信智能机器人的图片可能是加密的，但也可能只是特殊格式
                     // 先尝试解密
                     fileBytes = decryptWeworkData(encryptedBytes, aesKey);
-                    log.info("WeCom attachment decrypt OK: rawSize={}, decryptedSize={}", encryptedBytes.length, fileBytes.length);
+                    log.info("WeWork attachment decrypt OK: rawSize={}, decryptedSize={}", encryptedBytes.length, fileBytes.length);
                     log.info("First 16 bytes after decrypt: {}", bytesToHex(fileBytes, Math.min(16, fileBytes.length)));
                 } catch (Exception e) {
-                    log.warn("WeCom attachment decrypt failed: url={}, error: {}", url, e.getMessage());
+                    log.warn("WeWork attachment decrypt failed: url={}, error: {}", url, e.getMessage());
                     // 有些文件（比如普通附件）可能本身并不需要解密；
                     // 解密失败时，尝试把加密字节当成明文继续识别与上传（仅 type=file 才这样做）。
                     if ("file".equals(type)) {
@@ -174,7 +174,7 @@ public class WeworkAttachmentService {
 
             // 如果解密失败或数据为空，直接返回失败
             if (fileBytes == null || fileBytes.length == 0) {
-                log.warn("WeCom attachment decrypted empty: url={}", url);
+                log.warn("WeWork attachment decrypted empty: url={}", url);
                 result.getUnsupportedKeys().add(url);
                 return result;
             }
@@ -201,15 +201,15 @@ public class WeworkAttachmentService {
                         imUploadResult.getMimeType()
                 );
                 result.getAttachments().add(dto);
-                log.info("WeCom attachment OK: url={}, finalUrl={}, detectionSource={}",
+                log.info("WeWork attachment OK: url={}, finalUrl={}, detectionSource={}",
                         url, dto.getFileUrl(), uploadResult.getDetection().getDetectionSource());
             } else {
-                log.warn("WeCom attachment failed: url={}, error={}", url, uploadResult.getErrorMessage());
+                log.warn("WeWork attachment failed: url={}, error={}", url, uploadResult.getErrorMessage());
                 result.getUnsupportedKeys().add(url);
             }
 
         } catch (Exception e) {
-            log.error("WeCom attachment handling error: url={}", url, e);
+            log.error("WeWork attachment handling error: url={}", url, e);
             result.getUnsupportedKeys().add(url);
         }
 
@@ -260,7 +260,7 @@ public class WeworkAttachmentService {
                 return result;
             }
         } catch (Exception e) {
-            log.error("WeCom attachment download error: url={}", url, e);
+            log.error("WeWork attachment download error: url={}", url, e);
         }
         return null;
     }
@@ -327,7 +327,7 @@ public class WeworkAttachmentService {
                 }
             }
         } catch (Exception e) {
-            log.error("Exception fetching WeCom access_token", e);
+            log.error("Exception fetching WeWork access_token", e);
         }
         return null;
     }
@@ -350,7 +350,7 @@ public class WeworkAttachmentService {
                 return response.getBody();
             }
         } catch (Exception e) {
-            log.error("WeCom attachment download error: mediaId={}", mediaId, e);
+            log.error("WeWork attachment download error: mediaId={}", mediaId, e);
         }
         return null;
     }

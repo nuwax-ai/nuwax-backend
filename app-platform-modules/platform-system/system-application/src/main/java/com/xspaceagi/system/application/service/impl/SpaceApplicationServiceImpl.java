@@ -6,6 +6,7 @@ import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.domain.service.SpaceDomainService;
+import com.xspaceagi.system.domain.service.UserDomainService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SpaceUser;
 import com.xspaceagi.system.infra.dao.entity.User;
@@ -18,6 +19,7 @@ import com.xspaceagi.system.spec.exception.SpacePermissionException;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -26,14 +28,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class SpaceApplicationServiceImpl implements SpaceApplicationService, SpacePermissionService {
+
+    /**
+     * 「空间列表」这类展示型入口允许出现的空间类型白名单。
+     * <p>用白名单而不是「排除 DM」：{@code Group} 同样不该出现在这些列表里，且 {@link Space.Type} 日后再新增取值时
+     * 默认不展示（安全的那一侧）。
+     */
+    private static final List<Space.Type> LIST_VISIBLE_TYPES = List.of(Space.Type.Personal, Space.Type.Team);
 
     @Resource
     private SpaceDomainService spaceDomainService;
 
     @Resource
     private UserApplicationService userApplicationService;
+
+    @Resource
+    private UserDomainService userDomainService;
 
     @Resource
     private RedisUtil redisUtil;
@@ -59,7 +72,10 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
     @Override
     public void delete(Long spaceId) {
         spaceDomainService.delete(spaceId);
+        // 双队列分离消费：delete_space_queue 清 publish（agent 侧），delete_space_repo_queue 清 repo 文档（repo 侧）。
+        // Redis 队列是「抢」语义，两个消费者共用一个队列会漏处理，故各 push 一条。
         redisUtil.leftPush("delete_space_queue", spaceId);
+        redisUtil.leftPush("delete_space_repo_queue", spaceId);
     }
 
     @Override
@@ -109,21 +125,27 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
 
     @Override
     public List<SpaceDto> queryListByUserId(Long userId) {
+        return queryVisibleListByUserId(userId);
+    }
+
+    @Override
+    public List<SpaceDto> queryVisibleListByUserId(Long userId) {
         List<SpaceUser> spaceUsers = spaceDomainService.querySpaceUserListByUserId(userId);
+        if (spaceUsers.isEmpty()) {
+            return new ArrayList<>();
+        }
         Map<Long, SpaceUser> spaceUserMap = spaceUsers.stream().collect(Collectors.toMap(SpaceUser::getSpaceId, (s1) -> s1, (s1, s2) -> s1));
         List<Long> ids = spaceUsers.stream().map(SpaceUser::getSpaceId).toList();
-        List<Space> spaceList = spaceDomainService.queryListByIds(ids);
-        if (spaceList != null) {
-            return spaceList.stream().map(space -> {
-                SpaceDto spaceDto = new SpaceDto();
-                BeanUtils.copyProperties(space, spaceDto);
-                if (spaceUserMap.get(spaceDto.getId()) != null) {
-                    spaceDto.setCurrentUserRole(spaceUserMap.get(spaceDto.getId()).getRole());
-                }
-                return spaceDto;
-            }).collect(Collectors.toList());
-        }
-        return new ArrayList<>();
+        // 类型白名单下推到 SQL：私聊/群组空间整行都不查回来，避免「名下几千个 DM」时白读一遍再在内存里丢弃
+        List<Space> spaceList = spaceDomainService.queryListByIdsAndTypes(ids, LIST_VISIBLE_TYPES);
+        return spaceList.stream().map(space -> {
+            SpaceDto spaceDto = new SpaceDto();
+            BeanUtils.copyProperties(space, spaceDto);
+            if (spaceUserMap.get(spaceDto.getId()) != null) {
+                spaceDto.setCurrentUserRole(spaceUserMap.get(spaceDto.getId()).getRole());
+            }
+            return spaceDto;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -144,19 +166,25 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
 
     @Override
     public List<SpaceUserDto> querySpaceUserList(Long spaceId) {
+        List<SpaceUserDto> spaceUsers = new ArrayList<>();
         List<SpaceUser> spaceUserList = spaceDomainService.querySpaceUserList(spaceId);
-        if (spaceUserList != null) {
-            return spaceUserList.stream().map(spaceUser -> {
-                UserDto userDto = userApplicationService.queryById(spaceUser.getUserId());
+        if (spaceUserList != null && !spaceUserList.isEmpty()) {
+            List<UserDto> userDtos = userApplicationService.queryUserListByIds(spaceUserList.stream().map(SpaceUser::getUserId).collect(Collectors.toList()));
+            Map<Long, UserDto> userMap = userDtos.stream().collect(Collectors.toMap(UserDto::getId, user -> user, (u1, u2) -> u1));
+            spaceUserList.forEach(spaceUser -> {
+                UserDto userDto = userMap.get(spaceUser.getUserId());
+                if (userDto == null || !"user".equals(userDto.getAccountType())) {
+                    return;
+                }
                 SpaceUserDto spaceUserDto = new SpaceUserDto();
                 BeanUtils.copyProperties(spaceUser, spaceUserDto);
                 spaceUserDto.setUserName(userDto.getUserName());
                 spaceUserDto.setNickName(userDto.getNickName());
                 spaceUserDto.setAvatar(userDto.getAvatar());
-                return spaceUserDto;
-            }).collect(Collectors.toList());
+                spaceUsers.add(spaceUserDto);
+            });
         }
-        return new ArrayList<>();
+        return spaceUsers;
     }
 
     @Override
@@ -166,6 +194,21 @@ public class SpaceApplicationServiceImpl implements SpaceApplicationService, Spa
             SpaceUserDto spaceUserDto = new SpaceUserDto();
             BeanUtils.copyProperties(spaceUser, spaceUserDto);
             return spaceUserDto;
+        }
+        return null;
+    }
+
+    @Override
+    public String getSpaceUserRole(Long spaceId, Long userId) {
+        SpaceUserDto spaceUserDto = querySpaceUser(spaceId, userId);
+        if (spaceUserDto != null && spaceUserDto.getRole() != null) {
+            return spaceUserDto.getRole().name();
+        }
+        // 与 checkSpaceUserPermission 保持一致:平台管理员视为拥有空间权限(按 Admin 处理)
+        User user = userDomainService.queryById(userId);
+        if (user != null && user.getRole() == User.Role.Admin
+                && spaceDomainService.queryById(spaceId) != null) {
+            return SpaceUser.Role.Admin.name();
         }
         return null;
     }

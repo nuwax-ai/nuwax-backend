@@ -30,7 +30,9 @@ public class UserTargetRelation {
 
     private Long targetId; // 目标对象ID
 
-    private OpType type; // 关系类型，可选值：Edit, Add, Like, Collect, Conversation
+    private OpType type; // 关系类型，可选值：Edit, Add, Like, Collect, DevCollect, Conversation, Enable
+
+    private String targetSubType; // 目标子类型：ChatBot/TaskAgent 智能体，PageApp 网页应用
 
     private String extra;
 
@@ -39,6 +41,6 @@ public class UserTargetRelation {
     private Date created; // 创建时间
 
     public enum OpType {
-        Edit, Add, Like, Collect, DevCollect, Conversation
+        Edit, Add, Like, Collect, DevCollect, Conversation, Enable
     }
 }

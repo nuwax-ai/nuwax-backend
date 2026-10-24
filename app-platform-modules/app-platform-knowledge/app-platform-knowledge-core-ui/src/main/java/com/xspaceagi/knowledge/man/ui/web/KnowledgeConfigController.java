@@ -5,7 +5,6 @@ import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
 import com.xspaceagi.knowledge.core.application.service.IKnowledgeConfigApplicationService;
 import com.xspaceagi.knowledge.domain.model.KnowledgeConfigModel;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeConfigRepository;
-import com.xspaceagi.knowledge.domain.vectordb.VectorDBService;
 import com.xspaceagi.knowledge.man.ui.web.base.BaseController;
 import com.xspaceagi.knowledge.man.ui.web.dto.config.*;
 import com.xspaceagi.system.application.dto.SpaceDto;
@@ -57,9 +56,6 @@ public class KnowledgeConfigController extends BaseController {
 
     @Resource
     private IKnowledgeConfigRepository knowledgeConfigRepository;
-
-    @Resource
-    private VectorDBService vectorDBService;
 
     @Resource
     private SpaceApplicationService spaceApplicationService;
@@ -233,20 +229,15 @@ public class KnowledgeConfigController extends BaseController {
     }
 
     @RequireResource(COMPONENT_LIB_MODIFY)
-    @OperationLogReporter(actionType = ActionType.ADD, action = "补偿初始化向量数据库", objectName = "知识库基础配置", systemCode = SystemEnum.KNOWLEDGE_CONFIG)
-    @LogPrint(step = "知识库[知识库基础配置]-补偿初始化向量数据库")
-    @Operation(summary = "补偿初始化向量数据库", description = "补偿初始化向量数据库")
+    @OperationLogReporter(actionType = ActionType.ADD, action = "全量重建向量数据库", objectName = "知识库基础配置", systemCode = SystemEnum.KNOWLEDGE_CONFIG)
+    @LogPrint(step = "知识库[知识库基础配置]-全量重建向量数据库")
+    @Operation(summary = "全量重建向量数据库", description = "补建所有知识库collection并重新向量化,用于迁移到全新的空向量库(Milvus)")
     @RequestMapping(path = "/initVectorDb", method = RequestMethod.POST)
-    public ReqResult<Long> add(Long id) {
+    public ReqResult<String> rebuild() {
 
-        var model = this.knowledgeConfigApplicationService.queryOneInfoById(id);
-        Long embeddingModelId = null;
-        if (model != null) {
-            embeddingModelId = model.getEmbeddingModelId();
-        }
-        // 初始化向量数据库
-        vectorDBService.initAndCheckCollection(id, embeddingModelId);
-        return ReqResult.success(id);
+        // 跨租户补建所有知识库collection → 重置问答向量化状态 → 异步触发重新向量化
+        this.knowledgeConfigApplicationService.rebuildVectorDb();
+        return ReqResult.success("向量库全量重建任务已启动,请通过日志观察向量化进度");
     }
 
 }

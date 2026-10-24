@@ -26,4 +26,7 @@ public class KnowledgeQaSegmentQueryRequest implements Serializable {
     @NotNull(message = "Answer is required")
     private String question;
 
+    @Schema(description = "文档ID（可选；传 0 表示筛选未关联文档的 QA）", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Long docId;
+
 }

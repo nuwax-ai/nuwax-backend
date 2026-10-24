@@ -10,7 +10,10 @@ public enum CategoryTypeEnum {
 
     AGENT("Agent", "智能体"),
     PAGE_APP("PageApp", "网页应用"),
-    COMPONENT("Component", "组件");
+    COMPONENT("Component", "组件"),
+    CHATBOX("ChatBox", "对话框智能体"),
+    CONNECTOR("Connector", "连接器"),
+    SKILL("Skill", "技能");
 
     private final String code;
     private final String description;

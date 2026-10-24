@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +26,7 @@ public class ModelProviderParser {
 
     private static List<ModelProviderVo> modelProviderVos;
 
-    private static Map<String, Map<String, ModelProviderVo.ModelInfo>> modelProviderMap;
+    private static Map<String, ModelProviderVo> modelProviderMap;
 
     private ModelProviderParser() {
     }
@@ -81,17 +80,11 @@ public class ModelProviderParser {
         result.add(defaultProvider);
         modelProviderVos = result;
         modelProviderMap = modelProviderVos.stream().collect(Collectors.toMap(
-                ModelProviderVo::getPid,
-                v -> v.getModels() == null
-                        ? Collections.emptyMap()
-                        : v.getModels().stream().collect(Collectors.toMap(
-                        ModelProviderVo.ModelInfo::getId,
-                        Function.identity(),
-                        (a, b) -> a))));
+                ModelProviderVo::getPid, v -> v, (a, b) -> a));
         return result;
     }
 
-    public static Map<String, Map<String, ModelProviderVo.ModelInfo>> getModelProviderMap() {
+    public static Map<String, ModelProviderVo> getModelProviderMap() {
         if (modelProviderMap == null) {
             loadAll();
         }

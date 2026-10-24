@@ -18,6 +18,8 @@ import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
 public class ConversationPermissionChecker {
 
@@ -45,11 +47,20 @@ public class ConversationPermissionChecker {
         return check(cId, null);
     }
 
+    public ConversationDto checkAndResponseConversation(Long cId) {
+        return check0(cId, null);
+    }
+
     /**
-     * 校验当前用户对会话的访问权限，并在传入 customTargetDir 时校验会话电脑类型：
-     * 云端电脑（sandboxServerId 为空或 -1）不允许指定 customTargetDir，个人电脑允许。
+     * 校验当前用户对会话的访问权限，并在传入 customTargetDir 时校验：
+     * 云端电脑（sandboxServerId 为空或 -1）不允许指定；个人电脑仅会话属主本人可指定
+     * （个人沙箱属于属主，协作者可访问会话但不能借 customTargetDir 读属主机器的任意目录）。
      */
     public Long check(Long cId, String customTargetDir) {
+        return check0(cId, customTargetDir).getUserId();
+    }
+
+    private ConversationDto check0(Long cId, String customTargetDir) {
         if (cId == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "cId");
         }
@@ -60,10 +71,10 @@ public class ConversationPermissionChecker {
         validateCustomTargetDir(conversation, customTargetDir);
         Long conversationUserId = conversation.getUserId();
         if (RequestContext.get().getUserId().equals(conversationUserId)) {
-            return conversationUserId;
+            return conversation;
         }
         checkUserConversationPermission(RequestContext.get().getUserId(), conversation);
-        return conversationUserId;
+        return conversation;
     }
 
     public void checkUserConversationPermission(Long userId, ConversationDto conversation) {
@@ -94,7 +105,8 @@ public class ConversationPermissionChecker {
     }
 
     /**
-     * 校验 customTargetDir 是否允许用于指定会话（不校验用户权限，适用于已有独立鉴权逻辑的接口）。
+     * 校验 customTargetDir 是否允许用于指定会话（不校验会话访问权限，适用于已有独立鉴权逻辑的接口；
+     * 但 customTargetDir 本身带属主校验：仅会话属主本人的个人沙箱可指定，云端/协作者/匿名一律拒绝）。
      */
     public void checkCustomTargetDir(Long cId, String customTargetDir) {
         if (cId == null || StringUtils.isBlank(customTargetDir)) {
@@ -110,6 +122,17 @@ public class ConversationPermissionChecker {
     private void validateCustomTargetDir(ConversationDto conversation, String customTargetDir) {
         if (StringUtils.isBlank(customTargetDir)) {
             return;
+        }
+        // 静态文件端点在 auth.excludePath 中可匿名访问，RequestContext 可能为空；匿名一律不放开自定义目录
+        Long currentUserId = RequestContext.get() == null ? null : RequestContext.get().getUserId();
+        if (currentUserId == null) {
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "customTargetDir is only supported on your own conversation");
+        }
+        // 个人沙箱目录仅会话属主本人可指定：协作者虽有会话访问权，但不能借此读写属主机器的任意目录
+        if (!conversation.getUserId().equals(currentUserId)) {
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "customTargetDir is only supported on your own conversation");
         }
         String sandboxServerId = conversation.getSandboxServerId();
         if (sandboxServerId == null || "-1".equals(sandboxServerId)) {
@@ -127,6 +150,11 @@ public class ConversationPermissionChecker {
         if (sandboxConfigDto == null || sandboxConfigDto.getScope() != SandboxScopeEnum.USER) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
                     "customTargetDir is not supported for cloud computer");
+        }
+        // 双保险：沙箱确属当前登录用户（与文件系统浏览 requireSandboxBrowsePermission 同款校验，防会话行沙箱指向异常数据）
+        if (!Objects.equals(sandboxConfigDto.getUserId(), currentUserId)) {
+            throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "customTargetDir is only supported on your own sandbox");
         }
     }
 }

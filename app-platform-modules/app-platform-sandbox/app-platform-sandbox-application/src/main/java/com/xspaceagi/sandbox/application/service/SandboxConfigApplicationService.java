@@ -37,6 +37,15 @@ public interface SandboxConfigApplicationService {
     SandboxConfigDto getByKey(String key);
 
     /**
+     * 根据用户ID + 设备ID查询配置详情（device_id 维度）
+     *
+     * @param userId   用户ID
+     * @param deviceId 客户端设备ID
+     * @return 配置详情；不存在时返回 null
+     */
+    SandboxConfigDto getByDeviceId(Long userId, String deviceId);
+
+    /**
      * 查询用户配置列表
      *
      * @param userId 用户ID（为空时查询当前用户）

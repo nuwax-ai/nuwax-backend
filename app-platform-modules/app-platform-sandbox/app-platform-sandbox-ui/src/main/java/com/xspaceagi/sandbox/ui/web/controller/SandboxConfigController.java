@@ -20,7 +20,10 @@ import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.I18nSideEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import com.xspaceagi.system.spec.utils.MD5;
 import com.xspaceagi.system.spec.utils.RedisUtil;
@@ -32,6 +35,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
@@ -81,11 +85,6 @@ public class SandboxConfigController {
 
     @Value("${installation-source}")
     private String installationSource;
-
-    static {
-        // disable keep alive，暂不使用连接池
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
-    }
 
     private final HttpClient httpClient = java.net.http.HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
@@ -154,9 +153,14 @@ public class SandboxConfigController {
     @PostMapping("/reg")
     public ReqResult<SandboxConfigDto> create(@RequestBody SandboxRegDto sandboxRegDto, HttpServletRequest request) {
         sandboxRegDto.getSandboxConfigValue().setVncPort(sandboxRegDto.getSandboxConfigValue().getTtydPort());
-        int versionNum = toVersionNumber(extractNuwaxVersion(request.getHeader("User-Agent")));
-        UserDto user = null;
-        if (versionNum > START_VERSION && StringUtils.isNotBlank(sandboxRegDto.getUsername()) && StringUtils.isNotBlank(sandboxRegDto.getPassword())) {
+        String vs = extractNuwaxVersion(request.getHeader("User-Agent"));
+        if ((sandboxRegDto.getSandboxConfigValue() != null && StringUtils.isNotBlank(sandboxRegDto.getSandboxConfigValue().getVersion()))) {
+            sandboxRegDto.getSandboxConfigValue().setVersion(vs);
+        }
+        int versionNum = toVersionNumber(vs);
+        UserDto user = RequestContext.get().isLogin() ? (UserDto) RequestContext.get().getUser() : null;
+        boolean isOriginLogin = user != null;
+        if (user == null && versionNum > START_VERSION && StringUtils.isNotBlank(sandboxRegDto.getUsername()) && StringUtils.isNotBlank(sandboxRegDto.getPassword())) {
             user = checkLoginInfo(sandboxRegDto);
         }
         Assert.notNull(sandboxRegDto.getSandboxConfigValue(), I18nUtil.systemMessage("Backend.Sandbox.TerminalConfigRequired"));
@@ -178,18 +182,30 @@ public class SandboxConfigController {
                 SandboxConfigDto sandboxConfigUpdate = new SandboxConfigDto();
                 sandboxConfigUpdate.setId(byKey.getId());
                 sandboxConfigUpdate.setConfigValue(sandboxRegDto.getSandboxConfigValue());
+                // 回填 device_id：仅当本次带了 deviceId、库里该行还没有、且该 (userId, deviceId) 未被占用时才写，避免撞唯一键
+                String deviceIdA = sandboxRegDto.getDeviceId();
+                boolean stampDevice = StringUtils.isNotBlank(deviceIdA)
+                        && StringUtils.isBlank(byKey.getDeviceId())
+                        && sandboxConfigApplicationService.getByDeviceId(byKey.getUserId(), deviceIdA) == null;
+                if (stampDevice) {
+                    sandboxConfigUpdate.setDeviceId(deviceIdA);
+                }
                 sandboxConfigApplicationService.update(sandboxConfigUpdate);
                 byKey.setConfigValue(sandboxRegDto.getSandboxConfigValue());
-                if (user != null) {
+                if (stampDevice) {
+                    byKey.setDeviceId(deviceIdA);
+                }
+                if (user != null && !isOriginLogin) {
                     String token = authService.createToken(user, StringUtils.isNotBlank(sandboxRegDto.getDeviceId()) ? sandboxRegDto.getDeviceId() : UUID.randomUUID().toString().replace("-", ""));
                     byKey.setToken(token);
                 }
                 return ReqResult.success(byKey);
             }
         }
-        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getUsername()), I18nUtil.systemMessage("Backend.Sandbox.UsernameRequired"));
-        Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getPassword()), I18nUtil.systemMessage("Backend.Sandbox.PasswordRequired"));
+
         if (user == null) {
+            Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getUsername()), I18nUtil.systemMessage("Backend.Sandbox.UsernameRequired"));
+            Assert.isTrue(StringUtils.isNotBlank(sandboxRegDto.getPassword()), I18nUtil.systemMessage("Backend.Sandbox.PasswordRequired"));
             user = checkLoginInfo(sandboxRegDto);
         }
         RequestContext.get().setUser(user);
@@ -203,14 +219,82 @@ public class SandboxConfigController {
         dto.setUserId(user.getId());
         dto.setScope(SandboxScopeEnum.USER);
         dto.setConfigKey(UUID.randomUUID().toString().replace("-", ""));
-        dto.setName(I18nUtil.systemMessage("Backend.Sandbox.MyComputer"));
+        dto.setName(StringUtils.isNotBlank(sandboxRegDto.getComputerName()) ? sandboxRegDto.getComputerName() : I18nUtil.systemMessage("Backend.Sandbox.MyComputer"));
         dto.setConfigValue(sandboxRegDto.getSandboxConfigValue());
         dto.setDescription("");
         dto.setIsActive(true);
         dto.setOnline(false);
-        sandboxConfigApplicationService.create(dto, false);
-        String token = authService.createToken(user, StringUtils.isNotBlank(sandboxRegDto.getDeviceId()) ? sandboxRegDto.getDeviceId() : UUID.randomUUID().toString().replace("-", ""));
-        dto.setToken(token);
+        // 回填 device_id：仅当本次带了 deviceId 且该 (userId, deviceId) 未被占用时才写，避免撞唯一键
+        String deviceIdB = sandboxRegDto.getDeviceId();
+        if (StringUtils.isNotBlank(deviceIdB)
+                && sandboxConfigApplicationService.getByDeviceId(user.getId(), deviceIdB) == null) {
+            dto.setDeviceId(deviceIdB);
+        }
+        sandboxConfigApplicationService.create(dto, StringUtils.isNotBlank(sandboxRegDto.getComputerName()));
+        return ReqResult.success(sandboxConfigApplicationService.getByKey(dto.getConfigKey()));
+    }
+
+    @Operation(summary = "客户端注册V2（免 savedKey，按 deviceId + 当前登录用户 查/建）")
+    @PostMapping("/reg/v2")
+    public ReqResult<SandboxConfigDto> regV2(@RequestBody SandboxRegDto sandboxRegDto, HttpServletRequest request) {
+        // 1) fail-closed 自校验登录态：/reg/v2 落在免登前缀(/api/sandbox/config/reg)下，
+        //    拦截器不会对匿名请求 401，故此处必须自行拒绝未登录调用（拿不到 user 即视为未登录）。
+        UserDto user = RequestContext.get().isLogin() ? (UserDto) RequestContext.get().getUser() : null;
+        if (user == null) {
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
+        }
+        // 2) deviceId 必填
+        String deviceId = sandboxRegDto.getDeviceId();
+        if (StringUtils.isBlank(deviceId)) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.fieldRequiredButEmpty, "deviceId");
+        }
+        // 3) 归一化 sandboxConfigValue（与 /reg 一致）
+        SandboxConfigValue configValue = sandboxRegDto.getSandboxConfigValue();
+        Assert.notNull(configValue, I18nUtil.systemMessage("Backend.Sandbox.TerminalConfigRequired"));
+        configValue.setVncPort(configValue.getTtydPort());
+        if (configValue.getVncPort() <= 0) {
+            configValue.setVncPort(6080);
+        }
+        if (StringUtils.isNotBlank(configValue.getVersion())) {
+            configValue.setVersion(extractNuwaxVersion(request.getHeader("User-Agent")));
+        }
+        if (StringUtils.isBlank(configValue.getHostWithScheme())) {
+            configValue.setHostWithScheme("http://127.0.0.1");
+        }
+
+        // 4) 按 (当前登录 userId + deviceId) 查
+        SandboxConfigDto existed = sandboxConfigApplicationService.getByDeviceId(user.getId(), deviceId);
+        if (existed != null) {
+            // 命中 → refresh：用本次请求的 configValue 覆盖库里 config_value（端口/版本变化跟得上）
+            SandboxConfigDto refresh = new SandboxConfigDto();
+            refresh.setId(existed.getId());
+            refresh.setConfigValue(configValue);
+            sandboxConfigApplicationService.update(refresh);
+            existed.setConfigValue(configValue);
+            return ReqResult.success(existed);
+        }
+
+        // 5) 未命中 → 新建一条（含 savedKey=configKey），返回完整 DTO
+        SandboxConfigDto dto = new SandboxConfigDto();
+        dto.setUserId(user.getId());
+        dto.setScope(SandboxScopeEnum.USER);
+        dto.setConfigKey(UUID.randomUUID().toString().replace("-", ""));
+        dto.setDeviceId(deviceId);
+        dto.setName(StringUtils.isNotBlank(sandboxRegDto.getComputerName()) ? sandboxRegDto.getComputerName() : I18nUtil.systemMessage("Backend.Sandbox.MyComputer"));
+        dto.setConfigValue(configValue);
+        dto.setDescription("");
+        dto.setIsActive(true);
+        dto.setOnline(false);
+        try {
+            sandboxConfigApplicationService.create(dto, StringUtils.isNotBlank(sandboxRegDto.getComputerName()));
+        } catch (DuplicateKeyException e) {
+            // 并发下另一请求已为同 (userId, deviceId) 建好记录 → 重查返回既有，避免向客户端抛 500
+            SandboxConfigDto concurrent = sandboxConfigApplicationService.getByDeviceId(user.getId(), deviceId);
+            if (concurrent != null) {
+                return ReqResult.success(concurrent);
+            }
+            throw e;
+        }
         return ReqResult.success(sandboxConfigApplicationService.getByKey(dto.getConfigKey()));
     }
 

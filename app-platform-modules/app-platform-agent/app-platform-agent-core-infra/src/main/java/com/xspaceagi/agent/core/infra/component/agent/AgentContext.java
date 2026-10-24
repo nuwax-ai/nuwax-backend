@@ -6,11 +6,13 @@ import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.infra.component.agent.dto.AgentExecuteResult;
 import com.xspaceagi.agent.core.infra.component.model.dto.ComponentExecutingDto;
+import com.xspaceagi.agent.core.infra.component.model.dto.ToolExecRecord;
 import com.xspaceagi.agent.core.spec.enums.GlobalVariableEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
+import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -19,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.messages.Message;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +60,10 @@ public class AgentContext implements Serializable {
     @Schema(description = "附件列表")
     private List<AttachmentDto> attachments;
 
+    private List<Long> skillIds;
+
+    private Long sandboxId;
+
     @Schema(description = "执行结果")
     private AgentExecuteResult agentExecuteResult;
 
@@ -90,6 +97,8 @@ public class AgentContext implements Serializable {
     @Schema(description = "组件执行跟踪")
     private Consumer<ComponentExecutingDto> componentExecutingConsumer;
 
+    private Consumer<AgentContext> sandboxSkillPushConsumer;
+
     private UserDataPermissionDto userDataPermission;
 
     @Schema(description = "是否过滤长期记忆中的敏感信息")
@@ -110,6 +119,30 @@ public class AgentContext implements Serializable {
     private AtomicBoolean finished = new AtomicBoolean(false);
     private boolean useSate;
     private Map<String, Object> sessionState;
+
+    /**
+     * 是否已由上层（MasterAgentLoop）构造完整消息链（含本轮 user 消息）。
+     * true 时 ModelInvoker 不再追加 buildUserMessage，避免在 tool 链之后重复追加 user 破坏消息顺序。
+     * 默认 false：AgentExecutor 等仍走原逻辑（contextMessages + buildUserMessage）。
+     */
+    private boolean executionMessagesComplete;
+
+    /**
+     * 组件工具执行轨迹累积器（ModelInvoker.componentExecute 采集，MasterAgentLoop 每次流式调用后收集清空）。
+     * 记录非 Control 组件工具（插件/知识库/工作流/MCP/Table）的 tool_use → tool_result 配对，
+     * 用于并入执行链（toolChain）随会话变量持久化，保证跨轮上下文连贯。
+     */
+    private List<ToolExecRecord> toolTraceAccum;
+
+    private Map<String, Object> imVars;
+    private String from;
+
+    public List<ToolExecRecord> getToolTraceAccum() {
+        if (toolTraceAccum == null) {
+            toolTraceAccum = new ArrayList<>();
+        }
+        return toolTraceAccum;
+    }
 
     public Map<String, Object> getVariableParams() {
         if (variableParams == null) {

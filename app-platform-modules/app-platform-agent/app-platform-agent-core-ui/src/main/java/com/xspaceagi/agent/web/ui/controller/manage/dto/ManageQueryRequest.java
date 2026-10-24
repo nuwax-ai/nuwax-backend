@@ -35,4 +35,7 @@ public class ManageQueryRequest {
 
     @Schema(description = "目标类型：Agent、PageApp、Skill、Plugin、Workflow")
     private String targetType;
+
+    @Schema(description = "分类")
+    private String category;
 }

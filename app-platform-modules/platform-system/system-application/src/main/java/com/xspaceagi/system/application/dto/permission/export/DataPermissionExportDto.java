@@ -17,6 +17,8 @@ public class DataPermissionExportDto {
     private Integer maxSpaceCount;
     private Integer maxAgentCount;
     private Integer maxPageAppCount;
+    private Integer maxUserAppCount;
+    private Integer userAppIdleTimeoutSeconds;
     private Integer maxKnowledgeCount;
     private BigDecimal knowledgeStorageLimitGb;
     private Integer maxDataTableCount;

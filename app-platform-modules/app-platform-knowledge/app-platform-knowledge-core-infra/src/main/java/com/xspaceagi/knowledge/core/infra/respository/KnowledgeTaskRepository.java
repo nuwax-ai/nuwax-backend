@@ -79,6 +79,12 @@ public class KnowledgeTaskRepository implements IKnowledgeTaskRepository {
     }
 
     @Override
+    public KnowledgeTaskModel queryLatestOneByDocId(Long docId) {
+        var data = knowledgeTaskService.queryLatestOneByDocId(docId);
+        return knowledgeTaskTranslator.convertToModel(data);
+    }
+
+    @Override
     public Long updateInfo(KnowledgeTaskModel model, UserContext userContext) {
         var existObj = this.knowledgeTaskService.getById(model.getId());
         if (existObj == null) {

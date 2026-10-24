@@ -13,6 +13,8 @@ public class AgentOutputDto implements Serializable {
 
     private String error;
 
+    private String errorReason;
+
     private Object data;
 
     private boolean completed;

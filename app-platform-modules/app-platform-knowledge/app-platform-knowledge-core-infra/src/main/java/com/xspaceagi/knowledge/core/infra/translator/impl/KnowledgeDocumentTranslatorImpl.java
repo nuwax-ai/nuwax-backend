@@ -1,23 +1,17 @@
 package com.xspaceagi.knowledge.core.infra.translator.impl;
 
 import com.alibaba.fastjson2.JSON;
-import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeDocument;
 import com.xspaceagi.knowledge.core.infra.translator.IKnowledgeDocumentTranslator;
-import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
 import com.xspaceagi.knowledge.sdk.vo.SegmentConfigModel;
+import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
 import com.xspaceagi.system.spec.enums.YnEnum;
-import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
 @Service
 public class KnowledgeDocumentTranslatorImpl implements IKnowledgeDocumentTranslator {
-
-    @Resource
-    private IFileAccessService fileAccessService;
-
     @Override
     public KnowledgeDocumentModel convertToModel(KnowledgeDocument entity) {
         if (entity == null) {
@@ -27,8 +21,9 @@ public class KnowledgeDocumentTranslatorImpl implements IKnowledgeDocumentTransl
         knowledgeDocumentModel.setId(entity.getId());
         knowledgeDocumentModel.setKbId(entity.getKbId());
         knowledgeDocumentModel.setName(entity.getName());
-        knowledgeDocumentModel.setDocUrl(fileAccessService.getFileUrlWithAk(entity.getDocUrl(), true));
+        knowledgeDocumentModel.setDocUrl(entity.getDocUrl());
         knowledgeDocumentModel.setPubStatus(entity.getPubStatus());
+        knowledgeDocumentModel.setDocStatus(entity.getDocStatus());
         knowledgeDocumentModel.setHasQa(entity.getHasQa());
         knowledgeDocumentModel.setHasEmbedding(entity.getHasEmbedding());
         knowledgeDocumentModel.setDataType(entity.getDataType());
@@ -59,6 +54,7 @@ public class KnowledgeDocumentTranslatorImpl implements IKnowledgeDocumentTransl
         knowledgeDocument.setName(model.getName());
         knowledgeDocument.setDocUrl(model.getDocUrl());
         knowledgeDocument.setPubStatus(model.getPubStatus());
+        knowledgeDocument.setDocStatus(model.getDocStatus());
         knowledgeDocument.setHasQa(model.getHasQa());
         knowledgeDocument.setHasEmbedding(model.getHasEmbedding());
         knowledgeDocument.setDataType(model.getDataType());

@@ -35,6 +35,9 @@ public class AgentInfoDto implements Serializable {
     @Schema(description = "图标地址")
     private String icon; // 图标地址
 
+    @Schema(description = "子类型,ChatBot->ChatBot、PageApp->PageApp, TaskAgent -> General、Custom、Flow、Group")
+    private String subType;
+
     @Schema(description = "最后编辑时间")
     private Date modified; // 更新时间
 

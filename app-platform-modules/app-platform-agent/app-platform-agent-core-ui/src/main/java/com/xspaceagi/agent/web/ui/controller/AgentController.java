@@ -301,8 +301,8 @@ public class AgentController {
         if (agentConfigDto.getExtra().containsKey("private")) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPrivateComputerDeleteForbidden);
         }
-        agentApplicationService.delete(agentId);
-
+        // 工作区清理须在删除智能体之前：deleteWorkspace 按会话行解析沙箱，
+        // 级联删除会先移除会话行，之后再清理会因找不到会话而失效
         if (agentConfigDto.getDevAgentConversationId() != null) {
             try {
                 agentWorkspaceApplicationService.deleteWorkspace(agentConfigDto.getCreatorId(), agentConfigDto.getDevAgentConversationId());
@@ -310,6 +310,7 @@ public class AgentController {
                 log.warn("Failed to delete sandbox workspace for agent, agentId={}, cId={}", agentId, agentConfigDto.getDevAgentConversationId(), e);
             }
         }
+        agentApplicationService.delete(agentId);
         return ReqResult.success();
     }
 
@@ -820,7 +821,7 @@ public class AgentController {
             return;
         }
         ConversationDto conversation = conversationApplicationService.createConversation(RequestContext.get().getUserId(), agentId, false);
-        agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), agentId);
+        agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), agentId, publishedDto.getTargetSubType().name());
         response.sendRedirect(tenantConfigDto.getCasClientHostUrl().endsWith("/") ? tenantConfigDto.getCasClientHostUrl() + "home/chat/" + conversation.getId() : tenantConfigDto.getCasClientHostUrl() + "/home/chat/" + conversation.getId());
     }
 

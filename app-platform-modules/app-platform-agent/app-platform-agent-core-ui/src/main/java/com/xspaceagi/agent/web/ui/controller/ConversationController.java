@@ -1,11 +1,6 @@
 package com.xspaceagi.agent.web.ui.controller;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
-import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
+import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
@@ -17,7 +12,6 @@ import com.xspaceagi.agent.core.infra.component.agent.SandboxAgentClient;
 import com.xspaceagi.agent.core.infra.component.model.ModelPageRequest;
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
-import com.xspaceagi.agent.core.infra.sub.ChatMessagePubSubService;
 import com.xspaceagi.agent.core.spec.enums.MessageTypeEnum;
 import com.xspaceagi.agent.web.ui.controller.dto.ConversationMessageQueryDto;
 import com.xspaceagi.agent.web.ui.controller.dto.ConversationShareDto;
@@ -55,9 +49,6 @@ import reactor.core.publisher.Flux;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 @Tag(name = "智能体会话相关接口")
 @RestController
@@ -65,10 +56,11 @@ import java.util.function.Consumer;
 @Slf4j
 public class ConversationController {
 
-    public static final String DEFAULT_TOPIC = "Unnamed conversation";
-
     @Resource
     private ConversationApplicationService conversationApplicationService;
+
+    @Resource
+    private ChatApplicationService chatApplicationService;
 
     @Resource
     private AgentApplicationService agentApplicationService;
@@ -100,9 +92,6 @@ public class ConversationController {
     @Resource
     private SandboxAgentClient sandboxAgentClient;
 
-    @Resource
-    private ChatMessagePubSubService chatMessagePubSubService;
-
     @Operation(summary = "创建会话")
     @RequestMapping(path = "/create", method = RequestMethod.POST)
     public ReqResult<ConversationDto> create(@RequestBody ConversationCreateDto conversationCreateDto) {
@@ -123,7 +112,7 @@ public class ConversationController {
             }
             //agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), conversationCreateDto.getAgentId());
         }
-        return ReqResult.success(conversationApplicationService.createConversation(RequestContext.get().getUserId(), conversationCreateDto.getAgentId(), conversationCreateDto.isDevMode(), conversationCreateDto.getVariables()));
+        return ReqResult.success(conversationApplicationService.createConversation(RequestContext.get().getUserId(), conversationCreateDto.getAgentId(), conversationCreateDto.isDevMode(), conversationCreateDto.getVariables(), conversationCreateDto.getSandboxId(), conversationCreateDto.getWorkspacePath(), conversationCreateDto.getProjectId(), conversationCreateDto.getProjectType()));
     }
 
     @Operation(summary = "根据用户消息更新会话主题")
@@ -139,7 +128,7 @@ public class ConversationController {
             // ignore
         }
         conversationDto = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationUpdateDto.getId());
-        if (conversationDto != null && DEFAULT_TOPIC.equals(conversationDto.getTopic())) {
+        if (conversationDto != null && conversationDto.isDefaultTopic()) {
             conversationDto.setTopic(I18nUtil.systemMessage("Backend.Conversation.DefaultTopic", conversationDto.getAgent().getName()));
         }
         return ReqResult.success(conversationDto == null ? new ConversationDto() : conversationDto);
@@ -199,7 +188,7 @@ public class ConversationController {
             chatMessageDto.setTime(!conversationDto.getMessageList().isEmpty() ? conversationDto.getMessageList().get(0).getTime() : new Date());
             conversationDto.getMessageList().add(0, chatMessageDto);
         }
-        if (DEFAULT_TOPIC.equals(conversationDto.getTopic())) {
+        if (conversationDto.isDefaultTopic()) {
             if (conversationDto.getAgent() != null) {
                 conversationDto.setTopic(I18nUtil.systemMessage("Backend.Conversation.DefaultTopic", conversationDto.getAgent().getName()));
             }
@@ -236,47 +225,63 @@ public class ConversationController {
         if (conversationQueryDto.getLimit() == null || conversationQueryDto.getLimit() <= 0) {
             conversationQueryDto.setLimit(100);
         }
-        List<ConversationDto> conversationDtoList = conversationApplicationService.queryConversationList(RequestContext.get().getUserId(), conversationQueryDto.getAgentId(), conversationQueryDto.getLastId(), conversationQueryDto.getLimit(), conversationQueryDto.getTopic());
+        // archivedFilter：all=全部（默认，含归档）；exclude=排除归档；only=仅归档
+        // collectedFilter：all=全部（默认）；only=仅含收藏
+        // projectFilter：all=全部（默认）；exclude=排除项目会话（常规项目/全栈应用）；only=仅项目会话
+        List<ConversationDto> conversationDtoList = conversationApplicationService.queryConversationList(
+                RequestContext.get().getUserId(), conversationQueryDto.getAgentId(), conversationQueryDto.getLastId(),
+                conversationQueryDto.getLimit(), conversationQueryDto.getTopic(),
+                ArchivedFilter.parse(conversationQueryDto.getArchivedFilter()),
+                CollectedFilter.parse(conversationQueryDto.getCollectedFilter()),
+                ProjectConversationFilter.parse(conversationQueryDto.getProjectFilter()));
         return ReqResult.success(conversationDtoList);
     }
 
-    @Operation(summary = "智能体会话测试接口（勿用）")
-    @RequestMapping(path = "/chat", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<AgentOutputDto> testExecute(TryReqDto tryReqDto, HttpServletRequest request, HttpServletResponse response) {
-        return tryExecute(tryReqDto, request, response);
+    @Operation(summary = "会话置顶/取消置顶（置顶会话在列表排最前）")
+    @RequestMapping(path = "/pin/{conversationId}", method = RequestMethod.POST)
+    public ReqResult<ConversationDto> pin(@PathVariable Long conversationId,
+                                          @RequestParam(value = "pinned", defaultValue = "true") boolean pinned) {
+        return ReqResult.success(conversationApplicationService.updateConversationFlags(
+                RequestContext.get().getUserId(), conversationId, pinned, null));
+    }
+
+    @Operation(summary = "会话归档/取消归档")
+    @RequestMapping(path = "/archive/{conversationId}", method = RequestMethod.POST)
+    public ReqResult<ConversationDto> archive(@PathVariable Long conversationId,
+                                              @RequestParam(value = "archived", defaultValue = "true") boolean archived) {
+        return ReqResult.success(conversationApplicationService.updateConversationFlags(
+                RequestContext.get().getUserId(), conversationId, null, archived));
+    }
+
+    @Operation(summary = "会话收藏")
+    @RequestMapping(path = "/collect/{conversationId}", method = RequestMethod.POST)
+    public ReqResult<Void> collect(@PathVariable Long conversationId) {
+        conversationApplicationService.collectConversation(RequestContext.get().getUserId(), conversationId);
+        return ReqResult.success();
+    }
+
+    @Operation(summary = "会话取消收藏")
+    @RequestMapping(path = "/unCollect/{conversationId}", method = RequestMethod.POST)
+    public ReqResult<Void> unCollect(@PathVariable Long conversationId) {
+        conversationApplicationService.unCollectConversation(RequestContext.get().getUserId(), conversationId);
+        return ReqResult.success();
     }
 
     @Operation(summary = "智能体会话接口")
     @RequestMapping(path = "/chat", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<AgentOutputDto> tryExecute(@RequestBody @Valid TryReqDto tryReqDto, HttpServletRequest request, HttpServletResponse response) {
+    public Flux<AgentOutputDto> chat(@RequestBody @Valid TryReqDto tryReqDto, HttpServletRequest request, HttpServletResponse response) {
         response.setCharacterEncoding("utf-8");
         Map<String, String> headersFromRequest = getHeadersFromRequest(request);
         tryReqDto.setFrom("chat");
         tryReqDto.setFilterSensitive(null);
-        return conversationApplicationService.chat(tryReqDto, headersFromRequest, false);
+        tryReqDto.setAgentConfig(null);
+        return chatApplicationService.chat(tryReqDto, headersFromRequest, false);
     }
 
     @Operation(summary = "停止会话")
     @RequestMapping(path = "/chat/stop/{conversationId}", method = RequestMethod.POST)
     public ReqResult<Void> chatStop(@PathVariable String conversationId) {
-        long cid;
-        try {
-            cid = Long.parseLong(conversationId);
-        } catch (NumberFormatException e) {
-            // Compatible with previous API calls
-            conversationApplicationService.setChatStopStatus(conversationId);
-            return ReqResult.success();
-        }
-        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), cid);
-        if (conversation == null) {
-            return ReqResult.error("Conversation not found");
-        }
-
-        if ("TaskAgent".equals(conversation.getAgent().getType())) {
-            sandboxAgentClient.chatCancel(conversationId);
-        }
-        conversationApplicationService.setChatStopStatus(conversationId);
-        conversationApplicationService.updateConversationStatus(conversation.getId(), Conversation.ConversationTaskStatus.CANCEL);
+        chatApplicationService.stopChat(conversationId);
         return ReqResult.success();
     }
 
@@ -284,62 +289,7 @@ public class ConversationController {
     @RequestMapping(path = "/chat/sub/{conversationId}", method = RequestMethod.GET, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<AgentOutputDto> sub(@PathVariable Long conversationId, HttpServletResponse response) {
         response.setCharacterEncoding("utf-8");
-        ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationId);
-        if (conversation == null) {
-            AgentOutputDto agentOutputDto = new AgentOutputDto();
-            agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.ERROR);
-            agentOutputDto.setError("Conversation not found");
-            return Flux.just(agentOutputDto);
-        }
-        if (conversation.getTaskStatus() != Conversation.ConversationTaskStatus.EXECUTING) {
-            AgentOutputDto agentOutputDto = new AgentOutputDto();
-            agentOutputDto.setEventType(AgentOutputDto.EventTypeEnum.ERROR);
-            agentOutputDto.setError("Conversation not executing");
-            return Flux.just(agentOutputDto);
-        }
-
-        AtomicReference<Consumer<String>> consumer = new AtomicReference<>();
-        Flux<AgentOutputDto> flux = Flux.create(sink -> {
-            AtomicBoolean completed = new AtomicBoolean(false);
-            List<String> messages = chatMessagePubSubService.getMessages(conversationId.toString());
-            if (messages != null && !messages.isEmpty()) {
-                for (String message : messages) {
-                    try {
-                        AgentOutputDto agentOutputDto = JSON.parseObject(message, AgentOutputDto.class);
-                        sink.next(agentOutputDto);
-                        if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT) {
-                            sink.complete();
-                            completed.set(true);
-                        }
-                    } catch (Exception e) {
-                        log.error("parse message failed", e);
-                    }
-                }
-            }
-            if (completed.get()) {
-                return;
-            }
-            Consumer<String> listener = message -> {
-                if (JSON.isValidArray(message)) {
-                    JSONArray jsonArray = JSON.parseArray(message);
-                    for (int i = 0; i < jsonArray.size(); i++) {
-                        try {
-                            AgentOutputDto agentOutputDto = JSON.parseObject(jsonArray.getString(i), AgentOutputDto.class);
-                            sink.next(agentOutputDto);
-                            if (agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT || agentOutputDto.getEventType() == AgentOutputDto.EventTypeEnum.ERROR) {
-                                sink.complete();
-                                chatMessagePubSubService.unsubscribe(conversationId.toString(), consumer.get());
-                            }
-                        } catch (Exception e) {
-                            log.error("parse message failed", e);
-                        }
-                    }
-                }
-            };
-            consumer.set(listener);
-            chatMessagePubSubService.subscribe(conversationId.toString(), listener);
-        });
-        return flux.doOnCancel(() -> chatMessagePubSubService.unsubscribe(conversationId.toString(), consumer.get()));
+        return chatApplicationService.subscribe(conversationId);
     }
 
     @Operation(summary = "权限请求回复")
@@ -378,7 +328,7 @@ public class ConversationController {
         if (conversationByCid == null || conversationByCid.getUserId().equals(RequestContext.get().getUserId())) {
             return ReqResult.error("No permission for this conversation");
         }
-        conversationApplicationService.setChatStopStatus(conversationId.toString());
+        chatApplicationService.setChatStopStatus(conversationId.toString());
         sandboxAgentClient.agentStop(conversationId.toString());
         return ReqResult.success();
     }
@@ -475,6 +425,10 @@ public class ConversationController {
         ConversationDto conversation = conversationApplicationService.getConversation(RequestContext.get().getUserId(), conversationShareDto.getConversationId());
         if (conversation == null) {
             return ReqResult.error("Conversation not found");
+        }
+        // 分享可匿名访问，而 customTargetDir 可指向属主机器任意目录（仅属主本人可用）：带该参数的文件地址不支持分享
+        if (conversationShareDto.getContent() != null && conversationShareDto.getContent().contains("customTargetDir")) {
+            return ReqResult.error("Files with customTargetDir do not support sharing");
         }
         UserShareDto userShareDto = new UserShareDto();
         userShareDto.setType(conversationShareDto.getType());

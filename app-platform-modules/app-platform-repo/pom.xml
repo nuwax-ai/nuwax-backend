@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-modules</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>app-platform-repo</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <description>文档协作（类飞书文档）模块集：页面/版本/评论/附件，实时协作由独立 Node Sidecar 承载</description>
+    <properties/>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-spec</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-sdk</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-domain</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-infra</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-application</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-web</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>app-platform-repo-spec</module>
+        <module>app-platform-repo-sdk</module>
+        <module>app-platform-repo-domain</module>
+        <module>app-platform-repo-infra</module>
+        <module>app-platform-repo-application</module>
+        <module>app-platform-repo-web</module>
+    </modules>
+</project>

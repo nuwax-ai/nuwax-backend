@@ -26,6 +26,18 @@ public class UserDetailDto {
     @Schema(description = "用户头像")
     private String avatar;
 
+    /**
+     * 用户状态。sdk 模块不能依赖 system-infra 的 {@code User.Status} 枚举，
+     * 故以枚举名字符串下发：Enabled / Disabled / Deleted；由 BeanUtils 拷贝时
+     * 类型不匹配会被跳过，需要转换方显式赋值（如 InternalApiController#toDetailDto）。
+     */
+    @Schema(description = "用户状态（枚举名）：Enabled/Disabled/Deleted")
+    private String status;
+
+    /** 用户角色，同 status 以枚举名字符串下发：Admin / User */
+    @Schema(description = "用户角色（枚举名）：Admin/User")
+    private String role;
+
     @Schema(description = "邮箱")
     private String email;
 

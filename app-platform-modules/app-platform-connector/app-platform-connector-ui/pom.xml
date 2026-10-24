@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-connector</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-connector-ui</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-sdk</artifactId>
+        </dependency>
+        <!-- 扫码建连（authType=oauth2_device）在服务端把授权 URL 渲染成二维码。
+             版本与 platform-system/system-web 的 IconGenerateController 保持一致，
+             仓库里已在用，不是新引入的三方；父 pom 无 dependencyManagement 条目，故内联版本。 -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+    </dependencies>
+</project>

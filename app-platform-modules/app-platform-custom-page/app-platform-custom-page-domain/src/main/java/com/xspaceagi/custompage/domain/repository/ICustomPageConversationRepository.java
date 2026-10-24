@@ -52,13 +52,6 @@ public interface ICustomPageConversationRepository {
      */
     CustomPageConversationModel findUserByProjectIdAndRequestId(Long projectId, String requestId);
 
-    CustomPageConversationModel findById(Long id);
-
-    /**
-     * 更新助手消息内容
-     */
-    boolean updateAssistantContent(Long id, String content, String requestId, UserContext userContext);
-
     /**
      * 按项目ID删除会话记录（软删）
      */

@@ -41,5 +41,14 @@ public interface SandboxConfigService extends IService<SandboxConfig> {
      */
     SandboxConfig queryGlobalConfigByKey(String configKey);
 
+    /**
+     * 根据用户ID + 设备ID查询用户配置（device_id 维度）
+     *
+     * @param userId   用户ID
+     * @param deviceId 客户端设备ID
+     * @return 配置信息；userId 为空或 deviceId 为空时返回 null
+     */
+    SandboxConfig queryUserConfigByDeviceId(Long userId, String deviceId);
+
     SandboxConfig querySandboxConfigById(Long sandboxId);
 }

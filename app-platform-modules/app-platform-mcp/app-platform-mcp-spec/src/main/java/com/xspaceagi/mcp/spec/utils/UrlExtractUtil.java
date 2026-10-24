@@ -20,6 +20,9 @@ public class UrlExtractUtil {
                 return List.of(url);
             }
         }
+        if (text == null) {
+            return List.of();
+        }
         List<String> urls = new ArrayList<>();
         String regex = "(https?://[\\w\\-._~:/?#\\[\\]@!$&'()*+,;=%]+)";
         Pattern pattern = Pattern.compile(regex);

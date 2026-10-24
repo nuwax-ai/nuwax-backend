@@ -30,10 +30,13 @@ public class CategoryDto {
     @Schema(description = "分类描述")
     private String description;
 
+    @Schema(description = "分类图标地址")
+    private String icon;
+
     @Schema(description = "分类编码")
     private String code;
 
-    @Schema(description = "分类类型：Agent、PageApp、Component")
+    @Schema(description = "分类类型：Agent、PageApp、Component、ChatBox、Connector、Skill")
     private String type;
 
     @Schema(description = "创建时间")

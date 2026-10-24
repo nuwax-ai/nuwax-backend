@@ -44,7 +44,7 @@ public class SandboxConfigRpcDto implements Serializable {
 
     @Schema(description = "是否在线：true-在线 false-离线")
     private boolean online;
-
+    private Long agentId;
     @Schema(description = "隔离级别")
     private IsolationEnum isolation;
 

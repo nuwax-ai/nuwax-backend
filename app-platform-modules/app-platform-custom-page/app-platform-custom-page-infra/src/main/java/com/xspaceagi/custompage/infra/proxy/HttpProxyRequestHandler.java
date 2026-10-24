@@ -280,6 +280,8 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
             request.headers().set("Host", backendVo.getHost());
 
+            request.headers().set("x-api-key", StringUtils.defaultString(backendVo.getApiKey()));
+
             String remoteIp = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
             if (request.headers().get("X-Forwarded-For") == null) {
                 request.headers().set("X-Forwarded-For", remoteIp);

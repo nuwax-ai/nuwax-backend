@@ -69,6 +69,7 @@ public class UserManApiController {
         if (userDto == null) {
             throw new IllegalArgumentException("Invalid param");
         }
+        userDto.setLangMap(null);
         return ReqResult.success(userDto);
     }
 

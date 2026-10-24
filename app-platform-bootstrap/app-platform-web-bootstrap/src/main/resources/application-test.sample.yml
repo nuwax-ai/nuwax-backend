@@ -88,6 +88,10 @@ server:
 jwt:
   secretKey: ${JWT_SECRET_KEY:your_jwt_secret_key_minimum_32_characters}
 
+# 静态资源访问基址（图片等资源的对外前缀）
+resource:
+  baseUrl: ${RESOURCE_BASE_URL:}
+
 file:
   uploadFolder: ${FILE_UPLOAD_FOLDER:/tmp/uploads}
   baseUrl: ${FILE_BASE_URL:https://your-file-domain.com/files/}
@@ -127,6 +131,8 @@ s3:
   secret-key: ${S3_SECRET_KEY:}
   bucket-name: ${S3_BUCKET_NAME:}
   region: ${S3_REGION:us-east-1}
+  # 对外访问代理基址：非空时用它替换 endpoint 前缀生成文件 URL（如 https://s3p.example.com:9443）
+  proxy: ${S3_PROXY:}
 vector-store:
   engine: milvus
 
@@ -170,6 +176,9 @@ eco-market:
   server:
     # 远程server端的 ip端口配置
     base-url: ${ECO_MARKET_SERVER_URL:https://market-api.nuwax.com}
+  # 生态市场前端地址（后台跳转与通知展示用）
+  web:
+    base-url: ${ECO_MARKET_WEB_URL:https://eco.nuwax.com}
   client:
     # 客户端配置
     retry:
@@ -198,6 +207,17 @@ custom-page:
   docker-proxy:
     enable: ${DOCKER_PROXY_ENABLE:true}
     base-url: ${DOCKER_PROXY_URL:http://localhost:8088}
+
+# 全栈应用数据库凭证加密密钥（AES，Base64，16/24/32 字节）
+userapp:
+  http-proxy:
+    host: ${USERAPP_PROXY_HOST:0.0.0.0}
+    port: ${USERAPP_PROXY_PORT:19001}
+  domain:
+    dev-suffix: ${USERAPP_DOMAIN_DEV_SUFFIX}
+    prod-suffix: ${USERAPP_DOMAIN_PROD_SUFFIX}
+  credential:
+    aes-key: ${USERAPP_CREDENTIAL_AES_KEY:}
 
 computer:
   proxy:
@@ -230,3 +250,142 @@ model-api-proxy:
   port: ${MODEL_PROXY_PORT:18086}
   #记录日志
   save-log: ${MODEL_PROXY_SAVE_LOG:true}
+
+# 沙箱临时链接：子域名形态的免登录访问入口
+sandbox:
+  temp-link:
+    # 临时链接根域名（裸域名，如 example.com；不可填带协议的前缀）
+    # 留空则禁用临时链接能力（ApiForSandboxController 直接拒绝）
+    base-domain: ${SANDBOX_TEMP_LINK_BASE_DOMAIN:}
+    proxy:
+      # 反向代理监听端口（ReverseHttpProxyServer）
+      port: ${SANDBOX_TEMP_LINK_PROXY_PORT:18087}
+
+# 图数据库地址（随生产配置保留；本服务代码未读取）
+surrealdb:
+  url: ${SURREALDB_URL:}
+
+# 授权许可（随生产配置保留；本服务代码未读取）
+license: ${LICENSE:}
+
+speech:
+  asr:
+    provider: dashscope  # volc | dashscope
+    # 共用静音断句；切换 volc/dashscope 时保持一致。各 provider 可单独覆盖。
+    sentence-silence-ms: 600
+    # 百炼等空闲约 23s 超时后静默换会话，继续听音
+    timeout-silent-rebuild: true
+    rebuild-max-attempts: 3
+    rebuild-replay-ms: 400
+    volc:
+      endpoint: wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
+      api-key: ${ASR_VOLC_API_KEY:}
+      app-key: ${ASR_VOLC_APP_KEY:}
+      access-key: ${ASR_VOLC_ACCESS_KEY:}
+      resource-id: volc.seedasr.sauc.duration
+      chunk-ms: 200
+      # ≤0 则用 asr.sentence-silence-ms；实际下发 clamp ≥200
+      end-window-size-ms: 0
+      # ≤0 则用 200；配合 end_window_size，否则短句前约 10s 才允许判停
+      force-to-speech-time-ms: 200
+      connect-timeout-ms: 5000
+      send-timeout-ms: 10000
+      result-timeout-ms: 15000
+    dashscope:
+      workspace-id: ${ASR_DASHSCOPE_WORKSPACE_ID:}
+      api-key: ${ASR_DASHSCOPE_API_KEY:}
+      region: cn-beijing
+      model: fun-asr-realtime
+      format: pcm
+      sample-rate: 16000
+      chunk-ms: 200
+      # ≤0 则用 asr.sentence-silence-ms（对应 max_sentence_silence）
+      max-sentence-silence-ms: 0
+      speech-noise-threshold: 0.3
+      connect-timeout-ms: 5000
+      send-timeout-ms: 10000
+      result-timeout-ms: 15000
+  tts:
+    provider: dashscope  # volc | dashscope
+    batch-min-chars: 8
+    batch-max-hold-ms: 120
+    warmup-on-start: true
+    downlink-pace-enabled: false
+    downlink-prebuffer-ms: 800
+    downlink-max-buffered-ms: 2000
+    pending-pcm-max-buffered-ms: 60000
+    feed-max-idle-ms: 12000
+    feed-keepalive-text: "，"
+    timeout-silent-rebuild: true
+    rebuild-max-attempts: 3
+    volc:
+      endpoint: wss://openspeech.bytedance.com/api/v3/tts/bidirection
+      api-key: ${TTS_VOLC_API_KEY:}
+      app-key: ${TTS_VOLC_APP_KEY:}
+      access-key: ${TTS_VOLC_ACCESS_KEY:}
+      resource-id: seed-tts-2.0
+      speaker: ${TTS_VOLC_SPEAKER:zh_female_vv_uranus_bigtts}
+      model: seed-tts-2.0-standard
+      connect-timeout-ms: 5000
+      send-timeout-ms: 10000
+      session-timeout-ms: 30000
+      chunk-wait-ms: 200
+      non-flush-chunk-wait-ms: 0
+    dashscope:
+      workspace-id: ${TTS_DASHSCOPE_WORKSPACE_ID:}
+      api-key: ${TTS_DASHSCOPE_API_KEY:}
+      region: cn-beijing
+      model: cosyvoice-v3-flash
+      voice: longxing_v3
+      format: pcm
+      sample-rate: 16000
+      rate: 1.1
+      volume: 50
+      pitch: 1.0
+      connect-timeout-ms: 5000
+      send-timeout-ms: 10000
+      session-timeout-ms: 30000
+      chunk-wait-ms: 200
+      non-flush-chunk-wait-ms: 0
+
+# ===== 连接器 / IM RPC / 消息队列 =====
+nuwax:
+  # 连接器（第三方应用接入）
+  connector:
+    # 凭证加密主密钥（Base64 32 字节 或 Hex 64 字符）
+    # 读取优先级：系统属性 NUWAX_CONNECTOR_ENCRYPTION_KEY > 本配置 > 环境变量 NUWAX_CONNECTOR_ENCRYPTION_KEY
+    encryption-key: ${NUWAX_CONNECTOR_ENCRYPTION_KEY:}
+    # 出站请求 SSRF 防护
+    guard:
+      # 是否放行内网/私网地址（仅自托管场景考虑打开）
+      allow-private: ${CONNECTOR_GUARD_ALLOW_PRIVATE:false}
+      # true=拦截私网请求；false=观察模式（只记录不拦截）
+      enforce: ${CONNECTOR_GUARD_ENFORCE:true}
+      # 全局请求超时上限（毫秒）
+      timeout-ms: ${CONNECTOR_GUARD_TIMEOUT_MS:60000}
+      # 响应体大小上限（字节）
+      max-response-bytes: ${CONNECTOR_GUARD_MAX_RESPONSE_BYTES:1048576}
+  # IM 业务平面 RPC 适配
+  im:
+    adapter:
+      # 关闭后调用一律抛异常（拒绝，不是静默跳过）
+      enabled: ${IM_RPC_ENABLED:false}
+      # 内网直连地址（形如 http://192.168.1.10:18092）：
+      # 填对外域名会得到 HTTP 405 或 404，而不是“验签失败”
+      base-url: ${IM_RPC_BASE_URL:}
+      # 调用方标识，决定配额与密钥索引
+      app-id: ${IM_RPC_APP_ID:app-platform-im}
+      # 与 app-id 一一对应的 HMAC 密钥；绝不入日志、不入库、不回显
+      secret: ${IM_RPC_SECRET_PLATFORM_IM:}
+      # 契约版本，当前固定 v1
+      api-version: ${IM_RPC_API_VERSION:v1}
+      # 单次请求读超时
+      timeout: ${IM_RPC_TIMEOUT:3s}
+      # 连接超时
+      connect-timeout: ${IM_RPC_CONNECT_TIMEOUT:3s}
+  # 消息队列（随生产配置保留；本服务代码未读取）
+  mq:
+    enabled: ${NUWAX_MQ_ENABLED:false}
+    # broker 地址，如 192.168.1.10:30141
+    endpoints: ${NUWAX_MQ_ENDPOINTS:}
+    request-timeout: ${NUWAX_MQ_REQUEST_TIMEOUT:3s}

@@ -226,16 +226,17 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
             Long chatModelId = processModelConfigFlux(chatBody, userContext, configModel, sink);
             throwIfStopRequested(stopRequested);
 
-            // 5 处理数据源
+            // 5 记录本次使用的对话/多模态模型
+            updateLastModelIds(projectId, chatModelId, multiModelId, userContext);
+            throwIfStopRequested(stopRequested);
+
+            // 6 处理数据源
             processDataSourcesFlux(chatBody, configModel, sink);
             throwIfStopRequested(stopRequested);
 
-            // 6 处理技能列表并推送到网页应用开发工作空间
+            // 7 处理技能列表并推送到网页应用开发工作空间
             processSkillsFlux(chatBody, projectId, userContext, sink);
             throwIfStopRequested(stopRequested);
-
-            // 7 备份并更新版本
-            // backAndUpdateVersion(userContext, chatBody, projectId, buildModel, chatModelId, multiModelId, sink, stopRequested);
 
             // 8 调用 AI Agent
             //sendProgressFlux(sink, "Calling AI agent...80%");
@@ -270,6 +271,33 @@ public class CustomPageChatFluxServiceImpl implements ICustomPageChatFluxService
         } catch (Exception e) {
             log.error("[Flux Service] Flux chat exception", e);
             sendErrorFlux(sink, "0001", e.getMessage());
+        }
+    }
+
+    /**
+     * 将本次解析得到的对话模型/多模态模型 ID 写入 custom_page_build，供下次默认回显。
+     * 不触碰 codeVersion / versionInfo。
+     */
+    private void updateLastModelIds(Long projectId, Long chatModelId, Long multiModelId, UserContext userContext) {
+        if (projectId == null) {
+            return;
+        }
+        try {
+            CustomPageBuildModel buildModel = customPageBuildRepository.getByProjectId(projectId);
+            if (buildModel == null || buildModel.getId() == null) {
+                log.warn("[Flux Service] update last model ids skipped, build not found, project Id={}", projectId);
+                return;
+            }
+            CustomPageBuildModel updateModel = new CustomPageBuildModel();
+            updateModel.setId(buildModel.getId());
+            updateModel.setLastChatModelId(chatModelId);
+            updateModel.setLastMultiModelId(multiModelId);
+            customPageBuildRepository.updateVersionInfo(updateModel, userContext);
+            log.info("[Flux Service] update last model ids succeeded, project Id={}, chat Model Id={}, multi Model Id={}",
+                    projectId, chatModelId, multiModelId);
+        } catch (Exception e) {
+            log.warn("[Flux Service] update last model ids failed, project Id={}, chat Model Id={}, multi Model Id={}",
+                    projectId, chatModelId, multiModelId, e);
         }
     }
 

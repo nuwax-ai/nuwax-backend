@@ -158,6 +158,13 @@ public class SandboxConfigRpcServiceImpl implements ISandboxConfigRpcService {
         return convertToRpcDto(config);
     }
 
+    @Override
+    public SandboxConfigRpcDto queryByIdInTenant(Long id) {
+        // 租户上下文内执行：MyBatis-Plus 租户插件按 RequestContext.tenantId 过滤，
+        SandboxConfig config = sandboxConfigService.getById(id);
+        return convertToRpcDto(config);
+    }
+
     /**
      * 转换为 RPC DTO 列表
      */
@@ -214,6 +221,14 @@ public class SandboxConfigRpcServiceImpl implements ISandboxConfigRpcService {
     }
 
     @Override
+    public void saveUserSelectedSandboxId(Long userId, Long agentId, Long sandboxId) {
+        if (userId == null || agentId == null || sandboxId == null) {
+            return;
+        }
+        redisUtil.hashPut("user-sandbox-selected:" + userId, agentId.toString(), sandboxId.toString());
+    }
+
+    @Override
     public Long queryUserSelectedSandboxId(Long userId, Long agentId) {
         if (agentId == null || userId == null) {
             return null;
@@ -263,6 +278,13 @@ public class SandboxConfigRpcServiceImpl implements ISandboxConfigRpcService {
         }
         SandboxConfigRpcDto rpcDto = new SandboxConfigRpcDto();
         BeanUtils.copyProperties(configDto, rpcDto);
+        // serverInfo（application DTO，infra VO 类型）与 sandboxServerInfo（sdk DTO）字段名与类型均不同，
+        // copyProperties 拷不到；USER 级端点解析（SandboxEndpointConverter）依赖该字段，缺失会被判为配置不可用
+        if (configDto.getServerInfo() != null) {
+            SandboxServerInfo serverInfo = new SandboxServerInfo();
+            BeanUtils.copyProperties(configDto.getServerInfo(), serverInfo);
+            rpcDto.setSandboxServerInfo(serverInfo);
+        }
         SandboxConfigValue configValue = new SandboxConfigValue();
         BeanUtils.copyProperties(configDto.getConfigValue(), configValue);
         rpcDto.setConfigValue(configValue);

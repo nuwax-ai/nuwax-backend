@@ -13,4 +13,6 @@ public class BackendVo {
     private boolean requireAuth;
     private PublishTypeEnum publishType;
     private Long devAgentId;
+    /** 沙箱直连 backend 的 x-api-key（仅动态解析出的沙箱 backend 携带；其他 backend 为 null，不下发该头） */
+    private String apiKey;
 }

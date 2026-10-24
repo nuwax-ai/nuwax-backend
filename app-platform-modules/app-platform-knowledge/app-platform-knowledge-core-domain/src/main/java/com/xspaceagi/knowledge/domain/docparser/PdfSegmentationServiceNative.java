@@ -118,16 +118,25 @@ public class PdfSegmentationServiceNative {
                     float totalFontSize = 0;
                     int validCount = 0;
                     for (TextPosition p : positions) {
-                        float fs = p.getFontSize();
-                        if (fs > 1.0f) {
-                            totalFontSize += fs;
-                            validCount++;
-                        } else {
-                            totalFontSize += p.getHeight();
-                            validCount++;
+                        float fs = p.getFontSizeInPt(); // 使用标准点单位而非PDF内部单位
+                        if (fs < 1.0f || fs > 100.0f) {
+                            log.warn("异常字体大小: {} (原始值: {}), 文本: '{}', 使用高度计算",
+                                    fs, p.getFontSize(), text);
+                            fs = p.getHeight();
+                            if (fs < 1.0f || fs > 100.0f) {
+                                log.warn("高度计算也异常: {}, 使用默认值12.0", fs);
+                                fs = 12.0f;
+                            }
                         }
+                        totalFontSize += fs;
+                        validCount++;
                     }
                     float fontSize = validCount > 0 ? totalFontSize / validCount : 12;
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("文本块 - 字体大小: {}, 文本: '{}'", fontSize,
+                                text.length() > 50 ? text.substring(0, 50) + "..." : text);
+                    }
 
                     // [text, fontSize, page, type]
                     allBlocks.add(new Object[]{text, fontSize, pageIndex, TYPE_BODY});

@@ -15,6 +15,7 @@ import com.xspaceagi.agent.core.sdk.IAgentRpcService;
 import com.xspaceagi.agent.core.sdk.enums.TargetTypeEnum;
 import com.xspaceagi.agent.web.ui.controller.util.ReferUtil;
 import com.xspaceagi.custompage.sdk.dto.DataSourceDto;
+import com.xspaceagi.file.sdk.IFileAccessService;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
@@ -78,6 +79,9 @@ public class ExecuteForPageController {
 
     @Resource
     private TableWorkflowForPageApplicationService tableWorkflowForPageApplicationService;
+
+    @Resource
+    private IFileAccessService iFileAccessService;
 
     @Operation(summary = "运行已发布的工作流")
     @RequestMapping(path = "/api/page/workflow/{key}/streamExecute", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -151,6 +155,37 @@ public class ExecuteForPageController {
         workflowExecuteRequestDto.setAgentId(refererParseVo.getAgentId());
         response.setCharacterEncoding("utf-8");
         WorkflowExecutingDto workflowExecutingDto = workflowApplicationService.executeWorkflow(workflowExecuteRequestDto, workflowConfigDto).blockLast();
+        if (workflowExecutingDto != null) {
+            String content;
+            boolean isObject = true;
+            if (workflowExecutingDto.getData() instanceof String) {
+                content = (String) workflowExecutingDto.getData();
+                isObject = false;
+            } else {
+                content = JSON.toJSONString(workflowExecutingDto.getData());
+            }
+            if (content != null && content.contains("/api/f/")) {
+                java.util.regex.Matcher matcher = java.util.regex.Pattern
+                        .compile("https?://[^\\s\"'\\\\<>]+?/api/f/[^\\s\"'\\\\<>]+")
+                        .matcher(content);
+                StringBuilder sb = new StringBuilder();
+                while (matcher.find()) {
+                    String originalUrl = matcher.group();
+                    try {
+                        String signedUrl = iFileAccessService.getFileUrlWithAk(originalUrl, false);
+                        if (signedUrl != null) {
+                            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(signedUrl));
+                            continue;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(originalUrl));
+                }
+                matcher.appendTail(sb);
+                content = sb.toString();
+                workflowExecutingDto.setData(isObject ? JSON.parseObject(content) : content);
+            }
+        }
         return workflowExecutingDto != null && workflowExecutingDto.isSuccess() ? ReqResult.success(workflowExecutingDto.getData()) : ReqResult.error(workflowExecutingDto == null ? "" : workflowExecutingDto.getMessage());
     }
 
@@ -195,7 +230,7 @@ public class ExecuteForPageController {
         if (agentConfigDto != null && agentConfigDto.getAccessControl() != null && agentConfigDto.getAccessControl().equals(YesOrNoEnum.Y.getKey())) {
             // User data permission
             UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
-            if (userDataPermission.getAgentIds() == null || !userDataPermission.getAgentIds().contains(refererParseVo.getAgentId())) {
+            if (userDataPermission.getPageAgentIds() == null || !userDataPermission.getPageAgentIds().contains(refererParseVo.getAgentId())) {
                 throw BizException.of(ErrorCodeEnum.PERMISSION_DENIED, BizExceptionCodeEnum.permissionDenied);
             }
         }

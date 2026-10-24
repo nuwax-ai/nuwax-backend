@@ -1,9 +1,6 @@
 package com.xspaceagi.agent.web.ui.controller;
 
-import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
-import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
-import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
+import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
@@ -56,6 +53,9 @@ public class ApiController {
 
     @Resource
     private ConversationApplicationService conversationApplicationService;
+
+    @Resource
+    private ChatApplicationService chatApplicationService;
 
     @Resource
     private AgentApplicationService agentApplicationService;
@@ -155,7 +155,8 @@ public class ApiController {
         boolean isDevMode = userAccessKeyDto.getConfig() != null && userAccessKeyDto.getConfig().getIsDevMode() != null && userAccessKeyDto.getConfig().getIsDevMode().equals(YesOrNoEnum.Y.getKey());
         tryReqDto.setFrom("api");
         tryReqDto.setFilterSensitive(null);
-        return conversationApplicationService.chat(tryReqDto, headersFromRequest, false, isDevMode);
+        tryReqDto.setAgentConfig(null);
+        return chatApplicationService.chat(tryReqDto, headersFromRequest, false, isDevMode);
     }
 
     @Operation(summary = "智能体会话停止接口")

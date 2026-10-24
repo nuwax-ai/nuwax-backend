@@ -25,6 +25,9 @@ public class SandboxConfigDto {
     @Schema(description = "用户ID（scope为user时必填）")
     private Long userId;
 
+    @Schema(description = "客户端设备ID（前端真实 deviceId）")
+    private String deviceId;
+
     @Schema(description = "配置名称")
     private String name;
 

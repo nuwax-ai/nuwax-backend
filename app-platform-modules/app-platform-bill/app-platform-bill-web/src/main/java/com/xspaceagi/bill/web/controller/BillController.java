@@ -5,11 +5,10 @@ import com.xspaceagi.bill.app.service.BillRevenueAppService;
 import com.xspaceagi.bill.app.service.BillWithdrawAppService;
 import com.xspaceagi.bill.app.service.ResourceStatAppService;
 import com.xspaceagi.bill.sdk.dto.*;
-import com.xspaceagi.bill.spec.enums.ResourceStatTypeEnum;
-import com.xspaceagi.bill.spec.enums.RevenueTargetTypeEnum;
-import com.xspaceagi.bill.spec.enums.RevenueTypeEnum;
+import com.xspaceagi.bill.spec.enums.*;
 import com.xspaceagi.pay.sdk.dto.CashierSessionCreateResponse;
 import com.xspaceagi.pay.sdk.dto.OrderAndTransactionCreateResponse;
+import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.pay.sdk.support.PayAppWebViewDetector;
 import com.xspaceagi.pay.spec.support.PayAppNativeInAppGuard;
 import com.xspaceagi.pay.spec.support.PayH5InAppGuard;
@@ -28,8 +27,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -48,6 +50,35 @@ public class BillController {
 
     @Resource
     private ResourceStatAppService resourceStatAppService;
+
+    @PostMapping("/order/desk-buddy/create")
+    @Operation(summary = "创建桌搭订单")
+    public ReqResult<OrderDTO> createOrder(@RequestParam(required = false) PayMode payMode,
+                                           @RequestParam String name,
+                                           @RequestParam String phone,
+                                           @RequestParam String address) {
+
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setTenantId(RequestContext.get().getTenantId());
+        request.setUserId(RequestContext.get().getUserId());
+        request.setDescription("桌面搭子设备购买");
+        request.setBizType(BizTypeEnum.DESK_BUDDY);
+        CreateOrderRequest.CreateOrderItem item = new CreateOrderRequest.CreateOrderItem();
+        item.setTargetName("桌面搭子");
+        item.setTargetType(TargetTypeEnum.CREDIT_PACKAGE.getCode());
+        item.setTargetId(1L);
+        item.setPrice(BigDecimal.valueOf(199L));
+        item.setCount(1);
+        request.setItems(List.of(item));
+        request.setPayMode(payMode);
+        Map<String, Object> extra = new HashMap<>();
+        request.setExtra(extra);
+        extra.put("name", name);
+        extra.put("phone", phone);
+        extra.put("address", address);
+        OrderDTO order = billOrderAppService.createOrder(request);
+        return ReqResult.success(order);
+    }
 
     @GetMapping("/order/my")
     @Operation(summary = "我的订单")
@@ -139,7 +170,7 @@ public class BillController {
     @GetMapping("/order/pay/cashier")
     @Operation(summary = "获取订单收银台地址",
             description = "returnUrl 为前端结算页完整地址（支付完成后收银台跳转目标），须自行携带 orderId、业务回跳 callback/returnUrl 等 query；"
-                            + "示例：{前端域名}/pay/settlement?orderId={orderId}&returnUrl={业务页编码}")
+                    + "示例：{前端域名}/pay/settlement?orderId={orderId}&returnUrl={业务页编码}")
     public ReqResult<CashierSessionCreateResponse> getCashierUrl(
             @RequestParam Long orderId, @RequestParam String returnUrl) {
         Assert.notNull(orderId, "orderId can not be null");
@@ -226,7 +257,9 @@ public class BillController {
         response.setHeader("Location", target);
     }
 
-    /** 校验前端传入的结算页 URL（http/https）。 */
+    /**
+     * 校验前端传入的结算页 URL（http/https）。
+     */
     private static String validateSettlementPageUrl(String url) {
         try {
             URI uri = URI.create(url);

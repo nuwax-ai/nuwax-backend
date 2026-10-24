@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.web.ui.controller;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.xspaceagi.agent.core.adapter.application.*;
 import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
@@ -24,6 +25,7 @@ import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -247,8 +249,10 @@ public class PublishController extends BaseController {
                             currentUserId,
                             templateCopyDto.getTargetSpaceId(),
                             recommendResponse.getTargetId(),
-                            Published.TargetType.Skill.name(),
-                            id
+                            ProjectTypeEnum.Skill.name(),
+                            id,
+                            null,
+                            null
                     ).getId();
 
                     // 更新新技能的 devAgentConversationId
@@ -269,6 +273,14 @@ public class PublishController extends BaseController {
                     throw new RuntimeException("Failed to setup sandbox workspace for copied skill", e);
                 }
             }
+        }
+        if (templateCopyDto.getTargetType() == Published.TargetType.UserApp) {
+            // 自建应用不支持模板复制
+            throw new IllegalArgumentException("User app does not support template copy");
+        }
+        if (templateCopyDto.getTargetType() == Published.TargetType.ThirdApp) {
+            // 三方应用不支持模板复制
+            throw new IllegalArgumentException("Third-party app does not support template copy");
         }
         return ReqResult.success(id);
     }
@@ -309,6 +321,15 @@ public class PublishController extends BaseController {
             }
             if (creatorId == null && publishedDto.getPublishUser() != null) {
                 creatorId = publishedDto.getPublishUser().getUserId();
+            }
+        }
+        if (publishedDto.getTargetType() == Published.TargetType.ThirdApp
+                || publishedDto.getTargetType() == Published.TargetType.UserApp) {
+            // 三方应用与全栈应用：发布 config 是源行快照，创建者可自行下架
+            JSONObject config = JSON.parseObject(publishedDto.getConfig());
+            if (config != null) {
+                originalSpaceId = config.getLong("spaceId");
+                creatorId = config.getLong("creatorId");
             }
         }
         //发布者和接受方都可以下架

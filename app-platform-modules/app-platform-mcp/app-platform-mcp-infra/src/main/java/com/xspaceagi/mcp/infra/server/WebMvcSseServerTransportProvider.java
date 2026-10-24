@@ -331,6 +331,7 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
     private class WebMvcMcpSessionTransport implements McpServerTransport {
         private final String sessionId;
         private final ServerResponse.SseBuilder sseBuilder;
+        private final Object writeLock = new Object();
 
         WebMvcMcpSessionTransport(String sessionId, ServerResponse.SseBuilder sseBuilder) {
             this.sessionId = sessionId;
@@ -342,12 +343,26 @@ public class WebMvcSseServerTransportProvider implements McpServerTransportProvi
             return Mono.fromRunnable(() -> {
                 try {
                     String jsonText = WebMvcSseServerTransportProvider.this.objectMapper.writeValueAsString(message);
-                    this.sseBuilder.id(this.sessionId).event("message").data(jsonText);
+                    synchronized (writeLock) {
+                        this.sseBuilder.id(this.sessionId).event("message").data(jsonText);
+                    }
                     logger.info("Sending message to session {}: {}", this.sessionId, jsonText);
                     WebMvcSseServerTransportProvider.logger.debug("Message sent to session {}", this.sessionId);
                 } catch (Exception var3) {
+                    McpServerSession remove = sessions.remove(sessionId);
+                    if (remove != null) {
+                        try {
+                            remove.close();
+                        } catch (Exception e) {
+                            logger.error("Failed to close session {}", remove.getId(), e);
+                        }
+                    }
                     WebMvcSseServerTransportProvider.logger.error("Failed to send message to session {}: {}", this.sessionId, var3.getMessage());
-                    this.sseBuilder.error(var3);
+                    try {
+                        this.sseBuilder.complete();
+                    } catch (Exception e) {
+                        logger.error("Failed to complete SSE builder for session {}: {}", this.sessionId, e.getMessage());
+                    }
                 }
 
             });

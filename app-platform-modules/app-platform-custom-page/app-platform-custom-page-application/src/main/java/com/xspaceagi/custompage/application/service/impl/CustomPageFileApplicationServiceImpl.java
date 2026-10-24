@@ -18,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Signal;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -117,6 +118,9 @@ public class CustomPageFileApplicationServiceImpl implements ICustomPageFileAppl
             StreamingResponseBody streamingResponseBody = outputStream -> {
                 try {
                     finalFileFlux
+                            // 写出切离 reactor-netty event loop：阻塞写会钉住共享 IO 线程（慢客户端最坏钉满整个下载期）；
+                            // publishOn 自带 prefetch，同时补上端到端背压（写不动 → 停 request → 下游自动暂停）
+                            .publishOn(Schedulers.boundedElastic())
                             .doOnError(WebClientResponseException.class, e -> {
                                 log.error("[Web] Failed to get static file, log Id={}, status={}, response Body={}", 
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());

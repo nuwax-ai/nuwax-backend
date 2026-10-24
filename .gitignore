@@ -42,3 +42,21 @@ nbdist/
 # Ignore DevSpace cache and log folder
 .devspace/
 .*
+node_modules/
+.pnpm-store/
+dist-packages/
+.idea/
+.npmrc
+.agents/
+.claude/
+.opencode/
+.codex/
+.tmp/
+.logs/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+### Python ###
+__pycache__/
+*.pyc

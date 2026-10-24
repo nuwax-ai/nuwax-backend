@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>女娲 · 连接器执行调试</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23262320'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23F5F2EC' font-family='serif'%3E%E5%A5%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ 登录视图 ============ -->
+<div id="view-login" class="login-screen hidden">
+  <div class="login-card">
+    <div class="login-band">
+      <div class="brand-serif">女娲 · 连接器</div>
+      <div class="brand-sub">NUWAX CONNECTOR DEBUG</div>
+    </div>
+    <form id="login-form" class="login-body" autocomplete="off">
+      <label class="field">
+        <span class="field-label">手机号</span>
+        <input id="login-phone" type="text" maxlength="20" placeholder="请输入手机号" required>
+      </label>
+      <label class="field">
+        <span class="field-label">密码</span>
+        <input id="login-password" type="password" placeholder="请输入密码" required>
+      </label>
+      <button type="submit" class="btn btn-coal btn-block">登 录</button>
+      <p class="login-hint">登录后进入空间，选择连接器与动作即时执行调试。</p>
+    </form>
+  </div>
+</div>
+
+<!-- ============ 调试主视图 ============ -->
+<div id="view-app" class="hidden">
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div>
+        <div class="brand-serif light">女娲 · 连接器</div>
+        <div class="brand-sub light">NUWAX CONNECTOR DEBUG</div>
+      </div>
+      <div class="masthead-right">
+        <label class="space-picker">
+          <span class="space-picker-label">空间</span>
+          <select id="dbg-space"></select>
+        </label>
+        <span id="user-badge" class="user-badge"></span>
+        <a href="index.html" class="btn btn-ghost-light">返回控制台</a>
+        <button id="btn-logout" class="btn btn-ghost-light">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">执行参数</h3></div>
+        <form id="dbg-form" class="card-body" autocomplete="off">
+          <label class="field">
+            <span class="field-label">连接器</span>
+            <select id="dbg-provider"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">动作</span>
+            <select id="dbg-action"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">使用连接</span>
+            <select id="dbg-connection"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">输入参数（JSON）</span>
+            <textarea id="dbg-args" rows="6" spellcheck="false">{}</textarea>
+          </label>
+          <button type="submit" class="btn btn-coal">执 行</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head coal-band-sm">
+          <h3 class="card-title">执行结果</h3>
+          <span id="dbg-status" class="chip"></span>
+        </div>
+        <div class="card-body">
+          <div id="dbg-result" class="result-box">尚未执行。</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer-band">
+    <span>凭证明文不出连接器模块边界 · SSRF 防护永远生效 · 个人连接，不跨用户共享</span>
+  </footer>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/debug.js"></script>
+</body>
+</html>

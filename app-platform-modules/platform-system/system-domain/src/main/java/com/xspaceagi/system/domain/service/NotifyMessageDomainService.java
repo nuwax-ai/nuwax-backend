@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface NotifyMessageDomainService {
 
+    void addNotifyMessage(NotifyMessage notifyMessage, List<Long> userIds, boolean read);
+
     void addNotifyMessage(NotifyMessage notifyMessage, List<Long> userIds);
 
     void updateReadStatus(Long userId, List<Long> notifyIds);

@@ -29,6 +29,12 @@ public class UserDataPermissionDto implements Serializable {
     @Schema(description = "可创建网页应用数量，-1 表示不限制")
     private Integer maxPageAppCount;
 
+    @Schema(description = "可创建全栈应用数量，-1 表示不限制")
+    private Integer maxUserAppCount;
+
+    @Schema(description = "全栈应用闲置回收超时(秒)，-1 表示不限制（沿用下游默认），0 表示不回收（常驻）")
+    private Integer userAppIdleTimeoutSeconds;
+
     @Schema(description = "可创建知识库数量，-1 表示不限制")
     private Integer maxKnowledgeCount;
 
@@ -124,6 +130,16 @@ public class UserDataPermissionDto implements Serializable {
         if (userPageAppCount >= maxPageAppCount) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
                     "你的网页应用数量已经达到上限，当前网页应用上限数为" + maxPageAppCount);
+        }
+    }
+
+    public void checkMaxUserAppCount(long userAppCount) {
+        if (noLimit(maxUserAppCount)) {
+            return;
+        }
+        if (userAppCount >= maxUserAppCount) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "你的全栈应用数量已经达到上限，当前全栈应用上限数为" + maxUserAppCount);
         }
     }
 

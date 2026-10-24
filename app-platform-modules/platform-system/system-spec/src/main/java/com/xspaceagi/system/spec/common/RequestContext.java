@@ -27,6 +27,16 @@ public class RequestContext<T> implements Serializable {
     private static ThreadLocal<Set<String>> tenantIgnoreTablesLocal = new ThreadLocal<>();
 
     private Long userId;
+    /**
+     * 实际付费方覆盖（可空）。
+     * <p>
+     * 默认由计费链路自行推导——使用者本人，或（包干订阅 / 试用时）Agent 创建者；
+     * 仅内部调用接口「代指定用户发起会话」时由调用方显式指定（见
+     * {@code ChatApplicationServiceImpl#estimatePrice}）。
+     * <p>
+     * 为空时对既有计费行为完全无影响。
+     */
+    private Long billUserId;
     private Long tenantId;
     private Object tenantConfig;
     private String clientIp;
@@ -38,9 +48,17 @@ public class RequestContext<T> implements Serializable {
     private T user;
     private UserContext userContext;
     private String token;
+    /**
+     * OAuth2 access_token 的<b>有效</b> scope（逗号分隔，已按接入应用当前允许范围收窄）。
+     * <p>
+     * 仅当请求携带 {@code oa-} 令牌时由 {@code AuthInterceptor} 填充；普通登录态为 null。
+     * 用于门面端点的字段级权限判定（如 {@code user:phone} 决定 /userinfo 是否返回手机号）。
+     */
+    private String oauth2Scope;
     private String requestId;
     private Object akTarget;
     private Object userAccessKey;
+    private String from;
 
     public static <T> void set(RequestContext<T> requestContext) {
         requestContext.setRequestId(UUID.randomUUID().toString().replace("-", ""));

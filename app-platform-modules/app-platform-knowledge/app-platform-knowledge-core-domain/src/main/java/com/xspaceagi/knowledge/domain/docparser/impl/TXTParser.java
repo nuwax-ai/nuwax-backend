@@ -1,10 +1,12 @@
 package com.xspaceagi.knowledge.domain.docparser.impl;
 
 import com.xspaceagi.knowledge.core.spec.enums.KnowledgeDataTypeEnum;
+import com.xspaceagi.knowledge.domain.docparser.FileParseExtService;
 import com.xspaceagi.knowledge.domain.docparser.FileParseRequest;
 import com.xspaceagi.knowledge.domain.docparser.FileParseService;
 import com.xspaceagi.knowledge.domain.docparser.parse.DocParser;
 import com.xspaceagi.knowledge.domain.model.KnowledgeDocumentModel;
+import com.xspaceagi.knowledge.sdk.enums.SegmentEnum;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.KnowledgeException;
@@ -23,6 +25,9 @@ public class TXTParser implements DocParser {
 
     @Resource
     private FileParseService fileParseService;
+
+    @Resource
+    private FileParseExtService fileParseExtService;
 
     @Override
     public void chunk(KnowledgeDocumentModel documentDto, UserContext userContext) {
@@ -49,9 +54,19 @@ public class TXTParser implements DocParser {
                             .content(content.toString())
                             .segmentConfig(documentDto.getSegmentConfig())
                             .build();
-
+                    /*
                     this.fileParseService.parseRawTxt(fileParseRequest,
-                            userContext);
+                            userContext);*/
+                    String docUrl = "";
+                    if (documentDto != null && documentDto.getSegmentConfig() != null && documentDto.getSegmentConfig().getSegment().equals(SegmentEnum.SMART)) {
+                        fileParseExtService.parseRawTxt(fileParseRequest, userContext, docUrl);
+                    } else {
+                        this.fileParseService.parseRawTxt(fileParseRequest,
+                                userContext);
+                    }
+                } catch (KnowledgeException e) {
+                    // 业务异常(如租户默认模型不可用)原样上抛,保留具体原因供文档处理结果展示
+                    throw e;
                 } catch (Exception e) {
                     log.error("Failed to parse document", e);
                     throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);
@@ -67,9 +82,19 @@ public class TXTParser implements DocParser {
                             .content(documentDto.getFileContent())
                             .segmentConfig(documentDto.getSegmentConfig())
                             .build();
-
+                    /*
                     this.fileParseService.parseRawTxt(fileParseRequest,
-                            userContext);
+                            userContext);*/
+                    String docUrl = "";
+                    if (documentDto != null && documentDto.getSegmentConfig() != null && documentDto.getSegmentConfig().getSegment().equals(SegmentEnum.SMART)) {
+                        fileParseExtService.parseRawTxt(fileParseRequest, userContext, docUrl);
+                    } else {
+                        this.fileParseService.parseRawTxt(fileParseRequest,
+                                userContext);
+                    }
+                } catch (KnowledgeException e) {
+                    // 业务异常(如租户默认模型不可用)原样上抛,保留具体原因供文档处理结果展示
+                    throw e;
                 } catch (Exception e) {
                     log.error("Failed to parse document", e);
                     throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeDocumentParseFailed);

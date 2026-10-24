@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.function.Consumer;
 
 import com.xspaceagi.custompage.domain.model.CustomPageConfigModel;
 import com.xspaceagi.custompage.domain.repository.ICustomPageConfigRepository;
+import com.xspaceagi.custompage.domain.util.UriEncodingUtil;
 import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigValue;
@@ -241,7 +243,7 @@ public class PageAppAIClient {
         if (sessionId != null && !sessionId.isBlank()) {
             urlBuilder = urlBuilder.queryParam("session_id", sessionId);
         }
-        String url = appendRuntimeParams(urlBuilder, runtimeContext).toUriString();
+        URI url = UriEncodingUtil.buildEncodedUri(appendRuntimeParams(urlBuilder, runtimeContext));
         log.info("[Infra] callcancel agent task API, url={}, project Id={}, session Id={}", url, projectId, sessionId);
 
         HttpHeaders headers = new HttpHeaders();
@@ -270,7 +272,7 @@ public class PageAppAIClient {
 
     public Map<String, Object> getAgentStatus(Long projectId, UserContext userContext) {
         AgentRuntimeContext runtimeContext = buildAgentRuntimeContext(projectId, userContext);
-        String url = appendRuntimeParams(UriComponentsBuilder.fromHttpUrl(buildBaseUrl(runtimeContext) + "/agent/status/" + projectId), runtimeContext).toUriString();
+        URI url = UriEncodingUtil.buildEncodedUri(appendRuntimeParams(UriComponentsBuilder.fromHttpUrl(buildBaseUrl(runtimeContext) + "/agent/status/" + projectId), runtimeContext));
         log.info("[Infra] callquery Agent status API, url={}, project Id={}", url, projectId);
         RestTemplate restTemplate = createRestTemplate();
 
@@ -291,8 +293,8 @@ public class PageAppAIClient {
 
     public Map<String, Object> stopAgent(Long projectId, UserContext userContext) {
         AgentRuntimeContext runtimeContext = buildAgentRuntimeContext(projectId, userContext);
-        String url = appendRuntimeParams(
-                UriComponentsBuilder.fromHttpUrl(buildBaseUrl(runtimeContext) + "/agent/stop").queryParam("project_id", projectId), runtimeContext).toUriString();
+        URI url = UriEncodingUtil.buildEncodedUri(appendRuntimeParams(
+                UriComponentsBuilder.fromHttpUrl(buildBaseUrl(runtimeContext) + "/agent/stop").queryParam("project_id", projectId), runtimeContext));
         log.info("[Infra] callstop Agent service API, url={}, project Id={}", url, projectId);
         RestTemplate restTemplate = createRestTemplate();
 

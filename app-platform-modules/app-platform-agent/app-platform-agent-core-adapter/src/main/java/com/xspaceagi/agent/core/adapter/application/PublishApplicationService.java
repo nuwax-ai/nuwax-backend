@@ -5,8 +5,6 @@ import com.xspaceagi.agent.core.adapter.dto.*;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.system.spec.dto.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -16,6 +14,21 @@ public interface PublishApplicationService {
      * 获取已发布分页结果
      */
     SuperPage<PublishedDto> queryPublishedList(PublishedQueryDto publishedQueryDto);
+
+    /**
+     * 应用列表分页查询（网页应用PageApp+全栈应用UserApp）
+     */
+    SuperPage<PublishedDto> queryAppList(PublishedQueryDto publishedQueryDto);
+
+    /**
+     * 最近使用的应用列表（网页应用PageApp+全栈应用UserApp）
+     */
+    List<PublishedDto> queryRecentlyUsedApps(String kw, Integer size);
+
+    /**
+     * 记录最近使用（如全栈应用的代理访问）
+     */
+    void addOrUpdateRecentUsed(Long userId, Published.TargetType targetType, Long targetId, String targetSubType);
 
     List<ResourceGroupDto> queryGroupedPublishedList(PublishedQueryDto publishedQueryDto);
 
@@ -27,7 +40,7 @@ public interface PublishApplicationService {
 
     List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw);
 
-    List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw, boolean returnConfig);
+    List<PublishedDto> queryPublishedList(Published.TargetType targetType, List<Long> targetIds, String kw, boolean returnConfig, boolean returnFullInfo);
 
     IPage<PublishedDto> queryPublishedListForManage(PublishedQueryDto publishedQueryDto);
 
@@ -37,6 +50,11 @@ public interface PublishApplicationService {
     PublishedDto queryPublished(Published.TargetType targetType, Long targetId);
 
     PublishedDto queryPublished(Published.TargetType targetType, Long targetId, boolean loadConfig);
+
+    /**
+     * 轻量发布查询：仅判存在性与子类型（不含 config/统计/发布者/收藏富化），供点击埋点等热路径使用
+     */
+    PublishedDto queryPublishedBrief(Published.TargetType targetType, Long targetId);
 
     PublishedDto queryPublishedWithSpaceId(Published.TargetType targetType, Long targetId, Long spaceId);
 
@@ -111,7 +129,19 @@ public interface PublishApplicationService {
 
     void deleteBySpaceId(Long spaceId);
 
+    /**
+     * 按目标对象删除发布记录与统计（项目彻底删除用）
+     */
+    void deleteByTarget(Published.TargetType targetType, Long targetId);
+
+    /**
+     * 按目标对象删除全部用户关系（收藏/最近使用等，项目彻底删除用）；返回删除条数
+     */
+    int deleteTargetRelations(Published.TargetType targetType, Long targetId);
+
     PublishedPermissionDto hasPermission(Published.TargetType targetType, Long targetId);
+
+    PublishedPermissionDto hasPermission(Long userId, Published.TargetType targetType, Long targetId);
 
     void updateAccessControlStatus(Published.TargetType targetType, Long targetId, Integer status);
 

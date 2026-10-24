@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -20,8 +21,20 @@ public class PublishedQueryDto implements Serializable {
     @Schema(description = "目标类型，Agent,Plugin,Workflow")
     private Published.TargetType targetType;
 
+    @Schema(description = "目标类型列表（多类型联合查询，如应用列表的网页应用+全栈应用，2026.9月版本添加）")
+    private List<Published.TargetType> targetTypes;
+
     @Schema(description = "子类型")
     private Published.TargetSubType targetSubType;
+
+    @Schema(description = "子类型列表（多类型联合查询时的子类型过滤，如应用列表的PageApp+UserApp）")
+    private List<Published.TargetSubType> targetSubTypes;
+
+    @Schema(description = "排除的子类型，如只查智能体、但排除网页应用（Agent 下的 PageApp 子类型）", hidden = true)
+    private List<Published.TargetSubType> excludeTargetSubTypes;
+
+    @Schema(description = "搜索范围（可见范围）：Tenant-系统广场（默认）；Space-团队空间（2026.9月版本添加）")
+    private Published.PublishScope scope;
 
     @Schema(description = "智能体类型")
     private List<String> agentTypes;
@@ -70,6 +83,9 @@ public class PublishedQueryDto implements Serializable {
 
     @Schema(description = "查询的ID范围，比如只查看推荐、官方标识的组件等", hidden = true)
     private List<Long> targetIds;
+
+    @Schema(description = "多类型查询时按类型限定targetId集合（内部使用；各类型ID为独立空间，避免跨类型数值误匹配，如官方推荐的网页应用/全栈应用）", hidden = true)
+    private Map<Published.TargetType, List<Long>> targetTypeIds;
 
     @Schema(description = "推荐列表", hidden = true)
     private List<Long> recommendIds;

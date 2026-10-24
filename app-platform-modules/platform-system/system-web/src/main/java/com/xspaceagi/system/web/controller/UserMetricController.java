@@ -74,6 +74,7 @@ public class UserMetricController {
         usageDto.setNewWorkspaceUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxSpaceCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxSpaceCount().toString()).build());
         usageDto.setSandboxMemoryLimit(UsageDto.Usage.builder().description(userDataPermission.getAgentComputerMemoryGb() == null ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getAgentComputerMemoryGb() + "GB").build());
         usageDto.setNewPageAppUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxPageAppCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxPageAppCount().toString()).build());
+        usageDto.setNewUserAppUsage(UsageDto.Usage.builder().description(userDataPermission.getMaxUserAppCount() == null || userDataPermission.getMaxUserAppCount() == -1 ? I18nUtil.systemMessage("Backend.UserMetric.Unlimited") : userDataPermission.getMaxUserAppCount().toString()).build());
 
         return ReqResult.success(usageDto);
     }

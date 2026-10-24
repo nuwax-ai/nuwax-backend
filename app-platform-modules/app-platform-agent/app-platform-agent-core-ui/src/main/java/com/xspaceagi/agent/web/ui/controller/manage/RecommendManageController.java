@@ -66,6 +66,7 @@ public class RecommendManageController extends BaseManageController {
                 .like(request.getName() != null, TargetRecommend::getLabel, request.getName())
                 .eq(filterRecType != null, TargetRecommend::getRecType, filterRecType)
                 .eq(filterTargetType != null, TargetRecommend::getTargetType, filterTargetType)
+                .eq(StringUtils.isNotBlank(request.getCategory()), TargetRecommend::getCategory, request.getCategory())
                 .orderByAsc(TargetRecommend::getSort)
                 .orderByDesc(TargetRecommend::getCreated);
 
@@ -94,10 +95,10 @@ public class RecommendManageController extends BaseManageController {
             return ReqResult.error(validateError);
         }
         Long tenantId = RequestContext.get().getTenantId();
-        String duplicateError = validateDuplicate(request, tenantId);
-        if (duplicateError != null) {
-            return ReqResult.error(duplicateError);
-        }
+//        String duplicateError = validateDuplicate(request, tenantId);
+//        if (duplicateError != null) {
+//            return ReqResult.error(duplicateError);
+//        }
         TargetRecommend entity = toEntity(request);
         entity.setTenantId(tenantId);
         if (entity.getSort() == null) {
@@ -116,10 +117,10 @@ public class RecommendManageController extends BaseManageController {
             return ReqResult.error(validateError);
         }
         Long tenantId = RequestContext.get().getTenantId();
-        String duplicateError = validateDuplicate(request, tenantId);
-        if (duplicateError != null) {
-            return ReqResult.error(duplicateError);
-        }
+//        String duplicateError = validateDuplicate(request, tenantId);
+//        if (duplicateError != null) {
+//            return ReqResult.error(duplicateError);
+//        }
         TargetRecommend entity = toEntity(request);
         entity.setId(request.getId());
         entity.setTenantId(tenantId);
@@ -198,7 +199,7 @@ public class RecommendManageController extends BaseManageController {
             TargetRecommend.FunctionType functionType = TargetRecommend.FunctionType.valueOf(request.getFunctionType());
             wrapper.eq(TargetRecommend::getFunctionType, functionType)
                     .eq(TargetRecommend::getTargetType, TargetRecommend.TargetType.valueOf(request.getTargetType()));
-            if (functionType == TargetRecommend.FunctionType.Chat) {
+            if (functionType == TargetRecommend.FunctionType.Chat || functionType == TargetRecommend.FunctionType.UserAppDev || functionType == TargetRecommend.FunctionType.NormalProjectDev) {
                 wrapper.eq(TargetRecommend::getTargetId, request.getTargetId());
             }
         } else {
@@ -209,7 +210,7 @@ public class RecommendManageController extends BaseManageController {
         if (count != null && count > 0) {
             if (recType == TargetRecommend.RecType.ChatBoxNav) {
                 TargetRecommend.FunctionType functionType = TargetRecommend.FunctionType.valueOf(request.getFunctionType());
-                if (functionType == TargetRecommend.FunctionType.Chat) {
+                if (functionType == TargetRecommend.FunctionType.Chat || functionType == TargetRecommend.FunctionType.UserAppDev || functionType == TargetRecommend.FunctionType.NormalProjectDev) {
                     return "相同功能类型、推荐类型、目标类型和目标已存在";
                 }
                 return "相同功能类型、推荐类型和目标类型的配置已存在";
@@ -234,6 +235,8 @@ public class RecommendManageController extends BaseManageController {
         entity.setLabel(request.getLabel());
         entity.setIcon(request.getIcon());
         entity.setPlaceholder(request.getPlaceholder());
+        entity.setCategory(request.getCategory());
+        entity.setPrompts(request.getPrompts());
         entity.setSort(request.getSort());
         return entity;
     }
@@ -249,6 +252,8 @@ public class RecommendManageController extends BaseManageController {
                 .label(entity.getLabel())
                 .icon(entity.getIcon())
                 .placeholder(entity.getPlaceholder())
+                .category(entity.getCategory())
+                .prompts(entity.getPrompts())
                 .sort(entity.getSort())
                 .modified(entity.getModified())
                 .created(entity.getCreated())

@@ -2,6 +2,7 @@ package com.xspaceagi.agent.core.application.service;
 
 import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Lists;
+import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
@@ -34,10 +35,12 @@ import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -47,6 +50,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class PluginApplicationServiceImpl implements PluginApplicationService {
 
@@ -73,6 +77,9 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
 
     @Resource
     private ResourcePricingRpcService resourcePricingRpcService;
+
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
 
     @Override
     public Long add(PluginAddDto pluginAddDto) {
@@ -245,6 +252,13 @@ public class PluginApplicationServiceImpl implements PluginApplicationService {
     @Override
     public void delete(Long pluginId) {
         pluginDomainService.delete(pluginId);
+        // 项目会话随项目删除联动清理（含消息、收藏及云端沙箱工作区）；
+        // 清理失败不阻断项目删除，残骸会话可由用户从会话列表单独删除兜底
+        try {
+            conversationApplicationService.deleteByDevTarget(ProjectTypeEnum.Plugin.name(), pluginId);
+        } catch (Exception e) {
+            log.warn("Failed to cascade delete plugin conversations, pluginId={}", pluginId, e);
+        }
     }
 
     @Override

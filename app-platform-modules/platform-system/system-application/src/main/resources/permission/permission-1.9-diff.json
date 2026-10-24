@@ -1,0 +1,93 @@
+{
+  "fromVersion": "1.8",
+  "toVersion": "1.9",
+  "resources": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "code": "message",
+        "name": "伙伴",
+        "description": "伙伴",
+        "source": 1,
+        "path": "/instant-message",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 0
+      },
+      {
+        "code": "repo",
+        "name": "资料库",
+        "description": "资料库",
+        "source": 1,
+        "path": "/repo",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 4,
+        "status": 0
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "message",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "repo",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "message",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "repo",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

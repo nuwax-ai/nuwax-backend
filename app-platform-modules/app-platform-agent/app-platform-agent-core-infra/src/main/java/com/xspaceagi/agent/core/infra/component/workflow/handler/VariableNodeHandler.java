@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.core.infra.component.workflow.handler;
 
+import com.alibaba.fastjson2.JSON;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.VariableNodeConfigDto;
 import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
 import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
@@ -9,7 +10,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VariableNodeHandler extends AbstractNodeHandler {
 
@@ -30,12 +33,21 @@ public class VariableNodeHandler extends AbstractNodeHandler {
                             }
                             Object value = extractLoopNodeValue(loopNodeDto.getNodeExecuteResultMap(), arg);
                             if (value != null) {
+                                if (value instanceof List<?>) {
+                                    value = ((List<?>) value).stream().map(m -> JSON.parseObject(JSON.toJSONString(m))).collect(Collectors.toList());
+                                }
                                 params.put(arg.getName(), value);
                             }
                         });
                     }
                 }
                 if (!params.isEmpty()) {
+                    params.forEach((k, value) -> {
+                        if (value instanceof List<?>) {
+                            value = ((List<?>) value).stream().map(m -> JSON.parseObject(JSON.toJSONString(m))).collect(Collectors.toList());
+                            params.put(k, value);
+                        }
+                    });
                     workflowContext.getAgentContext().getVariableParams().putAll(params);
 
                     //循环内部变量

@@ -1,6 +1,6 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
-import com.xspaceagi.agent.core.adapter.repository.entity.Published;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import lombok.Data;
 public class ProjectCreateResultDTO {
 
     @Schema(description = "目标项目类型")
-    private Published.TargetType targetType;
+    private ProjectTypeEnum targetType;
 
     @Schema(description = "目标项目ID")
     private String targetId;

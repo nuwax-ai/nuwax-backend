@@ -4,14 +4,17 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xspaceagi.agent.core.adapter.dto.recommend.RecommendPrompt;
+import com.xspaceagi.agent.core.adapter.typehandler.RecommendPromptListTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
-@TableName("target_recommend")
+@TableName(value = "target_recommend", autoResultMap = true)
 @Data
 @Builder
 @AllArgsConstructor
@@ -42,6 +45,11 @@ public class TargetRecommend {
 
     private String placeholder;
 
+    private String category;
+
+    @TableField(value = "prompts", typeHandler = RecommendPromptListTypeHandler.class)
+    private List<RecommendPrompt> prompts;
+
     private Integer sort;
 
     private Date modified;
@@ -53,7 +61,9 @@ public class TargetRecommend {
         PageApp,
         Skill,
         Plugin,
-        Workflow
+        Workflow,
+        UserApp,
+        ThirdApp
     }
 
     public enum RecType {
@@ -67,6 +77,9 @@ public class TargetRecommend {
         PageAppDev,
         SkillDev,
         PluginDev,
+        UserAppDev,
+        NormalProjectDev,
+        ConnectorDev,
         Chat
     }
 }

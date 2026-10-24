@@ -1,0 +1,995 @@
+{
+  "fromVersion": "1.6",
+  "toVersion": "1.7",
+  "resources": {
+    "added": [
+      {
+        "code": "user_app_dev",
+        "name": "网站应用开发模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 27,
+        "status": 1
+      },
+      {
+        "code": "normal_project_dev",
+        "name": "常规项目开发模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 28,
+        "status": 1
+      },
+      {
+        "code": "third_app_dev",
+        "name": "三方应用开发模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 29,
+        "status": 1
+      },
+      {
+        "code": "normal_project_create",
+        "name": "创建",
+        "source": 1,
+        "type": 2,
+        "parentCode": "normal_project_dev",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "third_app_create",
+        "name": "创建",
+        "source": 1,
+        "type": 2,
+        "parentCode": "third_app_dev",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "user_app_create",
+        "name": "创建",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "normal_project_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "normal_project_dev",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "third_app_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "third_app_dev",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "user_app_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "normal_project_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "normal_project_dev",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "third_app_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "third_app_dev",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "user_app_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "normal_project_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "normal_project_dev",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "third_app_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "third_app_dev",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "user_app_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "third_app_publish",
+        "name": "发布",
+        "source": 1,
+        "type": 2,
+        "parentCode": "third_app_dev",
+        "sortIndex": 5,
+        "status": 1
+      },
+      {
+        "code": "user_app_deploy",
+        "name": "部署",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 5,
+        "status": 1
+      },
+      {
+        "code": "user_app_publish",
+        "name": "发布",
+        "source": 1,
+        "type": 2,
+        "parentCode": "user_app_dev",
+        "sortIndex": 6,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "workspace",
+        "code": "project_dev",
+        "name": "项目&应用",
+        "source": 1,
+        "path": "/space/:spaceId/project-manage",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "workspace",
+        "code": "connector",
+        "name": "连接器",
+        "description": "工作空间连接器",
+        "source": 1,
+        "path": "/space/:spaceId/connector",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 13,
+        "status": 1
+      },
+      {
+        "parentCode": "project_dev",
+        "code": "normal_project_dev",
+        "name": "常规项目",
+        "description": "常规项目",
+        "source": 1,
+        "path": "/space/:spaceId/normal-project",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "parentCode": "project_dev",
+        "code": "user_app_dev",
+        "name": "网站应用开发",
+        "description": "网站应用开发",
+        "source": 1,
+        "path": "/space/:spaceId/userapp-project",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "parentCode": "project_dev",
+        "code": "third_app_dev",
+        "name": "三方应用接入",
+        "description": "三方应用接入",
+        "source": 1,
+        "path": "/space/:spaceId/third-app-integration",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "parentCode": "content_manage",
+        "code": "official_connector",
+        "name": "官方连接器",
+        "description": "官方连接器",
+        "source": 1,
+        "path": "/system/content/official-connector",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 10,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "homepage",
+        "old": {
+          "code": "homepage",
+          "name": "主页",
+          "description": "主页",
+          "source": 1,
+          "path": "/home",
+          "openType": 1,
+          "sortIndex": 2,
+          "status": 1
+        },
+        "new": {
+          "code": "homepage",
+          "name": "新建任务",
+          "description": "主页",
+          "source": 1,
+          "path": "/home",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 2,
+          "status": 1
+        }
+      },
+      {
+        "key": "workspace",
+        "old": {
+          "code": "workspace",
+          "name": "工作空间",
+          "description": "工作空间",
+          "source": 1,
+          "path": "/space",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        },
+        "new": {
+          "code": "workspace",
+          "name": "工作空间",
+          "description": "工作空间",
+          "source": 1,
+          "path": "/space",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_square",
+        "old": {
+          "code": "system_square",
+          "name": "广场",
+          "description": "系统广场",
+          "source": 1,
+          "path": "/square?cate_type=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 4,
+          "status": 1
+        },
+        "new": {
+          "code": "system_square",
+          "name": "广场",
+          "description": "系统广场",
+          "source": 1,
+          "path": "/square?cate_type=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        }
+      },
+      {
+        "key": "eco_market",
+        "old": {
+          "code": "eco_market",
+          "name": "生态市场",
+          "description": "生态市场",
+          "source": 1,
+          "path": "%siteUrl%/api/eco/redirect",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        },
+        "new": {
+          "code": "eco_market",
+          "name": "生态市场",
+          "description": "生态市场",
+          "source": 1,
+          "path": "%siteUrl%/api/eco/redirect",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        }
+      },
+      {
+        "key": "documents",
+        "old": {
+          "code": "documents",
+          "name": "文档",
+          "description": "文档链接",
+          "source": 1,
+          "path": "https://nuwax.com/user-manual.html",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        },
+        "new": {
+          "code": "documents",
+          "name": "文档",
+          "description": "文档链接",
+          "source": 1,
+          "path": "https://nuwax.com/user-manual.html",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        }
+      },
+      {
+        "key": "notification",
+        "old": {
+          "code": "notification",
+          "name": "通知",
+          "description": "系统通知",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        },
+        "new": {
+          "code": "notification",
+          "name": "通知",
+          "description": "系统通知",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        }
+      },
+      {
+        "key": "my_computer",
+        "old": {
+          "code": "my_computer",
+          "name": "我的电脑",
+          "description": "我的电脑",
+          "source": 1,
+          "path": "/my-computer-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "code": "my_computer",
+          "name": "我的电脑",
+          "description": "我的电脑",
+          "source": 1,
+          "path": "/my-computer-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        }
+      },
+      {
+        "key": "more_page",
+        "old": {
+          "code": "more_page",
+          "name": "更多",
+          "source": 1,
+          "path": "/more-page",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "code": "more_page",
+          "name": "更多",
+          "source": 1,
+          "path": "/more-page",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "system_manage",
+        "old": {
+          "code": "system_manage",
+          "name": "系统管理",
+          "description": "系统管理",
+          "source": 1,
+          "path": "",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        },
+        "new": {
+          "code": "system_manage",
+          "name": "系统管理",
+          "description": "系统管理",
+          "source": 1,
+          "path": "",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 15,
+          "status": 1
+        }
+      },
+      {
+        "key": "agent_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "agent_dev",
+          "name": "智能体开发",
+          "description": "智能体开发",
+          "source": 1,
+          "path": "/space/:spaceId/develop",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 1,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "agent_dev",
+          "name": "智能体开发",
+          "description": "智能体开发",
+          "source": 1,
+          "path": "/space/:spaceId/develop",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 2,
+          "status": 1
+        }
+      },
+      {
+        "key": "page_app_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "page_app_dev",
+          "name": "网页应用开发",
+          "description": "网页应用开发",
+          "source": 1,
+          "path": "/space/:spaceId/page-develop",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 2,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "page_app_dev",
+          "name": "网页开发",
+          "description": "网页开发",
+          "source": 1,
+          "path": "/space/:spaceId/page-develop",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        }
+      },
+      {
+        "key": "component_lib_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件资源",
+          "description": "组件资源",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 3,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "component_lib_dev",
+          "name": "组件资源",
+          "description": "组件资源",
+          "source": 1,
+          "path": "/space/:spaceId/library",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 4,
+          "status": 1
+        }
+      },
+      {
+        "key": "skill_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "skill_dev",
+          "name": "技能管理",
+          "description": "技能管理",
+          "source": 1,
+          "path": "/space/:spaceId/skill-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 4,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "skill_dev",
+          "name": "技能管理",
+          "description": "技能管理",
+          "source": 1,
+          "path": "/space/:spaceId/skill-manage",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        }
+      },
+      {
+        "key": "mcp_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "mcp_dev",
+          "name": "MCP管理",
+          "description": "MCP管理",
+          "source": 1,
+          "path": "/space/:spaceId/mcp",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 5,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "mcp_dev",
+          "name": "MCP管理",
+          "description": "MCP管理",
+          "source": 1,
+          "path": "/space/:spaceId/mcp",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        }
+      },
+      {
+        "key": "resource_pricing",
+        "old": {
+          "parentCode": "workspace",
+          "code": "resource_pricing",
+          "name": "资源定价",
+          "description": "资源定价",
+          "source": 1,
+          "path": "/space/:spaceId/resource-pricing",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 6,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "resource_pricing",
+          "name": "资源定价",
+          "description": "资源定价",
+          "source": 1,
+          "path": "/space/:spaceId/resource-pricing",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        }
+      },
+      {
+        "key": "im_channel",
+        "old": {
+          "parentCode": "workspace",
+          "code": "im_channel",
+          "name": "IM 机器人",
+          "description": "IM 机器人",
+          "source": 1,
+          "path": "/space/:spaceId/im-channel",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 7,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "im_channel",
+          "name": "IM 机器人",
+          "description": "IM 机器人",
+          "source": 1,
+          "path": "/space/:spaceId/im-channel",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_task_dev",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "name": "任务中心",
+          "description": "任务中心",
+          "source": 1,
+          "path": "/space/:spaceId/task-center",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 8,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_task_dev",
+          "name": "任务中心",
+          "description": "任务中心",
+          "source": 1,
+          "path": "/space/:spaceId/task-center",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_log_query",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "path": "/space/:spaceId/library-log",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 9,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_log_query",
+          "name": "日志查询",
+          "description": "日志查询",
+          "source": 1,
+          "path": "/space/:spaceId/library-log",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        }
+      },
+      {
+        "key": "space_square",
+        "old": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "name": "空间广场",
+          "description": "空间广场",
+          "source": 1,
+          "path": "/space/:spaceId/space-square?activeKey=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 10,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "space_square",
+          "name": "空间广场",
+          "description": "空间广场",
+          "source": 1,
+          "path": "/space/:spaceId/space-square?activeKey=Agent",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        }
+      },
+      {
+        "key": "member_setting",
+        "old": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "name": "成员与设置",
+          "source": 1,
+          "path": "/space/:spaceId/team",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 11,
+          "status": 1
+        },
+        "new": {
+          "parentCode": "workspace",
+          "code": "member_setting",
+          "name": "成员与设置",
+          "source": 1,
+          "path": "/space/:spaceId/team",
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 12,
+          "status": 1
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "normal_project_dev",
+        "resourceCode": "normal_project_dev",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "user_app_dev",
+        "resourceCode": "user_app_dev",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "third_app_dev",
+        "resourceCode": "third_app_dev",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "project_dev",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "normal_project_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "normal_project_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "user_app_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "user_app_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "third_app_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "third_app_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "connector",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "official_connector",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [
+      {
+        "groupCode": "default_group",
+        "menuCode": "project_dev",
+        "menuBindType": 1,
+        "resourceTree": []
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "normal_project_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "normal_project_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "user_app_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "user_app_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "third_app_dev",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "third_app_dev",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "groupCode": "default_group",
+        "menuCode": "connector",
+        "menuBindType": 1,
+        "resourceTree": []
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": [
+      {
+        "key": "2|super_admin",
+        "old": {
+          "targetType": 2,
+          "targetCode": "super_admin",
+          "tokenLimit": {
+            "limitPerDay": -1
+          },
+          "maxSpaceCount": -1,
+          "maxAgentCount": -1,
+          "maxPageAppCount": -1,
+          "maxKnowledgeCount": -1,
+          "knowledgeStorageLimitGb": -1,
+          "maxDataTableCount": -1,
+          "maxScheduledTaskCount": -1,
+          "agentComputerCpuCores": 2,
+          "agentComputerMemoryGb": 4,
+          "agentFileStorageDays": -1,
+          "agentDailyPromptLimit": -1,
+          "pageDailyPromptLimit": -1
+        },
+        "new": {
+          "targetType": 2,
+          "targetCode": "super_admin",
+          "tokenLimit": {
+            "limitPerDay": -1
+          },
+          "maxSpaceCount": -1,
+          "maxAgentCount": -1,
+          "maxPageAppCount": -1,
+          "maxUserAppCount": 1,
+          "maxKnowledgeCount": -1,
+          "knowledgeStorageLimitGb": -1,
+          "maxDataTableCount": -1,
+          "maxScheduledTaskCount": -1,
+          "agentComputerCpuCores": 2,
+          "agentComputerMemoryGb": 4,
+          "agentComputerStorageLimitGb": -1,
+          "pageAppStorageLimitGb": -1,
+          "agentFileStorageDays": -1,
+          "agentDailyPromptLimit": -1,
+          "pageDailyPromptLimit": -1
+        }
+      },
+      {
+        "key": "3|default_group",
+        "old": {
+          "targetType": 3,
+          "targetCode": "default_group",
+          "tokenLimit": {
+            "limitPerDay": -1
+          },
+          "maxSpaceCount": -1,
+          "maxAgentCount": -1,
+          "maxPageAppCount": -1,
+          "maxKnowledgeCount": -1,
+          "knowledgeStorageLimitGb": -1,
+          "maxDataTableCount": -1,
+          "maxScheduledTaskCount": -1,
+          "agentComputerCpuCores": 2,
+          "agentComputerMemoryGb": 4,
+          "agentFileStorageDays": -1,
+          "agentDailyPromptLimit": -1,
+          "pageDailyPromptLimit": -1
+        },
+        "new": {
+          "targetType": 3,
+          "targetCode": "default_group",
+          "tokenLimit": {
+            "limitPerDay": -1
+          },
+          "maxSpaceCount": -1,
+          "maxAgentCount": -1,
+          "maxPageAppCount": -1,
+          "maxUserAppCount": 1,
+          "maxKnowledgeCount": -1,
+          "knowledgeStorageLimitGb": -1,
+          "maxDataTableCount": -1,
+          "maxScheduledTaskCount": -1,
+          "agentComputerCpuCores": 2,
+          "agentComputerMemoryGb": 4,
+          "agentComputerStorageLimitGb": -1,
+          "pageAppStorageLimitGb": -1,
+          "agentFileStorageDays": -1,
+          "agentDailyPromptLimit": -1,
+          "pageDailyPromptLimit": -1
+        }
+      }
+    ]
+  }
+}

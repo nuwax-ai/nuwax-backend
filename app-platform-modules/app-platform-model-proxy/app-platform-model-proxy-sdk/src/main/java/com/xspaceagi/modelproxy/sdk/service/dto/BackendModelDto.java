@@ -9,6 +9,7 @@ public class BackendModelDto {
     private Long userId;
     private Long modelId;
     private String userName;
+    private String lang;
     private String requestId;
     private String conversationId;
     private String baseUrl;

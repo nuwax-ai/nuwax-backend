@@ -2,6 +2,9 @@ package com.xspaceagi.system.spec.exception;
 
 import lombok.Getter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 异常枚举
  */
@@ -29,6 +32,12 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     configNotFound("8001", "配置不存在", "Configuration does not exist.", "通用"),
     /** 通用：需要登录态 */
     userNotLoggedIn("3177", "用户未登录", "User is not signed in.", "认证"),
+    /** 用户个人配置：key 不合法（格式/长度），或值为空 */
+    userConfigKeyInvalid("3175", "配置项 key 不合法或值为空（1-128 位，仅允许字母、数字、下划线、点、冒号、短横线）", "Invalid config key or empty config value.", "用户配置"),
+    /** 用户个人配置：值不可序列化或超出单 key 大小限制 */
+    userConfigValueTooLarge("3176", "配置项值或备注不合法、超出大小限制（值最大 64KB，备注最大 255 字符）", "Config value or description is invalid or exceeds the size limit.", "用户配置"),
+    /** 用户个人配置：个人配置项数量达上限 */
+    userConfigCountLimit("3187", "个人配置项数量已达上限（最多 200 个）", "Too many personal config entries.", "用户配置"),
     /** 通用：物理表不存在（Compose DDL、助手查询等共用） */
     tableNotFound("6013", "表不存在", "Table does not exist.", "通用"),
     /** 通用：无权限（合并原 systemOperationDenied / systemOperationPermissionDenied / systemPermissionDeniedShort） */
@@ -60,6 +69,12 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     systemCannotDeleteSelf("3025", "不能删除自己", "You cannot delete yourself.", "空间成员"),
     systemSpaceNotFound("3026", "空间不存在", "Space does not exist.", "空间"),
     systemCannotDeleteSpaceCreator("3027", "不能删除创建者", "Cannot remove the space creator.", "空间成员"),
+    // 空间类型管控：内部服务间接口（/api/internal/space/**）当前只对 Group（群组）与 DM（私聊）空间
+    // 开放创建与删除；成员增删则只排除 Personal（Group / DM 均开放）。
+    // 码值取 3038-3040（3028-3037 已被邮箱/短信/认证等占用），仅位置跟随空间段便于查找。
+    systemSpaceTypeDeleteForbidden("3038", "仅允许删除群组（Group）或私聊（DM）类型的空间", "Only spaces of type Group or DM can be deleted.", "空间"),
+    systemSpaceTypeCreateForbidden("3039", "仅允许创建群组（Group）或私聊（DM）类型的空间", "Only spaces of type Group or DM can be created.", "空间"),
+    systemPersonalSpaceMemberForbidden("3040", "个人空间不支持成员管理", "Personal spaces do not support member management.", "空间成员"),
     systemEmailFormatInvalid("3028", "邮箱格式不正确", "Invalid email format.", "用户"),
     systemEmailAlreadyInUse("3029", "邮箱已被占用", "Email is already in use.", "用户"),
     systemPhoneAlreadyInUse("3030", "手机号已被占用", "Phone number is already in use.", "用户"),
@@ -204,6 +219,26 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     imCannotResolveTargetId("3207", "无法从配置数据中解析目标唯一标识", "Cannot resolve target unique identifier from configuration data.", "IM"),
     imChannelConfigDuplicate("3208", "该渠道配置已存在", "This channel configuration already exists.", "IM"),
     imChannelConfigDuplicateDetail("3209", "该渠道配置已存在: %s %s %s", "This channel configuration already exists: %s %s %s", "IM"),
+    // IM 主动推送/绑定：3600 段，避开自定义页面 3260–3278
+    imNotifyChannelUnsupported("3600", "不支持的 IM 推送渠道: %s", "Unsupported IM notify channel: %s", "IM"),
+    imNotifyChannelNotConfigured("3601", "未配置可用的 IM 渠道应用，请先在 IM 渠道配置中启用对应应用", "No available IM channel app is configured; enable the app in IM channel config first.", "IM"),
+    imNotifyUserNotBound("3603", "用户未绑定该 IM 渠道账号", "User has not bound an account for this IM channel.", "IM"),
+    imNotifyBindSessionInvalid("3604", "绑定会话不存在或已过期", "Bind session does not exist or has expired.", "IM"),
+    imNotifyOauthFailed("3605", "IM 授权失败: %s", "IM OAuth failed: %s", "IM"),
+    imNotifySendFailed("3606", "IM 消息发送失败: %s", "IM message send failed: %s", "IM"),
+    imNotifyBindChannelMismatch("3607", "绑定会话渠道与请求不一致", "Bind session channel does not match the request.", "IM"),
+    imNotifyImIdentityAlreadyBound("3608", "该 IM 账号已绑定其他平台用户", "This IM account is already bound to another platform user.", "IM"),
+    imNotifyBindConfirmRequired("3609", "请在授权页确认后再完成绑定", "Please confirm on the authorization page to complete binding.", "IM"),
+    imNotifyBindAlreadyCompleted("3610", "绑定已完成或会话已失效", "Binding already completed or session is no longer valid.", "IM"),
+    imNotifyAppReturnUrlNotAllowed("3611", "appReturnUrl 不允许，须为 https 租户站点 /api/v1/im-notify/bind/return 或配置的白名单（精确 host+path）", "appReturnUrl is not allowed; must be https tenant site /api/v1/im-notify/bind/return or an allowlisted host+path.", "IM"),
+    // Nuwax IM（独立 IM 系统）内部 RPC 适配：3612 段
+    // ★这三条的分工对应 ImRpcException 的两分类：3612 请求根本没发出去（本地配置问题，重试无用）；
+    //   3613 上游暂时性故障（isRetryable=true，可带同一个 bizMsgId 重试）；3614 上游业务拒绝（重试无用）。
+    imRpcNotConfigured("3612", "IM 服务未配置或已停用，请联系管理员", "The IM service is not configured or is disabled; please contact the administrator.", "IM"),
+    imRpcUnavailable("3613", "IM 服务暂时不可用，请稍后重试", "The IM service is temporarily unavailable; please retry later.", "IM"),
+    imRpcRejected("3614", "IM 拒绝了本次操作: %s", "The IM service rejected this operation: %s", "IM"),
+
+    bootstrapLicenseDeviceMismatch("3615", "许可证已绑定设备，当前机器不在绑定范围内，请联系供应商换发", "This license is bound to other devices; this machine is outside the licensed scope. Contact your vendor to reissue.", "License"),
     customPageMultimodalModelUnavailable("3212", "当前多模态模型不可用：%s", "Multimodal model is unavailable: %s", "自定义页面"),
     customPageModelNotMultimodal("3213", "当前模型不支持多模态，无法解析图片，模型 id=%s", "This model does not support multimodal input; cannot parse images. Model id=%s", "自定义页面"),
     customPageChatModelUnavailable("3214", "当前聊天模型不可用：%s", "Chat model is unavailable: %s", "自定义页面"),
@@ -301,6 +336,7 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     knowledgeNotFoundSimple("5030", "知识库不存在", "Knowledge base does not exist.", "知识库"),
     memoryUnitNotFound("5031", "记忆单元不存在: %s", "Memory unit does not exist: %s", "记忆"),
     modelProxyTokenLimitExceeded("5032", "超出 token 限制", "Token limit exceeded.", "模型代理"),
+    knowledgeTripleExtractFailed("5033", "知识图谱三元组提取失败: %s", "Knowledge graph triple extraction failed: %s", "知识图谱"),
 
     //组件模块
     composeCannotGetCreateTableDdl("6002", "无法获取建表DDL语句", "Unable to obtain CREATE TABLE DDL.", ""),
@@ -564,6 +600,8 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
     agentWorkflowLoopNotFullyConnected("9378", "循环节点未完整连接", "Loop nodes are not fully connected.", "工作流"),
     agentWorkflowLoopMaxCountInvalid("9379", "循环节点最大循环次数不能小于等于0", "Loop max iterations must be greater than 0.", "工作流"),
     agentWorkflowConditionBranchesEmpty("9380", "条件分支列表不能为空", "Condition branch list cannot be empty.", "工作流"),
+    agentTaskConversationDeleteDenied("9385", "定时任务会话不支持直接删除", "Scheduled task conversations cannot be deleted directly.", "会话"),
+    agentProjectConversationDeleteDenied("9386", "项目会话需随项目一起删除，不支持单独删除", "Project conversations cannot be deleted directly; delete the project instead.", "会话"),
 
     workspaceExecuteCommandFailed("9400", "命令执行失败 %s", "Failed to execute command. %s", "工作空间"),
 
@@ -573,7 +611,93 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
 
     pay_h5_not_allowed_in_app("9383", "App 内请使用原生支付，不支持 H5 支付", "H5 payment is not allowed in the app; use native SDK payment", "支付"),
 
-    pay_app_native_requires_app("9384", "App 原生支付仅限 App 内调用，手机浏览器请使用 H5 支付", "App native payment requires the app client; use H5 payment in mobile browser", "支付");
+    pay_app_native_requires_app("9384", "App 原生支付仅限 App 内调用，手机浏览器请使用 H5 支付", "App native payment requires the app client; use H5 payment in mobile browser", "支付"),
+
+    agentModelConfigMissing("9390", "模型配置无效:模型(ID:%s)不存在或已被删除,请在「模型管理」中调整配置后重试", "Invalid model configuration: model (ID: %s) does not exist or has been deleted. Please fix it in Model Management and try again.", "模型"),
+    agentTenantDefaultModelMissing("9391", "默认对话模型未配置或不可用,请管理员在「模型管理」中设置默认模型后重试", "The default chat model is not configured or unavailable. An administrator needs to set a default model in Model Management first.", "模型"),
+    pay_open_app_not_found("9385", "接入应用不存在（未登记）", "Open-pay app not found; register the project on the platform first", "支付"),
+    pay_open_app_no_permission("9386", "无权操作该接入应用的支付订单", "No permission to operate payments of this app", "支付"),
+    pay_open_order_not_found("9387", "支付订单不存在或不属于该接入应用", "Payment order not found or not owned by this app", "支付"),
+    pay_open_out_trade_no_invalid("9388", "商户订单号非法（仅限字母数字-_，长度 1-64）", "outTradeNo is invalid (alphanumeric, dash or underscore, length 1-64)", "支付"),
+    pay_open_out_trade_no_paid("9389", "商户订单号已有一笔已支付订单，请换新单号", "outTradeNo already has a PAID order; use a new outTradeNo", "支付"),
+
+    userappProjectNotFound("3290", "用户应用不存在", "User app does not exist", "用户自定义应用"),
+    userappProjectBuildVersionInvalid("3292", "构建版本号不能为空", "Build version is required", "用户自定义应用"),
+    userappProjectNameRequired("3293", "应用名称不能为空", "App name is required", "用户自定义应用"),
+    userappProjectSpaceIdRequired("3294", "空间ID不能为空", "Space ID is required", "用户自定义应用"),
+    userappProjectCredentialSaveFailed("3295", "数据库账号密码不能为空或加密处理失败", "DB credential is blank or failed to be encrypted", "用户自定义应用"),
+    userappProjectPackageUrlRequired("3296", "发布包地址不能为空", "Publish package URL is required", "用户自定义应用"),
+    userappTaskNotFound("3297", "应用任务不存在", "Task does not exist", "用户自定义应用"),
+    userappTaskInProgress("3298", "应用已有进行中的同类任务，请先取消或等待完成", "A task of the same kind is already running for this app; cancel it or wait for completion", "用户自定义应用"),
+    userappTaskNotCancellable("3299", "任务已结束，无法取消", "Task is already in a terminal state and cannot be cancelled", "用户自定义应用"),
+    userappSandboxServerNotFound("3300", "可用的沙箱服务器不存在", "No available sandbox server", "用户自定义应用"),
+    userappBuildVersionNotFound("3302", "构建版本不存在，请先构建应用", "No build version found; build the app first", "用户自定义应用"),
+    userappProdDbCredentialMissing("3303", "未配置生产环境数据库账号密码", "Publish DB credential is not configured", "用户自定义应用"),
+    userappBuildArtifactDownloadFailed("3304", "构建产物下载失败", "Failed to download build artifact", "用户自定义应用"),
+    userappPublishNotApproved("3305", "应用发布审核未通过，无法部署生产环境", "Publish approval is required before prod deployment", "用户自定义应用"),
+    userappTaskNotAccepted("3306", "任务尚未受理，暂无进度流", "Task has not been accepted by the sandbox yet; no progress stream available", "用户自定义应用"),
+    userProjectNotFound("3307", "用户项目不存在", "User project does not exist", "用户自定义应用"),
+    userProjectRefRequired("3308", "项目类型与引用记录ID不能为空", "Project type and referenced record ID are required", "用户自定义应用"),
+    userProjectTypeInvalid("3309", "项目类型不合法", "Invalid project type", "用户自定义应用"),
+    userappProjectSandboxIdRequired("3310", "沙箱ID不能为空", "Sandbox ID is required", "用户自定义应用"),
+    userappProjectSandboxInvalid("3311", "沙箱不可用或无权限使用", "Sandbox is unavailable or not permitted for this project", "用户自定义应用"),
+    userappProxyAuthFailed("3312", "登录已失效，请重新登录", "Login session expired; please sign in again", "用户自定义应用"),
+    userappProxySpaceMemberOnly("3313", "仅同空间成员可访问", "Only members of the same space can access", "用户自定义应用"),
+    userappProxyNotDeployed("3314", "应用尚未部署生产环境，无法访问", "The app has not been deployed to prod; access is denied", "用户自定义应用"),
+    userappProxyNoPermission("3315", "无权访问该应用", "Access to this app is not permitted", "用户自定义应用"),
+    userappDomainInvalid("3316", "域名格式不合法", "Invalid domain format", "用户自定义应用"),
+    userappDomainCnameNotPointed("3317", "域名尚未指向平台接入地址，请先完成 CNAME 解析后重试", "The domain does not point to the platform access host yet; configure the CNAME and retry", "用户自定义应用"),
+    userappDomainExists("3318", "域名已被其他应用绑定", "The domain is already bound to another app", "用户自定义应用"),
+    userappDomainNotFound("3319", "域名绑定不存在", "Domain binding does not exist", "用户自定义应用"),
+    userappDomainDefaultImmutable("3320", "平台分配的域名不支持修改或解绑", "Platform-assigned domains cannot be modified or unbound", "用户自定义应用"),
+    userProjectNormalOnly("3321", "仅常规项目支持该操作", "Only normal projects support this operation", "用户自定义应用"),
+    userappProjectWorkspaceOccupiedByApp("3322", "工作空间已被其他全栈应用占用", "The workspace is already occupied by another full-stack app", "用户自定义应用"),
+    userappProjectWorkspaceOccupiedByNormal("3323", "工作空间已被其他常规项目占用", "The workspace is already occupied by a normal project", "用户自定义应用"),
+    userProjectTypeRequired("3324", "项目类型不能为空", "Project type is required", "用户自定义应用"),
+    userProjectWorkspaceOccupied("3325", "工作目录已被其他项目占用", "Workspace directory is already occupied", "用户自定义应用"),
+    userappPublishRequiresDeployed("3328", "应用尚未部署生产环境，请先构建并部署后再发布上架", "Prod deployment is required before publishing", "用户自定义应用"),
+    userappPrivateServerNotFound("3329", "私有服务器不存在", "Private server does not exist", "用户自定义应用"),
+    userappPrivateServerNoPermission("3330", "无权使用该私有服务器", "No permission to use this private server", "用户自定义应用"),
+    userappPrivateServerOffline("3331", "私有服务器未就绪（未验证或已离线），请先完成健康检查", "Private server is not ready (unverified or offline); run the health check first", "用户自定义应用"),
+    userappPrivateServerDuplicate("3332", "该私有服务器已被登记（相同地址与管理端口）", "This private server is already registered with the same host and agent port", "用户自定义应用"),
+    userappPrivateServerInvalidParam("3333", "私有服务器参数不合法", "Invalid private server parameters", "用户自定义应用"),
+    userappPrivateServerInUse("3334", "私有服务器仍被应用引用，请先解除引用后再删除", "Private server is still referenced by apps; remove the references first", "用户自定义应用"),
+
+    //OAuth2 接入（三方应用以 user_project 为配置行，平台作为授权方）
+    //注：原用 3330-3338，与「支持用户私服部署」(f9d435a4e) 的 userappPrivateServer* 段撞码，整体挪至 3341-3349
+    oauth2ClientNotFound("3341", "OAuth2 客户端不存在或已停用", "OAuth2 client does not exist or is disabled", "OAuth2 接入"),
+    oauth2RedirectUriMismatch("3342", "回调地址与登记的不一致", "The redirect URI does not match the registered one", "OAuth2 接入"),
+    oauth2InsufficientScope("3343", "access_token 权限不足，无法访问该接口", "The access token does not have sufficient scope for this API", "OAuth2 接入"),
+    oauth2InvalidGrant("3344", "授权码或令牌无效、已过期或已被使用", "The authorization code or token is invalid, expired, or already used", "OAuth2 接入"),
+    oauth2ClientSecretInvalid("3345", "客户端密钥不正确", "The client secret is incorrect", "OAuth2 接入"),
+    oauth2ThirdAppOnly("3346", "仅三方应用支持 OAuth2 接入配置", "Only third-party apps support OAuth2 integration settings", "OAuth2 接入"),
+    oauth2RedirectUriRequired("3347", "未配置回调地址，无法发起授权", "The redirect URI is not configured; authorization cannot start", "OAuth2 接入"),
+    //注：3347 的触发条件是「生效集合为空」——主地址 redirect_uri 与补充列表 redirect_uris 都没有值。
+    //   只有主地址为空但补充列表有值是合法状态（沙箱里的 AI 只往补充列表写），不触发本码。
+    oauth2UrlInvalid("3348", "主页地址或回调地址格式不合法", "The homepage URL or redirect URI is invalid", "OAuth2 接入"),
+    oauth2InvalidScope("3349", "申请的权限范围不合法或超出应用允许范围", "The requested scope is invalid or exceeds the allowed scopes", "OAuth2 接入"),
+    userProjectThirdAppOnly("3339", "仅三方应用支持该操作", "Only third-party apps support this operation", "用户自定义应用"),
+
+    //文件上传安全限制（SVG 可携带脚本，同源内联展示存在 XSS 风险，仅管理员可上传）
+    fileSvgUploadAdminOnly("3340", "不允许上传 SVG 文件，如需上传请联系管理员", "SVG uploads are not allowed; please contact an administrator", "文件"),
+
+    //三方应用发布上架（市场发布流程前置）
+    thirdAppPublishRequiresCredential("3350", "三方应用尚未生成 OAuth2 凭证，请先在接入设置中生成后再发布上架", "OAuth2 credentials have not been generated; generate them in the integration settings before publishing", "三方应用"),
+
+    //OAuth2 scope 范围变更需管理员审核后生效
+    oauth2ScopeApplyNotFound("3351", "scope 变更申请不存在或已完成审核", "The scope change request does not exist or has already been reviewed", "OAuth2 接入"),
+
+    //OAuth2 补充回调地址限额（user_project.redirect_uris）
+    oauth2RedirectUriExceeded("3352", "回调地址超出限制：最多 20 条，单条不超过 512 字符", "Too many redirect URIs, or one exceeds 512 characters (max 20 entries)", "OAuth2 接入"),
+
+    //主回调地址对沙箱（AI）冻结：一律不能写，库中为空时也不能——主地址只由网页端人工配置。
+    //理由：主地址是应用属主登记的那个回调，被 AI 静默改写等于把既有集成的登录打断；
+    //且它一旦被 AI 占位，人工再想配主地址反而会被这条挡住（库中非空改不动）。
+    //AI 自己的回调地址应写进补充列表（redirect_uris），那里按来源隔离、互不踩踏；
+    //生效集合取并集，主地址为空不影响授权，所以沙箱没有任何写主地址的需要。
+    oauth2RedirectUriPrimaryFrozen("3353", "主回调地址只能由应用属主在网页端设置，沙箱/AI 不能写入（库中为空时也不能）；请把回调地址加入补充回调地址列表 redirectUris", "The primary redirect URI can only be set by the app owner on the web console; sandbox/AI callers cannot write it (not even when it is empty). Add your redirect URI to the supplementary list (redirectUris) instead", "OAuth2 接入"),
+    //网页应用（PageApp）发布前置：页面须已成功构建，否则发布出去页面不可访问
+    customPagePublishRequiresBuild("3352", "网页应用页面尚未构建，请先构建成功后再发布", "The web app page has not been built; build it successfully in the page editor before publishing", "自定义页面");
 
     /**
      * 错误码
@@ -600,5 +724,64 @@ public enum BizExceptionCodeEnum implements IBizExceptionCodeEnum {
         this.remark = remark;
     }
 
+    /** 错误码反查索引;历史遗留的重复码以先声明者为准 */
+    private static final Map<String, BizExceptionCodeEnum> CODE_INDEX = new HashMap<>();
+
+    static {
+        for (BizExceptionCodeEnum entry : values()) {
+            CODE_INDEX.putIfAbsent(entry.code, entry);
+        }
+    }
+
+    /** 按错误码反查枚举,无匹配返回 null */
+    public static BizExceptionCodeEnum fromCode(String code) {
+        return code == null ? null : CODE_INDEX.get(code);
+    }
+
+    /**
+     * 结构化落库编码: "9390:281"(错误码:参数...)。
+     * 后台线程持久化失败原因时不存格式化明文——消息在后台线程格式化时的语言不可控
+     * (定时重试路径无请求上下文,恒为英文),明文会把语言冻结在写入时刻;
+     * 存编码,读取侧用 {@link #renderIfStructured(String)} 按查看者语言渲染。
+     */
+    public String encode(Object... params) {
+        if (params == null || params.length == 0) {
+            return code;
+        }
+        StringBuilder encoded = new StringBuilder(code);
+        for (Object param : params) {
+            encoded.append(':').append(param);
+        }
+        return encoded.toString();
+    }
+
+    /**
+     * 渲染持久化的任务结果: 输入为 {@link #encode(Object...)} 产物(纯数字码,可选 ":参数" 后缀)时,
+     * 按当前请求语言重新格式化;其余内容(历史明文/任意文本)原样返回。
+     * 解析或格式化失败一律回退为原样返回,展示路径不因渲染抛异常。
+     */
+    public static String renderIfStructured(String stored) {
+        if (stored == null || stored.isEmpty()) {
+            return stored;
+        }
+        int separator = stored.indexOf(':');
+        String codePart = separator < 0 ? stored : stored.substring(0, separator);
+        if (codePart.isEmpty() || !codePart.chars().allMatch(Character::isDigit)) {
+            return stored;
+        }
+        BizExceptionCodeEnum codeEnum = fromCode(codePart);
+        if (codeEnum == null) {
+            return stored;
+        }
+        try {
+            if (separator < 0) {
+                return codeEnum.formatMessage();
+            }
+            Object[] params = stored.substring(separator + 1).split(":", -1);
+            return codeEnum.formatMessage(params);
+        } catch (Exception e) {
+            return stored;
+        }
+    }
 
 }

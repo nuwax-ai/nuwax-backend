@@ -582,6 +582,10 @@ public class AgentDevApiForSandboxController {
         Assert.notNull(toolExecuteDTO.getTargetType(), "targetType must not be null");
         UserAccessKeyDto userAccessKeyDto = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
         String targetId = userAccessKeyDto.getTargetId();
+        if (targetId != null && targetId.contains("-")) {
+            int dash = targetId.indexOf("-");
+            targetId = targetId.substring(0, dash);
+        }
         Long agentId = toolExecuteDTO.getDevAgentId() != null ? toolExecuteDTO.getDevAgentId() : Long.parseLong(targetId);
         AgentConfigDto agentConfig;
         //验证用户有没有智能体的权限

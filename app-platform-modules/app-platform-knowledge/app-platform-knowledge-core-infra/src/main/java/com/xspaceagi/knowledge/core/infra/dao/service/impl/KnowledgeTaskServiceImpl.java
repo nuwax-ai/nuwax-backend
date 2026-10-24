@@ -65,6 +65,16 @@ public class KnowledgeTaskServiceImpl extends ServiceImpl<KnowledgeTaskMapper, K
     }
 
     @Override
+    public KnowledgeTask queryLatestOneByDocId(Long docId) {
+        LambdaQueryWrapper<KnowledgeTask> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(KnowledgeTask::getYn, YnEnum.Y.getKey())
+                .eq(KnowledgeTask::getDocId, docId)
+                .orderByDesc(KnowledgeTask::getCreated)
+                .last("LIMIT 1");
+        return this.getOne(queryWrapper);
+    }
+
+    @Override
     public Long updateInfo(KnowledgeTask entity) {
         var updateObj = this.getById(entity.getId());
 

@@ -6,9 +6,7 @@ import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
 import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
-import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
-import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
-import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigValue;
+import com.xspaceagi.sandbox.sdk.support.SandboxEndpointConverter.SandboxEndpoint;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
@@ -23,7 +21,9 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,13 +41,12 @@ public class ComputerPodClient {
     private ICustomPageRpcService iCustomPageRpcService;
 
     @Resource
-    private ISandboxConfigRpcService iSandboxConfigRpcService;
-
-    @Resource
     private SpacePermissionService spacePermissionService;
 
     @Resource
     private IUserDataPermissionRpcService iUserDataPermissionRpcService;
+    @Resource
+    private SandboxConfigEndpoints sandboxConfigEndpoints;
 
     @Value("${custom-page.ai-agent.base-url:}")
     private String configuredBaseUrl;
@@ -55,7 +54,7 @@ public class ComputerPodClient {
     /**
      * 启动容器
      */
-    public Map<String, Object> ensurePod(Long cId, Long userId) {
+    public Map<String, Object> ensurePod(Long cId, Long userId, String appStage) {
         ConversationDto conversationByCid = conversationApplicationService.getConversationByCid(cId);
         String baseUrl;
         SandboxServerConfig.SandboxServer sandboxServer;
@@ -74,30 +73,34 @@ public class ComputerPodClient {
                 sandboxServer.setServerAgentUrl(baseUrl);
             } else {
                 try {
-                    SandboxConfigRpcDto sandboxConfigRpcDto = iSandboxConfigRpcService.selectAppDevelopmentSandbox(customPageDto.getTenantId(), userId, customPageDto.getSpaceId(), customPageDto.getProjectId(), customPageDto.getSandboxId());
-                    SandboxConfigValue configValue = sandboxConfigRpcDto.getConfigValue();
-                    baseUrl = configValue.getHostWithScheme() + ":" + configValue.getAgentPort();
+                    SandboxEndpoint endpoint = sandboxConfigEndpoints.resolvePageAppSandbox(
+                            customPageDto.getTenantId(), userId, customPageDto.getSpaceId(), customPageDto.getProjectId(), customPageDto.getSandboxId());
+                    if (endpoint == null || endpoint.agentBaseUrl() == null) {
+                        throw new IllegalArgumentException("sandbox endpoint missing");
+                    }
+                    baseUrl = endpoint.agentBaseUrl();
                     sandboxServer = new SandboxServerConfig.SandboxServer();
                     sandboxServer.setServerAgentUrl(baseUrl);
-                    String isolationType = sandboxConfigRpcDto.getIsolation() == null ? null : sandboxConfigRpcDto.getIsolation().name();
-                    String podId = sandboxConfigRpcDto.getIsolationKey();
                     extraBody.put("tenant_id", customPageDto.getTenantId());
                     extraBody.put("space_id", customPageDto.getSpaceId());
-                    if (isolationType != null) {
-                        extraBody.put("isolation_type", isolationType);
+                    if (endpoint.isolationType() != null) {
+                        extraBody.put("isolation_type", endpoint.isolationType());
                     }
-                    if (podId != null) {
-                        extraBody.put("pod_id", podId);
+                    if (endpoint.isolationKey() != null) {
+                        extraBody.put("pod_id", endpoint.isolationKey());
                     }
                 } catch (Exception e) {
                     log.warn("[workspace-client] selectAppDevelopmentSandbox failed cId={}", cId, e);
                     throw new BizException("The sandbox bound to the project does not exist or has been taken offline.");
                 }
             }
-            extraBody.put("service_type", "web-agent-runner");
+            // 网页应用仅传 service_type
+            extraBody.put(WorkspaceServiceSupport.POD_SERVICE_TYPE, WorkspaceServiceType.PAGEAPP.getContainerType());
         } else {
             sandboxServer = selectSandboxServer(cId);
             baseUrl = sandboxServer.getServerAgentUrl();
+            WorkspaceServiceSupport.applyPodServiceParams(extraBody,
+                    WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer), appStage);
         }
         String url = baseUrl + "/computer/pod/ensure";
         log.info("[ComputerPodClient] ensurePod userId={} cId={} , url={}", userId, cId, url);
@@ -136,7 +139,7 @@ public class ComputerPodClient {
     /**
      * 容器保活
      */
-    public Map<String, Object> keepalive(Long cId, Long userId) {
+    public Map<String, Object> keepalive(Long cId, Long userId, String appStage) {
         SandboxServerConfig.SandboxServer sandboxServer = selectSandboxServer(cId);
         String url = sandboxServer.getServerAgentUrl() + "/computer/pod/keepalive";
         log.info("[ComputerPodClient] keepalive userId={} cId={} , url={}", userId, cId, url);
@@ -144,6 +147,8 @@ public class ComputerPodClient {
         Map<String, Object> body = new HashMap<>();
         body.put("project_id", String.valueOf(cId));
         body.put("user_id", String.valueOf(userId));
+        WorkspaceServiceSupport.applyPodServiceParams(body,
+                WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer), appStage);
 
         return doPost(url, body, sandboxServer, userId + "_" + cId + "_keepalive");
     }
@@ -151,10 +156,11 @@ public class ComputerPodClient {
     /**
      * 重启容器（销毁后重建）
      */
-    public Map<String, Object> restart(Long cId, Long userId) {
+    public Map<String, Object> restart(Long cId, Long userId, String appStage) {
         SandboxServerConfig.SandboxServer sandboxServer = selectSandboxServer(cId);
         String url = sandboxServer.getServerAgentUrl() + "/computer/pod/restart";
-        if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
+        boolean adminRestart = sandboxServer.getScope() == SandboxScopeEnum.USER;
+        if (adminRestart) {
             url = sandboxServer.getServerAgentUrl() + "/admin/services/restart";
         }
         log.info("[ComputerPodClient] restart userId={} cId={} , url={}", userId, cId, url);
@@ -163,6 +169,11 @@ public class ComputerPodClient {
         body.put("project_id", String.valueOf(cId));
         body.put("user_id", String.valueOf(userId));
         body.put("resource_limits", null);
+        if (!adminRestart) {
+            // /admin/services/restart 是客户端接口，不附带项目上下文参数
+            WorkspaceServiceSupport.applyPodServiceParams(body,
+                    WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer), appStage);
+        }
 
         return doPost(url, body, sandboxServer, userId + "_" + cId + "_restart");
     }
@@ -170,7 +181,7 @@ public class ComputerPodClient {
     /**
      * 查询容器 VNC 服务状态
      */
-    public Map<String, Object> getVncStatus(Long cId, Long userId) {
+    public Map<String, Object> getVncStatus(Long cId, Long userId, String appStage) {
         SandboxServerConfig.SandboxServer sandboxServer = selectSandboxServer(cId);
         if (sandboxServer.getScope() == SandboxScopeEnum.USER) {
             Map<String, Object> result = new HashMap<>();
@@ -181,14 +192,16 @@ public class ComputerPodClient {
         }
         String baseUrl = sandboxServer.getServerAgentUrl();
 
-        String url = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(baseUrl + "/computer/pod/vnc-status")
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl + "/computer/pod/vnc-status")
                 .queryParam("project_id", cId)
-                .queryParam("user_id", userId)
-                .toUriString();
+                .queryParam("user_id", userId);
+        WorkspaceServiceSupport.applyPodServiceParams(builder,
+                WorkspaceServiceSupport.resolveServiceContext(cId, sandboxServer), appStage);
+        URI uri = UriEncodingSupport.buildEncodedUri(builder);
 
-        log.info("[ComputerPodClient] getVncStatus userId={} cId={} , url={}", userId, cId, url);
+        log.info("[ComputerPodClient] getVncStatus userId={} cId={} , url={}", userId, cId, uri);
 
-        return doGet(url, sandboxServer, userId + "_" + cId + "_vnc_status");
+        return doGet(uri, sandboxServer, userId + "_" + cId + "_vnc_status");
     }
 
     /**
@@ -233,7 +246,7 @@ public class ComputerPodClient {
         }
     }
 
-    private Map<String, Object> doGet(String url, SandboxServerConfig.SandboxServer sandboxServer, String logId) {
+    private Map<String, Object> doGet(URI uri, SandboxServerConfig.SandboxServer sandboxServer, String logId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         // 所有下游请求增加 x-api-key 头，与代理保持一致
@@ -243,7 +256,7 @@ public class ComputerPodClient {
         RestTemplate restTemplate = new RestTemplate();
         try {
             ResponseEntity<Map<String, Object>> entity = restTemplate.exchange(
-                    url,
+                    uri,
                     HttpMethod.GET,
                     requestEntity,
                     new ParameterizedTypeReference<Map<String, Object>>() {
@@ -270,7 +283,9 @@ public class ComputerPodClient {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> errorResponse = objectMapper.readValue(responseBody, Map.class);
                 if (errorResponse.containsKey("code")) {
-                    resultMap.put("code", errorResponse.get("code"));
+                    // 前端会把 4010 当登录态失效跳转登录页；转 9999 通用错误，message 照常透传
+                    Object code = errorResponse.get("code");
+                    resultMap.put("code", "4010".equals(String.valueOf(code)) ? "9999" : code);
                 }
                 if (errorResponse.containsKey("message")) {
                     resultMap.put("message", errorResponse.get("message"));

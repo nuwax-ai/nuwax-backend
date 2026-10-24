@@ -11,4 +11,6 @@ public interface IConversationRpcService {
     List<ConversationRpcDto> queryLatestConversationListBySandboxId(Long sandboxId);
 
     void stopAgent(Long agentId, Long id);
+
+    Long createRepoDocConversation(Long userId, Long agentId, String slugId, String docName);
 }

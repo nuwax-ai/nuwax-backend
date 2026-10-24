@@ -123,7 +123,7 @@ public class MemoryUnitServiceImpl extends ServiceImpl<MemoryUnitMapper, MemoryU
 
     @Override
     public List<MemoryUnitDTO> queryList(MemoryUnitQueryDTO queryDTO) {
-        log.info("查询记忆单元列表: {}", queryDTO);
+        log.debug("查询记忆单元列表: {}", queryDTO);
         List<MemoryUnit> entities;
         List<Date> timeRange = null;
         boolean timeRangeQuery = false;
@@ -136,10 +136,11 @@ public class MemoryUnitServiceImpl extends ServiceImpl<MemoryUnitMapper, MemoryU
         queryWrapper.eq(MemoryUnit::getStatus, "active");
         queryWrapper.eq(MemoryUnit::getTenantId, queryDTO.getTenantId());
         queryWrapper.eq(MemoryUnit::getUserId, queryDTO.getUserId());
-        queryWrapper.eq(MemoryUnit::getAgentId, queryDTO.getAgentId());
+        queryWrapper.eq(queryDTO.getAgentId() != null, MemoryUnit::getAgentId, queryDTO.getAgentId());
         queryWrapper.in(CollectionUtils.isNotEmpty(queryDTO.getCategories()), MemoryUnit::getCategory, queryDTO.getCategories());
         queryWrapper.in(CollectionUtils.isNotEmpty(queryDTO.getSubCategories()), MemoryUnit::getSubCategory, queryDTO.getSubCategories());
-        queryWrapper.orderByDesc(MemoryUnit::getId);
+        // 最近更新的记忆优先（与 parseTimeRange 的 modified 语义一致），同刻按 id 倒序稳定排序
+        queryWrapper.orderByDesc(MemoryUnit::getModified).orderByDesc(MemoryUnit::getId);
         if (timeRangeQuery) {
             queryWrapper.between(MemoryUnit::getModified, timeRange.get(0), timeRange.get(1));
         }
@@ -147,7 +148,7 @@ public class MemoryUnitServiceImpl extends ServiceImpl<MemoryUnitMapper, MemoryU
         entities = list(queryWrapper);
 
         if (CollectionUtils.isNotEmpty(queryDTO.getTags())) {
-            List<MemoryUnit> memoryUnits = memoryUnitMapper.selectWithJoinTags(queryDTO.getUserId(), queryDTO.getAgentId(), queryDTO.getTags(), timeRangeQuery ? timeRange.get(0) : null, timeRangeQuery ? timeRange.get(1) : null, 0L, 10L);
+            List<MemoryUnit> memoryUnits = memoryUnitMapper.selectWithJoinTags(queryDTO.getUserId(), queryDTO.getAgentId(), queryDTO.getTags(), timeRangeQuery ? timeRange.get(0) : null, timeRangeQuery ? timeRange.get(1) : null, 0L, 20L);
             // 移除entries中id已包含的
             memoryUnits.removeIf(memoryUnit -> entities.stream().anyMatch(entity -> entity.getId().equals(memoryUnit.getId())));
             entities.addAll(memoryUnits);

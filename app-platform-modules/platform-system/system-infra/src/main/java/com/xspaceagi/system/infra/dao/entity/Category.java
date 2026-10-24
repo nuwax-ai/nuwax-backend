@@ -44,13 +44,18 @@ public class Category {
     private String description;
 
     /**
+     * 分类图标地址
+     */
+    private String icon;
+
+    /**
      * 分类编码
      */
     @I18nField(field = "code", keyPrefix = true)
     private String code;
 
     /**
-     * 分类类型：Agent、PageApp、Component
+     * 分类类型：Agent、PageApp、Component、ChatBox、Connector、Skill
      */
     private String type;
 

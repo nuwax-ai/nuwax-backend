@@ -11,14 +11,16 @@ public interface AgentWorkspaceApplicationService {
      * 创建/重置工作空间（不会重复创建，只重置skill/subagent，不会清除用户文件）
      * 如果传了技能id列表，会同时推送技能文件
      * 如果传了subagent列表，会同时推送subagent文件
+     * 单个技能发送失败不阻断流程，失败明细通过返回值查看
      */
-    void createWorkspace(CreateWorkspaceDto createWorkspaceDto);
+    SkillPushResultDto createWorkspace(CreateWorkspaceDto createWorkspaceDto);
 
     /**
      * 动态添加技能到工作空间
      * 支持传多个技能 id，动态增加的技能在重置工作空间时不会被清除
+     * 技能发送失败不阻断流程，失败明细通过返回值查看
      */
-    void addSkillsToWorkspace(AddSkillsToWorkspaceDto addSkillsToWorkspaceDto);
+    SkillPushResultDto addSkillsToWorkspace(AddSkillsToWorkspaceDto addSkillsToWorkspaceDto);
 
     /**
      * 初始化项目模板
@@ -47,6 +49,11 @@ public interface AgentWorkspaceApplicationService {
      * 删除沙箱工作空间
      */
     void deleteWorkspace(Long userId, Long cId);
+
+    /**
+     * 获取沙箱工作空间当前 git commit hash（HEAD）；git 不可用/无提交/调用失败返回 null
+     */
+    String getGitCommitHash(Long userId, Long cId);
 
     /**
      * 从沙箱导出技能为 zip 包

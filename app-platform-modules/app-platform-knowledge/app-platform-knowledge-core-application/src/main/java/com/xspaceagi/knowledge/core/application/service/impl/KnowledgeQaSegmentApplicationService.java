@@ -149,22 +149,12 @@ public class KnowledgeQaSegmentApplicationService implements IKnowledgeQaSegment
                     // 设置租户id
                     RequestContext.setThreadTenantId(tenantId);
 
-                    // 按照文档id来分组处理: docId
-                    Map<Long, List<KnowledgeQaSegmentModel>> docIdGroup = segmentList.stream()
-                            .collect(Collectors.groupingBy(KnowledgeQaSegmentModel::getDocId));
-                    for (Map.Entry<Long, List<KnowledgeQaSegmentModel>> docEntry : docIdGroup.entrySet()) {
-                        Long docId = docEntry.getKey();
-                        List<KnowledgeQaSegmentModel> segmentListForDoc = docEntry.getValue();
-                        if (log.isDebugEnabled()) {
-                            log.debug("生成文档id={}的问答向量化,问答分段列表:{}", docId, segmentListForDoc);
-                        }
-                        // 捕捉异常,避免影响其他docId重试
-                        try {
-                            this.knowledgeDocumentDomainService.generateEmbeddingsByQaSegment(segmentListForDoc,
-                                    userContext);
-                        } catch (Exception e) {
-                            log.error("生成文档id={}的问答向量化失败,问答分段列表:{}", docId, segmentListForDoc, e);
-                        }
+                    // 整页一次性传给 generateEmbeddingsByQaSegment:内部按 kbId 并发(跨库铺开线程池)、
+                    // 同库内按 doc 串行 + per-doc 容错(单 doc 失败不影响其他 doc)
+                    try {
+                        this.knowledgeDocumentDomainService.generateEmbeddingsByQaSegment(segmentList, userContext);
+                    } catch (Exception e) {
+                        log.error("生成问答向量化失败, tenantId={}, 条数={}", tenantId, segmentList.size(), e);
                     }
 
                 } finally {

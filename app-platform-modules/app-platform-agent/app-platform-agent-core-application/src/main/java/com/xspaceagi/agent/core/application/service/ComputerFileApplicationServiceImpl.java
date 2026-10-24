@@ -4,6 +4,7 @@ import com.xspaceagi.agent.core.adapter.application.IComputerFileApplicationServ
 import com.xspaceagi.agent.core.adapter.dto.ComputerFileInfo;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.domain.service.IComputerFileDomainService;
+import com.xspaceagi.agent.core.infra.rpc.ComputerFileClient;
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
@@ -14,6 +15,9 @@ import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.sdk.service.dto.UserShareDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
+import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
+import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -36,13 +40,16 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Signal;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Objects;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,30 +71,277 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     private SpacePermissionService spacePermissionService;
     @Resource
     private ConversationPermissionChecker conversationPermissionChecker;
+    @Resource
+    private ComputerFileClient computerFileClient;
+    @Resource
+    private ISandboxConfigRpcService iSandboxConfigRpcService;
+
+    private static final int SEARCH_MIN_KW_LENGTH = 1;  //搜索关键词最短长度（按 codePoint 计数，单个汉字/字母可搜）
+    private static final int SEARCH_DEFAULT_LIMIT = 100; // 返回文件数量上限（前端不传时）
+    private static final int SEARCH_MAX_LIMIT = 200; // 返回文件数量最大上限
+    private static final int SEARCH_DEFAULT_MAX_VISIT = 100_000; // 搜索文件数量上限（前端不传时）
+    private static final int SEARCH_MAX_MAX_VISIT = 200_000; // 搜索文件数量最大上限
+    private static final int SEARCH_DEFAULT_TIMEOUT_MS = 3_000; // 搜索耗时上限，超过不再搜索，直接返回（前端不传时）
+    private static final int SEARCH_MAX_TIMEOUT_MS = 15_000; // 搜索耗时最大上限
 
     @Override
-    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> listFsRoots(Long sandboxId) {
+        SandboxConfigRpcDto config = requireSandboxBrowsePermission(sandboxId);
+        return computerFileClient.listFsRoots(config);
+    }
+
+    @Override
+    public Map<String, Object> listFsChildren(Long sandboxId, String path) {
+        requireText(path, "path");
+        SandboxConfigRpcDto config = requireSandboxBrowsePermission(sandboxId);
+        return computerFileClient.listFsChildren(config, path);
+    }
+
+    @Override
+    public Map<String, Object> createFsDirectory(Long sandboxId, String parentPath, String dirName) {
+        requireText(parentPath, "parentPath");
+        requireText(dirName, "dirName");
+        SandboxConfigRpcDto config = requireSandboxBrowsePermission(sandboxId);
+        return computerFileClient.createFsDirectory(config, parentPath, dirName);
+    }
+
+    @Override
+    public Map<String, Object> renameFsDirectory(Long sandboxId, String path, String newName) {
+        requireText(path, "path");
+        requireText(newName, "newName");
+        SandboxConfigRpcDto config = requireSandboxBrowsePermission(sandboxId);
+        return computerFileClient.renameFsDirectory(config, path, newName);
+    }
+
+    /** 空白参数校验：统一 "X is required" 文案 */
+    private static void requireText(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+    }
+
+    /**
+     * 浏览权限：仅用户本人个人沙箱支持选目录；返回已加载的沙箱配置供下游复用（免二次查询）。
+     * 查询走租户上下文（queryByIdInTenant）：跨租户/不存在统一报 Sandbox not found（不暴露可区分探针），
+     * 缺租户上下文由租户处理器直接报错，不做 ignoreCheck 兜底。
+     */
+    private SandboxConfigRpcDto requireSandboxBrowsePermission(Long sandboxId) {
+        if (sandboxId == null || sandboxId <= 0) {
+            throw new IllegalArgumentException("sandboxId is required");
+        }
+        SandboxConfigRpcDto config = iSandboxConfigRpcService.queryByIdInTenant(sandboxId);
+        if (config == null) {
+            throw new IllegalArgumentException("Sandbox not found");
+        }
+        if (SandboxScopeEnum.USER != config.getScope()) {
+            throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(),
+                    "Directory selection is only supported on personal sandboxes");
+        }
+        if (!Objects.equals(config.getUserId(), RequestContext.get().getUserId())) {
+            throw new BizException(ErrorCodeEnum.PERMISSION_DENIED.getCode(), "No permission to browse this sandbox");
+        }
+        return config;
+    }
+
+    private static int resolveSearchBound(Integer value, int defaultValue, int max) {
+        if (value == null || value <= 0) {
+            return defaultValue;
+        }
+        return Math.min(value, max);
+    }
+
+    @Override
+    public Map<String, Object> getFileList(Long conversationUserId, Long cId, String proxyPath, UserContext userContext, String customTargetDir, String relativePath, Boolean recursive, Integer depth, String type, Integer limit) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
             return buildError("cId is invalid");
         }
+        // type/limit 归一化
+        String normalizedType = normalizeListType(type);
+        if (normalizedType == null && StringUtils.isNotBlank(type)) {
+            log.warn("[Web] Unknown file list type '{}', fallback to all, cId={}", type, cId);
+        }
+        Integer safeLimit = limit != null && limit >= 0 ? limit : null;
+        if (limit != null && limit < 0) {
+            log.warn("[Web] Invalid file list limit {}, fallback to unlimited, cId={}", limit, cId);
+        }
+        // depth 归一化：仅单层模式（recursive=false）下生效的受限展开层级数，1-10；null=不展开。
+        // 递归模式下 depth 是无操作参数：忽略（不校验、不下发），与 file-server 口径一致。
+        Integer safeDepth = null;
+        if (Boolean.FALSE.equals(recursive) && depth != null) {
+            if (depth < 1 || depth > 10) {
+                return buildError("depth must be between 1 and 10");
+            }
+            safeDepth = depth;
+        }
         try {
-            return computerFileDomainService.getFileList(userId, cId, proxyPath, userContext, customTargetDir);
+            Map<String, Object> result = computerFileDomainService.getFileList(
+                    conversationUserId, cId, proxyPath, userContext, customTargetDir, relativePath, recursive, safeDepth, normalizedType, safeLimit);
+            // 混部窗口：旧版 file-server（无 depth 能力）会静默丢弃 depth 参数——响应缺 depth 回显键时告警，
+            if (safeDepth != null && result != null && !result.containsKey("depth")) {
+                log.warn("[Web] file-server does not support depth (no echo), depth={} silently ignored, cId={}", safeDepth, cId);
+            }
+            // 混部窗口：旧版 file-server（< 1.3.6 无单层能力）会静默丢弃 recursive 参数——响应缺 recursive 回显键时告警，
+            // 此时"单层请求"实际返回全量扁平列表（且非空目录无条目），前端按路径推导才正确
+            if (Boolean.FALSE.equals(recursive) && result != null && !result.containsKey("recursive")) {
+                log.warn("[Web] file-server does not support single-layer list (no recursive echo), recursive=false silently ignored, cId={}", cId);
+            }
+            return applyLegacyFileListFallback(result, normalizedType, safeLimit);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception querying file list, userId={}, cId={}", userId, cId, e);
+            log.error("[Web] Exception querying file list, conversationUserId={}, cId={}", conversationUserId, cId, e);
             return buildError("Failed to query file list");
         }
     }
 
+    /**
+     * type 归一为规范字符串：file→file、dir/directory→dir、其他→null（按 all 处理）
+     */
+    private static String normalizeListType(String type) {
+        if (StringUtils.isBlank(type)) {
+            return null;
+        }
+        return switch (type.trim().toLowerCase()) {
+            case "file" -> "file";
+            case "dir", "directory" -> "dir";
+            default -> null;
+        };
+    }
+
+    /**
+     * 旧版 file-server（不识别 type/limit、响应无生效参数回显）时的平台侧兜底过滤，保证新旧 FS 对两个入口行为一致。
+     * 新版 FS 扫描时已应用并回显 type/limit，直接返回。
+     */
+    private Map<String, Object> applyLegacyFileListFallback(Map<String, Object> result, String type, Integer limit) {
+        // 无过滤需求，或新版 FS 已应用（type/limit 两键同时回显；即使存在只回显其一的中间版本，
+        // 兜底的过滤/截断对已应用的结果幂等，宁可重做不可漏做）——都无需处理
+        if (result == null || (type == null && limit == null)
+                || (result.containsKey("type") && result.containsKey("limit"))) {
+            return result;
+        }
+        Object filesObj = result.get("files");
+        if (!(filesObj instanceof List<?> files) || files.isEmpty()) {
+            return result;
+        }
+        List<Object> filtered = new ArrayList<>(files);
+        if (type != null) {
+            boolean wantDir = "dir".equals(type);
+            filtered.removeIf(entry -> wantDir != isFileListDirectoryEntry(entry));
+        }
+        if (limit != null && filtered.size() > limit) {
+            filtered.subList(limit, filtered.size()).clear();
+        }
+        result.put("files", filtered);
+        return result;
+    }
+
+    /**
+     * 判断文件列表条目是否目录：file-server 条目为 Map（isDir 字段，同 file-meta/fs 接口），兼容字符串路径按尾随 / 判断
+     */
+    private static boolean isFileListDirectoryEntry(Object entry) {
+        if (entry instanceof Map<?, ?> map) {
+            return Boolean.TRUE.equals(map.get("isDir"));
+        }
+        return entry instanceof String path && path.endsWith("/");
+    }
+
     @Override
-    public Map<String, Object> getLogs(Long userId, Long cId, int tailLines) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> resolveExistingFile(Long conversationUserId, Long cId, String proxyPath, String filePath, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        if (filePath == null || filePath.isBlank()) {
+            return buildError("filePath is invalid");
+        }
+        try {
+            return computerFileDomainService.resolveExistingFile(conversationUserId, cId, proxyPath, filePath, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
+        } catch (Exception e) {
+            log.error("[Web] Exception resolving file, conversationUserId={}, cId={}, filePath={}", conversationUserId, cId, filePath, e);
+            return buildError("Failed to resolve file");
+        }
+    }
+
+    @Override
+    public Map<String, Object> getFileMeta(Long conversationUserId, Long cId, List<String> filePaths, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        if (filePaths == null || filePaths.isEmpty()) {
+            return buildError("filePaths is invalid");
+        }
+        try {
+            return computerFileDomainService.getFileMeta(conversationUserId, cId, filePaths, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
+        } catch (Exception e) {
+            log.error("[Web] Exception querying file meta, conversationUserId={}, cId={}", conversationUserId, cId, e);
+            return buildError("Failed to query file meta");
+        }
+    }
+
+    @Override
+    public Map<String, Object> searchFiles(Long conversationUserId, Long cId, String proxyPath, String kw, UserContext userContext, String customTargetDir, String relativePath, String type, Integer limit, Integer maxVisit, Integer timeoutMs) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        if (kw == null || kw.isBlank()) {
+            return buildError("kw is invalid");
+        }
+        String trimmedKw = kw.trim();
+        if (trimmedKw.codePointCount(0, trimmedKw.length()) < SEARCH_MIN_KW_LENGTH) {
+            return buildError("kw must be at least " + SEARCH_MIN_KW_LENGTH + " characters");
+        }
+        // type 归一（与 file-list 的 normalizeListType 同口径）：file/dir/其他按 all
+        String normalizedType = normalizeListType(type);
+        if (normalizedType == null && StringUtils.isNotBlank(type)) {
+            log.warn("[Web] Unknown file search type '{}', fallback to all, cId={}", type, cId);
+        }
+        int safeLimit = resolveSearchBound(limit, SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT);
+        int safeMaxVisit = resolveSearchBound(maxVisit, SEARCH_DEFAULT_MAX_VISIT, SEARCH_MAX_MAX_VISIT);
+        int safeTimeoutMs = resolveSearchBound(timeoutMs, SEARCH_DEFAULT_TIMEOUT_MS, SEARCH_MAX_TIMEOUT_MS);
+        try {
+            return computerFileDomainService.searchFiles(
+                    conversationUserId, cId, proxyPath, trimmedKw, userContext, customTargetDir, relativePath, normalizedType,
+                    safeLimit, safeMaxVisit, safeTimeoutMs);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
+        } catch (Exception e) {
+            log.error("[Web] Exception searching files, conversationUserId={}, cId={}, kw={}", conversationUserId, cId, kw, e);
+            return buildError("Failed to search files");
+        }
+    }
+
+    @Override
+    public Map<String, Object> getLogs(Long conversationUserId, Long cId, int tailLines) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
@@ -95,18 +349,21 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         }
         int safeTailLines = Math.max(1, tailLines);
         try {
-            return computerFileDomainService.getLogs(userId, cId, safeTailLines, null);
+            return computerFileDomainService.getLogs(conversationUserId, cId, safeTailLines, null);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception querying logs, userId={}, cId={}", userId, cId, e);
+            log.error("[Web] Exception querying logs, conversationUserId={}, cId={}", conversationUserId, cId, e);
             return buildError("Failed to query logs");
         }
     }
 
     @Override
-    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> filesUpdate(Long conversationUserId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
@@ -117,18 +374,21 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("files is invalid");
         }
         try {
-            return computerFileDomainService.filesUpdate(userId, cId, files, userContext, customTargetDir);
+            return computerFileDomainService.filesUpdate(conversationUserId, cId, files, userContext, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception updating user file list, userId={}, cId={}", userId, cId, e);
+            log.error("[Web] Exception updating user file list, conversationUserId={}, cId={}", conversationUserId, cId, e);
             return buildError("Failed to update user file list, please check if filename is duplicated");
         }
     }
 
     @Override
-    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> uploadFile(Long conversationUserId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
@@ -143,18 +403,46 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("file is invalid");
         }
         try {
-            return computerFileDomainService.uploadFile(userId, cId, filePath, file, userContext, customTargetDir);
+            return computerFileDomainService.uploadFile(conversationUserId, cId, filePath, file, userContext, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception uploading user file, userId={}, cId={}, filePath={}", userId, cId, filePath, e);
+            log.error("[Web] Exception uploading user file, conversationUserId={}, cId={}, filePath={}", conversationUserId, cId, filePath, e);
             return buildError("Failed to upload user file");
         }
     }
 
     @Override
-    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> generateFile(Long conversationUserId, Long cId, String fileName, String content, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
+        }
+        if (cId == null || cId <= 0) {
+            log.error("[Web] Invalid cId, cId={}", cId);
+            return buildError("cId is invalid");
+        }
+        if (fileName == null || fileName.trim().isEmpty()) {
+            log.error("[Web] fileName is invalid, fileName={}", fileName);
+            return buildError("fileName is invalid");
+        }
+        try {
+            return computerFileDomainService.generateFile(conversationUserId, cId, fileName.trim(), content, userContext, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
+        } catch (Exception e) {
+            log.error("[Web] Exception generating user file, conversationUserId={}, cId={}, fileName={}", conversationUserId, cId, fileName, e);
+            return buildError("Failed to generate user file");
+        }
+    }
+
+    @Override
+    public Map<String, Object> uploadFiles(Long conversationUserId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
@@ -173,18 +461,21 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("filePaths and files count mismatch");
         }
         try {
-            return computerFileDomainService.uploadFiles(userId, cId, filePaths, files, userContext, customTargetDir);
+            return computerFileDomainService.uploadFiles(conversationUserId, cId, filePaths, files, userContext, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception batch uploading user files, userId={}, cId={}", userId, cId, e);
+            log.error("[Web] Exception batch uploading user files, conversationUserId={}, cId={}", conversationUserId, cId, e);
             return buildError("Failed to batch upload user files");
         }
     }
 
     @Override
-    public Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
-            return buildError("userId is invalid");
+    public Map<String, Object> importProject(Long conversationUserId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
+            return buildError("conversationUserId is invalid");
         }
         if (cId == null || cId <= 0) {
             log.error("[Web] Invalid cId, cId={}", cId);
@@ -200,17 +491,20 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return buildError("Only zip files are supported");
         }
         try {
-            return computerFileDomainService.importProject(userId, cId, file, userContext, customTargetDir);
+            return computerFileDomainService.importProject(conversationUserId, cId, file, userContext, customTargetDir);
+        } catch (BizException e) {
+            // 语义化业务错误（沙箱不在线/被禁用/会话不存在等）直接抛出返回原始错误，不吞掉成通用错误
+            throw e;
         } catch (Exception e) {
-            log.error("[Web] Exception importing project, userId={}, cId={}, fileName={}", userId, cId, originalFilename, e);
+            log.error("[Web] Exception importing project, conversationUserId={}, cId={}, fileName={}", conversationUserId, cId, originalFilename, e);
             return buildError("Failed to import project");
         }
     }
 
     @Override
-    public ResponseEntity<StreamingResponseBody> downloadAllFiles(Long userId, Long cId, UserContext userContext, String customTargetDir) {
-        if (userId == null || userId <= 0) {
-            log.error("[Web] Invalid userId, userId={}", userId);
+    public ResponseEntity<StreamingResponseBody> downloadAllFiles(Long conversationUserId, Long cId, UserContext userContext, String customTargetDir) {
+        if (conversationUserId == null || conversationUserId <= 0) {
+            log.error("[Web] Invalid conversationUserId, conversationUserId={}", conversationUserId);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         if (cId == null || cId <= 0) {
@@ -218,11 +512,11 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        String logId = userId + "_" + cId;
-        log.info("[Web] Download all files, logId={}, userId={}, cId={}", logId, userId, cId);
+        String logId = conversationUserId + "_" + cId;
+        log.info("[Web] Download all files, logId={}, conversationUserId={}, cId={}", logId, conversationUserId, cId);
 
         try {
-            Flux<DataBuffer> fileFlux = computerFileDomainService.downloadAllFiles(userId, cId, logId, userContext, customTargetDir);
+            Flux<DataBuffer> fileFlux = computerFileDomainService.downloadAllFiles(conversationUserId, cId, logId, userContext, customTargetDir);
 
             // Check the first signal before starting to write to detect errors early
             // Use share() to share Flux, then use materialize() to check the first signal
@@ -271,7 +565,7 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            String zipFileName = "files-" + userId + "-" + cId + ".zip";
+            String zipFileName = "files-" + conversationUserId + "-" + cId + ".zip";
             String encodedName = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8);
             headers.set(HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + encodedName + "\"; filename*=UTF-8''" + encodedName);
@@ -279,6 +573,9 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             StreamingResponseBody streamingResponseBody = outputStream -> {
                 try {
                     finalFileFlux
+                            // 写出切离 reactor-netty event loop：阻塞写会钉住共享 IO 线程（慢客户端最坏钉满整个下载期）；
+                            // publishOn 自带 prefetch，同时补上端到端背压（写不动 → 停 request → 下游自动暂停）
+                            .publishOn(Schedulers.boundedElastic())
                             .doOnError(WebClientResponseException.class, e -> {
                                 log.error("[Web] Failed to download all files, logId={}, status={}, responseBody={}",
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());
@@ -326,11 +623,11 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     @Override
     public ResponseEntity<StreamingResponseBody> getStaticFile(Long cId, HttpServletRequest request, String customTargetDir) {
         ConversationDto currentConversation = getConversation(cId);
-        AuthResult authResult = staticFileAuth(currentConversation, cId, request);
+        AuthResult authResult = staticFileAuth(currentConversation, cId, request, customTargetDir);
         if (authResult.getRedirectUrl() != null) {
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(authResult.getRedirectUrl())).build();
         }
-        Long conversationUserId = authResult.getUserId();
+        Long conversationUserId = authResult.getConversationUserId();
 
         log.info("[Web] Access static file, conversationUserId={}, cId={}, ", conversationUserId, cId);
         String staticPrefix = "/api/computer/static/" + cId + "/";
@@ -404,6 +701,10 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             if (downstreamHeaders.getFirst(HttpHeaders.LAST_MODIFIED) != null) {
                 headers.set(HttpHeaders.LAST_MODIFIED, downstreamHeaders.getFirst(HttpHeaders.LAST_MODIFIED));
             }
+            // 自定义header
+            if (downstreamHeaders.getFirst("X-File-Size") != null) {
+                headers.set("X-File-Size", downstreamHeaders.getFirst("X-File-Size"));
+            }
 
             // If token is obtained from ticket, set Cookie for subsequent requests
             if (authResult.getToken() != null) {
@@ -432,6 +733,9 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
             StreamingResponseBody streamingResponseBody = outputStream -> {
                 try {
                     finalFileFlux
+                            // 写出切离 reactor-netty event loop：阻塞写会钉住共享 IO 线程（慢客户端最坏钉满整个下载期）；
+                            // publishOn 自带 prefetch，同时补上端到端背压（写不动 → 停 request → 下游自动暂停）
+                            .publishOn(Schedulers.boundedElastic())
                             .doOnError(WebClientResponseException.class, e -> {
                                 log.error("[Web] Failed to get static file, logId={}, status={}, responseBody={}",
                                         logId, e.getStatusCode(), e.getResponseBodyAsString());
@@ -498,13 +802,13 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
     }
 
     /**
-     * Authentication result, containing userId and token (if obtained from ticket).
-     * When redirectUrl is not empty, it means need to redirect to login page, userId is null at this time.
+     * Authentication result, containing conversationUserId and token (if obtained from ticket).
+     * When redirectUrl is not empty, it means need to redirect to login page, conversationUserId is null at this time.
      */
     @Getter
     @AllArgsConstructor
     private static class AuthResult {
-        private final Long userId;
+        private final Long conversationUserId;
         private final String token;
         private final UserShareDto userShare;
         private final String redirectUrl;
@@ -550,11 +854,13 @@ public class ComputerFileApplicationServiceImpl implements IComputerFileApplicat
         return null;
     }
 
-    private AuthResult staticFileAuth(ConversationDto currentConversation, Long cId, HttpServletRequest request) {
+    private AuthResult staticFileAuth(ConversationDto currentConversation, Long cId, HttpServletRequest request, String customTargetDir) {
         Long conversationUserId = currentConversation.getUserId();
 
         UserShareDto userShare = authWithSk(currentConversation, cId, request);
-        if (userShare != null) {
+        // 分享放行不适用于自定义目录：customTargetDir 非空时不认分享（含 sk Cookie 命中），落回登录态鉴权——
+        // 属主本人经登录态正常使用；匿名分享访客无登录态被拦，协作者由控制器层 checkCustomTargetDir 属主校验拦截
+        if (userShare != null && StringUtils.isBlank(customTargetDir)) {
             return new AuthResult(conversationUserId, null, userShare, null);
         }
 

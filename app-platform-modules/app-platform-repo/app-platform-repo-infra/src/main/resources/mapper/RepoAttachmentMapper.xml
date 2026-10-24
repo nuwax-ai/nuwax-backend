@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.repo.infra.dao.mapper.RepoAttachmentMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.repo.infra.dao.entity.RepoAttachment">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="pageId" column="page_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="fileKey" column="file_key" jdbcType="VARCHAR"/>
+        <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+        <result property="mime" column="mime" jdbcType="VARCHAR"/>
+        <result property="size" column="size" jdbcType="BIGINT"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="listByPageId" resultMap="BaseResultMap">
+        SELECT id, _tenant_id, space_id, page_id, user_id, file_key, file_name, mime, size, yn, created
+        FROM repo_attachment
+        WHERE page_id = #{pageId}
+        AND yn = 1
+        ORDER BY id DESC
+    </select>
+
+    <select id="listBySpaceId" resultMap="BaseResultMap">
+        SELECT id, _tenant_id, space_id, page_id, user_id, file_key, file_name, mime, size, yn, created
+        FROM repo_attachment
+        WHERE space_id = #{spaceId}
+        AND yn = 1
+        ORDER BY id DESC
+    </select>
+
+    <update id="softDelete">
+        UPDATE repo_attachment
+        SET yn = 0
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="softDeleteByPageIds">
+        UPDATE repo_attachment
+        SET yn = 0
+        WHERE yn = 1
+        AND page_id IN
+        <foreach collection="pageIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+    </update>
+
+    <select id="listSizeByPageIds" resultMap="BaseResultMap">
+        SELECT page_id, size
+        FROM repo_attachment
+        WHERE yn = 1
+        AND page_id IN
+        <foreach collection="pageIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+    </select>
+</mapper>

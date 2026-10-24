@@ -1,6 +1,7 @@
 package com.xspaceagi.agent.core.application.service;
 
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.application.WorkflowApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
@@ -44,6 +45,9 @@ public class TaskCenterApplicationServiceImpl implements TaskExecuteService {
     private ConversationApplicationService conversationApplicationService;
 
     @Resource
+    private ChatApplicationService chatApplicationService;
+
+    @Resource
     private WorkflowApplicationService workflowApplicationService;
 
     @Resource
@@ -69,6 +73,7 @@ public class TaskCenterApplicationServiceImpl implements TaskExecuteService {
                 requestContext.setUser(userDto);
                 requestContext.setUserId(userDto.getId());
                 requestContext.setLangMap(userDto.getLangMap());
+                requestContext.setFrom("task_center");
                 RequestContext.set(requestContext);
                 if (scheduleTask.getTargetType().equals(Published.TargetType.Agent.name())) {
                     executeAgentTask(sink, requestContext, scheduleTask);
@@ -158,7 +163,7 @@ public class TaskCenterApplicationServiceImpl implements TaskExecuteService {
         RequestContext.set(requestContext);
         AtomicBoolean retry = new AtomicBoolean(false);
         try {
-            conversationApplicationService.chat(tryReqDto, new HashMap<>(), false)
+            chatApplicationService.chat(tryReqDto, new HashMap<>(), false)
                     .doOnComplete(() -> {
                         log.info("TaskCenterApplicationServiceImpl.executeAgentTask() - doOnComplete {} => {}, 执行成功 {}", scheduleTask.getTargetId(), scheduleTask.getTaskName(), !retry.get());
                         if (!retry.get()) {

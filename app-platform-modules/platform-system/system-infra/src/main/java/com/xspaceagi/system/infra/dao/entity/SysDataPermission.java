@@ -93,6 +93,16 @@ public class SysDataPermission {
     private Integer maxPageAppCount;
 
     /**
+     * 可创建全栈应用数量，-1 表示不限制
+     */
+    private Integer maxUserAppCount;
+
+    /**
+     * 全栈应用闲置回收超时(秒)，-1 表示不限制（沿用下游默认），0 表示不回收（常驻）
+     */
+    private Integer userAppIdleTimeoutSeconds;
+
+    /**
      * 可创建知识库数量，-1 表示不限制
      */
     private Integer maxKnowledgeCount;

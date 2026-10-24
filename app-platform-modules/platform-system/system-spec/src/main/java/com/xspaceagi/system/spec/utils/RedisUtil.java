@@ -69,6 +69,16 @@ public class RedisUtil {
     }
 
     /**
+     * 获取并删除key的值（GETDEL原子操作），用于验证码等一次性消费场景
+     *
+     * @param key 键
+     * @return 值，key不存在时返回null
+     */
+    public Object getAndDelete(String key) {
+        return key == null ? null : redisTemplate.opsForValue().getAndDelete(key);
+    }
+
+    /**
      * 将值放入缓存
      *
      * @param key   键
@@ -516,6 +526,14 @@ public class RedisUtil {
      */
     public long listLength(String key) {
         return redisTemplate.opsForList().size(key);
+    }
+
+    /**
+     * 裁剪列表，只保留 [start, end] 范围内的元素（Redis LTRIM）。
+     * 支持负数下标，例如 trim(key, -100, -1) 只保留最后 100 个元素。
+     */
+    public void trim(String key, long start, long end) {
+        redisTemplate.opsForList().trim(key, start, end);
     }
 
     /**

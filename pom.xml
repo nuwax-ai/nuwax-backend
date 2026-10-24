@@ -282,6 +282,38 @@
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
 
+            <!-- connector -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-connector-ui</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
             <!-- custom-page -->
             <dependency>
                 <groupId>com.xspaceagi</groupId>
@@ -316,6 +348,43 @@
             <dependency>
                 <groupId>com.xspaceagi</groupId>
                 <artifactId>app-platform-custom-page-spec</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
+            <!-- userapp -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-adapter</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-domain</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-infra</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-web</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-userapp-spec</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
 
@@ -534,6 +603,11 @@
             <!-- im -->
             <dependency>
                 <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-im-sdk</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
                 <artifactId>app-platform-im-web</artifactId>
                 <version>0.0.1-SNAPSHOT</version>
             </dependency>
@@ -664,6 +738,37 @@
             <dependency>
                 <groupId>com.xspaceagi</groupId>
                 <artifactId>app-platform-file-web</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <!-- repo（文档协作） -->
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-spec</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-sdk</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-domain</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-infra</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-application</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xspaceagi</groupId>
+                <artifactId>app-platform-repo-web</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
@@ -902,10 +1007,6 @@
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.knuddels</groupId>
-            <artifactId>jtokkit</artifactId>
         </dependency>
         <dependency>
             <groupId>org.quartz-scheduler</groupId>

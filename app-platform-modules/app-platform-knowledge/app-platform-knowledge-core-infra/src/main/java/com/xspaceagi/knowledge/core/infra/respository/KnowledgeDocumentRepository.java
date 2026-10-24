@@ -197,7 +197,11 @@ public class KnowledgeDocumentRepository implements IKnowledgeDocumentRepository
             KnowledgeTask retryTask = retryTasks.get(0);
             if (retryTask.getRetryCnt() >= retryTask.getMaxRetryCnt()) {
                 document.setDocStatus(KnowledgeDocStatueEnum.ANALYZE_FAILED);
-                document.setDocStatusReason("重试次数达到最大值");
+                // 优先展示任务记录的具体失败原因,无记录时回退通用文案。
+                // 结构化编码(如"9390:281")按当前请求语言渲染成用户提示,历史明文与其他内容原样展示
+                String reason = (retryTask.getResult() != null && !retryTask.getResult().isBlank())
+                        ? BizExceptionCodeEnum.renderIfStructured(retryTask.getResult()) : "重试次数达到最大值";
+                document.setDocStatusReason(reason);
                 log.warn("Document {} analysis failed due to max retry count reached", document.getId());
                 return true;
             }

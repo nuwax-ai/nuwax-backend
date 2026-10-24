@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.repo.infra.dao.mapper.RepoPageVersionMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.repo.infra.dao.entity.RepoPageVersion">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="pageId" column="page_id" jdbcType="BIGINT"/>
+        <result property="editorId" column="editor_id" jdbcType="BIGINT"/>
+        <result property="reason" column="reason" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="FullResultMap" type="com.xspaceagi.repo.infra.dao.entity.RepoPageVersion" extends="BaseResultMap">
+        <result property="ydocSnapshot" column="ydoc_snapshot" jdbcType="LONGVARBINARY"/>
+        <result property="html" column="html" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+
+    <!-- 列表查询不含大字段，避免分页拉取 LONGBLOB -->
+    <select id="listByPageId" resultMap="BaseResultMap">
+        SELECT id, _tenant_id, page_id, editor_id, reason, created
+        FROM repo_page_version
+        WHERE page_id = #{pageId}
+        ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByPageId" resultType="long">
+        SELECT COUNT(*)
+        FROM repo_page_version
+        WHERE page_id = #{pageId}
+    </select>
+
+    <select id="selectFullById" resultMap="FullResultMap">
+        SELECT id, _tenant_id, page_id, ydoc_snapshot, html, editor_id, reason, created
+        FROM repo_page_version
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+</mapper>

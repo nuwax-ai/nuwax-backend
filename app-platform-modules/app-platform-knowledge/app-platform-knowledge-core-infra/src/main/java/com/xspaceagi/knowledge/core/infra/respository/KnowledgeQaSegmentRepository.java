@@ -1,10 +1,12 @@
 package com.xspaceagi.knowledge.core.infra.respository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
@@ -23,6 +25,7 @@ import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.exception.KnowledgeException;
 import com.xspaceagi.system.spec.page.PageUtils;
+import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +47,9 @@ public class KnowledgeQaSegmentRepository implements IKnowledgeQaSegmentReposito
     private KnowledgeRawSegmentService knowledgeRawSegmentService;
     @Resource
     private VectorDBService vectorDBService;
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
 
     @Override
@@ -247,5 +253,18 @@ public class KnowledgeQaSegmentRepository implements IKnowledgeQaSegmentReposito
         return data.stream()
                 .map(item -> this.knowledgeQaSegmentTranslator.convertToModel(item))
                 .toList();
+    }
+
+    @Override
+    public int resetAllForVectorRebuild(LocalDateTime todayZero) {
+        // 全表重置(跨所有租户):jdbcTemplate 直写 SQL 不经过 MyBatis-Plus 租户拦截器,天然跨租户;
+        // 再用 TenantFunctions.runWithIgnoreCheck 包一层作为双保险。
+        String updateSql = "update knowledge_qa_segment set has_embedding = 0, created = ? where yn = 1";
+        int[] affected = new int[1];
+        TenantFunctions.runWithIgnoreCheck(() -> {
+            affected[0] = jdbcTemplate.update(updateSql, todayZero);
+        });
+        log.info("resetAllForVectorRebuild done, affected rows={}, todayZero={}", affected[0], todayZero);
+        return affected[0];
     }
 }

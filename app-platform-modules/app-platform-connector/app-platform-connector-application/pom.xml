@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-connector</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-connector-application</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-infra</artifactId>
+        </dependency>
+        <!-- 插件/工作流绑定执行 SPI（agent 侧 @Service 实现，运行期同一 Spring 应用） -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-application</artifactId>
+        </dependency>
+    </dependencies>
+</project>

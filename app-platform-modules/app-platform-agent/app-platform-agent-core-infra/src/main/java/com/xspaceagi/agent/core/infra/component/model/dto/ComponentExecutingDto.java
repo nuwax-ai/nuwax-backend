@@ -119,5 +119,6 @@ public class ComponentExecutingDto implements Serializable {
         REQUEST_PERMISSION,
         //ASK USER
         ASK_QUESTION,
+        RENDER_UI,
     }
 }

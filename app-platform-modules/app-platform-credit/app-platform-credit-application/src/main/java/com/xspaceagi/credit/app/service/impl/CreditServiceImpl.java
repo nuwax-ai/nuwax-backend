@@ -32,6 +32,11 @@ public class CreditServiceImpl implements CreditService {
     private CreditFlowMapper creditFlowMapper;
 
     @Override
+    public boolean bizNoAdded(String bizNo) {
+        return creditFlowMapper.selectByBizNo(bizNo, CreditOperationTypeEnum.ADD.getCode()) != null;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public String addCredit(CreditAddRequest request) {
         // Idempotency check
@@ -475,7 +480,7 @@ public class CreditServiceImpl implements CreditService {
 
         dto.setCreated(credit.getCreated());
         dto.setRemark(credit.getRemark());
-        if (JSON.isValidObject(credit.getExtra())){
+        if (JSON.isValidObject(credit.getExtra())) {
             dto.setExtra(JSON.parseObject(credit.getExtra()));
         }
         return dto;

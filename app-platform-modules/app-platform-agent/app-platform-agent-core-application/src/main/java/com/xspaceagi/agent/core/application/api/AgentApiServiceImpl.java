@@ -136,6 +136,9 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     private CustomPageRpcService customPageRpcService;
 
     @Resource
+    private ChatApplicationService chatApplicationService;
+
+    @Resource
     private ConversationApplicationService conversationApplicationService;
 
     @Resource
@@ -1361,7 +1364,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
             tryReqDto.setMessage(agentExecuteRequestDto.getMessage());
             tryReqDto.setVariableParams(agentExecuteRequestDto.getVariables());
             tryReqDto.setRequestId(agentExecuteRequestDto.getTraceContext() != null ? agentExecuteRequestDto.getTraceContext().getTraceId() : null);
-            return conversationApplicationService.chat(tryReqDto, null, false).map(agentOutputDto -> {
+            return chatApplicationService.chat(tryReqDto, null, false).map(agentOutputDto -> {
                 AgentOutputDto agentOutputDto0 = new AgentOutputDto();
                 agentOutputDto0.setCompleted(agentOutputDto.isCompleted());
                 if (agentOutputDto.getData() instanceof ChatMessageDto) {
@@ -1463,7 +1466,7 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         publishApplicationService.publish(applyId);
 
         //Add recent use
-        agentApplicationService.addOrUpdateRecentUsed(userId, agentId);
+        agentApplicationService.addOrUpdateRecentUsed(userId, agentId, agentConfigDto.getType());
         return ReqResult.success(agentId);
     }
 
@@ -1472,7 +1475,12 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
         AgentConfigDto agentConfigDto = agentApplicationService.queryById(agentId);
         //If user has changed agent name, do not modify again
         if (agentConfigDto != null && agentConfigDto.getName().contains(oldName)) {
-            newName = "Agent@" + newName;
+            String key = "Backend.Agent.PrivateAgent.assistantName";
+            String assistantName = I18nUtil.systemMessage(key);
+            if (key.equals(assistantName)) {
+                assistantName = "助理";
+            }
+            newName = assistantName + "@" + newName;
             AgentConfigDto agentConfigUpdate = new AgentConfigDto();
             agentConfigUpdate.setId(agentId);
             agentConfigUpdate.setName(newName);
@@ -1483,11 +1491,16 @@ public class AgentApiServiceImpl implements IAgentRpcService, TemplateExportOrIm
     }
 
     private @NotNull AgentConfigDto buildPrivateAgentConfigDto(Long userId, Long sandboxId, SpaceDto spaceDto, String name) {
+        String key = "Backend.Agent.PrivateAgent.assistantName";
+        String assistantName = I18nUtil.systemMessage(key);
+        if (key.equals(assistantName)) {
+            assistantName = "助理";
+        }
         AgentConfigDto agentConfigDto = new AgentConfigDto();
         agentConfigDto.setSystemPrompt(PERSONAL_COMPUTER_ASSISTANT_PROMPT);
         agentConfigDto.setCreatorId(userId);
         agentConfigDto.setSpaceId(spaceDto.getId());
-        agentConfigDto.setName(StringUtils.isNotBlank(name) ? "Agent@" + name : I18nUtil.systemMessage("Backend.Agent.PrivateAgent.DefaultName", sandboxId.toString()));
+        agentConfigDto.setName(StringUtils.isNotBlank(name) ? assistantName + "@" + name : I18nUtil.systemMessage("Backend.Agent.PrivateAgent.DefaultName", sandboxId.toString()));
         agentConfigDto.setDescription(I18nUtil.systemMessage("Backend.Agent.PrivateAgent.Description"));
         agentConfigDto.setType(AgentConfigDto.AgentType.TaskAgent.name());
         agentConfigDto.setSubType(AgentConfigDto.AgentSubType.General.name());

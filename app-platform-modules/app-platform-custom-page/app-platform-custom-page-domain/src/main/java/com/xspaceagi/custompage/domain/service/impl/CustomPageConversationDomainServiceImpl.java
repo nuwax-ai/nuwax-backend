@@ -29,13 +29,15 @@ public class CustomPageConversationDomainServiceImpl implements ICustomPageConve
     private SpacePermissionService spacePermissionService;
 
     @Override
-    public ReqResult<Long> saveOrUpdateAssistantConversation(CustomPageConversationModel model, UserContext userContext) {
+    public ReqResult<Long> saveAssistantConversation(CustomPageConversationModel model, UserContext userContext) {
         Optional.ofNullable(model.getProjectId()).filter(x -> x > 0)
                 .orElseThrow(() -> new IllegalArgumentException("projectId is required or invalid"));
         Optional.ofNullable(model.getContent()).filter(x -> !x.trim().isEmpty())
                 .orElseThrow(() -> new IllegalArgumentException("content is required"));
         Optional.ofNullable(model.getSessionId()).filter(x -> !x.trim().isEmpty())
                 .orElseThrow(() -> new IllegalArgumentException("sessionId is required"));
+        Optional.ofNullable(model.getRequestId()).filter(x -> !x.trim().isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("requestId is required"));
 
         try {
             var configModel = customPageConfigRepository.getById(model.getProjectId());
@@ -44,23 +46,14 @@ public class CustomPageConversationDomainServiceImpl implements ICustomPageConve
             }
             spacePermissionService.checkSpaceUserPermission(configModel.getSpaceId());
             model.setSpaceId(configModel.getSpaceId());
-
-            if (model.getId() != null) {
-                CustomPageConversationModel existing = customPageConversationRepository.findById(model.getId());
-                if (existing == null || !"ASSISTANT".equalsIgnoreCase(existing.getRole())
-                        || !model.getProjectId().equals(existing.getProjectId())) {
-                    return ReqResult.error("0001", "Invalid assistant conversation id");
-                }
-                boolean updated = customPageConversationRepository.updateAssistantContent(model.getId(),
-                        model.getContent(), model.getRequestId(), userContext);
-                return updated ? ReqResult.success(model.getId())
-                        : ReqResult.error("0001", "Failed to update assistant conversation");
-            }
+            model.setRole("ASSISTANT");
+            // 同 conversation_message：整轮结束只 insert 一次，不 update
+            model.setId(null);
             Long id = customPageConversationRepository.save(model, userContext);
             return ReqResult.success(id);
         } catch (Exception e) {
-            log.error("[Domain] save or update assistant conversation failed, project Id={}, sessionId={}",
-                    model.getProjectId(), model.getSessionId(), e);
+            log.error("[Domain] save assistant conversation failed, project Id={}, sessionId={}, requestId={}",
+                    model.getProjectId(), model.getSessionId(), model.getRequestId(), e);
             return ReqResult.error("0001", "Failed to save assistant conversation: " + e.getMessage());
         }
     }

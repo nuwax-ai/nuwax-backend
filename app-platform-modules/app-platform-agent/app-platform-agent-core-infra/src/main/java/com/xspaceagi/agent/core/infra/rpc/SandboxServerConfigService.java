@@ -8,10 +8,11 @@ import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.sandbox.sdk.server.ISandboxConfigRpcService;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxConfigRpcDto;
 import com.xspaceagi.sandbox.sdk.service.dto.SandboxGlobalConfigDto;
-import com.xspaceagi.sandbox.sdk.service.dto.SandboxServerInfo;
+import com.xspaceagi.sandbox.sdk.support.SandboxEndpointConverter;
 import com.xspaceagi.sandbox.spec.enums.SandboxScopeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.sdk.service.AbstractTaskExecuteService;
 import com.xspaceagi.system.sdk.service.ScheduleTaskApiService;
 import com.xspaceagi.system.sdk.service.dto.ScheduleTaskDto;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -46,12 +48,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component("sandboxServerConfigService")
 public class SandboxServerConfigService extends AbstractTaskExecuteService {
-
-
-    static {
-        // Disable keep alive, temporarily do not use connection pool
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
-    }
 
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
@@ -108,6 +104,35 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         });
     }
 
+    /** 按沙箱配置 id 解析目标服务器（目录浏览等无会话场景；租户/用户取当前请求上下文） */
+    public SandboxServerConfig.SandboxServer selectServerBySandboxId(Long sandboxId) {
+        RequestContext requestContext = RequestContext.get();
+        TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(requestContext.getTenantId());
+        return selectServer(tenantConfig, requestContext.getUserId(), String.valueOf(sandboxId));
+    }
+
+    /** 已持有沙箱配置（调用方权限校验时已加载）时复用，跳过重复 queryById；校验与转换规则同 selectServer */
+    public SandboxServerConfig.SandboxServer selectServerBySandboxId(SandboxConfigRpcDto sandboxConfigRpcDto) {
+        RequestContext requestContext = RequestContext.get();
+        TenantConfigDto tenantConfig = tenantConfigApplicationService.getTenantConfig(requestContext.getTenantId());
+        return requireActiveAndConvert(tenantConfig, sandboxConfigRpcDto);
+    }
+
+    /** USER 沙箱须启用且在线、GLOBAL 须启用；通过后连同全局配置转换为 SandboxServer */
+    private SandboxServerConfig.SandboxServer requireActiveAndConvert(TenantConfigDto tenantConfig,
+            SandboxConfigRpcDto sandboxConfigRpcDto) {
+        if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.getIsActive()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientDisabled);
+        } else if (!sandboxConfigRpcDto.getIsActive()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentComputerServerDisabled);
+        }
+        if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.isOnline()) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientOffline);
+        }
+        SandboxGlobalConfigDto globalConfig = iSandboxConfigRpcService.getGlobalConfig(tenantConfig.getTenantId());
+        return convertToSandboxServer(sandboxConfigRpcDto, globalConfig);
+    }
+
     public SandboxServerConfig.SandboxServer selectServer(TenantConfigDto tenantConfig, Long userId, String serverId) {
 
         if (!serverStatusMap.containsKey(tenantConfig.getTenantId())) {
@@ -117,16 +142,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
             try {
                 SandboxConfigRpcDto sandboxConfigRpcDto = iSandboxConfigRpcService.queryById(Long.parseLong(serverId));
                 if (sandboxConfigRpcDto != null) {
-                    if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.getIsActive()) {
-                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientDisabled);
-                    } else if (!sandboxConfigRpcDto.getIsActive()) {
-                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentComputerServerDisabled);
-                    }
-                    if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.USER && !sandboxConfigRpcDto.isOnline()) {
-                        throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentClientOffline);
-                    }
-                    SandboxGlobalConfigDto globalConfig = iSandboxConfigRpcService.getGlobalConfig(tenantConfig.getTenantId());
-                    return convertToSandboxServer(sandboxConfigRpcDto, globalConfig);
+                    return requireActiveAndConvert(tenantConfig, sandboxConfigRpcDto);
                 }
             } catch (NumberFormatException e) {
                 log.warn("Unable to convert serverId to Long type, skip this record: {}", serverId);
@@ -173,6 +189,17 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         return sandboxServer;
     }
 
+    /**
+     * 当前租户全局沙箱列表（含 file-server 地址）
+     */
+    public List<SandboxServerConfig.SandboxServer> listGlobalServers(TenantConfigDto tenantConfig) {
+        SandboxServerConfig config = buildGloabalSandboxServerConfig(tenantConfig);
+        if (config == null || CollectionUtils.isEmpty(config.getSandboxServers())) {
+            return List.of();
+        }
+        return new ArrayList<>(config.getSandboxServers());
+    }
+
     private SandboxServerConfig buildGloabalSandboxServerConfig(TenantConfigDto tenantConfig) {
         SandboxServerConfig sandboxServerConfig;
         List<SandboxConfigRpcDto> sandboxConfigRpcDtos = iSandboxConfigRpcService.queryGlobalConfigs(tenantConfig.getTenantId());
@@ -189,7 +216,7 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
             sandboxServerConfig.setPerUserMemoryGB(4);
             sandboxServerConfig.setPerUserCpuCores(2);
         }
-        sandboxServerConfig.setSandboxServers(sandboxConfigRpcDtos.stream().map(sandboxConfigRpcDto -> convertToSandboxServer(sandboxConfigRpcDto, globalConfig)).collect(Collectors.toList()));
+        sandboxServerConfig.setSandboxServers(sandboxConfigRpcDtos.stream().map(sandboxConfigRpcDto -> convertToSandboxServerSafely(sandboxConfigRpcDto, globalConfig)).filter(Objects::nonNull).collect(Collectors.toList()));
 
         Assert.notEmpty(sandboxServerConfig.getSandboxServers(), "Agent computer not configured");
         sandboxServerConfig.getSandboxServers().forEach(sandboxServer -> {
@@ -206,6 +233,17 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
         return sandboxServerConfig;
     }
 
+    /** 列表构建容错版：单条配置非法（端口未配/host 缺失等）跳过并告警，不因一行坏数据中止整个租户沙箱列表；全部无效由 buildGloabalSandboxServerConfig 的 Assert 兜底报错 */
+    private SandboxServerConfig.SandboxServer convertToSandboxServerSafely(SandboxConfigRpcDto sandboxConfigRpcDto, SandboxGlobalConfigDto sandboxGlobalConfigDto) {
+        try {
+            return convertToSandboxServer(sandboxConfigRpcDto, sandboxGlobalConfigDto);
+        } catch (IllegalArgumentException e) {
+            log.warn("[sandbox-server] skip invalid sandbox config, serverId={}, reason={}",
+                    sandboxConfigRpcDto == null ? null : sandboxConfigRpcDto.getId(), e.getMessage());
+            return null;
+        }
+    }
+
     private SandboxServerConfig.SandboxServer convertToSandboxServer(SandboxConfigRpcDto sandboxConfigRpcDto, SandboxGlobalConfigDto sandboxGlobalConfigDto) {
         SandboxServerConfig.SandboxServer sandboxServer = new SandboxServerConfig.SandboxServer();
         sandboxServer.setServerId(sandboxConfigRpcDto.getId().toString());
@@ -215,26 +253,17 @@ public class SandboxServerConfigService extends AbstractTaskExecuteService {
             throw new IllegalArgumentException("Invalid agent computer configuration");
         }
         sandboxServer.setScope(sandboxConfigRpcDto.getScope());
-        if (sandboxConfigRpcDto.getScope() == SandboxScopeEnum.GLOBAL) {
-            if (hostWithScheme.endsWith("/")) {
-                hostWithScheme = hostWithScheme.substring(0, hostWithScheme.length() - 1);
-            }
-            sandboxServer.setServerAgentUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getAgentPort());
-            sandboxServer.setServerVncUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getVncPort());
-            sandboxServer.setServerFileUrl(hostWithScheme + ":" + sandboxConfigRpcDto.getConfigValue().getFileServerPort());
-            sandboxServer.setServerApiKey(sandboxConfigRpcDto.getConfigValue().getApiKey());
-            sandboxServer.setMaxUsers(sandboxConfigRpcDto.getConfigValue().getMaxUsers());
-        } else {
-            SandboxServerInfo sandboxServerInfo = sandboxConfigRpcDto.getSandboxServerInfo();
-            if (sandboxServerInfo == null) {
-                throw new IllegalArgumentException("Invalid agent computer configuration");
-            }
-            sandboxServer.setServerAgentUrl(sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getAgentPort());
-            sandboxServer.setServerVncUrl(sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getVncPort());
-            sandboxServer.setServerFileUrl(sandboxServerInfo.getScheme() + "://" + sandboxServerInfo.getHost() + ":" + sandboxServerInfo.getFileServerPort());
-            sandboxServer.setServerApiKey(sandboxServerInfo.getApiKey());
-            sandboxServer.setMaxUsers(Integer.MAX_VALUE);
+        // URL 组装复用 sandbox-sdk 统一转换（含尾斜杠/端口校验；端口未配置视为配置非法，不再产出）
+        SandboxEndpointConverter.SandboxEndpoint endpoint = SandboxEndpointConverter.toEndpoint(sandboxConfigRpcDto);
+        if (endpoint == null || endpoint.agentBaseUrl() == null || endpoint.fileBaseUrl() == null) {
+            throw new IllegalArgumentException("Invalid agent computer configuration");
         }
+        sandboxServer.setServerAgentUrl(endpoint.agentBaseUrl());
+        sandboxServer.setServerVncUrl(endpoint.vncBaseUrl());
+        sandboxServer.setServerFileUrl(endpoint.fileBaseUrl());
+        sandboxServer.setServerApiKey(endpoint.apiKey());
+        sandboxServer.setMaxUsers(sandboxConfigRpcDto.getScope() == SandboxScopeEnum.GLOBAL
+                ? sandboxConfigRpcDto.getConfigValue().getMaxUsers() : Integer.MAX_VALUE);
         if (sandboxGlobalConfigDto != null) {
             try {
                 sandboxServer.setPerUserMemoryGB(Double.parseDouble(sandboxGlobalConfigDto.getPerUserMemoryGB()));

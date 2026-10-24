@@ -55,7 +55,8 @@ public class KnowledgeAutoGenerateQaEmbeddingsTask extends AbstractTaskExecuteSe
         int pageNum = 1;
         int pageSize = 500;
         while (true) {
-            var dataList = this.knowledgeQaSegmentApplicationService.queryListForEmbeddingQaAndEmbeddings(1,
+            // 查询最近5天内待向量化的文档问答(created窗口);rebuild 会把 created 重置为当天0点,5天窗口可避免跨天后扫不到
+            var dataList = this.knowledgeQaSegmentApplicationService.queryListForEmbeddingQaAndEmbeddings(5,
                     pageSize,
                     pageNum);
             if (dataList.isEmpty()) {

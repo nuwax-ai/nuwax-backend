@@ -1,0 +1,362 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.description",
+    "fieldValue": "Web Development",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.name",
+    "fieldValue": "Web Development",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Common.workspace",
+    "fieldValue": "Artifact",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.FilePathHeader.collapseFileTree",
+    "fieldValue": "Close Artifacts Panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.FilePathHeader.expandFileTree",
+    "fieldValue": "Open artifacts panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.MoreActionsMenu.exportResult",
+    "fieldValue": "Export Artifacts",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Chat.closeFilePreview",
+    "fieldValue": "Close artifacts panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Chat.openFilePreview",
+    "fieldValue": "Open build panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeFilePreview",
+    "fieldValue": "Close Artifacts Panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openFilePreview",
+    "fieldValue": "Open Artifacts Panel",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.inputEmailRequired",
+    "fieldValue": "Please enter your email",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.description",
+    "fieldValue": "网页开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.name",
+    "fieldValue": "网页开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.modelSelect",
+    "fieldValue": "选择模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Common.workspace",
+    "fieldValue": "产物",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Voice.holdToTalk",
+    "fieldValue": "按住 说话",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.FilePathHeader.collapseFileTree",
+    "fieldValue": "关闭产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.FilePathHeader.expandFileTree",
+    "fieldValue": "打开产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.MoreActionsMenu.exportResult",
+    "fieldValue": "导出产物",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Chat.closeFilePreview",
+    "fieldValue": "关闭产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Chat.openFilePreview",
+    "fieldValue": "打开产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeFilePreview",
+    "fieldValue": "关闭产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openFilePreview",
+    "fieldValue": "打开产物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.description",
+    "fieldValue": "網頁開發",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.page_app_dev.name",
+    "fieldValue": "網頁開發",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Common",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Common.workspace",
+    "fieldValue": "產物",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.FilePathHeader.collapseFileTree",
+    "fieldValue": "關閉產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.FilePathHeader.expandFileTree",
+    "fieldValue": "開啟產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.HistoryConversationList.searchPlaceholder",
+    "fieldValue": "搜尋歷史會話",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.MoreActionsMenu.exportResult",
+    "fieldValue": "匯出產物",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Chat.closeFilePreview",
+    "fieldValue": "關閉產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Chat.openFilePreview",
+    "fieldValue": "打開產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeFilePreview",
+    "fieldValue": "關閉產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openFilePreview",
+    "fieldValue": "打開產物面板",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputEmailPlaceholder",
+    "fieldValue": "請輸入郵箱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputEmailRequired",
+    "fieldValue": "請輸入郵箱",
+    "remark": null
+  }
+]

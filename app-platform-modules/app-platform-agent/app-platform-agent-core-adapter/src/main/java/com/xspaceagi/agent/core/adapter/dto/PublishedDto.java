@@ -68,6 +68,9 @@ public class PublishedDto implements Serializable {
     @Schema(description = "当前登录用户是否收藏")
     private boolean isCollect;
 
+    @Schema(description = "当前登录用户是否启用")
+    private boolean isEnabled;
+
     @Schema(description = "发布范围", hidden = true)
     private Published.PublishScope scope;
 
@@ -96,6 +99,9 @@ public class PublishedDto implements Serializable {
 
     @Schema(description = "封面图片来源")
     private SourceTypeEnum coverImgSourceType;
+
+    @Schema(description = "三方应用主页地址（仅三方应用有值）")
+    private String homepageUrl;
 
     @Schema(description = "是否需要付费")
     private boolean paymentRequired;

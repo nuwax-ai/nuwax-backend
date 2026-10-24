@@ -6,9 +6,11 @@ import java.util.regex.Pattern;
 public class OpenAISSEParser {
     private static final Pattern CAHED_TOKENS_PATTERN = Pattern.compile("\"cached_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern PROMPT_TOKENS_PATTERN = Pattern.compile("\"prompt_tokens\"\\s*:\\s*(\\d+)");
+    private static final Pattern INPUT_TOKENS_PATTERN = Pattern.compile("\"input_tokens\"\\s*:\\s*(\\d+)");
 
     private static final Pattern CACHE_PROMPT_CREATE_TOKENS_PATTERN = Pattern.compile("\"cache_creation_input_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern COMPLETION_TOKENS_PATTERN = Pattern.compile("\"completion_tokens\"\\s*:\\s*(\\d+)");
+    private static final Pattern OUTPUT_TOKENS_PATTERN = Pattern.compile("\"output_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern TOTAL_TOKENS_PATTERN = Pattern.compile("\"total_tokens\"\\s*:\\s*(\\d+)");
     private static final Pattern CONTENT_PATTERN = Pattern.compile("\"content\"\\s*:\\s*\"([^\"]*)\"");
 
@@ -25,6 +27,13 @@ public class OpenAISSEParser {
             usage.promptTokens = Integer.parseInt(promptMatcher.group(1));
         }
 
+        if (usage.promptTokens == 0) {
+            Matcher inputMatcher = INPUT_TOKENS_PATTERN.matcher(data);
+            while (inputMatcher.find()) {
+                usage.promptTokens = Integer.parseInt(inputMatcher.group(1));
+            }
+        }
+
         Matcher promptCacheCreateMatcher = CACHE_PROMPT_CREATE_TOKENS_PATTERN.matcher(data);
         while (promptCacheCreateMatcher.find()) {
             usage.cacheCreationInputTokens = Integer.parseInt(promptCacheCreateMatcher.group(1));
@@ -33,6 +42,12 @@ public class OpenAISSEParser {
         Matcher completionMatcher = COMPLETION_TOKENS_PATTERN.matcher(data);
         while (completionMatcher.find()) {
             usage.completionTokens = Integer.parseInt(completionMatcher.group(1));
+        }
+        if (usage.completionTokens == 0) {
+            Matcher outputMatcher = OUTPUT_TOKENS_PATTERN.matcher(data);
+            while (outputMatcher.find()) {
+                usage.completionTokens = Integer.parseInt(outputMatcher.group(1));
+            }
         }
 
         Matcher totalMatcher = TOTAL_TOKENS_PATTERN.matcher(data);

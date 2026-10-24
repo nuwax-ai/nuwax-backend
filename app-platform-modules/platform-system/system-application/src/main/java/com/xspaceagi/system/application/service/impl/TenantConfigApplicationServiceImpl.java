@@ -26,16 +26,15 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -65,9 +64,6 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
 
     @Value("${app.version:1.0.0}")
     private String newVersion;
-
-    @Value("${license:}")
-    private String license;
 
     @PostConstruct
     private void startUpRegisterEco() {
@@ -189,9 +185,6 @@ public class TenantConfigApplicationServiceImpl implements TenantConfigApplicati
         }
         TenantConfigDto tenantConfigDto = JSON.parseObject(configStr.toString(), TenantConfigDto.class);
         tenantConfigDto.setTenantId(tenantId);
-        if (StringUtils.isNotBlank(license)) {
-            tenantConfigDto.setCommercialEdition(true);
-        }
         return tenantConfigDto;
     }
 

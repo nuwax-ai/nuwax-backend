@@ -12,7 +12,8 @@ public enum TargetTypeEnum {
     PLUGIN("PLUGIN", "插件"),
     WORKFLOW("WORKFLOW", "工作流"),
     MCP("MCP", "MCP"),
-    MODEL("MODEL", "模型");
+    MODEL("MODEL", "模型"),
+    TOOL("TOOL", "工具");
 
     private final String code;
     private final String desc;

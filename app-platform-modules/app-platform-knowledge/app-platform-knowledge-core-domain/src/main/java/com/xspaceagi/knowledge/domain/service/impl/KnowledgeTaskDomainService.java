@@ -105,6 +105,7 @@ public class KnowledgeTaskDomainService implements IKnowledgeTaskDomainService {
         taskExistModel.setKbId(kbId);
         taskExistModel.setName(runType.getDesc());
         taskExistModel.setType(runType.getType());
+        taskExistModel.setTenantId(userContext.getTenantId());
 
         //重置任务状态
         taskExistModel.setStatus(KnowledgeTaskStageStatusEnum.INIT.getStatus());

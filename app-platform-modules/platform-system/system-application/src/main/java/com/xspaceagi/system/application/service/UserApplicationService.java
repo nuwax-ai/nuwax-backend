@@ -16,6 +16,8 @@ public interface UserApplicationService {
 
     UserDto queryById(Long userId);
 
+    UserDto queryById(Long userId, boolean withLangMap);
+
     UserDto queryUserByPhoneOrEmailWithPassword(String phoneOrEmail, String password);
 
     UserDto queryUserByPhone(String phone);
@@ -27,6 +29,15 @@ public interface UserApplicationService {
     UserDto queryUserByUid(String uid);
 
     List<UserDto> queryUserListByIds(List<Long> userIds);
+
+    /**
+     * 按关键词搜索用户（同租户内；用户名或昵称模糊匹配）。
+     *
+     * @param kw    关键词（空白返回空列表）
+     * @param limit 返回条数上限
+     * @return 用户列表
+     */
+    List<UserDto> searchUsers(String kw, int limit);
 
 
     /**

@@ -7,6 +7,7 @@ import com.xspaceagi.agent.core.adapter.dto.PublishedDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.web.ui.controller.dto.*;
 import com.xspaceagi.system.application.dto.SpaceDto;
+import com.xspaceagi.system.application.dto.SpaceUserDto;
 import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
@@ -67,30 +68,48 @@ public class TaskCenterForSandboxController {
                 return ReqResult.error("你能创建的任务数量已达上限，当前最多可创建任务数为" + userDataPermission.getMaxScheduledTaskCount());
             }
         }
-        UserAccessKeyDto userAccessKeyDto = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
-        PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Agent, Long.valueOf(userAccessKeyDto.getTargetId()));
+        Long akAgentId = resolveAkAgentId((UserAccessKeyDto) RequestContext.get().getUserAccessKey());
+        if (akAgentId == null) {
+            return ReqResult.error(INVALID_AK_MESSAGE);
+        }
+        PublishedDto publishedDto = publishApplicationService.queryPublished(Published.TargetType.Agent, akAgentId);
         if (publishedDto == null) {
             return ReqResult.error("Agent不存在或已下架");
         }
         ConversationDto conversationByCid = conversationApplicationService.getConversationByCid(sandboxTaskAddDto.getConversationId());
-        if (conversationByCid == null || !conversationByCid.getAgentId().equals(Long.valueOf(userAccessKeyDto.getTargetId()))) {
+        if (conversationByCid == null || !conversationByCid.getAgentId().equals(akAgentId)) {
             return ReqResult.error("conversationId 错误，请从环境变量中获取");
         }
-        List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
-        Long spaceId = spaceDtos.contains(publishedDto.getSpaceId()) ? publishedDto.getSpaceId() : null;
-        if (spaceId == null) {
-            SpaceDto spaceDto1 = spaceDtos.stream().filter(spaceDto -> spaceDto.getType() == Space.Type.Personal).findFirst().orElse(null);
-            if (spaceDto1 == null) {
-                return ReqResult.error("用户缺少个人空间数据，无法创建当前任务");
+        // 空间归属解析：
+        //  - 请求指定了 spaceId：只校验「当前用户是否为该空间成员」，不校验智能体所在空间。
+        //    ★成员判定用 querySpaceUser（直查 space_user 行、不看空间类型），别用 queryListByUserId——
+        //    后者现委托 queryVisibleListByUserId、只返回 Personal/Team，会把 DM/Group 空间漏掉造成误拒。
+        //  - 未指定：沿用既有逻辑（智能体发布空间 → 回落用户个人空间）。
+        Long spaceId;
+        Long requestedSpaceId = sandboxTaskAddDto.getSpaceId();
+        if (requestedSpaceId != null) {
+            SpaceUserDto spaceUser = spaceApplicationService.querySpaceUser(requestedSpaceId, RequestContext.get().getUserId());
+            if (spaceUser == null) {
+                return ReqResult.error("没有指定空间的权限，无法在该空间创建定时任务");
             }
-            spaceId = spaceDto1.getId();
+            spaceId = requestedSpaceId;
+        } else {
+            List<SpaceDto> spaceDtos = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
+            spaceId = spaceDtos.contains(publishedDto.getSpaceId()) ? publishedDto.getSpaceId() : null;
+            if (spaceId == null) {
+                SpaceDto spaceDto1 = spaceDtos.stream().filter(spaceDto -> spaceDto.getType() == Space.Type.Personal).findFirst().orElse(null);
+                if (spaceDto1 == null) {
+                    return ReqResult.error("用户缺少个人空间数据，无法创建当前任务");
+                }
+                spaceId = spaceDto1.getId();
+            }
         }
 
         ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
         scheduleTaskDto.setCron(sandboxTaskAddDto.getCron());
         scheduleTaskDto.setTargetType("Agent");
         scheduleTaskDto.setTargetName(publishedDto.getName());
-        scheduleTaskDto.setTargetId(userAccessKeyDto.getTargetId());
+        scheduleTaskDto.setTargetId(String.valueOf(akAgentId));
         scheduleTaskDto.setTaskName(sandboxTaskAddDto.getTaskName());
         scheduleTaskDto.setTaskId(UUID.randomUUID().toString().replace("-", ""));
         scheduleTaskDto.setTenantId(RequestContext.get().getTenantId());
@@ -111,6 +130,15 @@ public class TaskCenterForSandboxController {
         params.put("message", sandboxTaskAddDto.getMessage());
         scheduleTaskDto.setParams(params);
         Long id = scheduleTaskApiService.start(scheduleTaskDto);
+        // ★ start() 内部会吞掉异常并回 0（ScheduleTaskApplicationServiceImpl），任务其实没建。
+        //   不判这一下，cron 写错（如用 5 字段 crontab 写法）会回「成功 + id=0」——
+        //   调用方以为建好了，实际什么都没有，是最难查的一种失败。
+        if (id == null || id <= 0) {
+            log.warn("沙盒创建定时任务未生效 targetId={} taskName={} executeType={} cron={}",
+                    scheduleTaskDto.getTargetId(), scheduleTaskDto.getTaskName(),
+                    sandboxTaskAddDto.getExecuteType(), scheduleTaskDto.getCron());
+            return ReqResult.error("任务创建失败，请检查 cron 表达式（需 Quartz 6 字段）后重试");
+        }
         SandboxTaskCreateResult sandboxTaskCreateResult = new SandboxTaskCreateResult();
         sandboxTaskCreateResult.setId(id);
         return ReqResult.success(sandboxTaskCreateResult);
@@ -124,8 +152,8 @@ public class TaskCenterForSandboxController {
         if (scheduleTaskDto1 == null) {
             return ReqResult.error("任务不存在");
         }
-        UserAccessKeyDto userAccessKeyDto = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
-        if (!userAccessKeyDto.getTargetId().equals(scheduleTaskDto1.getTargetId())) {
+        Long akAgentId = resolveAkAgentId((UserAccessKeyDto) RequestContext.get().getUserAccessKey());
+        if (akAgentId == null || !String.valueOf(akAgentId).equals(scheduleTaskDto1.getTargetId())) {
             return ReqResult.error("Invalid task id");
         }
         ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
@@ -160,8 +188,8 @@ public class TaskCenterForSandboxController {
         if (scheduleTaskDto1 == null) {
             return ReqResult.error("任务不存在");
         }
-        UserAccessKeyDto userAccessKeyDto = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
-        if (!userAccessKeyDto.getTargetId().equals(scheduleTaskDto1.getTargetId())) {
+        Long akAgentId = resolveAkAgentId((UserAccessKeyDto) RequestContext.get().getUserAccessKey());
+        if (akAgentId == null || !String.valueOf(akAgentId).equals(scheduleTaskDto1.getTargetId())) {
             return ReqResult.error("Invalid task id");
         }
         ScheduleTaskDto scheduleTaskDto = new ScheduleTaskDto();
@@ -174,8 +202,11 @@ public class TaskCenterForSandboxController {
     @Operation(summary = "查询当前Agent的定时任务列表")
     @RequestMapping(path = "/list", method = RequestMethod.POST)
     public ReqResult<List<SandboxTaskDto>> list() {
-        UserAccessKeyDto userAccessKeyDto = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
-        List<ScheduleTaskDto> scheduleTaskDtoList = scheduleTaskApiService.queryTaskListByUserIdAndAgentId(RequestContext.get().getUserId(), userAccessKeyDto.getTargetId());
+        Long akAgentId = resolveAkAgentId((UserAccessKeyDto) RequestContext.get().getUserAccessKey());
+        if (akAgentId == null) {
+            return ReqResult.error(INVALID_AK_MESSAGE);
+        }
+        List<ScheduleTaskDto> scheduleTaskDtoList = scheduleTaskApiService.queryTaskListByUserIdAndAgentId(RequestContext.get().getUserId(), String.valueOf(akAgentId));
         return ReqResult.success(scheduleTaskDtoList.stream().map(scheduleTaskDto -> {
             SandboxTaskDto sandboxTaskDto = new SandboxTaskDto();
             sandboxTaskDto.setId(scheduleTaskDto.getId());
@@ -195,6 +226,51 @@ public class TaskCenterForSandboxController {
         }).collect(Collectors.toList()));
     }
 
+
+    // ------------------------------------------------------------------ 身份与范围
+
+    private static final String INVALID_AK_MESSAGE = "仅支持绑定智能体的访问密钥（AK）调用本接口";
+
+    /**
+     * 从 AK 解出「这把钥匙锚定哪个智能体」，解不出返回 null。与
+     * {@code AgentTaskForSandboxController#resolveAkAgentId} 同源（同一把沙盒钥匙，两处必须一致）。
+     *
+     * <p>★两种形态都得认 —— 沙盒里默认拿到的就是后者：
+     * <ul>
+     *   <li>{@code Agent} 型（智能体页签里建的钥匙）：{@code targetId} 就是 agentId；</li>
+     *   <li>{@code Sandbox} 型：{@code targetId} 是 {@code "{agentId}-{conversationId}"}。这是
+     *       {@code ChatApplicationServiceImpl} 铸沙盒钥匙时拼的，并作为 {@code SANDBOX_ACCESS_KEY}
+     *       注入沙盒环境变量 —— 所以技能手里那把必然是 Sandbox 型。取第一个 {@code '-'} 之前的部分。</li>
+     * </ul>
+     * 其余类型（Tenant / OpenApi / Mcp / TempChat …）不代表某个具体智能体，没有可锚定的可见范围，一律不认。
+     */
+    private static Long resolveAkAgentId(UserAccessKeyDto ak) {
+        if (ak == null) {
+            return null;
+        }
+        String targetId = ak.getTargetId();
+        if (StringUtils.isBlank(targetId)) {
+            return null;
+        }
+        if (ak.getTargetType() == UserAccessKeyDto.AKTargetType.Agent) {
+            return parsePositiveLong(targetId);
+        }
+        if (ak.getTargetType() == UserAccessKeyDto.AKTargetType.Sandbox) {
+            int dash = targetId.indexOf('-');
+            return parsePositiveLong(dash < 0 ? targetId : targetId.substring(0, dash));
+        }
+        return null;
+    }
+
+    /** 解析成正数 ID；非数字 / 非正数一律 null（宁可不认，也不锚到 0 或负数上）。 */
+    private static Long parsePositiveLong(String raw) {
+        try {
+            long value = Long.parseLong(raw.trim());
+            return value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     private static String toCron(long timestamp) {
         try {

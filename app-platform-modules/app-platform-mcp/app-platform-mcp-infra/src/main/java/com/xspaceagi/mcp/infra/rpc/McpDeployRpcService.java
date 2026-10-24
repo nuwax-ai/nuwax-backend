@@ -41,10 +41,6 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class McpDeployRpcService {
 
-    static {
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
-    }
-
     private static final String MCP_VERSION_KEY = "mcp-version:";
     @Value("${mcp.proxy-base-url:}")
     private String mcpProxyBaseUrl;

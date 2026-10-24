@@ -27,6 +27,8 @@ public class CategoryRpcService {
                 categoryDtos1 = com.xspaceagi.agent.core.adapter.dto.CategoryDto.convertPageAppCategoryList();
             } else if (StringUtils.equals(type, CategoryTypeEnum.COMPONENT.getCode())) {
                 categoryDtos1 = com.xspaceagi.agent.core.adapter.dto.CategoryDto.convertPluginCategoryList();
+            } else if (StringUtils.equals(type, CategoryTypeEnum.SKILL.getCode())) {
+                categoryDtos1 = com.xspaceagi.agent.core.adapter.dto.CategoryDto.convertSkillCategoryList();
             }
             if (categoryDtos1 != null) {
                 categoryDtos1.forEach(categoryDto -> {

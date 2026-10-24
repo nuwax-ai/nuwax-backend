@@ -1,5 +1,6 @@
 package com.xspaceagi.knowledge.domain.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -129,5 +130,14 @@ public interface IKnowledgeQaSegmentDomainService {
      * @param models 新增的问答列表
      */
     void batchAddEmbeddingQa(List<KnowledgeQaSegmentModel> models, UserContext userContext);
+
+    /**
+     * 全量重置问答向量化状态(跨所有租户),用于迁移到新向量库后重新向量化。
+     * 将所有有效问答的 has_embedding 置为 0、created 置为指定时间(当天0点)。
+     *
+     * @param todayZero 重置后的创建时间(当天0点)
+     * @return 受影响行数
+     */
+    int resetAllForVectorRebuild(LocalDateTime todayZero);
 
 }

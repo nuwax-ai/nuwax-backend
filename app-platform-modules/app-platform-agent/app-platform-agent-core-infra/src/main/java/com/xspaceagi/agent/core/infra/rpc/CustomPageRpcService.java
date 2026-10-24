@@ -24,6 +24,11 @@ public class CustomPageRpcService {
         return queryPageDto(pageId, true);
     }
 
+    /** 网页应用发布前置校验：按开发智能体ID反查页面项目，须成功构建（build_running=1） */
+    public void checkPageAppPublishPrecondition(Long agentId) {
+        iCustomPageRpcService.checkPageAppPublishPrecondition(agentId);
+    }
+
     public PageDto queryPageDto(Long pageId, boolean published) {
         CustomPageDto customPageDto = iCustomPageRpcService.queryDetail(pageId);
         if (customPageDto == null) {

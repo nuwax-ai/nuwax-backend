@@ -1,0 +1,295 @@
+{
+  "fromVersion": "1.7",
+  "toVersion": "1.8",
+  "resources": {
+    "added": [
+      {
+        "code": "sensitive_word_manage",
+        "name": "敏感词管控模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 30,
+        "status": 1
+      },
+      {
+        "code": "auth_method_manage",
+        "name": "登录方式管理模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 31,
+        "status": 1
+      },
+      {
+        "code": "oauth2_scope_audit",
+        "name": "OAuth2范围审核模块",
+        "source": 1,
+        "type": 1,
+        "sortIndex": 32,
+        "status": 1
+      },
+      {
+        "code": "auth_method_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "auth_method_manage",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "oauth2_scope_audit_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "oauth2_scope_audit",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "sensitive_word_query",
+        "name": "查询",
+        "source": 1,
+        "type": 2,
+        "parentCode": "sensitive_word_manage",
+        "sortIndex": 1,
+        "status": 1
+      },
+      {
+        "code": "auth_method_add",
+        "name": "添加",
+        "source": 1,
+        "type": 2,
+        "parentCode": "auth_method_manage",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "oauth2_scope_audit_pass",
+        "name": "通过",
+        "source": 1,
+        "type": 2,
+        "parentCode": "oauth2_scope_audit",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "sensitive_word_add",
+        "name": "添加",
+        "source": 1,
+        "type": 2,
+        "parentCode": "sensitive_word_manage",
+        "sortIndex": 2,
+        "status": 1
+      },
+      {
+        "code": "auth_method_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "auth_method_manage",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "oauth2_scope_audit_reject",
+        "name": "拒绝",
+        "source": 1,
+        "type": 2,
+        "parentCode": "oauth2_scope_audit",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "sensitive_word_modify",
+        "name": "编辑",
+        "source": 1,
+        "type": 2,
+        "parentCode": "sensitive_word_manage",
+        "sortIndex": 3,
+        "status": 1
+      },
+      {
+        "code": "auth_method_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "auth_method_manage",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "sensitive_word_delete",
+        "name": "删除",
+        "source": 1,
+        "type": 2,
+        "parentCode": "sensitive_word_manage",
+        "sortIndex": 4,
+        "status": 1
+      },
+      {
+        "code": "auth_method_enable",
+        "name": "启用/禁用/未登录自动跳转",
+        "source": 1,
+        "type": 2,
+        "parentCode": "auth_method_manage",
+        "sortIndex": 5,
+        "status": 1
+      },
+      {
+        "code": "sensitive_word_enable",
+        "name": "启用/禁用",
+        "source": 1,
+        "type": 2,
+        "parentCode": "sensitive_word_manage",
+        "sortIndex": 5,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "menus": {
+    "added": [
+      {
+        "parentCode": "system_config",
+        "code": "sensitive_word_config",
+        "name": "敏感词管控",
+        "source": 1,
+        "path": "/system/config/sensitive-word",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 6,
+        "status": 1
+      },
+      {
+        "parentCode": "system_config",
+        "code": "auth_method_config",
+        "name": "登录方式管理",
+        "source": 1,
+        "path": "/system/config/auth-method",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 7,
+        "status": 1
+      },
+      {
+        "parentCode": "content_manage",
+        "code": "oauth2_scope_audit",
+        "name": "授权范围审核",
+        "description": "审核 OAuth2 应用授权范围变更申请",
+        "source": 1,
+        "path": "/system/oauth2/scope-audit",
+        "openType": 1,
+        "icon": "",
+        "sortIndex": 11,
+        "status": 1
+      }
+    ],
+    "removed": [],
+    "modified": [
+      {
+        "key": "new_conversation",
+        "old": {
+          "code": "new_conversation",
+          "name": "新建会话",
+          "description": "菜单上面的新建会话图标控制",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 1,
+          "status": 1
+        },
+        "new": {
+          "code": "new_conversation",
+          "name": "新建会话",
+          "description": "菜单上面的新建会话图标控制",
+          "source": 1,
+          "openType": 1,
+          "icon": "",
+          "sortIndex": 1,
+          "status": 0
+        }
+      }
+    ]
+  },
+  "roles": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "groups": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "menuResources": {
+    "added": [
+      {
+        "menuCode": "sensitive_word_config",
+        "resourceCode": "sensitive_word_manage",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "auth_method_config",
+        "resourceCode": "auth_method_manage",
+        "resourceBindType": 1
+      },
+      {
+        "menuCode": "oauth2_scope_audit",
+        "resourceCode": "oauth2_scope_audit",
+        "resourceBindType": 1
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "roleMenus": {
+    "added": [
+      {
+        "roleCode": "super_admin",
+        "menuCode": "oauth2_scope_audit",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "oauth2_scope_audit",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "sensitive_word_config",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "sensitive_word_manage",
+            "resourceBindType": 1
+          }
+        ]
+      },
+      {
+        "roleCode": "super_admin",
+        "menuCode": "auth_method_config",
+        "menuBindType": 1,
+        "resourceTree": [
+          {
+            "code": "auth_method_manage",
+            "resourceBindType": 1
+          }
+        ]
+      }
+    ],
+    "removed": [],
+    "modified": []
+  },
+  "groupMenus": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  },
+  "dataPermissions": {
+    "added": [],
+    "removed": [],
+    "modified": []
+  }
+}

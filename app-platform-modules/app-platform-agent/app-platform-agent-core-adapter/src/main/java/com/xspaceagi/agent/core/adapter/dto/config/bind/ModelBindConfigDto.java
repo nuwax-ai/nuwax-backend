@@ -28,6 +28,9 @@ public class ModelBindConfigDto implements Serializable {
     @Schema(description = "最大生成长度")
     private Integer maxTokens;
 
+    @Schema(description = "最大上下文长度")
+    private Integer maxContextTokens;
+
     @Schema(description = "上下文轮数")
     private Integer contextRounds;
 

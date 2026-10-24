@@ -170,6 +170,9 @@ public class ArgExtractUtil {
                     if (!inputMap.containsKey(argBindConfigDto.getName())) {
                         inputMap.put(argBindConfigDto.getName(), new HashMap<>());
                     }
+                    if (!argBindConfigDto.isRequire() && inputMap.get(argBindConfigDto.getName()) == null && argBindConfigDto.getSubArgs() != null) {
+                        argBindConfigDto.getSubArgs().forEach(arg -> arg.setRequire(false));
+                    }
                     setArgDefaultValue(agentContext, argBindConfigDto.getSubArgs(), inputMap.get(argBindConfigDto.getName()), params, errorList);
                 } else if (argBindConfigDto.isRequire()) {
                     errorList.add(requireArgMsg(argBindConfigDto));

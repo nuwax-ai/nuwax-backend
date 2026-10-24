@@ -21,9 +21,12 @@ public class CategoryCreateDto {
     private String code;
 
     @NotBlank(message = "Category type is required")
-    @Schema(description = "分类类型：Agent、PageApp、Component", required = true)
+    @Schema(description = "分类类型：Agent、PageApp、Component、ChatBox、Connector、Skill", required = true)
     private String type;
 
     @Schema(description = "分类描述")
     private String description;
+
+    @Schema(description = "分类图标地址")
+    private String icon;
 }

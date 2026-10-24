@@ -1,6 +1,6 @@
 package com.xspaceagi.memory.app.service;
 
-import com.xspaceagi.memory.app.service.dto.MemoryExtractDto;
+import com.xspaceagi.memory.app.service.dto.MemoryExtractItemDto;
 import com.xspaceagi.memory.sdk.dto.MemoryMetaData;
 import com.xspaceagi.memory.sdk.dto.MemorySaveDto;
 import com.xspaceagi.memory.sdk.dto.MemoryUnitDTO;
@@ -15,7 +15,7 @@ public interface MemoryApplicationService {
     /**
      * 创建记忆
      */
-    List<MemoryExtractDto> createMemory(MemoryMetaData memoryData);
+    List<MemoryExtractItemDto> createMemory(MemoryMetaData memoryData);
 
     /**
      * 保存记忆

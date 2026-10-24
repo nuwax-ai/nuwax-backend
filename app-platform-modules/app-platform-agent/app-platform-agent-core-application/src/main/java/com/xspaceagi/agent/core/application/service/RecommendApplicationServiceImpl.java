@@ -90,6 +90,7 @@ public class RecommendApplicationServiceImpl implements RecommendApplicationServ
                 .eq(StringUtils.isNotBlank(request.getTargetType()),
                         TargetRecommend::getTargetType,
                         request.getTargetType() != null ? TargetRecommend.TargetType.valueOf(request.getTargetType()) : null)
+                .eq(StringUtils.isNotBlank(request.getCategory()), TargetRecommend::getCategory, request.getCategory())
                 .orderByAsc(TargetRecommend::getSort)
                 .orderByDesc(TargetRecommend::getCreated);
         IPage<TargetRecommend> result = targetRecommendMapper.selectPage(page, wrapper);
@@ -98,11 +99,17 @@ public class RecommendApplicationServiceImpl implements RecommendApplicationServ
 
     @Override
     public List<TargetRecommendResponse> list(String recType, String targetType) {
+        return list(recType, targetType, null);
+    }
+
+    @Override
+    public List<TargetRecommendResponse> list(String recType, String targetType, String category) {
         return targetRecommendMapper.selectList(
                 new LambdaQueryWrapper<TargetRecommend>()
                         .eq(TargetRecommend::getTenantId, getTenantId())
                         .eq(StringUtils.isNotBlank(recType), TargetRecommend::getRecType, recType != null ? TargetRecommend.RecType.valueOf(recType) : null)
                         .eq(StringUtils.isNotBlank(targetType), TargetRecommend::getTargetType, targetType != null ? TargetRecommend.TargetType.valueOf(targetType) : null)
+                        .eq(StringUtils.isNotBlank(category), TargetRecommend::getCategory, category)
                         .orderByAsc(TargetRecommend::getSort)
                         .orderByDesc(TargetRecommend::getCreated)
         ).stream().map(this::toResponse).collect(Collectors.toList());
@@ -171,6 +178,8 @@ public class RecommendApplicationServiceImpl implements RecommendApplicationServ
         entity.setLabel(request.getLabel());
         entity.setIcon(request.getIcon());
         entity.setPlaceholder(request.getPlaceholder());
+        entity.setCategory(request.getCategory());
+        entity.setPrompts(request.getPrompts());
         entity.setSort(request.getSort());
         return entity;
     }
@@ -186,6 +195,8 @@ public class RecommendApplicationServiceImpl implements RecommendApplicationServ
                 .label(entity.getLabel())
                 .icon(entity.getIcon())
                 .placeholder(entity.getPlaceholder())
+                .category(entity.getCategory())
+                .prompts(entity.getPrompts())
                 .sort(entity.getSort())
                 .modified(entity.getModified())
                 .created(entity.getCreated())

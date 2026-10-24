@@ -570,7 +570,7 @@ public class WorkflowApplicationServiceImpl implements WorkflowApplicationServic
 
     @Override
     public List<WorkflowConfigDto> queryPublishedWorkflowConfigs(List<Long> workflowIds) {
-        List<PublishedDto> publishedList = publishApplicationService.queryPublishedList(Published.TargetType.Workflow, workflowIds, null, true);
+        List<PublishedDto> publishedList = publishApplicationService.queryPublishedList(Published.TargetType.Workflow, workflowIds, null, true, true);
         return publishedList.stream().map(publishedDto -> JSON.parseObject(publishedDto.getConfig(), WorkflowConfigDto.class)).filter(Objects::nonNull).toList();
     }
 

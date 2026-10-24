@@ -20,20 +20,10 @@ import com.xspaceagi.bill.spec.enums.*;
 import com.xspaceagi.credit.sdk.dto.CreditAddRequest;
 import com.xspaceagi.credit.sdk.rpc.ICreditRpcService;
 import com.xspaceagi.credit.spec.enums.CreditTypeEnum;
-import com.xspaceagi.pay.sdk.dto.AppOrderRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.AppTransactionRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.MiniPayOrderRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.MiniPayTransactionRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.OrderAndTransactionCreateResponse;
-import com.xspaceagi.pay.sdk.dto.OrderCreateResponse;
-import com.xspaceagi.pay.sdk.dto.ScanOrderCreateRequest;
-import com.xspaceagi.pay.sdk.dto.H5OrderRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.H5TransactionRpcCreateRequest;
-import com.xspaceagi.pay.sdk.dto.CashierSessionCreateRequest;
-import com.xspaceagi.pay.sdk.dto.CashierSessionCreateResponse;
+import com.xspaceagi.pay.sdk.dto.*;
 import com.xspaceagi.pay.sdk.enums.PayChannel;
-import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.pay.sdk.enums.PayClientScene;
+import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.pay.sdk.service.IPaymentRpcService;
 import com.xspaceagi.pay.sdk.support.PayOrderExtKeys;
 import com.xspaceagi.subscription.sdk.dto.CreateSubscriptionRequest;
@@ -43,6 +33,7 @@ import com.xspaceagi.system.application.dto.TenantConfigDto;
 import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.sdk.service.INotificationRpcService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
@@ -101,6 +92,9 @@ public class BillOrderAppServiceImpl implements BillOrderAppService {
 
     @Resource
     private WeChatJsapiChannelCredentialResolver weChatJsapiChannelCredentialResolver;
+
+    @Resource
+    private INotificationRpcService iNotificationRpcService;
 
     @Override
     public OrderDTO createOrder(CreateOrderRequest request) {
@@ -499,7 +493,10 @@ public class BillOrderAppServiceImpl implements BillOrderAppService {
                     log.info("订单支付成功，添加积分, orderId={}, amount={}", orderId, snapshot.get("creditAmount"));
                 }
             }
-
+            if (order.getBizType().equals(BizTypeEnum.DESK_BUDDY.getCode())) {
+                log.info("桌搭订单支付成功, orderId={}, userId={}", orderId, orderDTO.getUserId());
+                iNotificationRpcService.sendNotifyMessage(orderDTO.getUserId(), "桌搭设备下单成功，我们将及时安排发货");
+            }
         } else if (PayStatusEnum.FAILED.equals(payStatusEnum) || PayStatusEnum.CLOSED.equals(payStatusEnum)) {
             order.setOrderStatus(OrderStatusEnum.CANCELLED.getCode());
             order.setPayStatus(payStatusEnum.getCode());

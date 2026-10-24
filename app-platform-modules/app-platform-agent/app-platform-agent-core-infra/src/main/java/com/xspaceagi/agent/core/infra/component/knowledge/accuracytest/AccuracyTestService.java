@@ -168,7 +168,6 @@ public class AccuracyTestService {
             AgentContext agentContext = new AgentContext();
             agentContext.setUser(currentUser);
             TenantConfigDto tenantConfig = new TenantConfigDto();
-            tenantConfig.setCommercialEdition(request.getIsShowGRAPH());
             agentContext.setTenantConfig(tenantConfig);
             searchContext.setAgentContext(agentContext);
 

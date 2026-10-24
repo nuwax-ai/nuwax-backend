@@ -37,6 +37,9 @@ public class SandboxConfig implements Serializable {
     @TableField(value = "user_id")
     private Long userId;
 
+    @TableField(value = "device_id")
+    private String deviceId;
+
     @TableField(value = "name")
     private String name;
 

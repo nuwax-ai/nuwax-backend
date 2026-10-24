@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>连接器目录查询 API · 一个接口四种查法</title>
+<link rel="stylesheet" href="https://static-resources.nuwax.com/tailwind.min.css">
+<style>
+:root{
+  --paper:#f2efe6;
+  --paper-2:#eae5d8;
+  --card:#fbfaf5;
+  --ink:#17150f;
+  --ink-2:#4a453a;
+  --ink-3:#837b6a;
+  --rule:#d3cab6;
+  --rule-2:#e2dccb;
+  --seal:#b1351d;
+  --seal-2:#d9603f;
+  --seal-bg:#f6e3dc;
+  --jade:#2c6a4f;
+  --jade-bg:#e0ebe3;
+  --amber:#96650f;
+  --amber-bg:#f5ebd5;
+  --blue:#2b4a72;
+  --blue-bg:#e2e8f1;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --serif:"Songti SC","STSong","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --mono:"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15.5px;line-height:1.75;-webkit-font-smoothing:antialiased;position:relative;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+
+/* 顶栏 */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(242,239,230,.9);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--rule)}
+.topbar-in{max-width:1120px;margin:0 auto;padding:11px 28px 9px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:.02em;white-space:nowrap;flex:1}
+.brand em{color:var(--seal);font-style:normal}
+.nav{display:flex;gap:2px;flex-wrap:wrap;order:3;width:100%;padding-top:7px;border-top:1px solid var(--rule-2)}
+.nav a{font-size:12.5px;color:var(--ink-3);text-decoration:none;padding:4px 9px;border-radius:3px;transition:all .15s}
+.nav a:hover{background:var(--paper-2);color:var(--ink)}
+.nav a.on{background:var(--ink);color:var(--paper);font-weight:600}
+.envtag{font-family:var(--mono);font-size:11.5px;color:var(--jade);background:var(--jade-bg);border:1px solid #bcd3c5;padding:2px 8px;border-radius:999px;white-space:nowrap}
+
+/* 封面 */
+.hero{padding:48px 0 30px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--seal);margin-bottom:14px}
+h1{font-family:var(--serif);font-size:clamp(28px,4.4vw,44px);line-height:1.2;margin:0 0 16px;font-weight:700;letter-spacing:-.01em}
+h1 small{display:block;font-size:.44em;font-weight:400;color:var(--ink-3);letter-spacing:0;margin-top:12px;font-family:var(--sans)}
+.lede{font-size:17px;color:var(--ink-2);max-width:76ch;margin:0}
+.meta{margin-top:22px;display:flex;gap:26px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px;color:var(--ink-3)}
+.meta b{color:var(--ink);font-weight:600}
+
+/* 章节 */
+section{padding:40px 0;border-bottom:1px solid var(--rule);scroll-margin-top:110px}
+h2{font-family:var(--serif);font-size:26px;margin:0 0 6px;font-weight:700;display:flex;align-items:baseline;gap:12px}
+h2 .no{font-family:var(--mono);font-size:13px;color:var(--seal);font-weight:600;letter-spacing:.1em}
+h2+.sub{color:var(--ink-3);font-size:14px;margin:0 0 22px}
+h3{font-size:16.5px;margin:28px 0 10px;font-weight:700}
+h4{font-size:14px;margin:20px 0 8px;font-weight:700;color:var(--ink-2);letter-spacing:.02em}
+p{margin:0 0 12px}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper-2);padding:1.5px 5px;border-radius:3px;color:var(--ink);word-break:normal;overflow-wrap:break-word}
+a{color:var(--seal)}
+
+/* 结论卡 */
+.verdict{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--jade);padding:18px 22px;margin:22px 0;border-radius:2px}
+.verdict .vh{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--jade);font-weight:600;margin-bottom:8px}
+.verdict p:last-child{margin-bottom:0}
+
+/* 表格 */
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:3px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:var(--paper-2);text-align:left;padding:9px 12px;font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--ink-2);border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(234,229,216,.45)}
+td code{background:transparent;padding:0;font-size:12.5px;word-break:break-all}
+.num{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ok{color:var(--jade);font-weight:600}
+.no{color:var(--seal);font-weight:600}
+.mut{color:var(--ink-3)}
+
+/* 请求块 */
+.req{margin:14px 0;border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:#1a1813}
+.req .bar{display:flex;align-items:center;gap:10px;padding:7px 12px;background:#26231b;border-bottom:1px solid #35312a;font-family:var(--mono);font-size:11.5px;color:#a89f8b}
+.req .bar .m{background:var(--jade);color:#fff;padding:1px 7px;border-radius:2px;font-weight:600;letter-spacing:.05em}
+.req pre{margin:0;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#e8e2d4}
+.req pre .u{color:#8fc7a8}
+.req pre .c{color:#7a7264}
+
+/* 徽章 */
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:1.5px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+.p-req{color:var(--seal);border-color:#e0b3a4;background:var(--seal-bg)}
+.p-opt{color:var(--ink-3);border-color:var(--rule);background:var(--paper-2)}
+.p-jade{color:var(--jade);border-color:#bcd3c5;background:var(--jade-bg)}
+.p-blue{color:var(--blue);border-color:#b8c6dc;background:var(--blue-bg)}
+.p-amber{color:var(--amber);border-color:#ddc793;background:var(--amber-bg)}
+
+/* 查询卡 */
+.q{border:1px solid var(--rule);background:var(--card);border-radius:3px;margin:26px 0;overflow:hidden}
+.q-h{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--rule);background:var(--paper-2);flex-wrap:wrap}
+.q-n{font-family:var(--serif);font-size:19px;font-weight:700}
+.q-t{font-size:14px;color:var(--ink-3);font-family:var(--mono);margin-left:auto}
+.q-b{padding:18px 20px}
+.q-b>p:first-child{margin-top:0}
+.q-b>p:last-child{margin-bottom:0}
+
+/* 脚注 */
+.note{background:var(--amber-bg);border:1px solid #ddc793;border-left:4px solid var(--amber);padding:13px 17px;margin:16px 0;border-radius:2px;font-size:14px}
+.note b{color:var(--amber)}
+.note.g{background:var(--jade-bg);border-color:#bcd3c5;border-left-color:var(--jade)}
+.note.g b{color:var(--jade)}
+.note.r{background:var(--seal-bg);border-color:#e0b3a4;border-left-color:var(--seal)}
+.note.r b{color:var(--seal)}
+.note p:last-child{margin-bottom:0}
+
+footer{padding:34px 0 60px;color:var(--ink-3);font-size:13px}
+footer .fnote{border-top:1px solid var(--rule);padding-top:18px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-family:var(--mono);font-size:12px}
+
+@media (max-width:720px){
+  .wrap{padding:0 16px}
+  .topbar-in{padding:10px 16px 8px}
+  h1{font-size:26px}
+  section{padding:30px 0}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">连接器目录查询 API <em>/providers</em></div>
+    <span class="envtag">testagent.xspaceagi.com · 已实测</span>
+    <nav class="nav">
+      <a href="#s0" class="on">速览</a>
+      <a href="#s1">认证</a>
+      <a href="#s2">四种查法</a>
+      <a href="#s3">参数全集</a>
+      <a href="#s4">返回字段</a>
+      <a href="#s5">排序</a>
+      <a href="#s6">组合与分页</a>
+      <a href="#s7">边界</a>
+      <a href="#s8">实测记录</a>
+      <a href="#s9">相关接口</a>
+      <a href="#s10">免鉴权</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="hero">
+  <div class="kicker">Connector Catalog · Query API</div>
+  <h1>四种查询，一个接口
+    <small>官方目录 / 全部空间 / 指定空间 / 我已启用 —— 全部走 <code>GET /api/connector/providers</code>，靠参数组合区分，不新增接口</small>
+  </h1>
+  <p class="lede">每条结果都标注了两件事：<b>我连接了没</b>（<code>connected</code>）与<b>我启用了没</b>（<code>connectionEnabled</code>）。已启用、已连接的自动排在前面。本文档全部数字来自 2026-09-11 对 <code>https://testagent.xspaceagi.com</code> 的登录态实测。</p>
+  <div class="meta">
+    <span>接口 · <b>GET /api/connector/providers</b></span>
+    <span>环境 · <b>testagent（线上）</b></span>
+    <span>实测 · <b>2026-09-11</b></span>
+    <span>结论 · <b>四种查法全部可用</b></span>
+  </div>
+</div>
+
+<section id="s0">
+  <h2><span class="no">00</span>速览：四种查法怎么拼参数</h2>
+  <p class="sub">同一接口，四种用途互不冲突，可以叠加筛选条件。</p>
+
+  <div class="verdict">
+    <div class="vh">一句话</div>
+    <p><b>官方</b>看 <code>scope=official</code>；<b>全部空间</b>什么都不传；<b>指定空间</b>传 <code>spaceId</code>；<b>我已启用</b>传 <code>connectionEnabled=true</code>。四者可组合，例如「空间 57 里我已启用的」= <code>?spaceId=57&amp;connectionEnabled=true</code>。</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>#</th><th>要查什么</th><th>请求</th><th class="num">本次实测条数</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td>
+          <td>所有<b>官方</b>连接器</td>
+          <td><code>GET /providers?scope=official</code></td>
+          <td class="num ok">1283</td>
+        </tr>
+        <tr>
+          <td class="num">2</td>
+          <td>所有<b>空间</b>的连接器（我有权限的全部空间，含官方）</td>
+          <td><code>GET /providers</code>（不传 spaceId）</td>
+          <td class="num ok">1298</td>
+        </tr>
+        <tr>
+          <td class="num">3</td>
+          <td><b>指定空间</b>的连接器</td>
+          <td><code>GET /providers?spaceId=57</code></td>
+          <td class="num ok">1298</td>
+        </tr>
+        <tr>
+          <td class="num">4</td>
+          <td><b>我自己已启用</b>的连接器</td>
+          <td><code>GET /providers?connectionEnabled=true</code></td>
+          <td class="num ok">8</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <p><b>为什么 2 和 3 都是 1298？</b>因为官方连接器（1283 条，<code>spaceId=0</code>）对每个空间都可见，而该账号除了空间 57 之外没有别的空间自建连接器。所以「全部空间」= 官方 1283 + 空间自建 15 = 1298；「空间 57」恰好也是 1283 + 15。若你只想看<b>空间自建</b>、不要官方，加 <code>scope=space</code>：<code>?scope=space</code> 得到 15 条。</p>
+  </div>
+</section>
+
+<section id="s1">
+  <h2><span class="no">01</span>怎么调：两种入口</h2>
+  <p class="sub">同一个接口，两种调用方式，返回体完全一致。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>方式</th><th>路径</th><th>认证</th><th>适用</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>登录态</b></td>
+          <td><code>GET https://testagent.xspaceagi.com/api/connector/providers</code></td>
+          <td>浏览器会话（Cookie），浏览器里直接 fetch 即可</td>
+          <td>平台前端、需要「当前登录用户」视角的调用</td>
+        </tr>
+        <tr>
+          <td><b>AK</b></td>
+          <td><code>GET https://testagent.xspaceagi.com/api/v1/4sandbox/connector/providers</code></td>
+          <td><code>Authorization: Bearer &lt;AK&gt;</code></td>
+          <td>脚本、Agent 技能调用</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="req">
+    <div class="bar"><span class="m">GET</span><span>登录态 · 浏览器控制台</span></div>
+<pre>await (await fetch('/api/connector/providers?scope=official', {credentials:'include'})).json()</pre>
+  </div>
+
+  <div class="req">
+    <div class="bar"><span class="m">GET</span><span>AK · 命令行</span></div>
+<pre>curl -H <span class="u">"Authorization: Bearer $AK"</span> \
+  <span class="u">"https://testagent.xspaceagi.com/api/v1/4sandbox/connector/providers?scope=official"</span></pre>
+  </div>
+
+  <div class="note r">
+    <p><b>未登录时</b>不会返回 HTTP 401，而是 HTTP 200 + <code>{"code":"4010","message":"Not signed in or session expired.","data":null,"success":false}</code>。判断成功要看 <code>code</code> 是否为 <code>"0000"</code>，不要只看 HTTP 状态码。</p>
+  </div>
+</section>
+
+<section id="s2">
+  <h2><span class="no">02</span>四种查法详解</h2>
+  <p class="sub">每张卡：怎么调、返回多少、要看哪个字段。</p>
+
+  <div class="q">
+    <div class="q-h"><span class="q-n">① 所有官方的连接器</span><span class="pill p-jade">scope=official</span><span class="q-t">实测 1283 条</span></div>
+    <div class="q-b">
+      <p>只查平台官方目录（<code>spaceId=0</code>，<code>managedBy=system</code>、<code>source=open_connector</code> 等），不含任何空间自建。传了 <code>scope=official</code> 后 <code>spaceId</code> 会被忽略，也不要求调用方是任何空间的成员。</p>
+      <div class="req"><div class="bar"><span class="m">GET</span><span>请求</span></div>
+<pre>/api/connector/providers?scope=official&amp;pageSize=20&amp;pageNum=1</pre></div>
+      <p><b>返回要点</b>：每条 <code>spaceId</code> 恒为 <code>0</code>；<code>status</code> 默认只返回 <code>enabled</code> 的官方条目（要含停用的需显式传 <code>status=all</code>）。</p>
+      <p><b>叠加「我启用的官方」</b>：<code>?scope=official&amp;connectionEnabled=true</code> → 实测 <b>5</b> 条（ably_control、anthropic、asana、deepseek、add02）。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-h"><span class="q-n">② 所有空间的连接器</span><span class="pill p-blue">不传 spaceId</span><span class="q-t">实测 1298 条</span></div>
+    <div class="q-b">
+      <p>不传 <code>spaceId</code> 时，后端按<b>当前用户的全部空间</b>解析（自己取用户的空间列表，而不是让调用方自报），返回官方 + 各空间自建。</p>
+      <div class="req"><div class="bar"><span class="m">GET</span><span>请求</span></div>
+<pre>/api/connector/providers?pageSize=20&amp;pageNum=1</pre></div>
+      <p><b>返回要点</b>：<code>spaceId=0</code> 的是官方，其余是各空间自建。实测 1298 = 官方 1283 + 空间自建 15。</p>
+      <p><b>只要空间自建、不要官方</b>：加 <code>scope=space</code> → 实测 <b>15</b> 条。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-h"><span class="q-n">③ 指定空间的连接器</span><span class="pill p-blue">spaceId=57</span><span class="q-t">实测 1298 条</span></div>
+    <div class="q-b">
+      <p>传 <code>spaceId</code> 即进入单空间视图，<b>会校验你对该空间的成员权限</b>（不是成员会报错，见第 07 节）。返回 = 该空间自建 + 官方（官方对每个空间可见）。</p>
+      <div class="req"><div class="bar"><span class="m">GET</span><span>请求</span></div>
+<pre>/api/connector/providers?spaceId=57&amp;pageSize=20&amp;pageNum=1</pre></div>
+      <p><b>返回要点</b>：本次实测该账号除空间 57 外无其他空间自建，所以条数与「不传 spaceId」相同（1298）；换账号或换空间会不同。<b>只要空间 57 自建</b>：<code>?scope=space&amp;spaceId=57</code> → 实测 <b>15</b> 条，且全部为 <code>spaceId=57</code>，不含官方。</p>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-h"><span class="q-n">④ 我自己已经启用的连接器</span><span class="pill p-req">connectionEnabled=true</span><span class="q-t">实测 8 条</span></div>
+    <div class="q-b">
+      <p>按「<b>我是否启用了该连接器的任一连接</b>」过滤。判据是连接行的用户开关 <code>enabled=1</code>，<b>不掺凭证健康度</b>——所以「启用了但 token 过期」的连接器仍算已启用（真去执行才会报 <code>connection_expired</code>）。</p>
+      <div class="req"><div class="bar"><span class="m">GET</span><span>请求</span></div>
+<pre>/api/connector/providers?connectionEnabled=true&amp;pageSize=20&amp;pageNum=1</pre></div>
+      <p><b>返回要点</b>：8 条 = github、ably_control、anthropic、asana、deepseek、add02、s_add02、s_qwen_image，<code>connected</code> 与 <code>connectionEnabled</code> 全为 <code>true</code>。</p>
+      <p><b>反向查询</b>：<code>?connectionEnabled=false</code> → 实测 <b>1290</b> 条（未连接的 + 连了但停用的），与 8 条互补，8 + 1290 = 1298 ✓。</p>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <h2><span class="no">03</span>参数全集</h2>
+  <p class="sub">全部为 Query 参数，均为可选，可自由组合。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>参数</th><th>取值</th><th>默认</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>spaceId</code></td><td>空间 ID</td><td class="mut">不传</td><td>传了 = 单空间视图（校验空间成员权限）；不传 = 用户全部空间；<code>scope=official</code> 时忽略</td></tr>
+        <tr><td><code>scope</code></td><td><code>official</code> / <code>space</code></td><td class="mut">不传</td><td><code>official</code>=仅官方；<code>space</code>=仅空间自建；不传=两者都要</td></tr>
+        <tr><td><code>connectionEnabled</code></td><td><code>true</code> / <code>false</code></td><td class="mut">不传</td><td><code>true</code>=只看我启用的；<code>false</code>=只看我没启用的；不传=不过滤</td></tr>
+        <tr><td><code>connected</code></td><td><code>connected</code> / <code>unconnected</code></td><td class="mut">不传</td><td>按「我建过连接没」过滤（停用的连接仍算已连接）</td></tr>
+        <tr><td><code>category</code></td><td>分类名</td><td class="mut">不传</td><td>按分类精确筛选，如 <code>AI</code>、<code>Developer Tools</code></td></tr>
+        <tr><td><code>tag</code></td><td>标签名</td><td class="mut">不传</td><td>按标签筛选</td></tr>
+        <tr><td><code>keyword</code></td><td>关键字</td><td class="mut">不传</td><td>按 service / displayName 等模糊搜索</td></tr>
+        <tr><td><code>status</code></td><td><code>enabled</code> / <code>disabled</code> / <code>all</code></td><td><code>enabled</code></td><td><b>目录条目自身</b>的启停（与你的连接无关）</td></tr>
+        <tr><td><code>pageNum</code></td><td>≥1</td><td><code>1</code></td><td>页码</td></tr>
+        <tr><td><code>pageSize</code></td><td>≥1</td><td><code>20</code></td><td>每页条数</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <p><b><code>status</code> 与 <code>connectionEnabled</code> 不是一回事。</b><code>status</code> 说的是「这个连接器目录条目本身开没开」（空间管理员控制），<code>connectionEnabled</code> 说的是「<b>我</b>有没有启用它的连接」（你自己控制）。前者默认按 <code>enabled</code> 过滤，所以正常查询里不会看到 <code>status=disabled</code> 的条目。</p>
+  </div>
+</section>
+
+<section id="s4">
+  <h2><span class="no">04</span>返回字段</h2>
+  <p class="sub">标准分页信封，<code>data.records</code> 是条目数组。<b>先看这三个标注字段，再看其余</b>。</p>
+
+  <div class="req"><div class="bar"><span class="m">200</span><span>响应骨架</span></div>
+<pre>{
+  "code": "0000",
+  "message": "success",
+  "success": true,
+  "data": {
+    "records": [ <span class="c">/* ProviderDto 数组 */</span> ],
+    "total": 1298,
+    "size": 20,
+    "current": 1,
+    "pages": 65
+  }
+}</pre></div>
+
+  <h3>三个状态字段的分工</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>字段</th><th>回答的问题</th><th>数据来源</th><th>谁改</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>status</code></td>
+          <td>这个连接器<b>目录条目</b>启用了吗</td>
+          <td><code>connector_provider.status</code></td>
+          <td>空间管理员 / 平台</td>
+        </tr>
+        <tr>
+          <td><code>connected</code></td>
+          <td><b>我</b>建过连接吗（停用的也算）</td>
+          <td>连接行是否存在</td>
+          <td>我建连 / 断开</td>
+        </tr>
+        <tr>
+          <td><code>connectionEnabled</code></td>
+          <td><b>我</b>启用了吗</td>
+          <td>连接行 <code>enabled=1</code></td>
+          <td>我启停</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>组合</th><th><code>connected</code></th><th><code>connectionEnabled</code></th><th>含义 / 下一步</th></tr></thead>
+      <tbody>
+        <tr><td>可用</td><td class="ok">true</td><td class="ok">true</td><td>建了且启用，可直接执行动作（凭证过期则执行时报 <code>connection_expired</code>）</td></tr>
+        <tr><td>连了但停用</td><td class="ok">true</td><td class="no">false</td><td>连接器仍可见，但执行会被拒（<code>connection_disabled</code>）</td></tr>
+        <tr><td>没连</td><td class="no">false</td><td class="no">false</td><td>需先建连</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>条目其余字段（节选）</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>Long</td><td>目录条目主键</td></tr>
+        <tr><td><code>spaceId</code></td><td>Long</td><td><code>0</code>=官方；其余=所属空间</td></tr>
+        <tr><td><code>service</code></td><td>String</td><td>连接器唯一标识，如 <code>github</code>；调详情/动作时用它</td></tr>
+        <tr><td><code>displayName</code></td><td>String</td><td>展示名</td></tr>
+        <tr><td><code>description</code> / <code>icon</code></td><td>String</td><td>介绍与图标 URL</td></tr>
+        <tr><td><code>category</code> / <code>tags</code></td><td>String / String[]</td><td>分类与标签</td></tr>
+        <tr><td><code>authType</code></td><td>String</td><td>认证方式：<code>api_key</code> / <code>bearer</code> / <code>oauth2</code> / <code>oauth2_device</code> / <code>custom</code> / <code>no_auth</code></td></tr>
+        <tr><td><code>baseUrl</code></td><td>String</td><td>上游基址</td></tr>
+        <tr><td><code>authConfig</code></td><td>Object</td><td>key 注入位置 / OAuth 端点等（<b>不含密钥</b>）</td></tr>
+        <tr><td><code>managedBy</code></td><td>String</td><td><code>system</code>=官方托管；<code>user</code>=用户改过、进保护区</td></tr>
+        <tr><td><code>actionCount</code></td><td>Integer</td><td>动作数</td></tr>
+        <tr><td><code>sortOrder</code></td><td>Integer</td><td>目录排序权重，越小越靠前</td></tr>
+        <tr><td><code>created</code> / <code>modified</code></td><td>Date</td><td>创建 / 修改时间</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>真实响应节选</h3>
+  <div class="req"><div class="bar"><span class="m">200</span><span>GET /providers?connectionEnabled=true&amp;pageSize=1（线上实测，节选）</span></div>
+<pre>{
+  "code": "0000", "message": "success", "success": true,
+  "data": {
+    "records": [{
+      "id": 7, "spaceId": 57, "service": "github", "displayName": "GitHub",
+      "category": "开发工具", "tags": ["演示"], "authType": "oauth2",
+      "baseUrl": "https://api.github.com", "managedBy": "user",
+      "status": "enabled", "sortOrder": 0,
+      "connected": true, <span class="u">"connectionEnabled": true</span>, "actionCount": 147
+    }],
+    "total": 8, "size": 1, "current": 1, "pages": 8
+  }
+}</pre></div>
+
+  <div class="note g">
+    <p><b>三个返回路径都带这两个标注：</b></p>
+    <p>· <code>GET /providers</code> — 分页列表（本文档主角）<br>
+       · <code>GET /providers/overview</code> — 不分页全量（实测 1298 条，其中 <code>connectionEnabled=true</code> 8 条）<br>
+       · <code>GET /providers/{service}</code> — 详情，结构为 <code>{ provider:{...}, actions:[...] }</code>，标注在 <code>data.provider</code> 里（<b>不在 <code>data</code> 顶层</b>）</p>
+  </div>
+</section>
+
+<section id="s5">
+  <h2><span class="no">05</span>排序：已启用的排前面</h2>
+  <p class="sub">固定四档，服务端不接受排序参数。要别的排法请在客户端二次排序。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th class="num">档</th><th>含义</th><th>判据</th><th>建议动作</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0</td><td><b>可用</b></td><td><code>connected</code> ∧ <code>connectionEnabled</code> ∧ 凭证 <code>status='active'</code></td><td>直接执行</td></tr>
+        <tr><td class="num">1</td><td>已启用，但凭证异常</td><td>已连接且启用，凭证 <code>expired</code> / <code>error</code></td><td>需重新授权或修凭证</td></tr>
+        <tr><td class="num">2</td><td>已连接，未启用</td><td><code>connected=true</code> ∧ <code>connectionEnabled=false</code></td><td>可一键启用（凭证仍在）</td></tr>
+        <tr><td class="num">3</td><td>未连接</td><td>没有连接行</td><td>需建连</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>档内按目录权重 <code>sort_order ASC, id ASC</code> —— 与改动前的顺序完全一致，所以「未连接」这一大档的顺序没有任何变化。</p>
+
+  <div class="verdict">
+    <div class="vh">线上实测证据</div>
+    <p>不传任何过滤，<code>pageSize=10</code> 取前 10 条：前 <b>8</b> 条恰好是全部 8 个已启用连接器（github、ably_control、anthropic、asana、deepseek、add02、s_add02、s_qwen_image），第 <b>9</b> 条起转入未连接（ima、todo_demo）。<code>connected=true</code> 与 <code>connectionEnabled=true</code> 各 8 个，与档 0 完全对齐。</p>
+  </div>
+
+  <div class="note">
+    <p><b>档 0 与档 1 在接口上不可区分</b>（都表现为 <code>connected=true</code> + <code>connectionEnabled=true</code>）。凭证健康度不对外暴露——这是有意的：客户端只需要知道「能不能用我启用的」，真过期了在执行时会拿到明确的 <code>connection_expired</code>，届时再引导重新授权。所以做界面时<b>不要</b>试图用这两个标注推断凭证状态。</p>
+  </div>
+</section>
+
+<section id="s6">
+  <h2><span class="no">06</span>组合与分页</h2>
+  <p class="sub">参数可以叠加，分页在服务端完成（排序也在服务端做，翻页不会错乱）。</p>
+
+  <h3>常用组合</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>目的</th><th>请求</th><th>实测</th></tr></thead>
+      <tbody>
+        <tr><td>我连了但停用的</td><td><code>?connected=connected&amp;connectionEnabled=false</code></td><td class="mut">本次账号无此组合（8 条全为启用）</td></tr>
+        <tr><td>官方里我已启用的</td><td><code>?scope=official&amp;connectionEnabled=true</code></td><td class="num ok">5</td></tr>
+        <tr><td>空间 57 里我没启用的</td><td><code>?spaceId=57&amp;connectionEnabled=false</code></td><td class="mut">1293（1298−5）</td></tr>
+        <tr><td>空间自建里我已启用的</td><td><code>?scope=space&amp;connectionEnabled=true</code></td><td class="num ok">3（github、s_add02、s_qwen_image）</td></tr>
+        <tr><td>搜关键字 + 只要已启用</td><td><code>?keyword=git&amp;connectionEnabled=true</code></td><td class="mut">过滤与搜索可叠加</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>分页正确性</h3>
+  <div class="req"><div class="bar"><span class="m">GET</span><span>?connectionEnabled=true&amp;pageSize=5 翻页</span></div>
+<pre><span class="c">pageNum=1 →</span> github, ably_control, anthropic, asana, deepseek   <span class="c">(5 条)</span>
+<span class="c">pageNum=2 →</span> add02, s_add02, s_qwen_image                       <span class="c">(3 条)</span>
+<span class="c">total=8, pages=2 → 无重复、无遗漏，跨档边界不错乱</span></pre></div>
+
+  <div class="note">
+    <p><b>排序权重会变化</b>：你启停连接后，同一条目在不同档之间移动，<b>页码会变</b>。做「翻页加载」的界面时，建议在列表顶部标明「已启用优先」，或按需锁定一次快照，避免用户在翻页途中看到条目跳位。</p>
+  </div>
+</section>
+
+<section id="s7">
+  <h2><span class="no">07</span>边界与错误</h2>
+  <p class="sub">实测过的错误情形，以及一个容易误判的坑。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>情形</th><th>响应</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>未登录 / 会话过期</td>
+          <td><code>HTTP 200</code> + <code>code:"4010"</code><br><span class="mut">Not signed in or session expired.</span></td>
+          <td>不是 HTTP 401，必须按 <code>code</code> 判断</td>
+        </tr>
+        <tr>
+          <td>传入不存在的空间</td>
+          <td><code>code:"4000"</code><br><span class="mut">空间不存在</span></td>
+          <td><code>?spaceId=999999</code> 实测；不存在的空间直接拒绝</td>
+        </tr>
+        <tr>
+          <td>传入非成员空间</td>
+          <td>权限类错误</td>
+          <td>传 <code>spaceId</code> 会校验成员权限；<span class="mut">未构造实测</span></td>
+        </tr>
+        <tr>
+          <td>参数写错值</td>
+          <td>忽略并按默认值处理</td>
+          <td>如 <code>connectionEnabled=yes</code> 无法解析为布尔，按「不传」处理，<b>不会报错</b></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note r">
+    <p><b>「过滤没生效」与「没传参数」必须分清。</b><code>?connectionEnabled=true</code> 少写一个字母（或写成 <code>yes</code>）时，接口<b>不报错</b>，而是当成没传——你会拿到全量 1298 条，很容易误以为「过滤生效了但数据没分类」。任何过滤后条数没有明显变化时，先核对参数拼写。</p>
+  </div>
+
+  <div class="note g">
+    <p><b>反向过滤的语义</b>：<code>connectionEnabled=false</code> 包含「从未连接」和「连了但停用」两类，实测 1290 = 1298 − 8。若要精确表达「连了但停用」，请组合 <code>?connected=connected&amp;connectionEnabled=false</code>。</p>
+  </div>
+</section>
+
+<section id="s8">
+  <h2><span class="no">08</span>实测记录</h2>
+  <p class="sub">2026-09-11 · 线上 <code>testagent.xspaceagi.com</code>（登录态）与本地实例（AK）双跑，数字完全一致。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>用例</th><th>请求</th><th class="num">线上</th><th class="num">本地</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>① 所有官方</td><td><code>?scope=official</code></td><td class="num">1283</td><td class="num">1283</td><td class="ok">一致</td></tr>
+        <tr><td>② 所有空间</td><td><code>?</code>（无 spaceId）</td><td class="num">1298</td><td class="num">1298</td><td class="ok">一致</td></tr>
+        <tr><td>③ 指定空间</td><td><code>?spaceId=57</code></td><td class="num">1298</td><td class="num">1298</td><td class="ok">一致</td></tr>
+        <tr><td>④ 我已启用</td><td><code>?connectionEnabled=true</code></td><td class="num">8</td><td class="num">8</td><td class="ok">一致</td></tr>
+        <tr><td>④ 反向</td><td><code>?connectionEnabled=false</code></td><td class="num">1290</td><td class="num">1290</td><td class="ok">互补，8+1290=1298</td></tr>
+        <tr><td>空间自建</td><td><code>?scope=space</code></td><td class="num">15</td><td class="num">—</td><td class="ok">= 1298 − 1283</td></tr>
+        <tr><td>官方 + 已启用</td><td><code>?scope=official&amp;connectionEnabled=true</code></td><td class="num">5</td><td class="num">—</td><td class="ok">子集关系成立</td></tr>
+        <tr><td>排序四档</td><td><code>?pageSize=10</code></td><td colspan="2" class="num">前 8 条 = 全部已启用</td><td class="ok">档 0 占满首位</td></tr>
+        <tr><td>分页一致性</td><td><code>?connectionEnabled=true&amp;pageSize=5</code></td><td colspan="2" class="num">5 + 3 = 8</td><td class="ok">无重无漏</td></tr>
+        <tr><td>overview 标注</td><td><code>GET /providers/overview</code></td><td colspan="2" class="num">1298 条 / enabled 8</td><td class="ok">带字段</td></tr>
+        <tr><td>详情标注</td><td><code>GET /providers/github</code></td><td colspan="2" class="num">data.provider.connectionEnabled=true</td><td class="ok">带字段</td></tr>
+        <tr><td>免鉴权无连接执行</td><td><code>/runtime/execute</code> 不传 connectionId</td><td colspan="2" class="num">到达上游（404 /get-info）</td><td class="ok">无需连接</td></tr>
+        <tr><td>调试端点要连接</td><td><code>/actions/{id}/test</code> 不传 connectionId</td><td colspan="2" class="num"><code>validation_error</code></td><td class="ok">硬性要求</td></tr>
+        <tr><td>非法空间</td><td><code>?spaceId=999999</code></td><td colspan="2" class="num"><code>4000 空间不存在</code></td><td class="ok">按预期拒绝</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <p><b>测试纪律</b>：本次实测全部为<b>只读查询</b>，未新建、未修改、未删除任何连接或连接器数据。测试账号空间 57 的 8 条连接均为启用状态（<code>enabled=1</code>、<code>status='active'</code>），故档 1（已启用但凭证异常）与「连了但停用」两类组合在本次账号上无样本可测。</p>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="no">09</span>相关接口</h2>
+  <p class="sub">查到了连接器之后，通常接着调这些。</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>接口</th><th>用途</th><th>关键参数</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /api/connector/providers/overview</code></td><td>不分页全量（首屏分组用）</td><td><code>scope</code></td></tr>
+        <tr><td><code>GET /api/connector/providers/{service}</code></td><td>详情 + 动作列表</td><td><code>spaceId</code>、<code>includeDeprecated</code>、<code>includeDisabled</code></td></tr>
+        <tr><td><code>GET /api/connector/connections</code></td><td>我的连接列表（含 <code>status</code>、<code>enabled</code>）</td><td>—</td></tr>
+        <tr><td><code>POST /api/connector/connections/{id}/status</code></td><td>启用 / 停用一条连接</td><td><code>?enabled=true|false</code></td></tr>
+        <tr><td><code>DELETE /api/connector/connections/{id}</code></td><td>断开连接（连凭证一起删）</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note g">
+    <p><b>查列表用 <code>/providers</code>，改状态用 <code>/connections</code>。</b>本接口是<b>只读</b>的目录视图；启停连接走 <code>/connections/{id}/status</code>，建连/断连走 <code>/connections</code> 与 <code>DELETE</code>。本轮没有给 <code>/connections</code> 增加过滤参数——所有查询形态统一由 <code>/providers</code> 承担。</p>
+  </div>
+</section>
+
+<section id="s10">
+  <h2><span class="no">10</span>免鉴权（no_auth）连接器怎么处理</h2>
+  <p class="sub">不建连接也能直接执行；但<b>一旦建了连接，启停开关就管得住它</b>——「统一管理」在免鉴权上的落点就在这里。</p>
+
+  <div class="verdict">
+    <div class="vh">一句话</div>
+    <p><code>authType=no_auth</code> 的连接器，平台<b>不收集、不注入任何凭证</b>。<b>一条连接都没建</b>时执行会被放行（列表里 <code>connected=false</code> 不是异常）；<b>建了连接</b>之后，那条连接的启停状态就成为执行的前置条件——与 api_key / oauth2 完全同构。</p>
+  </div>
+
+  <h3>建了连接和没建连接，差在哪</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>该连接器的连接情况</th><th>执行结果</th><th>为什么</th></tr></thead>
+      <tbody>
+        <tr><td><b>一条连接都没建</b></td><td class="ok">放行，直接执行</td><td>免鉴权本就不需要凭证，「用哪条连接」无从谈起</td></tr>
+        <tr><td>建了，且启用 + 凭证正常</td><td class="ok">用这条连接执行</td><td>与其它认证方式一致</td></tr>
+        <tr><td>建了，但<b>被停用</b></td><td class="no"><code>connection_disabled</code></td><td rowspan="2">连接一旦存在，就代表你对这个连接器的管理意愿——停用 / 失效必须算数，否则启停开关在免鉴权上是空转的</td></tr>
+        <tr><td>建了，但凭证 <code>expired</code></td><td class="no"><code>connection_expired</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>执行时的行为差异</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>入口</th><th>不传 <code>connectionId</code></th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>POST /runtime/execute</code><br><span class="mut">运行时 / Agent 入口</span></td>
+          <td class="ok">放行，直接执行</td>
+          <td>连接解析逻辑：<b>一条连接都没建过</b>时，只有非 no_auth 才报 <code>connection_required</code>；<b>建过但全部停用 / 失效</b>则一律拒绝</td>
+        </tr>
+        <tr>
+          <td><code>POST /actions/{id}/test</code><br><span class="mut">调试台入口</span></td>
+          <td class="no">拒绝：<code>validation_error</code><br><span class="mut">「调试执行必须显式指定 connectionId」</span></td>
+          <td>调试端点硬性要求连接，<b>免鉴权也不例外</b>——想在调试台试它，得先建一条空凭证连接</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>线上实测（2026-09-11）</h3>
+  <div class="req"><div class="bar"><span class="m">POST</span><span>s_add01（no_auth，connected=false，无任何连接）</span></div>
+<pre>{ "actionId": 13505, "args": { "param1": "x" } }        <span class="c">// 不传 connectionId</span>
+
+→ <span class="c">上游真的收到了请求：</span>
+  {"success":false,"errorCode":"upstream_error","message":"上游返回 404 (get_info)",
+   "meta":{"httpStatus":404,
+           "upstreamBody":"... The requested URL /get-info was not found on this server."}}</pre></div>
+  <p>上游 404 是因为这个测试连接器配的路径 <code>/get-info</code> 本就不存在（baseUrl 指向 baidu.com），<b>与鉴权无关</b>。关键在于：<b>没有任何连接，请求依然被发到了上游</b> —— 这就是「免鉴权无需连接」的直接证据。</p>
+
+  <h3>如果确实想给它建一条连接</h3>
+  <p>免鉴权连接器的连接<b>不装凭证</b>：<code>injectAuth</code> 见到 <code>NO_AUTH</code> 直接跳过，不会往请求里塞任何东西，凭证字段可以完全不传（服务端 <code>NO_AUTH</code> 分支为空实现）。它承载的是<b>启停状态</b>与「我连过它」的归属，不是密钥。</p>
+  <div class="note g">
+    <p><b>前端已经给了入口</b>：免鉴权连接器的卡片上直接显示「连接」按钮，抽屉里不需要填任何字段，确认即建。建完即可在「已连接」里统一启停或断开。想让它进「我的连接器」并受启停管理，点一下连接即可。</p>
+  </div>
+  <div class="req"><div class="bar"><span class="m">POST</span><span>建一条空凭证连接</span></div>
+<pre>POST /api/connector/connections/api-key
+{
+  "providerService": "s_add01",
+  "spaceId": 57            <span class="c">// 空间自建必填；官方连接器不要传</span>
+  <span class="c">// fields 省略或传 {} 均可</span>
+}
+
+→ 建出的连接：status="active"，enabled=true</pre></div>
+
+  <div class="note">
+    <p><b>建不建连接，决定它受不受启停管理。</b><b>不建</b>：执行永远放行，但 <code>connected</code> / <code>connectionEnabled</code> 恒为 <code>false</code>，永远落在四档排序的档 3，也不出现在 <code>?connectionEnabled=true</code> 里——相当于「不受管」。<b>建了并保持启用</b>：进档 0、出现在「我已启用」结果里，且可用 <code>/connections/{id}/status</code> 一键停用；停用后执行会报 <code>connection_disabled</code>，不会像以前那样被静默放行。</p>
+  </div>
+
+  <div class="note g">
+    <p><b>反面提示</b>：<code>connectionId</code> 一旦传了，校验就全部生效——传一条<b>已停用</b>的连接会报 <code>connection_disabled</code>，传一条<b>不存在</b>的连接会报 <code>connection_not_found</code>（实测确认）。所以免鉴权连接器如果要传 connectionId，就得保证那条连接是启用且健康的，否则「本来不传就能跑」的事反而会失败。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="fnote">
+    <span>连接器目录查询 API · v1.0</span>
+    <span>实测环境 testagent.xspaceagi.com · 2026-09-11</span>
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var links = [].slice.call(document.querySelectorAll('.nav a'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function sync(){
+    var y = window.scrollY + 140, idx = 0;
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i] && secs[i].offsetTop <= y) idx = i;
+    }
+    links.forEach(function(a, i){ a.classList.toggle('on', i === idx); });
+  }
+  var t = null;
+  window.addEventListener('scroll', function(){
+    if (t) return;
+    t = requestAnimationFrame(function(){ sync(); t = null; });
+  }, {passive:true});
+  sync();
+})();
+</script>
+</body>
+</html>

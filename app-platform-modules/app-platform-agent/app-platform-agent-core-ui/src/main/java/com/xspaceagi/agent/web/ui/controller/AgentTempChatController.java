@@ -2,6 +2,7 @@ package com.xspaceagi.agent.web.ui.controller;
 
 import com.xspaceagi.agent.core.adapter.application.AgentApplicationService;
 import com.xspaceagi.agent.core.adapter.application.AgentTempChatApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
 import com.xspaceagi.agent.core.adapter.dto.AgentTempChatDto;
@@ -65,6 +66,9 @@ public class AgentTempChatController {
 
     @Resource
     private ConversationApplicationService conversationApplicationService;
+
+    @Resource
+    private ChatApplicationService chatApplicationService;
 
     @Resource
     private UserApplicationService userApplicationService;
@@ -164,7 +168,8 @@ public class AgentTempChatController {
         tryReqDto.setAttachments(chatMessage.getAttachments());
         tryReqDto.setSelectedComponents(chatMessage.getSelectedComponents());
         tryReqDto.setFilterSensitive(null);
-        return conversationApplicationService.chat(tryReqDto, headersFromRequest, true);
+        tryReqDto.setAgentConfig(null);
+        return chatApplicationService.chat(tryReqDto, headersFromRequest, true);
     }
 
     private AgentTempChatDto queryAndCheckTempChatByChatKey(HttpServletRequest request, String chatKey) {
@@ -183,7 +188,7 @@ public class AgentTempChatController {
                 if (StringUtils.isNotBlank(referer)) {
                     throw BizException.of(ErrorCodeEnum.UNAUTHORIZED_REDIRECT, BizExceptionCodeEnum.bootstrapAuthRedirectUrl,
                             "/login?redirect=" + URLEncoder.encode(referer, StandardCharsets.UTF_8));
-                }else{
+                } else {
                     throw BizException.of(HttpStatusEnum.UNAUTHORIZED, ErrorCodeEnum.UNAUTHORIZED,
                             BizExceptionCodeEnum.systemUnauthorizedOrSessionExpired);
                 }

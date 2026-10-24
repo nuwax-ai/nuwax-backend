@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class UserAgentDto extends UserTargetRelationDto implements Serializable {
@@ -25,4 +26,7 @@ public class UserAgentDto extends UserTargetRelationDto implements Serializable 
 
     @Schema(description = "最后一次会话ID")
     private Long lastConversationId;
+
+    @Schema(description = "最近会话列表")
+    private List<ConversationDto> conversationList;
 }

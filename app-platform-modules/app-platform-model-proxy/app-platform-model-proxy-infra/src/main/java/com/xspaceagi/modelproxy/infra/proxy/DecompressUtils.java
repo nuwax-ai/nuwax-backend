@@ -1,5 +1,6 @@
 package com.xspaceagi.modelproxy.infra.proxy;
 
+import io.airlift.compress.zstd.ZstdInputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.brotli.dec.BrotliInputStream;
 
@@ -15,7 +16,7 @@ public class DecompressUtils {
      * 根据 Content-Encoding 自动解压
      *
      * @param data     原始字节
-     * @param encoding Content-Encoding 值：gzip, br, deflate, null
+     * @param encoding Content-Encoding 值：gzip, br, deflate, zstd, null
      */
     public static byte[] decompress(byte[] data, String encoding) throws Exception {
         try {
@@ -26,6 +27,7 @@ public class DecompressUtils {
                 case "gzip", "x-gzip" -> decompressGzip(data);
                 case "br" -> decompressBrotli(data);
                 case "deflate" -> decompressDeflate(data);
+                case "zstd" -> decompressZstd(data);
                 default -> data;
             };
         } catch (Throwable e) {
@@ -60,6 +62,18 @@ public class DecompressUtils {
 
     private static byte[] decompressDeflate(byte[] compressed) throws Exception {
         try (InputStream is = new java.util.zip.InflaterInputStream(new ByteArrayInputStream(compressed));
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return bos.toByteArray();
+        }
+    }
+
+    private static byte[] decompressZstd(byte[] compressed) throws Exception {
+        try (InputStream is = new ZstdInputStream(new ByteArrayInputStream(compressed));
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[4096];
             int len;

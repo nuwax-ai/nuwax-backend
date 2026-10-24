@@ -11,15 +11,14 @@ import com.xspaceagi.agent.core.adapter.dto.recommend.TargetRecommendResponse;
 import com.xspaceagi.agent.core.adapter.repository.entity.Published;
 import com.xspaceagi.agent.core.adapter.repository.entity.PublishedStatistics;
 import com.xspaceagi.agent.core.adapter.repository.entity.TargetRecommend;
+import com.xspaceagi.agent.core.adapter.repository.entity.UserTargetRelation;
 import com.xspaceagi.agent.core.domain.service.ConversationDomainService;
+import com.xspaceagi.agent.core.domain.service.UserTargetRelationDomainService;
 import com.xspaceagi.agent.core.infra.rpc.CategoryRpcService;
 import com.xspaceagi.agent.core.infra.rpc.ResourcePricingRpcService;
 import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.agent.web.ui.controller.base.BaseController;
-import com.xspaceagi.agent.web.ui.controller.dto.PluginDetailDto;
-import com.xspaceagi.agent.web.ui.controller.dto.SkillDetailDto;
-import com.xspaceagi.agent.web.ui.controller.dto.UserOffShelfDto;
-import com.xspaceagi.agent.web.ui.controller.dto.WorkflowDetailDto;
+import com.xspaceagi.agent.web.ui.controller.dto.*;
 import com.xspaceagi.agent.web.ui.dto.PublishedCategoryDto;
 import com.xspaceagi.agent.web.ui.dto.PublishedComposeTableQueryDto;
 import com.xspaceagi.agent.web.ui.dto.PublishedKnowledgeQueryDto;
@@ -48,6 +47,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -56,6 +56,7 @@ import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -79,6 +80,12 @@ public class PublishedController extends BaseController {
 
     @Resource
     private CollectApplicationService collectApplicationService;
+
+    @Resource
+    private EnableApplicationService enableApplicationService;
+
+    @Resource
+    private UserTargetRelationDomainService userTargetRelationDomainService;
 
 
     @Resource
@@ -128,11 +135,17 @@ public class PublishedController extends BaseController {
     @RequestMapping(path = "/category/list", method = RequestMethod.GET)
     public ReqResult<List<PublishedCategoryDto>> categoryList() {
         List<com.xspaceagi.system.sdk.service.dto.CategoryDto> agentCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.AGENT.getCode(), RequestContext.get().getTenantId());
+        List<com.xspaceagi.system.sdk.service.dto.CategoryDto> chatboxCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.CHATBOX.getCode(), RequestContext.get().getTenantId());
         List<com.xspaceagi.system.sdk.service.dto.CategoryDto> pageAppCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.PAGE_APP.getCode(), RequestContext.get().getTenantId());
         List<com.xspaceagi.system.sdk.service.dto.CategoryDto> componentCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.COMPONENT.getCode(), RequestContext.get().getTenantId());
+        List<com.xspaceagi.system.sdk.service.dto.CategoryDto> connectorCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.CONNECTOR.getCode(), RequestContext.get().getTenantId());
+        List<com.xspaceagi.system.sdk.service.dto.CategoryDto> skillCategories = categoryRpcService.listByTypeAndTenantId(CategoryTypeEnum.SKILL.getCode(), RequestContext.get().getTenantId());
         List<PublishedCategoryDto> categoryDtoList = new ArrayList<>();
         //智能体
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Agent, "智能体", agentCategories));
+
+        //对话框智能体
+        categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.ChatBox, "对话框智能体", chatboxCategories));
 
         //PageApp
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.PageApp, "网页应用", pageAppCategories));
@@ -140,13 +153,16 @@ public class PublishedController extends BaseController {
         //插件分类
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Plugin, "插件", componentCategories));
 
+        //连接器
+        categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Connector, "连接器", connectorCategories));
+
         //工作流分类
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Workflow, "工作流", componentCategories));
 
         categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Template, "模板", componentCategories));
 
         //技能分类
-        categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Skill, "技能", componentCategories));
+        categoryDtoList.add(buildTypeCategories(PublishedCategoryDto.CategoryType.Skill, "技能", skillCategories));
 
         I18nUtil.replaceSystemMessage(categoryDtoList);
         return ReqResult.success(categoryDtoList);
@@ -162,8 +178,8 @@ public class PublishedController extends BaseController {
             PublishedCategoryDto publishedCategoryDto = new PublishedCategoryDto();
             publishedCategoryDto.setKey(categoryDto.getCode());
             publishedCategoryDto.setLabel(categoryDto.getName());
-            publishedCategoryDto.setIcon("");
-            publishedCategoryDto.setType(PublishedCategoryDto.CategoryType.PageApp);
+            publishedCategoryDto.setIcon(categoryDto.getIcon());
+            publishedCategoryDto.setType(type);
             return publishedCategoryDto;
         }).toList());
         return category;
@@ -171,7 +187,7 @@ public class PublishedController extends BaseController {
 
     @Operation(summary = "广场-已发布智能体列表接口")
     @RequestMapping(path = "/agent/list", method = RequestMethod.POST)
-    public ReqResult<SuperPage<PublishedDto>> agentList(@RequestBody PublishedQueryDto publishedQueryDto) {
+    public ReqResult<SuperPage<PublishedDto>> agentList(HttpServletRequest request, @RequestBody PublishedQueryDto publishedQueryDto) {
         // 如果targetSubType字段不为空，将作为查询条件
         publishedQueryDto.setTargetType(Published.TargetType.Agent);
         if ("Agent".equals(publishedQueryDto.getCategory())) {
@@ -187,7 +203,9 @@ public class PublishedController extends BaseController {
         if (publishedQueryDto.getSpaceId() != null) {
             //查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
             var spaceIds = this.obtainAuthSpaceIds();
-            if (spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
+            if (publishedQueryDto.getSpaceId() == -1L) {
+                publishedQueryDto.setSpaceIds(spaceIds);
+            } else if (spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
                 publishedQueryDto.setSpaceId(null);
             }
         }
@@ -200,7 +218,9 @@ public class PublishedController extends BaseController {
             }
         }
 
-        List<Long> excludeIds = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name()).stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
+        List<TargetRecommendResponse> recList = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name());
+        recList.removeIf(res -> TargetRecommend.FunctionType.Chat.name().equals(res.getFunctionType()) || TargetRecommend.FunctionType.NormalProjectDev.name().equals(res.getFunctionType()));
+        List<Long> excludeIds = recList.stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toList());
         publishedQueryDto.setExcludeIds(excludeIds);
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
@@ -212,7 +232,8 @@ public class PublishedController extends BaseController {
             UserDto user = (UserDto) RequestContext.get().getUser();
             if (user.getRole() != User.Role.Admin) {//管理员展示列表
                 UserDataPermissionDto userDataPermission = userDataPermissionRpcService.getUserDataPermission(RequestContext.get().getUserId());
-                page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1 && !userDataPermission.getAgentIds().contains(publishedDto.getTargetId()));
+                page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1
+                        && !userDataPermission.getAgentIds().contains(publishedDto.getTargetId()) && !userDataPermission.getPageAgentIds().contains(publishedDto.getTargetId()));
             }
         } else {
             page.getRecords().removeIf(publishedDto -> publishedDto.getAccessControl() != null && publishedDto.getAccessControl() == 1);
@@ -227,7 +248,150 @@ public class PublishedController extends BaseController {
             });
         }
         setSubscriptionStatus(BizTypeEnum.AGENT, page.getRecords());
+        removeRequiringPaymentItems(request, page.getRecords());
         return ReqResult.success(page);
+    }
+
+    @Operation(summary = "广场-应用列表接口（网页应用+全栈应用+三方应用）")
+    @RequestMapping(path = "/app/list", method = RequestMethod.POST)
+    public ReqResult<SuperPage<PublishedDto>> appList(@RequestBody PublishedQueryDto publishedQueryDto) {
+        //网页应用为Agent的PageApp子类型，全栈应用为UserApp类型且发布时记录子类型UserApp，三方应用为ThirdApp类型且记录子类型ThirdApp；
+        //查单个：直接认 targetType+targetSubType；合并查：认 targetTypes+targetSubTypes，缺省才用应用列表默认组合
+        if (publishedQueryDto.getTargetType() != null) {
+            //单类型查询以 targetType+targetSubType 为准，清掉多类型字段避免域层走 multiType 分支
+            publishedQueryDto.setTargetTypes(null);
+            publishedQueryDto.setTargetSubTypes(null);
+        } else {
+            publishedQueryDto.setTargetSubType(null);
+
+            if (CollectionUtils.isEmpty(publishedQueryDto.getTargetTypes())) {
+                publishedQueryDto.setTargetTypes(List.of(Published.TargetType.Agent, Published.TargetType.UserApp, Published.TargetType.ThirdApp));
+            }
+            if (CollectionUtils.isEmpty(publishedQueryDto.getTargetSubTypes())) {
+                publishedQueryDto.setTargetSubTypes(List.of(Published.TargetSubType.PageApp, Published.TargetSubType.UserApp, Published.TargetSubType.ThirdApp));
+            }
+        }
+        //默认排除仅模板数据
+        if (publishedQueryDto.getOnlyTemplate() == null) {
+            publishedQueryDto.setOnlyTemplate(YesOrNoEnum.N.getKey());
+        }
+        //官方标识过滤
+        completeOfficialAppTargetIds(publishedQueryDto);
+        if (Published.PublishScope.Space == publishedQueryDto.getScope()) {
+            //空间广场：用户有权限的全部空间（指定空间时校验权限）
+            var spaceIds = this.obtainAuthSpaceIds();
+            if (publishedQueryDto.getSpaceId() == null || spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
+                publishedQueryDto.setSpaceId(null);
+                publishedQueryDto.setSpaceIds(spaceIds);
+            }
+            publishedQueryDto.setJustReturnSpaceData(true);
+        }
+        //默认全局（系统广场）：仅查询scope=Tenant的数据
+        SuperPage<PublishedDto> page = publishApplicationService.queryAppList(publishedQueryDto);
+        page.getRecords().forEach(publishedDto -> publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(),
+                publishedDto.getTargetType() == Published.TargetType.Agent ? "agent" : publishedDto.getTargetType().name(), true)));
+        return ReqResult.success(page);
+    }
+
+    /**
+     * 应用列表的官方标识过滤 (网页应用、全栈应用与三方应用)
+     * 多类型查询按类型限定（targetTypeIds，各类ID独立，扁平IN会跨类型数值误匹配）；
+     * 单类型查询直接用平铺 targetIds（单类型下无跨类型误匹配问题）。
+     * 只认官方推荐（RecType=Official），无推荐时该类型无结果。
+     */
+    private void completeOfficialAppTargetIds(PublishedQueryDto publishedQueryDto) {
+        if (publishedQueryDto.getOfficial() == null || !publishedQueryDto.getOfficial()) {
+            return;
+        }
+        publishedQueryDto.setShowRecommend(false);
+        // 一次查出全部 Official 推荐再按类型分组（targetType 传空跳过类型过滤，避免逐类型串行查询）
+        Map<String, List<Long>> officialIdsByType = recommendApplicationService
+                .list(TargetRecommend.RecType.Official.name(), null)
+                .stream()
+                .filter(rec -> rec.getTargetType() != null && rec.getTargetId() != null)
+                .collect(Collectors.groupingBy(TargetRecommendResponse::getTargetType,
+                        Collectors.mapping(TargetRecommendResponse::getTargetId, Collectors.toList())));
+        List<Long> pageAppIds = officialIdsOrNone(officialIdsByType, TargetRecommend.TargetType.PageApp.name());
+        List<Long> userAppIds = officialIdsOrNone(officialIdsByType, TargetRecommend.TargetType.UserApp.name());
+        List<Long> thirdAppIds = officialIdsOrNone(officialIdsByType, TargetRecommend.TargetType.ThirdApp.name());
+        if (publishedQueryDto.getTargetType() != null) {
+            //单类型查询：targetTypeIds 仅在多类型查询时被域层消费，改用平铺 targetIds（单类型下无跨类型ID误匹配问题）
+            publishedQueryDto.setTargetIds(publishedQueryDto.getTargetType() == Published.TargetType.Agent ? pageAppIds
+                    : publishedQueryDto.getTargetType() == Published.TargetType.UserApp ? userAppIds
+                    : publishedQueryDto.getTargetType() == Published.TargetType.ThirdApp ? thirdAppIds
+                    : List.of(-1L));
+            return;
+        }
+        publishedQueryDto.setTargetTypeIds(Map.of(Published.TargetType.Agent, pageAppIds,
+                Published.TargetType.UserApp, userAppIds,
+                Published.TargetType.ThirdApp, thirdAppIds));
+    }
+
+    /**
+     * 官方推荐 id 列表：未配置该类型时用不可能命中的 ID 占位，保证「只认推荐」下该类型无结果
+     */
+    private static List<Long> officialIdsOrNone(Map<String, List<Long>> officialIdsByType, String targetType) {
+        List<Long> ids = officialIdsByType.get(targetType);
+        return ids == null || ids.isEmpty() ? List.of(-1L) : ids;
+    }
+
+    @Operation(summary = "最近使用的应用列表（网页应用+全栈应用+三方应用）")
+    @RequestMapping(path = "/app/recentlyUsed/list", method = RequestMethod.POST)
+    public ReqResult<List<PublishedDto>> appRecentlyUsedList(@RequestBody PublishedQueryDto publishedQueryDto) {
+        Integer size = publishedQueryDto.getPageSize() != null && publishedQueryDto.getPageSize() > 0 ? publishedQueryDto.getPageSize() : 50;
+        return ReqResult.success(publishApplicationService.queryRecentlyUsedApps(publishedQueryDto.getKw(), size));
+    }
+
+    @Operation(summary = "记录应用最近使用（市场点击应用时前端统一调用；网页应用/智能体在 redirect 与会话链路自动记录）")
+    @RequestMapping(path = "/app/recentlyUsed/add", method = RequestMethod.POST)
+    public ReqResult<Void> addAppRecentlyUsed(@RequestBody AppRecentUsedAddDto addDto) {
+        Assert.notNull(addDto.getProjectId(), "projectId is required");
+        Assert.notNull(addDto.getProjectType(), "projectType is required");
+        if (RequestContext.get().getUserId() == null) {
+            throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.userNotLoggedIn);
+        }
+        ProjectTypeEnum projectType = requireAppProjectType(addDto.getProjectType());
+        Published.TargetType targetType = projectType == ProjectTypeEnum.UserApp
+                ? Published.TargetType.UserApp : Published.TargetType.ThirdApp;
+        // 仅可记录市场发布中的应用（未发布/已下架报错），projectId 与发布记录 targetId 同源；
+        PublishedDto publishedDto = publishApplicationService.queryPublishedBrief(targetType, addDto.getProjectId());
+        if (publishedDto == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotPublishedOrOfflineAlt);
+        }
+        // 子类型按发布行原样记录（UserApp/ThirdApp）；最近使用查询对这两类不按子类型过滤，纯标注
+        publishApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(),
+                targetType, addDto.getProjectId(),
+                publishedDto.getTargetSubType() == null ? null : publishedDto.getTargetSubType().name());
+        // 使用次数（convCount）+1
+        publishApplicationService.incStatisticsCount(targetType, addDto.getProjectId(),
+                PublishedStatistics.Key.CONV_COUNT.getKey(), 1L);
+        return ReqResult.success();
+    }
+
+    /**
+     * 应用最近使用仅支持全栈应用与三方应用，其余类型走各自模块的记录链路
+     */
+    private ProjectTypeEnum requireAppProjectType(String projectType) {
+        if (StringUtils.isBlank(projectType)) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.userProjectTypeRequired);
+        }
+        ProjectTypeEnum type;
+        try {
+            type = ProjectTypeEnum.valueOf(projectType.trim());
+        } catch (IllegalArgumentException e) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.userProjectTypeInvalid);
+        }
+        if (type != ProjectTypeEnum.UserApp && type != ProjectTypeEnum.ThirdApp) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.userProjectTypeInvalid);
+        }
+        return type;
+    }
+    private void removeRequiringPaymentItems(HttpServletRequest request, List<PublishedDto> items) {
+        //判断是否为鸿蒙和ios，鸿蒙和ios则移除付费标识  items.removeIf(PublishedDto::isPaymentRequired);
+        String ct = request.getHeader("X-Client-Type");
+        if (ct != null && (ct.equals("ios") || ct.equals("harmony"))) {
+            items.removeIf(PublishedDto::isPaymentRequired);
+        }
     }
 
     private void completeOfficialTargetIds(PublishedQueryDto publishedQueryDto) {
@@ -334,7 +498,7 @@ public class PublishedController extends BaseController {
 
     @Operation(summary = "已发布模板列表接口")
     @RequestMapping(path = "/template/list", method = RequestMethod.POST)
-    public ReqResult<SuperPage<PublishedDto>> templateList(@RequestBody PublishedQueryDto publishedQueryDto) {
+    public ReqResult<SuperPage<PublishedDto>> templateList(HttpServletRequest request, @RequestBody PublishedQueryDto publishedQueryDto) {
         publishedQueryDto.setAllowCopy(YesOrNoEnum.Y.getKey());
         if ("Template".equals(publishedQueryDto.getCategory())) {
             publishedQueryDto.setCategory(null);
@@ -353,7 +517,7 @@ public class PublishedController extends BaseController {
             // 智能体模板
             publishedQueryDto.setTargetType(Published.TargetType.Agent);
             completeOfficialTargetIds(publishedQueryDto);
-            ReqResult<SuperPage<PublishedDto>> agentPageReqResult = agentList(publishedQueryDto);
+            ReqResult<SuperPage<PublishedDto>> agentPageReqResult = agentList(request, publishedQueryDto);
             long total = agentPageReqResult.getData().getTotal();
 
             // 工作流模板
@@ -365,7 +529,7 @@ public class PublishedController extends BaseController {
             // 技能模板
             publishedQueryDto.setTargetType(Published.TargetType.Skill);
             completeOfficialTargetIds(publishedQueryDto);
-            ReqResult<SuperPage<PublishedDto>> skillPageReqResult = skillList(publishedQueryDto);
+            ReqResult<SuperPage<PublishedDto>> skillPageReqResult = skillList(request, publishedQueryDto);
             total += skillPageReqResult.getData().getTotal();
 
             List<PublishedDto> publishedDtos = new ArrayList<>();
@@ -387,7 +551,7 @@ public class PublishedController extends BaseController {
 
     @Operation(summary = "已发布的智能体详情接口")
     @RequestMapping(path = "/agent/{agentId}", method = RequestMethod.GET)
-    public ReqResult<AgentDetailDto> agentDetail(@PathVariable Long agentId, @RequestParam(required = false) Boolean withConversationId) {
+    public ReqResult<AgentDetailDto> agentDetail(@PathVariable Long agentId, @RequestParam(required = false) Boolean withConversationId, @RequestParam(required = false) Long recId) {
         AgentDetailDto agentDetailDto = agentApplicationService.queryAgentDetail(agentId, true);
         if (agentDetailDto == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishedOffline);
@@ -401,7 +565,20 @@ public class PublishedController extends BaseController {
         if (withConversationId != null && withConversationId && !"PageApp".equals(agentDetailDto.getType())) {
             agentDetailDto.setConversationId(conversationApplicationService.nextConversationId(agentId, agentDetailDto.getSandboxId() == null ? null : agentDetailDto.getSandboxId().toString()));
         }
-
+        //判断recId是否为空，不为空时查询
+        if (recId != null) {
+            TargetRecommendResponse recommendResponse = recommendApplicationService.getById(recId);
+            if (recommendResponse != null && CollectionUtils.isNotEmpty(recommendResponse.getPrompts())) {
+                List<GuidQuestionDto> collect = recommendResponse.getPrompts().stream().map(p -> {
+                    GuidQuestionDto guidQuestionDto = new GuidQuestionDto();
+                    guidQuestionDto.setType(GuidQuestionDto.GuidQuestionType.Question);
+                    guidQuestionDto.setTitle(p.getTitle());
+                    guidQuestionDto.setInfo(p.getContent());
+                    return guidQuestionDto;
+                }).collect(Collectors.toList());
+                agentDetailDto.setGuidQuestionDtos(collect);
+            }
+        }
         return ReqResult.success(agentDetailDto);
     }
 
@@ -412,7 +589,7 @@ public class PublishedController extends BaseController {
         if (agentConfigDto == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentPublishedOffline);
         }
-        return agentDetail(agentConfigDto.getId(), withConversationId);
+        return agentDetail(agentConfigDto.getId(), withConversationId, null);
     }
 
     @Operation(summary = "已发布的插件详情接口")
@@ -661,7 +838,7 @@ public class PublishedController extends BaseController {
 
     @Operation(summary = "已发布技能列表接口")
     @RequestMapping(path = "/skill/list", method = RequestMethod.POST)
-    public ReqResult<SuperPage<PublishedDto>> skillList(@RequestBody PublishedQueryDto publishedQueryDto) {
+    public ReqResult<SuperPage<PublishedDto>> skillList(HttpServletRequest request, @RequestBody PublishedQueryDto publishedQueryDto) {
         publishedQueryDto.setTargetType(Published.TargetType.Skill);
         if ("Skill".equals(publishedQueryDto.getCategory())) {
             publishedQueryDto.setCategory(null);
@@ -676,7 +853,9 @@ public class PublishedController extends BaseController {
         //查询用户有权限的空间,限制访问空间
         if (publishedQueryDto.getSpaceId() != null) {
             var spaceIds = this.obtainAuthSpaceIds();
-            if (spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
+            if (publishedQueryDto.getSpaceId() == -1L) {
+                publishedQueryDto.setSpaceIds(spaceIds);
+            } else if (spaceIds == null || !spaceIds.contains(publishedQueryDto.getSpaceId())) {
                 publishedQueryDto.setSpaceId(null);
             }
         }
@@ -685,12 +864,34 @@ public class PublishedController extends BaseController {
         }
         completeOfficialTargetIds(publishedQueryDto);
         SuperPage<PublishedDto> page = publishApplicationService.queryPublishedList(publishedQueryDto);
+        fillEnabledStatus(page.getRecords());
         page.getRecords().forEach(publishedDto -> {
             publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name(), true));
             publishedDto.setUsageScenarios(parseUsageScenariosFromExt(publishedDto.getExt()));
         });
         setSubscriptionStatus(BizTypeEnum.SKILL, page.getRecords());
+        removeRequiringPaymentItems(request, page.getRecords());
         return ReqResult.success(page);
+    }
+
+    /**
+     * 填充当前用户是否已启用
+     */
+    private void fillEnabledStatus(List<PublishedDto> records) {
+        Long userId = RequestContext.get().getUserId();
+        if (userId == null || CollectionUtils.isEmpty(records)) {
+            return;
+        }
+        List<Long> targetIds = records.stream().map(PublishedDto::getTargetId).filter(Objects::nonNull).distinct().toList();
+        if (targetIds.isEmpty()) {
+            return;
+        }
+        Set<Long> enabledTargetIds = userTargetRelationDomainService
+                .queryUserTargetRelationByTargetIds(userId, Published.TargetType.Skill, UserTargetRelation.OpType.Enable, targetIds)
+                .stream()
+                .map(UserTargetRelation::getTargetId)
+                .collect(Collectors.toSet());
+        records.forEach(record -> record.setEnabled(enabledTargetIds.contains(record.getTargetId())));
     }
 
     private void setSubscriptionStatus(BizTypeEnum bizType, List<PublishedDto> records) {
@@ -854,6 +1055,39 @@ public class PublishedController extends BaseController {
     public ReqResult<Void> skillUnCollect(@PathVariable Long skillId) {
         collectApplicationService.unCollect(RequestContext.get().getUserId(), Published.TargetType.Skill, skillId);
         return ReqResult.success();
+    }
+
+    @Operation(summary = "启用技能接口")
+    @RequestMapping(path = "/skill/enable/{skillId}", method = RequestMethod.POST)
+    public ReqResult<Void> skillEnable(@PathVariable Long skillId) {
+        enableApplicationService.enable(RequestContext.get().getUserId(), Published.TargetType.Skill, skillId);
+        return ReqResult.success();
+    }
+
+    @Operation(summary = "取消启用技能接口")
+    @RequestMapping(path = "/skill/unEnable/{skillId}", method = RequestMethod.POST)
+    public ReqResult<Void> skillUnEnable(@PathVariable Long skillId) {
+        enableApplicationService.unEnable(RequestContext.get().getUserId(), Published.TargetType.Skill, skillId);
+        return ReqResult.success();
+    }
+
+    @Operation(summary = "已启用的技能列表接口")
+    @RequestMapping(path = "/skill/enable/list", method = RequestMethod.POST)
+    public ReqResult<List<PublishedDto>> skillEnableList(@RequestBody PublishedQueryDto publishedQueryDto) {
+        publishedQueryDto.setPage(1);
+        publishedQueryDto.setPageSize(1000);
+        //查询用户有权限的空间
+        var spaceIds = this.obtainAuthSpaceIds();
+        List<PublishedDto> publishedDtos = enableApplicationService.queryEnableListWithoutConfig(RequestContext.get().getUserId(), Published.TargetType.Skill, spaceIds);
+        if (CollectionUtils.isNotEmpty(publishedDtos)) {
+            publishedDtos.forEach(publishedDto -> publishedDto.setUsageScenarios(parseUsageScenariosFromExt(publishedDto.getExt())));
+            publishedDtos = publishedDtos.stream().filter(item -> matchSkillExtFilter(item, publishedQueryDto)).toList();
+            publishedDtos = filter(publishedQueryDto, publishedDtos);
+            publishedDtos.forEach(publishedDto -> {
+                publishedDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(publishedDto.getIcon(), publishedDto.getName(), Published.TargetType.Skill.name()));
+            });
+        }
+        return ReqResult.success(publishedDtos);
     }
 
     @Operation(summary = "最近使用的技能列表")

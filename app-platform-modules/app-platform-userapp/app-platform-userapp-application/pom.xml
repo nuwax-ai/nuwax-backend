@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-userapp</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>app-platform-userapp-application</artifactId>
+    <name>app-platform-userapp-application</name>
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-infra</artifactId>
+        </dependency>
+        <!-- 统一文件服务：构建产物 zip 上传 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-repo-sdk</artifactId>
+        </dependency>
+        <!-- 预删除清理任务：会话查询与工作目录清理（ConversationApplicationService 等） -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-file-application</artifactId>
+        </dependency>
+        <!-- 数据权限（全栈应用数量配额校验）：IUserDataPermissionRpcService -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-sdk</artifactId>
+        </dependency>
+    </dependencies>
+</project>

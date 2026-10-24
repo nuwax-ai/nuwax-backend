@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<!--
+  数据看板 · 透视页默认模版（技能内置；用户没指定风格时就用它）
+  ───────────────────────────────────────────────────────────────
+  这一页不写死任何字段名 / 列号 / 选项 id：字段角色（标题、分组轴、
+  次要分组、人员、标签、日期、数值）全部按「字段类型 + 字段名语义」自动识别，
+  分组轴还能在页面右上角手动切换，选择结果跨会话记住。
+
+  三个视图共用一份数据与一个搜索词：看板（拖拽卡片即改分组轴）、表格、图表。
+  挂的多维表格里若有多张数据表，页头下方会自动多出一排切换标签：切表只换用哪一份
+  字段与记录，分组轴 / 图形偏好按数据表分别记住，改数据也只会落到当前那张表。
+  图表同样按字段自动适配 —— select 出分布（环形 / 条形 / 玫瑰），user 出人员
+  任务量，multiSelect 出标签分布，date 族出时间趋势，number 族出按分组求和 / 均值，
+  语义词典认出「完成」类选项才出完成率仪表盘。缺哪类字段就少哪张图，一张都画不出
+  时给一段说明而不是摆空图；每张图右上角可换图形，图形选择也跨会话记住。
+
+  复用到别的多维表格，只需要两处之一：
+    1) 把 HTML 头部（head 区）repo-datatable-source 那一行的 content 换成目标
+       数据表的 slugId（在该数据表页面地址里取，或用 GET /pages/{pageId} 查）。
+       数据表本身不用改结构，只要有一个 select 字段就能分列。
+    2) 或者直接在目标数据表下新建一个 HTML 页面，把本页代码整段粘过去。
+
+  想微调文案与语义词典，改 JS 顶部的 NONE_LABEL / UNASSIGNED /
+  GROUP_HINTS / DOING_HINTS / DONE_HINTS / NEG_HINTS 即可。
+  词典只是"猜"，猜不中会自动降级，不会硬套一个错的结论。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="repo-datatable-source" content="这里填数据表slugId">
+<title>数据看板 · 透视看板</title>
+<script src="https://static-resources.nuwax.com/echarts.min.js"></script>
+<style>
+  :root{
+    --ink:#16181d; --ink2:#5b6270; --ink3:#8b939f; --ink4:#aeb4bf;
+    --line:#e9ebef; --line2:#f1f3f6; --canvas:#f7f8fa; --card:#ffffff;
+    --sel:#6b8cff; --focus:rgba(22,119,255,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+    --serif:"Songti SC","Source Han Serif SC","Noto Serif SC",Georgia,serif;
+    --mono:"SFMono-Regular",Menlo,Consolas,"JetBrains Mono","Courier New",monospace;
+    --r:10px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans); color:var(--ink); background:#fff;
+    -webkit-font-smoothing:antialiased; line-height:1.55;
+  }
+  ::-webkit-scrollbar{height:9px;width:9px}
+  ::-webkit-scrollbar-thumb{background:#d8dce3;border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:#c4cad4}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  .wrap{display:flex;flex-direction:column;height:100vh;min-height:420px}
+
+  /* ── 工具栏 ───────────────────────────────── */
+  .bar{
+    display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;
+    padding:22px 28px 16px;border-bottom:1px solid var(--line);background:#fff;
+  }
+  .brand{min-width:0;flex:1 1 320px}
+  .brand .kicker{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink4);margin-bottom:7px;
+  }
+  h1{
+    font-family:var(--serif);font-size:27px;font-weight:700;letter-spacing:.01em;
+    line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:36vw;
+  }
+  .sub{margin-top:7px;font-size:12px;color:var(--ink3);font-family:var(--mono);letter-spacing:.01em}
+  .sub b{color:var(--ink2);font-weight:600}
+  .sub i{font-style:normal;color:var(--ink4);margin:0 6px}
+
+  .tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .search{position:relative}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.42}
+  .search input{
+    width:238px;border:1px solid var(--line);background:#fbfcfd;border-radius:8px;
+    padding:8px 30px 8px 32px;font-size:13px;font-family:inherit;color:var(--ink);outline:none;
+    transition:border-color .18s,box-shadow .18s,background .18s;
+  }
+  .search input::placeholder{color:var(--ink4)}
+  .search input:focus{border-color:var(--sel);background:#fff;box-shadow:0 0 0 3px var(--focus)}
+  .search .clr{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;
+    cursor:pointer;color:var(--ink4);font-size:15px;line-height:1;padding:3px 5px;border-radius:5px;display:none;
+  }
+  .search .clr:hover{color:var(--ink);background:var(--line2)}
+
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .seg button{
+    border:0;background:transparent;font-family:inherit;font-size:12.5px;color:var(--ink2);
+    padding:8px 13px;cursor:pointer;transition:background .16s,color .16s;white-space:nowrap;
+  }
+  .seg button + button{border-left:1px solid var(--line)}
+  .seg button:hover{background:var(--line2)}
+  .seg button[aria-pressed="true"]{color:var(--sel);font-weight:700;background:#f7f9ff}
+
+  /* ── 图表视图：一屏图表卡片，卡片高度固定免得 echarts 首帧量不到高度 ── */
+  .charts{padding:16px 28px 24px;background:var(--canvas)}
+  .cg-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 2px 12px}
+  .cg-head b{font-size:13.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+  .cg-head span{font-size:10.5px;color:var(--ink4);font-family:var(--mono);letter-spacing:.01em;line-height:1.5}
+  .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .ccard{
+    background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px 14px 8px;min-width:0;
+    box-shadow:0 1px 2px rgba(20,30,55,.03);animation:cardIn .34s ease both;
+  }
+  .ccard-hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:5px}
+  .ccard-tt{flex:1;min-width:0}
+  .ccard-tt b{display:block;font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+  .ccard-tt span{display:block;font-size:10.5px;color:var(--ink4);margin-top:3px;line-height:1.5}
+  .ctype{display:flex;gap:2px;flex:0 0 auto;background:var(--line2);border-radius:7px;padding:2px}
+  .ctype button{
+    border:0;background:transparent;font-family:inherit;font-size:10.5px;color:var(--ink3);
+    padding:3px 8px;border-radius:5px;cursor:pointer;transition:background .14s,color .14s;white-space:nowrap;
+  }
+  .ctype button:hover{color:var(--ink2)}
+  .ctype button[aria-pressed="true"]{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(20,30,55,.08)}
+  .cbox{width:100%;height:224px}
+  .cbox--tall{height:252px}
+
+  /* 分组维度选择器：看上去像一枚标签，点开才是 select */
+  .pick{
+    display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;
+    border-radius:8px;padding:0 10px;height:34px;transition:border-color .16s,box-shadow .16s;
+  }
+  .pick:hover{border-color:#cfd6e4}
+  .pick:focus-within{border-color:var(--sel);box-shadow:0 0 0 3px var(--focus)}
+  .pick > span{font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--ink4);text-transform:uppercase}
+  .pick select{
+    width:auto;border:0;background:transparent;font-size:12.5px;color:var(--ink);font-weight:600;
+    font-family:inherit;padding:0 2px 0 0;cursor:pointer;max-width:132px;outline:none;
+  }
+  .pick select:focus{border:0;box-shadow:none}
+  .pick select:disabled{color:var(--ink2);cursor:default}
+  .pick i{font-style:normal;font-size:10px;color:var(--ink4);letter-spacing:.04em}
+  .pick i:empty{display:none}
+
+  .btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;
+    padding:8px 14px;font-size:12.5px;font-family:inherit;cursor:pointer;
+    transition:border-color .16s,color .16s,background .16s,transform .16s;white-space:nowrap;
+  }
+  .btn:hover{border-color:#cfd5df;background:#fcfdfe}
+  .btn:active{transform:translateY(1px)}
+  .btn--primary{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .btn--primary:hover{background:#000;border-color:#000;color:#fff}
+  .btn--danger{color:#c0392b;border-color:#f0d5d1}
+  .btn--danger:hover{background:#fdf4f3;border-color:#e6b8b2}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+
+  /* ── 数据表切换：一个多维表格里有多张数据表时才出现 ── */
+  .tabs{
+    display:flex;gap:24px;padding:0 28px;background:#fff;border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .tabs[hidden]{display:none}
+  .tabs::-webkit-scrollbar{height:0}
+  .tab{
+    appearance:none;border:0;background:none;font-family:inherit;font-size:13px;color:var(--ink4);
+    padding:11px 0;line-height:1.5;cursor:pointer;white-space:nowrap;transition:color .18s;
+  }
+  .tab:hover{color:var(--ink2)}
+  .tab[aria-pressed="true"]{color:var(--sel);font-weight:700}
+  .tab .n{font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--ink4);margin-left:6px}
+  .tab[aria-pressed="true"] .n{color:var(--sel);opacity:.7}
+
+  /* ── 指标条 ───────────────────────────────── */
+  .metrics{
+    display:flex;align-items:stretch;gap:0;padding:0 28px;background:#fff;
+    border-bottom:1px solid var(--line);overflow-x:auto;
+  }
+  .metric{padding:14px 26px 15px 0;margin-right:26px;border-right:1px solid var(--line2);min-width:118px}
+  .metric:last-child{border-right:0;margin-right:0}
+  .metric .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;color:var(--ink4);text-transform:uppercase}
+  .metric .vl{font-family:var(--mono);font-size:25px;font-weight:600;letter-spacing:-.02em;margin-top:3px;line-height:1.1}
+  .metric .vl small{font-size:12px;font-weight:500;color:var(--ink3);margin-left:3px;letter-spacing:0}
+  .metric .note{font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .metric .track{height:4px;border-radius:2px;background:var(--line2);margin-top:9px;overflow:hidden;width:100%}
+  .metric .track i{display:block;height:100%;border-radius:2px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .metric--chart{flex:1;min-width:300px;border-right:0}
+  .metric--chart .lb{margin-bottom:2px}
+  #chart{width:100%;height:84px;margin-top:3px}
+
+  /* ── 看板 ─────────────────────────────────── */
+  .board{
+    flex:1;min-height:0;overflow:auto;background:var(--canvas);
+    padding:18px 28px 26px;display:flex;gap:14px;align-items:flex-start;
+  }
+  .col{
+    flex:1 1 202px;min-width:202px;max-width:330px;min-height:176px;background:#f1f3f6;border-radius:var(--r);
+    padding:11px 11px 9px;display:flex;flex-direction:column;gap:9px;
+    animation:colIn .42s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes colIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .col-hd{display:flex;align-items:center;gap:8px;padding:2px 3px 6px}
+  .col-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .col-nm{font-size:13px;font-weight:600;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .col-ct{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-left:auto;font-weight:500}
+  .col-track{height:3px;border-radius:2px;background:#e2e6ec;overflow:hidden;margin:0 3px 4px}
+  .col-track i{display:block;height:100%;border-radius:2px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .col-body{display:flex;flex-direction:column;gap:8px;min-height:16px}
+
+  .card{
+    position:relative;background:var(--card);border-radius:8px;padding:11px 12px 10px 13px;
+    border:1px solid #e7eaf0;cursor:pointer;overflow:hidden;
+    transition:box-shadow .2s,border-color .2s,transform .2s;
+    animation:cardIn .4s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac,#c9ced8)}
+  .card:hover{border-color:#d3d9e3;box-shadow:0 6px 18px rgba(20,30,55,.09);transform:translateY(-1px)}
+  .card:focus-visible{outline:2px solid var(--sel);outline-offset:1px}
+  /* 拖拽改状态 */
+  .card[draggable="true"]{cursor:grab}
+  .card[draggable="true"] .card-t{padding-right:17px}
+  .card-grip{position:absolute;top:9px;right:8px;color:var(--ink4);opacity:0;transition:opacity .16s;line-height:0;cursor:grab}
+  .card:hover .card-grip,.card:focus-visible .card-grip{opacity:.7}
+  .card.dragging{opacity:.4;border-style:dashed;box-shadow:0 10px 26px rgba(20,30,55,.14)}
+  body.dragging .card{cursor:grabbing}
+  body.dragging .card:hover{transform:none;box-shadow:none}
+  .col.drop-on{background:#e6ebf5;box-shadow:inset 0 0 0 2px var(--sel)}
+  .col.drop-on .col-nm{color:var(--sel)}
+  .col.drop-on .col-empty{background:#fff;border-color:#c6d2ea}
+  .col.drop-on .col-body::after{
+    content:"松开即改状态";display:block;text-align:center;font-size:11px;font-weight:600;
+    color:var(--sel);padding:7px 0 1px;letter-spacing:.02em;
+  }
+  .card-t{font-size:13.5px;font-weight:600;line-height:1.45;word-break:break-word;padding-right:2px}
+  .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;
+    font-size:11px;line-height:1.6;font-weight:600;letter-spacing:.01em;white-space:nowrap;
+    background:#f2f4f7;color:var(--ink2);
+  }
+  .pill .dt{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+  .pill--tag{font-weight:500}
+  .card-ft{display:flex;align-items:center;gap:7px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line2)}
+  .avatar{
+    width:19px;height:19px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    font-size:10px;font-weight:700;color:#fff;background:#8b939f;font-family:var(--sans);
+  }
+  .who{font-size:11.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rowno{font-family:var(--mono);font-size:10.5px;color:var(--ink4);margin-left:auto;flex:0 0 auto}
+  .add{
+    border:1px dashed #d8dde5;background:transparent;border-radius:8px;padding:7px;width:100%;
+    font-family:inherit;font-size:12px;color:var(--ink3);cursor:pointer;transition:all .18s;
+  }
+  .add:hover{color:var(--ink);border-color:#b9c1cd;background:#fff}
+  .col-empty{
+    border:1px dashed #dfe3ea;border-radius:8px;padding:15px 10px;text-align:center;
+    font-size:11.5px;color:var(--ink4);background:rgba(255,255,255,.5);
+  }
+
+  /* ── 表格视图 ─────────────────────────────── */
+  .sheet{flex:1;min-height:0;overflow:auto;padding:20px 28px 30px;background:#fff}
+  table{width:100%;border-collapse:collapse}
+  th{
+    text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink4);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:#fff;z-index:2;
+  }
+  td{font-size:13px;padding:11px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+  tbody tr{transition:background .15s}
+  tbody tr:hover{background:#fafbfd}
+  td.t-title{font-weight:600}
+  .t-people{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .muted{color:var(--ink4)}
+
+  .empty{text-align:center;color:var(--ink3);font-size:13px;padding:52px 0}
+  .empty b{display:block;font-size:14px;color:var(--ink);margin-bottom:6px;font-weight:600}
+
+  /* ── 抽屉 / 弹层 ──────────────────────────── */
+  #mask{display:none;position:fixed;inset:0;background:rgba(16,22,34,.34);z-index:60}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:396px;max-width:92vw;background:#fff;z-index:61;
+    box-shadow:-14px 0 44px rgba(16,22,34,.16);transform:translateX(101%);
+    transition:transform .3s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;
+  }
+  .drawer.on{transform:none}
+  .d-hd{padding:18px 20px 14px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px}
+  .d-hd .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink4);text-transform:uppercase}
+  .d-hd h2{font-size:16px;font-weight:600;margin-top:5px;line-height:1.4;word-break:break-word}
+  .x{border:0;background:transparent;font-size:19px;line-height:1;color:var(--ink3);cursor:pointer;padding:3px 7px;border-radius:6px}
+  .x:hover{background:var(--line2);color:var(--ink)}
+  .d-bd{padding:16px 20px 20px;overflow:auto;flex:1}
+  .fld{margin-bottom:17px}
+  .fld > label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink4);text-transform:uppercase;margin-bottom:7px}
+  .fld input[type=text]{
+    width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;
+    font-family:inherit;color:var(--ink);outline:none;transition:border-color .16s,box-shadow .16s;
+  }
+  .fld input[type=text]:focus{border-color:var(--sel);box-shadow:0 0 0 3px var(--focus)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{
+    border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 11px;font-size:12px;
+    font-family:inherit;color:var(--ink2);cursor:pointer;transition:all .16s;
+  }
+  .chip:hover{border-color:#c9d0da}
+  .chip.on{background:var(--chip-bg,#f2f4f7);border-color:var(--chip-bd,#cfd5df);color:var(--chip-fg,var(--ink));font-weight:600}
+  .d-ft{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center;background:#fcfdfe}
+  .d-ft .sp{flex:1}
+  .hint{font-size:11px;color:var(--ink4);margin-top:9px}
+
+  .modal{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);z-index:61;
+    background:#fff;border-radius:12px;width:404px;max-width:92vw;box-shadow:0 22px 60px rgba(16,22,34,.24);
+    display:none;opacity:0;transition:opacity .2s,transform .2s;
+  }
+  .modal.on{display:block;opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .m-hd{padding:18px 20px 4px;font-size:15px;font-weight:600}
+  .m-bd{padding:12px 20px 4px}
+  .m-ft{padding:14px 20px 18px;display:flex;justify-content:flex-end;gap:9px}
+  select{
+    width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;
+    font-family:inherit;color:var(--ink);background:#fff;outline:none;
+  }
+  select:focus{border-color:var(--sel);box-shadow:0 0 0 3px var(--focus)}
+
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:var(--ink);color:#fff;
+    font-size:12.5px;padding:9px 17px;border-radius:8px;opacity:0;pointer-events:none;z-index:70;
+    transition:opacity .22s,transform .22s;font-family:inherit;max-width:80vw;text-align:center;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .toast.err{background:#9b2c20}
+
+  @media (max-width:1080px){
+    .cgrid{grid-template-columns:1fr}
+  }
+  @media (max-width:860px){
+    .bar{padding:16px 16px 13px}
+    .tabs{padding:0 16px}
+    h1{font-size:22px;max-width:70vw}
+    .metrics{padding:0 16px}
+    .board{padding:14px 16px 22px}
+    .sheet{padding:14px 16px 24px}
+    .charts{padding:14px 16px 22px}
+    .search input{width:170px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="bar">
+    <div class="brand">
+      <div class="kicker">Board · 任务透视</div>
+      <h1 id="pageTitle">数据看板</h1>
+      <div class="sub" id="meta">数据同步中…</div>
+    </div>
+    <div class="tools">
+      <div class="search">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#8b939f" stroke-width="1.6">
+          <circle cx="7" cy="7" r="4.6"></circle><path d="M10.6 10.6 14 14"></path>
+        </svg>
+        <input id="q" type="text" placeholder="搜索标题 / 处理人 / 标签" autocomplete="off">
+        <button class="clr" id="qClr" type="button" title="清除">×</button>
+      </div>
+      <div class="seg" role="group" aria-label="视图切换">
+        <button id="vBoard" type="button" aria-pressed="true">看板</button>
+        <button id="vTable" type="button" aria-pressed="false">表格</button>
+        <button id="vChart" type="button" aria-pressed="false">图表</button>
+      </div>
+      <label class="pick" id="pickGroup" title="看板按哪个字段分列 —— 默认自动识别字段类型与名称，也可以在这里手选">
+        <span>分组</span>
+        <select id="groupBy" aria-label="分组字段"></select>
+        <i id="pickHint">自动</i>
+      </label>
+      <button class="btn btn--primary" id="btnNew" type="button">＋ 新建记录</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" hidden aria-label="数据表切换"></nav>
+
+  <section class="metrics" id="metrics"></section>
+
+  <main class="board" id="board"><div class="empty">加载中…</div></main>
+  <main class="sheet" id="sheet" style="display:none"></main>
+  <main class="charts" id="charts" style="display:none"></main>
+
+  <footer style="padding:11px 28px;border-top:1px solid var(--line);background:#fff;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink4);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span id="footSrc">数据源 · 数据看板</span>
+    <span style="margin-left:auto" id="footSync">数据表更新后刷新本页即同步</span>
+  </footer>
+</div>
+
+<div id="mask"></div>
+
+<!-- 详情 / 编辑抽屉 -->
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="d-hd">
+    <div style="flex:1;min-width:0">
+      <div class="kicker" id="dRow">记录</div>
+      <h2 id="dTitle">—</h2>
+    </div>
+    <button class="x" id="dClose" type="button" title="关闭">×</button>
+  </div>
+  <div class="d-bd" id="dBody"></div>
+  <div class="d-ft">
+    <button class="btn btn--danger" id="dDel" type="button">删除记录</button>
+    <span class="sp"></span>
+    <button class="btn" id="dDone" type="button">完成</button>
+  </div>
+</aside>
+
+<!-- 新建记录 -->
+<div class="modal" id="mNew" role="dialog" aria-modal="true">
+  <div class="m-hd" id="mNewTitle">新建记录</div>
+  <div class="m-bd">
+    <div class="fld" id="fTitle">
+      <label for="nTitle" id="lblTitle">标题</label>
+      <input type="text" id="nTitle" placeholder="写一句能看懂的话">
+    </div>
+    <div class="fld" id="fStatus">
+      <label for="nStatus" id="lblStatus">状态</label>
+      <select id="nStatus"></select>
+    </div>
+    <div class="fld" id="fWho">
+      <label for="nWho" id="lblWho">人员</label>
+      <input type="text" id="nWho" placeholder="多个用英文逗号分隔（可留空）">
+    </div>
+    <div class="fld" id="fPri" style="margin-bottom:4px">
+      <label for="nPri" id="lblPri">次要分组</label>
+      <select id="nPri"></select>
+    </div>
+  </div>
+  <div class="m-ft">
+    <button class="btn" id="nCancel" type="button">取消</button>
+    <button class="btn btn--primary" id="nOk" type="button">创建记录</button>
+  </div>
+</div>
+
+<!-- 删除确认 -->
+<div class="modal" id="mDel" role="dialog" aria-modal="true">
+  <div class="m-hd">删除这条记录？</div>
+  <div class="m-bd" style="font-size:13px;color:var(--ink2);line-height:1.65" id="delText"></div>
+  <div class="m-ft">
+    <button class="btn" id="delCancel" type="button">取消</button>
+    <button class="btn btn--primary" id="delOk" type="button">确认删除</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  'use strict';
+
+  /* ── 可配置文案（改这里即可，不必改数据表）───────────── */
+  var NONE_LABEL = '未分类';     // 分组字段为空时的列名 / 标签
+  var NONE_COLOR = '#94A3B8';    // 空值桶配色（中性灰）
+  var UNASSIGNED = '未指派';     // 人员字段为空时的显示
+  var AVATAR_COLORS = ['#4d6fd0', '#2f8f83', '#7a5bd0', '#b4791f', '#b0475f', '#5a7d2f'];
+
+  /* 语义词典：只用于「猜哪个字段该当分组轴」「挑进行中 / 完成类桶」，
+     猜不中会自动降级（分组退化为"按用到的值最多的 select"，指标退化为"计数前几名"），
+     不会硬套一个错的结论。换一张表不用改代码。 */
+  var GROUP_HINTS = ['状态', '阶段', '进度', '进展', '情况', '环节', '流程', '生命周期',
+    'status', 'state', 'stage', 'phase', 'progress', 'step', 'workflow'];
+  var DOING_HINTS = ['进行中', '进行', '处理中', '执行中', '开发中', '制作中', '审核中',
+    'doing', 'inprogress', 'in progress', 'progress', 'wip', 'ongoing', 'active', 'started'];
+  var DONE_HINTS = ['已完成', '完成', '已交付', '交付', '已上线', '上线', '已发布', '发布', '已结案', '结案',
+    '已结束', '结束', '已关闭', '关闭', '已解决', '解决', '已通过', '通过', '已归档', '归档',
+    'done', 'complete', 'completed', 'closed', 'resolved', 'finished', 'shipped', 'released', 'merged', 'archived', 'deployed'];
+  var NEG_HINTS = ['未', '不', '待', '非', '取消', '驳回', '打回', '拒绝', '失败', '阻塞', '暂停', '挂起', '搁置', '中止',
+    'cancel', 'reject', 'fail', 'block', 'hold', 'todo', 'to do', 'backlog', 'not '];
+  var PREF_GROUP = 'groupField'; // 用户手选的分组字段名（存字段名而不是列号，换表/调列序都不失效）
+  var PREF_VIEW = 'viewMode';    // 上次停在哪个视图（看板 / 表格 / 图表）
+  var PREF_KINDS = 'chartKinds'; // 每张图上次选的图形（JSON：{status:'rose', ...}）
+  var PREF_TABLE = 'activeSheet';// 上次看的是哪张数据表（一个多维表格里有多张时才用得上）
+
+  var api = window.repoDatatable;
+  var snap = null, fields = [], records = [], F = {}, editable = false;
+  var view = 'board', kw = '', drawerRow = null, pendingDelete = null, charts = [];
+  var gcharts = [];              // 图表视图里的 echarts 实例（与指标条那张 mini 图分开管理）
+  var kinds = {};                // 每张图的图形选择，键是图 id（status / user / sub / tag / date / num）
+  var groupPref = null;          // 用户手选的分组字段名（跨会话记住，见 PREF_GROUP）
+  var tables = [], activeIdx = 0, pendingSheetId = null;  // 多维表格里的多张数据表（一个 workbook 多个 sheet）
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function stripSite(t) {
+    t = String(t == null ? (document.title || '') : t);
+    var i = t.indexOf(' - ');
+    return i > 0 ? t.slice(i + 3) : t;
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function hex2rgb(hex) {
+    var h = String(hex || '').replace('#', '');
+    if (h.length === 3) { h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; }
+    var n = parseInt(h, 16);
+    if (isNaN(n)) { return [140, 140, 140]; }
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function tint(hex, a) { var c = hex2rgb(hex); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  function darken(hex, k) {                      // 亮色状态色在浅底上做文字对比度不足，加深后再用作文字色
+    var c = hex2rgb(hex);
+    return '#' + c.map(function (v) {
+      var x = Math.max(0, Math.round(v * (1 - k)));
+      return ('0' + x.toString(16)).slice(-2);
+    }).join('');
+  }
+  function avatarColor(name) {
+    var s = 0, i;
+    for (i = 0; i < name.length; i++) { s = (s * 31 + name.charCodeAt(i)) % 9973; }
+    return AVATAR_COLORS[s % AVATAR_COLORS.length];
+  }
+  function toast(msg, isErr) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast on' + (isErr ? ' err' : '');
+    clearTimeout(t._tm);
+    t._tm = setTimeout(function () { t.className = 'toast' + (isErr ? ' err' : ''); }, 2200);
+  }
+
+  /* ── 字段角色识别（不写死列号、也不写死字段名，换表即用）────── */
+  function nthType(type, n) {
+    var c = 0, i;
+    for (i = 0; i < fields.length; i++) {
+      if (fields[i].schema && fields[i].schema.type === type) {
+        if (c === n) { return fields[i]; }
+        c++;
+      }
+    }
+    return null;
+  }
+  function selectFields() {
+    var out = [], i;
+    for (i = 0; i < fields.length; i++) {
+      if (fields[i].schema && fields[i].schema.type === 'select') { out.push(fields[i]); }
+    }
+    return out;
+  }
+  function normName(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ''); }
+  function hintHit(name, hints) {                // 先全等、再包含：词典里短词多，全等优先避免误伤
+    var s = normName(name), i;
+    for (i = 0; i < hints.length; i++) { if (s === normName(hints[i])) { return 1; } }
+    for (i = 0; i < hints.length; i++) { if (s.indexOf(normName(hints[i])) >= 0) { return 1; } }
+    return 0;
+  }
+  function isNegName(name) { return hintHit(name, NEG_HINTS) === 1; }
+
+  function usedOptionCount(f) {                  // 这张表里真正用到的选项数（空值不算）
+    var m = optMap(f), used = {}, n = 0, i, v;
+    for (i = 0; i < records.length; i++) {
+      v = valOf(records[i], f);
+      if (v && m[v] && !used[v]) { used[v] = 1; n++; }
+    }
+    return n;
+  }
+  function fillRate(f) {
+    var i, n = 0;
+    if (!records.length) { return 0; }
+    for (i = 0; i < records.length; i++) { if (valOf(records[i], f)) { n++; } }
+    return n / records.length;
+  }
+  function groupScore(f) {                       // 谁最像"分组轴"：名字像状态 > 填得满 > 用得开 > 列数合适
+    var os = (f.schema && f.schema.options) || [];
+    if (os.length < 2) { return -1e9; }          // 只有 0/1 个选项，分不出列
+    var u = usedOptionCount(f);
+    var s = 0;
+    if (hintHit(f.name, GROUP_HINTS)) { s += 100; }
+    s += fillRate(f) * 40;
+    s += (u / os.length) * 30;
+    if (u >= 2 && u <= 9) { s += 12; }           // 2~9 个在用值，正好是看板列数
+    if (u <= 1) { s -= 60; }                     // 只有一个值在用，分组没意义
+    return s;
+  }
+  function pickGroupField() {
+    var ss = selectFields(), best = null, bs = -1e9, i, s;
+    for (i = 0; i < ss.length; i++) {
+      s = groupScore(ss[i]);
+      if (s > bs) { bs = s; best = ss[i]; }      // 同分保留靠前的字段（表里先定义的更可能是主状态）
+    }
+    return best;
+  }
+  function pickSecondSelect(g) {                 // 状态之外的那个 select，当卡片副标签用
+    var ss = selectFields(), i;
+    for (i = 0; i < ss.length; i++) { if (!g || ss[i].col !== g.col) { return ss[i]; } }
+    return null;
+  }
+  function resolveFields() {
+    F.title = nthType('text', 0) || (fields.length ? fields[0] : null);  // 没有 text 字段就退用第一列
+    var g = null, i;
+    if (groupPref) {                             // 用户在页面上手选过 → 以他为准
+      for (i = 0; i < fields.length; i++) {
+        if (fields[i].name === groupPref && fields[i].schema && fields[i].schema.type === 'select') { g = fields[i]; }
+      }
+    }
+    F.status = g || pickGroupField();
+    F.sub = pickSecondSelect(F.status);
+    F.user = nthType('user', 0);
+    F.tag = nthType('multiSelect', 0);
+    F.date = nthTypeIn(DATE_TYPES, 0);           // 图表用：有日期族字段就画趋势
+    F.num = nthTypeIn(NUM_TYPES, 0);             // 图表用：有数值族字段就画聚合
+  }
+  function valOf(r, f) { return f ? String(r.values[f.col] == null ? '' : r.values[f.col]) : ''; }
+  function optMap(f) {
+    var m = {}, os = (f && f.schema && f.schema.options) || [], i;
+    for (i = 0; i < os.length; i++) { m[os[i].id] = os[i]; }
+    return m;
+  }
+  function bucketsOf(f) {                        // 分组维度 = 空值桶 + 已定义选项（顺序固定，空值桶最前）
+    var out = [{ key: '', name: NONE_LABEL, color: NONE_COLOR }];
+    var os = (f && f.schema && f.schema.options) || [], i;
+    for (i = 0; i < os.length; i++) { out.push({ key: os[i].id, name: os[i].name, color: os[i].color || '#8c8c8c' }); }
+    return out;
+  }
+  function bucketKeyOf(r, f) {                   // 空串 / 未知 id 一律进空值桶
+    var v = valOf(r, f);
+    if (!v) { return ''; }
+    return optMap(f)[v] ? v : '';
+  }
+  function bucketByHints(hints) {                // 按语义词典挑桶；否定词优先（"未完成"不算完成，"已取消"也不算）
+    var bs = bucketsOf(F.status), i;
+    if (!F.status) { return null; }
+    for (i = 1; i < bs.length; i++) {
+      if (isNegName(bs[i].name)) { continue; }
+      if (hintHit(bs[i].name, hints)) { return bs[i]; }
+    }
+    return null;
+  }
+
+  function searchText(r) {
+    var parts = [], i;
+    for (i = 0; i < fields.length; i++) {
+      var f = fields[i], v = valOf(r, f);
+      if (!v) { continue; }
+      if (f.schema && (f.schema.type === 'select' || f.schema.type === 'multiSelect')) {
+        var m = optMap(f);
+        parts.push(v.split(',').map(function (id) { return m[id] ? m[id].name : id; }).join(' '));
+      } else {
+        parts.push(v);
+      }
+    }
+    return parts.join(' ').toLowerCase();
+  }
+  function visible() {
+    if (!kw) { return records; }
+    var k = kw.toLowerCase();
+    return records.filter(function (r) { return searchText(r).indexOf(k) >= 0; });
+  }
+
+  /* ── 渲染片段 ───────────────────────────────── */
+  function noneLabelFor(f) { return f === F.status ? NONE_LABEL : '未填'; }
+  function pillOf(f, v) {
+    if (!f) { return ''; }                        /* 表里没有这类字段（纯文本表、没建状态列）→ 不画标签，别把整页拖崩 */
+    var type = f.schema && f.schema.type;
+    if (type === 'select') {
+      if (v === '') { return '<span class="pill" style="background:' + tint(NONE_COLOR, .16) + ';color:' + darken(NONE_COLOR, .35) + '">' + esc(noneLabelFor(f)) + '</span>'; }
+      var o = optMap(f)[v];
+      var nm = o ? o.name : v, cl = (o && o.color) || '#8c8c8c';
+      return '<span class="pill" style="background:' + tint(cl, .16) + ';color:' + darken(cl, .35) + '">'
+        + '<i class="dt" style="background:' + esc(cl) + '"></i>' + esc(nm) + '</span>';
+    }
+    if (type === 'multiSelect') {
+      if (v === '') { return ''; }
+      var m = optMap(f);
+      return v.split(',').map(function (id) {
+        var o = m[id], nm = o ? o.name : id, cl = (o && o.color) || '#8c8c8c';
+        return '<span class="pill pill--tag" style="background:' + tint(cl, .14) + ';color:' + darken(cl, .4) + '">' + esc(nm) + '</span>';
+      }).join('');
+    }
+    return '';
+  }
+  function peopleHtml(names, showName) {
+    if (!names) { return '<span class="avatar" style="background:#c3c8d2">·</span><span class="who">' + esc(UNASSIGNED) + '</span>'; }
+    var arr = names.split(',').filter(function (s) { return s.trim(); });
+    var first = arr.length ? arr[0].trim() : UNASSIGNED;
+    var html = arr.slice(0, 3).map(function (n) {
+      n = n.trim();
+      return '<span class="avatar" style="background:' + avatarColor(n) + '" title="' + esc(n) + '">' + esc(n.slice(0, 1)) + '</span>';
+    }).join('');
+    if (!showName) { return html; }
+    return html + '<span class="who">' + esc(arr.join('、') || UNASSIGNED) + (arr.length > 3 ? ' 等' + arr.length + '人' : '') + '</span>';
+  }
+
+  function canDrag() { return editable && !!F.status; }   /* 拖拽=改状态：没有状态字段/只读身份都不给拖 */
+  function findRecord(row) {
+    for (var i = 0; i < records.length; i++) { if (records[i].row === row) { return records[i]; } }
+    return null;
+  }
+  var GRIP_SVG = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">'
+    + '<circle cx="2" cy="2" r="1.15"/><circle cx="8" cy="2" r="1.15"/><circle cx="2" cy="7" r="1.15"/>'
+    + '<circle cx="8" cy="7" r="1.15"/><circle cx="2" cy="12" r="1.15"/><circle cx="8" cy="12" r="1.15"/></svg>';
+
+  function cardHtml(r, i, acColor) {
+    var pr = F.sub ? pillOf(F.sub, valOf(r, F.sub)) : '';
+    var tag = F.tag ? pillOf(F.tag, valOf(r, F.tag)) : '';
+    var dg = canDrag();
+    return '<article class="card" data-row="' + r.row + '" tabindex="0" role="button"'
+      + (dg ? ' draggable="true"' : '')
+      + ' style="--ac:' + esc(acColor) + ';animation-delay:' + (Math.min(i, 14) * 26) + 'ms">'
+      + (dg ? '<span class="card-grip" title="拖拽到别的列，即改「' + esc(F.status.name) + '」">' + GRIP_SVG + '</span>' : '')
+      + '<div class="card-t">' + (esc(valOf(r, F.title)) || '<span class="muted">（未填' + esc(F.title ? F.title.name : '标题') + '）</span>') + '</div>'
+      + '<div class="card-tags">' + pillOf(F.status, valOf(r, F.status)) + pr + tag + '</div>'
+      + '<div class="card-ft">' + peopleHtml(valOf(r, F.user), true)
+      + '<span class="rowno">#' + pad(r.row) + '</span></div>'
+      + '</article>';
+  }
+
+  function renderBoard(resetScroll) {
+    var host = $('board');
+    var sl = host.scrollLeft;
+    if (!records.length) {
+      host.innerHTML = '<div class="empty" style="flex:1"><b>这张数据表还没有记录</b>点右上角「新建记录」写下第一条，或直接在多维表格里添加</div>';
+      return;
+    }
+    var rows = visible();
+    var total = records.length;
+    var bs = F.status ? bucketsOf(F.status) : [{ key: '__all__', name: '全部记录', color: '#8c8c8c' }];
+    var keyOf = function (r) { return F.status ? bucketKeyOf(r, F.status) : '__all__'; };
+
+    var html = bs.map(function (b, ci) {
+      var list = rows.filter(function (r) { return keyOf(r) === b.key; });
+      var pct = total ? Math.round(list.length / total * 100) : 0;
+      return '<section class="col" data-bucket="' + esc(b.key) + '" data-bname="' + esc(b.name) + '"'
+        + ' style="animation-delay:' + (ci * 55) + 'ms">'
+        + '<div class="col-hd"><span class="col-dot" style="background:' + esc(b.color) + '"></span>'
+        + '<span class="col-nm">' + esc(b.name) + '</span>'
+        + '<span class="col-ct">' + list.length + (kw ? '/' + total : '') + '</span></div>'
+        + '<div class="col-track"><i style="width:' + pct + '%;background:' + esc(b.color) + '"></i></div>'
+        + '<div class="col-body">'
+        + (list.length
+            ? list.map(function (r, i) { return cardHtml(r, i, b.color); }).join('')
+            : '<div class="col-empty">' + (kw ? '无匹配记录' : '这一列还是空的') + '</div>')
+        + '</div>'
+        + (editable ? '<button class="add" type="button" data-add="' + esc(b.key) + '">＋ 添加记录</button>' : '')
+        + '</section>';
+    }).join('');
+
+    host.innerHTML = rows.length ? html
+      : '<div class="empty" style="flex:1"><b>没有匹配「' + esc(kw) + '」的记录</b>换个关键词，或清空搜索框</div>';
+    host.scrollLeft = resetScroll ? 0 : sl;
+  }
+
+  function renderTable() {
+    var host = $('sheet');
+    var rows = visible();
+    if (!rows.length) {
+      host.innerHTML = '<div class="empty"><b>' + (records.length ? '没有匹配的记录' : '暂无数据') + '</b></div>';
+      return;
+    }
+    var head = '<tr><th style="width:52px">#</th>' + fields.map(function (f) {
+      return '<th>' + esc(f.name) + '</th>';
+    }).join('') + '</tr>';
+    var body = rows.map(function (r) {
+      return '<tr>' + '<td class="muted" style="font-family:var(--mono);font-size:11px">' + pad(r.row) + '</td>'
+        + fields.map(function (f) {
+          var t = f.schema && f.schema.type, v = valOf(r, f);
+          if (t === 'select' || t === 'multiSelect') {
+            var p = pillOf(f, v);
+            return '<td>' + (p || '<span class="muted">—</span>') + '</td>';
+          }
+          if (t === 'user') { return '<td><div class="t-people">' + peopleHtml(v, true) + '</div></td>'; }
+          if (t === 'checkbox') { return '<td>' + (v === 'true' ? '✓' : '<span class="muted">—</span>') + '</td>'; }
+          if (!v) { return '<td><span class="muted">—</span></td>'; }
+          var isTitle = F.title && f.col === F.title.col;
+          return '<td' + (isTitle ? ' class="t-title"' : '') + '>' + esc(v) + '</td>';
+        }).join('') + '</tr>';
+    }).join('');
+    host.innerHTML = '<table><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
+  }
+
+  /* ── 指标条 ─────────────────────────────────── */
+  function renderMetrics() {
+    var host = $('metrics');
+    var total = records.length;
+    var bs = bucketsOf(F.status);
+    var counts = {}, i;
+    for (i = 0; i < bs.length; i++) { counts[bs[i].key] = 0; }
+    var seen = 0;
+    records.forEach(function (r) {
+      var k = F.status ? bucketKeyOf(r, F.status) : '';
+      if (counts[k] == null) { k = ''; }
+      counts[k]++; seen++;
+    });
+    if (F.status && seen !== total) { console.warn('分组数字不自洽', seen, total); }
+
+    var people = {}, pn = 0;
+    records.forEach(function (r) {
+      var n = (valOf(r, F.user).split(',')[0] || '').trim();
+      if (!n) { return; }
+      if (!people[n]) { people[n] = 1; pn++; }
+    });
+
+    var doing = bucketByHints(DOING_HINTS);
+    var done = bucketByHints(DONE_HINTS);
+    var rate = (total && done) ? Math.round(counts[done.key] / total * 1000) / 10 : null;
+    var pctOf = function (k) { return total ? Math.round(counts[k] / total * 100) : 0; };
+
+    var mCount = 0;
+    function metric(lb, vl, unit, note, color, pct) {
+      mCount++;
+      return '<div class="metric"><div class="lb">' + esc(lb) + '</div>'
+        + '<div class="vl">' + esc(vl) + (unit ? '<small>' + esc(unit) + '</small>' : '') + '</div>'
+        + (note ? '<div class="note">' + esc(note) + '</div>' : '<div class="note">&nbsp;</div>')
+        + (pct == null ? '' : '<div class="track"><i style="width:' + pct + '%;background:' + esc(color) + '"></i></div>')
+        + '</div>';
+    }
+    var html = metric('任务总数', total, '条',
+      F.user ? (pn ? '来自 ' + pn + ' 位' + F.user.name : '尚未指派' + F.user.name) : '',
+      NONE_COLOR, null);
+    var shown = {};
+    if (doing) {
+      shown[doing.key] = 1;
+      html += metric(doing.name, counts[doing.key], '条', '占比 ' + pctOf(doing.key) + '%', doing.color, pctOf(doing.key));
+    }
+    if (done) {
+      shown[done.key] = 1;
+      html += metric(done.name, counts[done.key], '条', '占比 ' + pctOf(done.key) + '%', done.color, pctOf(done.key));
+    }
+    if (rate != null) { html += metric('完成率', rate, '%', counts[done.key] + ' / ' + total + ' 条为「' + done.name + '」', done.color, rate); }
+
+    /* 语义词典没命中时不留空：按计数补位，指标条永远有内容可读 */
+    var fill = bs.slice().sort(function (a, b) { return counts[b.key] - counts[a.key]; });
+    var j, b, cap = (doing && done) ? 4 : 5;
+    for (j = 0; j < fill.length; j++) {
+      b = fill[j];
+      if (shown[b.key] || mCount >= cap) { continue; }
+      html += metric(b.name, counts[b.key], '条', '占比 ' + pctOf(b.key) + '%', b.color, pctOf(b.key));
+      shown[b.key] = 1;
+    }
+
+    var legend = bs.map(function (b) {
+      return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:11px">'
+        + '<i style="width:7px;height:7px;border-radius:2px;background:' + esc(b.color) + ';display:inline-block"></i>'
+        + esc(b.name) + '</span>';
+    }).join('');
+    var chartTitle = F.status ? ((F.user ? F.user.name + ' × ' : '') + F.status.name + ' 分布') : (F.user ? F.user.name + ' 分布' : '分布');
+    html += '<div class="metric metric--chart"><div class="lb">' + esc(chartTitle) + '</div>'
+      + '<div style="font-size:10.5px;color:#8b939f;margin:2px 0 1px;white-space:nowrap;overflow:hidden">' + legend + '</div>'
+      + '<div id="chart"></div></div>';
+    host.innerHTML = html;
+    renderChart();
+  }
+
+  function renderChart() {
+    charts.forEach(function (c) { try { c.dispose(); } catch (e) {} });
+    charts = [];
+    var el = $('chart');
+    if (!el) { return; }
+    if (typeof echarts === 'undefined' || !records.length || !F.status) { el.style.display = 'none'; return; }
+    var bs = bucketsOf(F.status);
+    var names = [], idx = {};
+    records.forEach(function (r) {
+      var n = (valOf(r, F.user).split(',')[0] || '').trim() || UNASSIGNED;
+      if (idx[n] == null) { idx[n] = names.length; names.push(n); }
+    });
+    var series = bs.map(function (b) {
+      return {
+        name: b.name, type: 'bar', stack: 'st', barMaxWidth: 11, barCategoryGap: '34%', itemStyle: { color: b.color },
+        emphasis: { focus: 'series' },
+        data: names.map(function (n) { return 0; })
+      };
+    });
+    records.forEach(function (r) {
+      var n = (valOf(r, F.user).split(',')[0] || '').trim() || UNASSIGNED;
+      var k = bucketKeyOf(r, F.status);
+      var si = 0, i;
+      for (i = 0; i < bs.length; i++) { if (bs[i].key === k) { si = i; } }
+      series[si].data[idx[n]]++;
+    });
+    var ch = echarts.init(el);
+    ch.setOption({
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: '#fff', borderColor: '#E4EAF4', borderWidth: 1,
+        textStyle: { color: '#16203A', fontSize: 12 },
+        extraCssText: 'box-shadow:0 6px 20px rgba(20,34,64,.10);border-radius:8px;'
+      },
+      grid: { left: 2, right: 8, top: 6, bottom: 0, containLabel: true },
+      xAxis: {
+        type: 'value', minInterval: 1, axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#5A6785', fontSize: 10 }, splitLine: { lineStyle: { color: '#EDF1F8' } }
+      },
+      yAxis: {
+        type: 'category', data: names.reverse(), axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#2b2f33', fontSize: 11 }
+      },
+      series: series.map(function (s) { s.data = s.data.reverse(); return s; })
+    });
+    charts.push(ch);
+  }
+  function fixCharts() {
+    var el = $('chart');
+    if (el) { el.style.height = ''; }   /* 交还高度给 CSS，避免 echarts 用首帧塌陷高度写死内联 px */
+    charts.concat(gcharts).forEach(function (c) {
+      try { if (c.getDom && c.getDom().offsetWidth) { c.resize(); } } catch (e) {}
+    });
+  }
+  requestAnimationFrame(fixCharts);
+  setTimeout(fixCharts, 200);
+  window.addEventListener('resize', fixCharts);
+
+  /* ── 图表视图：本表有什么字段，就画什么图 ───────────────
+     不写死任何一种图：select → 环形 / 条形 / 玫瑰，user → 人员任务量，
+     multiSelect → 标签分布，date 族 → 时间趋势，number 族 → 按分组求和 / 均值，
+     语义词典认出「完成」类桶才出完成率仪表盘。缺哪类字段就少哪张图；
+     一张都画不出时给一句说明，而不是摆一张空图。 */
+  var NUM_TYPES = ['number', 'currency', 'rating', 'progress', 'autoNumber'];
+  var DATE_TYPES = ['date', 'createdTime', 'modifiedTime'];
+
+  function nthTypeIn(types, n) {
+    var i, j, c = 0;
+    for (i = 0; i < fields.length; i++) {
+      for (j = 0; j < types.length; j++) {
+        if (fields[i].schema && fields[i].schema.type === types[j]) {
+          if (c === n) { return fields[i]; }
+          c++;
+          break;
+        }
+      }
+    }
+    return null;
+  }
+  function bucketByKey(f, key) {
+    var bs = bucketsOf(f), i;
+    for (i = 0; i < bs.length; i++) { if (bs[i].key === key) { return bs[i]; } }
+    return { key: '', name: noneLabelFor(f), color: NONE_COLOR };
+  }
+  function tallySelect(f, rows) {                // 各桶计数（只画有数据的桶，免得一串 0 挤满轴）
+    var bs = bucketsOf(f), cnt = {}, i, k, out = [];
+    for (i = 0; i < bs.length; i++) { cnt[bs[i].key] = 0; }
+    for (i = 0; i < rows.length; i++) {
+      k = bucketKeyOf(rows[i], f);
+      if (cnt[k] == null) { k = ''; }
+      cnt[k]++;
+    }
+    for (i = 0; i < bs.length; i++) {
+      if (cnt[bs[i].key] > 0) {
+        out.push({ name: bs[i].key === '' ? noneLabelFor(f) : bs[i].name, color: bs[i].color, value: cnt[bs[i].key] });
+      }
+    }
+    return out;
+  }
+  function tallyPeople(f, rows) {                // 取第一个处理人，与看板卡片口径一致
+    var cnt = {}, order = [], i, n;
+    for (i = 0; i < rows.length; i++) {
+      n = (valOf(rows[i], f).split(',')[0] || '').trim() || UNASSIGNED;
+      if (cnt[n] == null) { cnt[n] = 0; order.push(n); }
+      cnt[n]++;
+    }
+    return order.map(function (x) { return { name: x, color: avatarColor(x), value: cnt[x] }; })
+      .sort(function (a, b) { return b.value - a.value; });
+  }
+  function tallyTags(f, rows) {                  // 一条记录的多个标签各自计一次
+    var m = optMap(f), map = {}, order = [], i, j, arr, id, nm;
+    for (i = 0; i < rows.length; i++) {
+      arr = valOf(rows[i], f).split(',');
+      for (j = 0; j < arr.length; j++) {
+        id = arr[j].trim();
+        if (!id) { continue; }
+        nm = m[id] ? m[id].name : id;
+        if (!map[nm]) { map[nm] = { name: nm, color: (m[id] && m[id].color) || NONE_COLOR, value: 0 }; order.push(nm); }
+        map[nm].value++;
+      }
+    }
+    return order.map(function (x) { return map[x]; }).sort(function (a, b) { return b.value - a.value; });
+  }
+  function toDate(v) {                           // 兼容 Excel 序列号（20000~80000）与日期串
+    if (!v) { return null; }
+    var n = Number(v), d;
+    if (isFinite(n) && n > 20000 && n < 80000) { return new Date(Math.round((n - 25569) * 86400000)); }
+    d = new Date(String(v).replace(/\//g, '-').slice(0, 10).replace(/-/g, '/'));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function tallyDates(f, rows) {                 // 跨度 > 92 天按月，否则按天
+    var ds = [], cnt = {}, order = [], i, d;
+    for (i = 0; i < rows.length; i++) {
+      d = toDate(valOf(rows[i], f));
+      if (d) { ds.push(d); }
+    }
+    if (ds.length < 2) { return null; }
+    ds.sort(function (a, b) { return a - b; });
+    var byMonth = (ds[ds.length - 1] - ds[0]) / 86400000 > 92;
+    for (i = 0; i < ds.length; i++) {
+      d = ds[i];
+      var k = byMonth ? (d.getFullYear() + '-' + pad(d.getMonth() + 1)) : (pad(d.getMonth() + 1) + '-' + pad(d.getDate()));
+      if (cnt[k] == null) { cnt[k] = 0; order.push(k); }
+      cnt[k]++;
+    }
+    order.sort();
+    return { byMonth: byMonth, items: order.map(function (x) { return { name: x, value: cnt[x], color: '#6b8cff' }; }) };
+  }
+  function tallyNumber(f, groupF, rows, mode) {  // 按分组求和 / 求均值
+    var g = {}, order = [], i, v, k, b;
+    for (i = 0; i < rows.length; i++) {
+      v = parseFloat(valOf(rows[i], f));
+      if (!isFinite(v)) { continue; }
+      k = groupF ? bucketKeyOf(rows[i], groupF) : '__all__';
+      if (!g[k]) { g[k] = { sum: 0, n: 0 }; order.push(k); }
+      g[k].sum += v;
+      g[k].n++;
+    }
+    return order.map(function (x) {
+      b = groupF ? bucketByKey(groupF, x) : { name: '全部', color: '#6b8cff' };
+      var val = mode === 'avg' ? g[x].sum / g[x].n : g[x].sum;
+      return { name: b.key === '' ? noneLabelFor(groupF) : b.name, color: b.color, value: Math.round(val * 100) / 100 };
+    });
+  }
+
+  /* ── ECharts 公共样式与几种图形 ─────────────── */
+  function echBase() {
+    return {
+      textStyle: { fontFamily: '-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif', color: '#2b2f33' },
+      tooltip: {
+        backgroundColor: '#fff', borderColor: '#E4EAF4', borderWidth: 1,
+        textStyle: { color: '#16203A', fontSize: 12 },
+        extraCssText: 'box-shadow:0 6px 20px rgba(20,34,64,.10);border-radius:8px;'
+      },
+      animationDuration: 420,
+      animationEasing: 'cubicOut'
+    };
+  }
+  function optHBar(items) {                      // 横向条形：每条用自己的色（取自数据表选项色）
+    return {
+      grid: { left: 2, right: 36, top: 6, bottom: 2, containLabel: true },
+      xAxis: {
+        type: 'value', minInterval: 1, axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#8b939f', fontSize: 10 }, splitLine: { lineStyle: { color: '#EDF1F8' } }
+      },
+      yAxis: {
+        type: 'category', inverse: true, data: items.map(function (x) { return x.name; }),
+        axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#2b2f33', fontSize: 11 }
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 15, barCategoryGap: '38%',
+        label: { show: true, position: 'right', fontSize: 11, color: '#5b6270' },
+        itemStyle: { borderRadius: [0, 3, 3, 0] },
+        data: items.map(function (x) { return { value: x.value, itemStyle: { color: x.color } }; })
+      }]
+    };
+  }
+  function optVBar(items) {                      // 纵向柱：条目多时自动斜排标签
+    return {
+      grid: { left: 2, right: 10, top: 14, bottom: 2, containLabel: true },
+      xAxis: {
+        type: 'category', data: items.map(function (x) { return x.name; }),
+        axisLine: { lineStyle: { color: '#E9EBEF' } }, axisTick: { show: false },
+        axisLabel: { color: '#5b6270', fontSize: 10, rotate: items.length > 8 ? 32 : 0 }
+      },
+      yAxis: {
+        type: 'value', axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#8b939f', fontSize: 10 }, splitLine: { lineStyle: { color: '#EDF1F8' } }
+      },
+      series: [{
+        type: 'bar', barMaxWidth: 24, itemStyle: { borderRadius: [3, 3, 0, 0] },
+        label: { show: items.length <= 12, position: 'top', fontSize: 10.5, color: '#5b6270' },
+        data: items.map(function (x) {
+          return { value: x.value, itemStyle: { color: x.color || '#6b8cff' } };
+        })
+      }]
+    };
+  }
+  function optPie(items, kind) {
+    var rose = kind === 'rose', donut = kind === 'donut';
+    var total = items.reduce(function (s, x) { return s + x.value; }, 0);
+    var o = {
+      tooltip: echBase().tooltip,
+      legend: {
+        bottom: 0, icon: 'circle', itemWidth: 7, itemHeight: 7, itemGap: 11,
+        textStyle: { fontSize: 10.5, color: '#5b6270' }
+      },
+      series: [{
+        type: 'pie',
+        radius: rose ? ['16%', '70%'] : (donut ? ['52%', '76%'] : '74%'),
+        center: ['50%', donut ? '43%' : '45%'],
+        roseType: rose ? 'radius' : false, avoidLabelOverlap: true,
+        itemStyle: { borderColor: '#fff', borderWidth: 2 },
+        label: { show: !donut, formatter: '{b} {c}', fontSize: 10.5, color: '#5b6270' },
+        labelLine: { length: 5, length2: 5, lineStyle: { color: '#d5dbe6' } },
+        data: items.map(function (x) { return { name: x.name, value: x.value, itemStyle: { color: x.color } }; })
+      }]
+    };
+    o.tooltip = {
+      trigger: 'item', formatter: '{b}：{c} 条（{d}%）',
+      backgroundColor: '#fff', borderColor: '#E4EAF4', borderWidth: 1,
+      textStyle: { color: '#16203A', fontSize: 12 },
+      extraCssText: 'box-shadow:0 6px 20px rgba(20,34,64,.10);border-radius:8px;'
+    };
+    if (donut) {                                 // 环形中心写总数，图例看分布
+      o.graphic = [
+        { type: 'text', left: 'center', top: '33%', silent: true, style: { text: String(total), fontSize: 23, fontWeight: 'bold', fill: '#16181d', textAlign: 'center' } },
+        { type: 'text', left: 'center', top: '46%', silent: true, style: { text: '条记录', fontSize: 10.5, fill: '#8b939f', textAlign: 'center' } }
+      ];
+    }
+    return o;
+  }
+  function optGauge(pct, color, cap) {
+    return {
+      tooltip: echBase().tooltip,
+      series: [{
+        type: 'gauge', startAngle: 206, endAngle: -26, min: 0, max: 100, radius: '90%', center: ['50%', '56%'],
+        progress: { show: true, width: 16, roundCap: true, itemStyle: { color: color } },
+        axisLine: { lineStyle: { width: 16, color: [[1, '#EEF1F7']] } },
+        pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false },
+        axisLabel: { show: false }, anchor: { show: false },
+        detail: { valueAnimation: true, offsetCenter: [0, '0%'], fontSize: 30, fontWeight: 'bold', color: '#16181d', formatter: '{value}%' },
+        title: { offsetCenter: [0, '30%'], fontSize: 11, color: '#8b939f' },
+        data: [{ value: pct, name: cap }]
+      }]
+    };
+  }
+  function optLine(items, color, filled) {
+    return {
+      grid: { left: 2, right: 12, top: 14, bottom: 2, containLabel: true },
+      xAxis: {
+        type: 'category', boundaryGap: false, data: items.map(function (x) { return x.name; }),
+        axisLine: { lineStyle: { color: '#E9EBEF' } }, axisTick: { show: false },
+        axisLabel: { color: '#5b6270', fontSize: 10 }
+      },
+      yAxis: {
+        type: 'value', minInterval: 1, axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#8b939f', fontSize: 10 }, splitLine: { lineStyle: { color: '#EDF1F8' } }
+      },
+      series: [{
+        type: 'line', smooth: true, symbol: 'circle', symbolSize: 6, showSymbol: items.length <= 24,
+        lineStyle: { width: 2.4, color: color }, itemStyle: { color: color },
+        areaStyle: filled ? {
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: tint(color, .26) }, { offset: 1, color: tint(color, .02) }]
+          }
+        } : { opacity: 0 },
+        data: items.map(function (x) { return x.value; })
+      }]
+    };
+  }
+
+  /* ── 图表清单：按字段角色动态拼，缺字段就不出现 ───────── */
+  function roleLine() {
+    var p = [];
+    if (F.status) { p.push('分组轴「' + F.status.name + '」'); }
+    if (F.sub) { p.push('次要分组「' + F.sub.name + '」'); }
+    if (F.user) { p.push('人员「' + F.user.name + '」'); }
+    if (F.tag) { p.push('标签「' + F.tag.name + '」'); }
+    if (F.date) { p.push('日期「' + F.date.name + '」'); }
+    if (F.num) { p.push('数值「' + F.num.name + '」'); }
+    return p.length ? '字段角色自动识别：' + p.join(' · ') : '';
+  }
+  function pieDef(items, pref) {                  // 只有一个取值时饼/玫瑰就是一块色，不如条形直白
+    return items.length > 1 ? pref : 'bar';
+  }
+  function oneHint(items) {
+    return items.length === 1 ? ' · 只有 1 个取值在用' : '';
+  }
+  function curKind(s) {                           // 记着的图形若已不在本图的候选里（换表/改字段），退回默认
+    var k = kinds[s.id], i;
+    for (i = 0; i < s.kinds.length; i++) { if (s.kinds[i][0] === k) { return k; } }
+    return s.def;
+  }
+  function chartSpecs(rows) {
+    var out = [], n = rows.length, it, done = bucketByHints(DONE_HINTS), rate;
+    var suffix = kw ? ' · 已按搜索过滤' : '';
+
+    if (F.status) {
+      it = tallySelect(F.status, rows);
+      if (it.length) {
+        out.push({
+          id: 'status', title: F.status.name + ' 分布', def: pieDef(it, 'donut'), data: it,
+          note: 'select 字段「' + F.status.name + '」· ' + n + ' 条' + oneHint(it) + suffix,
+          kinds: [['donut', '环形'], ['bar', '条形'], ['rose', '玫瑰']],
+          build: function (k, d) { return k === 'bar' ? optHBar(d) : optPie(d, k); }
+        });
+      }
+    }
+    if (F.user) {
+      it = tallyPeople(F.user, rows);
+      if (it.length) {
+        out.push({
+          id: 'user', title: F.user.name + ' 任务量', def: 'bar', data: it,
+          note: 'user 字段「' + F.user.name + '」· 多处理人取第一个' + suffix,
+          kinds: [['bar', '条形'], ['pie', '环形']],
+          build: function (k, d) { return k === 'bar' ? optHBar(d) : optPie(d, 'donut'); }
+        });
+      }
+    }
+    if (F.sub) {
+      it = tallySelect(F.sub, rows);
+      if (it.length) {
+        out.push({
+          id: 'sub', title: F.sub.name + ' 分布', def: pieDef(it, 'rose'), data: it,
+          note: '次要 select 字段「' + F.sub.name + '」· ' + n + ' 条' + oneHint(it) + suffix,
+          kinds: [['rose', '玫瑰'], ['donut', '环形'], ['bar', '条形']],
+          build: function (k, d) { return k === 'bar' ? optHBar(d) : optPie(d, k); }
+        });
+      }
+    }
+    if (F.tag) {
+      it = tallyTags(F.tag, rows);
+      if (it.length) {
+        out.push({
+          id: 'tag', title: F.tag.name + ' 分布', def: 'bar', data: it,
+          note: 'multiSelect 字段「' + F.tag.name + '」· 一条记录可计入多个' + suffix,
+          kinds: [['bar', '条形'], ['donut', '环形']],
+          build: function (k, d) { return k === 'bar' ? optHBar(d) : optPie(d, 'donut'); }
+        });
+      }
+    }
+    if (F.date) {
+      var tl = tallyDates(F.date, rows);
+      if (tl) {
+        out.push({
+          id: 'date', title: F.date.name + ' 趋势', def: 'line', data: tl.items, tall: 1,
+          note: 'date 字段「' + F.date.name + '」· 按' + (tl.byMonth ? '月' : '天') + '汇总' + suffix,
+          kinds: [['line', '折线'], ['area', '面积'], ['bar', '柱状']],
+          build: function (k, d) { return k === 'bar' ? optVBar(d) : optLine(d, '#6b8cff', k === 'area'); }
+        });
+      }
+    }
+    if (F.num && F.status) {
+      var sum = tallyNumber(F.num, F.status, rows, 'sum'), avg = tallyNumber(F.num, F.status, rows, 'avg');
+      if (sum.length) {
+        out.push({
+          id: 'num', title: F.num.name + ' 聚合', def: 'sum', data: sum, dataAvg: avg,
+          note: 'number 字段「' + F.num.name + '」· 按「' + F.status.name + '」' + suffix,
+          kinds: [['sum', '求和'], ['avg', '均值']],
+          build: function (k, d, sp) { return optVBar(k === 'avg' ? sp.dataAvg : d); }
+        });
+      }
+    }
+    rate = (F.status && done && n) ? Math.round(tallySelect(F.status, rows).reduce(function (s, x) {
+      return s + (x.name === done.name ? x.value : 0);
+    }, 0) / n * 1000) / 10 : null;
+    if (rate != null) {
+      out.push({
+        id: 'rate', title: '完成率', def: 'gauge', data: [{ value: rate }], tall: 1,
+        note: '「' + done.name + '」占全部 ' + n + ' 条的比例' + suffix,
+        kinds: [],
+        build: function (k, d) { return optGauge(d[0].value, done.color, done.name); }
+      });
+    }
+    return out;
+  }
+
+  function renderCharts() {
+    var host = $('charts');
+    gcharts.forEach(function (c) { try { c.dispose(); } catch (e) {} });
+    gcharts = [];
+    if (!records.length) {
+      host.innerHTML = '<div class="empty" style="margin:22px auto"><b>这张数据表还没有记录</b>先在多维表格里添加记录，或点右上角「新建记录」</div>';
+      return;
+    }
+    var specs = chartSpecs(visible());
+    if (!specs.length) {
+      host.innerHTML = '<div class="empty" style="margin:22px auto;text-align:left;max-width:620px">'
+        + '<b>这张表暂时画不出图表</b>图表是按字段类型自动适配的：select → 分布环形/条形，user → 人员任务量，'
+        + 'multiSelect → 标签分布，date → 时间趋势，number → 按分组求和/均值。<br>'
+        + '给数据表加一个上述类型的字段并填上值，刷新本页就会出现对应的图。</div>';
+      return;
+    }
+    var html = specs.map(function (s) {
+      var kind = curKind(s);
+      var btns = s.kinds.length ? '<div class="ctype" role="group" aria-label="图形">' + s.kinds.map(function (k) {
+        return '<button type="button" data-ck="' + s.id + '" data-kind="' + k[0] + '" aria-pressed="'
+          + (k[0] === kind ? 'true' : 'false') + '">' + k[1] + '</button>';
+      }).join('') + '</div>' : '';
+      return '<section class="ccard"><div class="ccard-hd"><div class="ccard-tt"><b>' + esc(s.title) + '</b>'
+        + '<span>' + esc(s.note) + '</span></div>' + btns + '</div>'
+        + '<div class="cbox' + (s.tall ? ' cbox--tall' : '') + '" id="ck-' + s.id + '"></div></section>';
+    }).join('');
+    host.innerHTML = '<div class="cg-head"><b>' + specs.length + ' 个图表</b><span>' + esc(roleLine()) + '</span></div>'
+      + '<div class="cgrid">' + html + '</div>';
+
+    if (typeof echarts === 'undefined') { return; }
+    specs.forEach(function (s) {
+      var el = $('ck-' + s.id);
+      if (!el) { return; }
+      var merged = echBase(), o = s.build(curKind(s), s.data, s), k;
+      for (k in o) { merged[k] = o[k]; }
+      var ch = echarts.init(el);
+      ch.setOption(merged);
+      gcharts.push(ch);
+    });
+  }
+
+  /* ── 抽屉（详情 / 编辑）─────────────────────── */
+  function chipRow(f, value, canEdit) {
+    var bs = bucketsOf(f);
+    var nl = noneLabelFor(f);
+    var html = bs.map(function (b, i) {
+      var on = (value === b.key) ? ' on' : '';
+      var nm = (i === 0) ? nl : b.name;
+      return '<button type="button" class="chip' + on + '" data-set="' + f.col + '" data-val="' + esc(b.key) + '"'
+        + (canEdit ? '' : ' disabled')
+        + ' style="--chip-bg:' + tint(b.color, .16) + ';--chip-bd:' + tint(b.color, .5) + ';--chip-fg:' + darken(b.color, .35) + '">'
+        + esc(nm) + '</button>';
+    }).join('');
+    return '<div class="chips">' + html + '</div>' + (canEdit ? '<div class="hint">点击即时同步到数据表</div>' : '');
+  }
+  function tagChips(f, value, canEdit) {
+    var ids = value ? value.split(',') : [];
+    var os = (f.schema && f.schema.options) || [];
+    var html = os.map(function (o) {
+      var on = ids.indexOf(o.id) >= 0 ? ' on' : '';
+      return '<button type="button" class="chip' + on + '" data-tag="' + f.col + '" data-val="' + esc(o.id) + '"'
+        + (canEdit ? '' : ' disabled')
+        + ' style="--chip-bg:' + tint(o.color || '#8c8c8c', .16) + ';--chip-bd:' + tint(o.color || '#8c8c8c', .5) + ';--chip-fg:' + darken(o.color || '#8c8c8c', .35) + '">'
+        + esc(o.name) + '</button>';
+    }).join('');
+    return '<div class="chips">' + (html || '<span class="hint">该字段还没有定义选项</span>') + '</div>'
+      + (canEdit && os.length ? '<div class="hint">可多选，点击即时同步</div>' : '');
+  }
+
+  function renderDrawer() {
+    if (drawerRow == null) { return; }
+    var r = null, i;
+    for (i = 0; i < records.length; i++) { if (records[i].row === drawerRow) { r = records[i]; } }
+    if (!r) { closeDrawer(); return; }
+    $('dRow').textContent = '记录 #' + pad(r.row) + (editable ? '' : ' · 只读');
+    $('dTitle').textContent = valOf(r, F.title) || '（未填标题）';
+    var html = '';
+    if (editable && F.title) {
+      html += '<div class="fld"><label>' + esc(F.title.name) + '</label><input type="text" id="dInputTitle" value="' + esc(valOf(r, F.title)) + '"></div>';
+    }
+    if (F.status) { html += '<div class="fld"><label>' + esc(F.status.name) + '</label>' + chipRow(F.status, valOf(r, F.status), editable) + '</div>'; }
+    if (F.sub) { html += '<div class="fld"><label>' + esc(F.sub.name) + '</label>' + chipRow(F.sub, valOf(r, F.sub), editable) + '</div>'; }
+    if (F.user) {
+      html += '<div class="fld"><label>' + esc(F.user.name) + '</label>';
+      if (editable) { html += '<input type="text" id="dInputWho" value="' + esc(valOf(r, F.user)) + '" placeholder="多个用英文逗号分隔">'; }
+      else { html += '<div class="t-people">' + peopleHtml(valOf(r, F.user), true) + '</div>'; }
+      html += '</div>';
+    }
+    if (F.tag) { html += '<div class="fld"><label>' + esc(F.tag.name) + '</label>' + tagChips(F.tag, valOf(r, F.tag), editable) + '</div>'; }
+    var rest = fields.filter(function (f) { return [F.title, F.status, F.sub, F.user, F.tag].indexOf(f) < 0; });
+    if (rest.length) {
+      html += '<div class="fld"><label>其余字段</label><div class="hint">'
+        + rest.map(function (f) { return esc(f.name) + '：' + (esc(valOf(r, f)) || '—'); }).join('<br>') + '</div></div>';
+    }
+    $('dBody').innerHTML = html;
+    $('dDel').style.display = editable ? '' : 'none';
+    if (editable) {
+      var ti = $('dInputTitle'), wi = $('dInputWho');
+      if (ti) {
+        ti.addEventListener('keydown', function (e) { if (e.key === 'Enter') { ti.blur(); } });
+        ti.addEventListener('blur', function () {
+          if (ti.value !== valOf(r, F.title)) { write(F.title.col, r.row, ti.value); }
+        });
+      }
+      if (wi) {
+        wi.addEventListener('keydown', function (e) { if (e.key === 'Enter') { wi.blur(); } });
+        wi.addEventListener('blur', function () {
+          if (wi.value !== valOf(r, F.user)) { write(F.user.col, r.row, wi.value); }
+        });
+      }
+    }
+    $('dBody').onclick = function (e) {
+      var el = e.target.closest ? e.target.closest('[data-set],[data-tag]') : null;
+      if (!el || !editable) { return; }
+      var col = Number(el.getAttribute('data-set') || el.getAttribute('data-tag'));
+      var val = el.getAttribute('data-val') || '';
+      if (el.hasAttribute('data-set')) {
+        write(col, drawerRow, val === '' ? null : val);
+      } else {
+        var cur = '', j;
+        for (j = 0; j < records.length; j++) { if (records[j].row === drawerRow) { cur = String(records[j].values[col] || ''); } }
+        var ids = cur ? cur.split(',') : [];
+        var at = ids.indexOf(val);
+        if (at >= 0) { ids.splice(at, 1); } else { ids.push(val); }
+        write(col, drawerRow, ids.join(','));
+      }
+    };
+  }
+  function openDrawer(row) {
+    drawerRow = row;
+    $('mask').style.display = 'block';
+    $('drawer').className = 'drawer on';
+    $('drawer').setAttribute('aria-hidden', 'false');
+    renderDrawer();
+  }
+  function closeDrawer() {
+    drawerRow = null;
+    $('drawer').className = 'drawer';
+    $('drawer').setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.modal.on')) { $('mask').style.display = 'none'; }
+  }
+
+  /* ── 弹层 ───────────────────────────────────── */
+  function openModal(id) { $('mask').style.display = 'block'; $(id).className = 'modal on'; }
+  function closeModal(id) { $(id).className = 'modal'; if (!document.querySelector('.modal.on') && drawerRow == null) { $('mask').style.display = 'none'; } }
+  function fillSelect(sel, f, preset) {
+    var bs = bucketsOf(f), html = '', i;
+    var nl = f ? noneLabelFor(f) : NONE_LABEL;
+    for (i = 0; i < bs.length; i++) {
+      if (i === 0) { html += '<option value="">' + esc(nl) + '</option>'; continue; }
+      html += '<option value="' + esc(bs[i].key) + '">' + esc(bs[i].name) + '</option>';
+    }
+    sel.innerHTML = html;
+    sel.value = preset || '';
+  }
+
+  /* 「新建记录」弹层：标题、字段名、显隐全部跟着真实字段走 —— 换一张表不用改代码 */
+  function syncNewForm(preset) {
+    var map = [['fTitle', 'lblTitle', F.title, '标题'],
+               ['fStatus', 'lblStatus', F.status, '状态'],
+               ['fWho', 'lblWho', F.user, '人员'],
+               ['fPri', 'lblPri', F.sub, '次要分组']];
+    var i, m;
+    for (i = 0; i < map.length; i++) {
+      m = map[i];
+      $(m[0]).style.display = m[2] ? '' : 'none';
+      $(m[1]).textContent = m[2] ? m[2].name : m[3];
+    }
+    if (F.status) { fillSelect($('nStatus'), F.status, preset || ''); }
+    if (F.sub) { fillSelect($('nPri'), F.sub, ''); }
+  }
+
+  /* 分组维度选择器：列的全是 select 字段，选中项 = 当前生效的分组轴 */
+  function syncGroupPicker() {
+    var ss = selectFields(), i, html = '', auto, autoPick;
+    if (!F.status) {                               // 一个 select 字段都没有 → 没有可分组的东西
+      $('pickGroup').style.display = 'none';
+      return;
+    }
+    for (i = 0; i < ss.length; i++) { html += '<option value="' + esc(ss[i].name) + '">' + esc(ss[i].name) + '</option>'; }
+    $('groupBy').innerHTML = html;
+    $('groupBy').value = F.status.name;
+    $('pickGroup').style.display = '';
+    $('groupBy').disabled = ss.length <= 1;        // 只有一个可选字段时没得挑，仍显示当前分组轴
+    /* 提示这一轴是自动认出来的还是用户手选的 —— 别让人以为系统猜错了 */
+    auto = pickGroupField();
+    autoPick = !groupPref || (auto && auto.col === F.status.col);
+    $('pickHint').textContent = (ss.length <= 1 || autoPick) ? '自动' : '手选';
+  }
+
+  /* ── 视图切换：看板 / 表格 / 图表 ─────────────
+     三个视图共用一份数据与一个搜索词；切换只动显隐，不重新拉数据。 */
+  var VIEWS = ['board', 'table', 'chart'];
+  function viewBtn(v) {
+    var cap = v.charAt(0).toUpperCase() + v.slice(1);
+    return $('v' + cap);
+  }
+  function applyView() {
+    var i, b;
+    for (i = 0; i < VIEWS.length; i++) {
+      b = viewBtn(VIEWS[i]);
+      if (b) { b.setAttribute('aria-pressed', view === VIEWS[i] ? 'true' : 'false'); }
+    }
+    $('board').style.display = view === 'board' ? 'flex' : 'none';
+    $('sheet').style.display = view === 'table' ? 'block' : 'none';
+    $('charts').style.display = view === 'chart' ? 'block' : 'none';
+    $('metrics').style.display = view === 'table' ? 'none' : 'flex';   // 表格视图要宽度，让出指标条
+    if (view === 'board') { renderBoard(); }
+    else if (view === 'table') { renderTable(); }
+    else { renderCharts(); }
+  }
+  function rerender() {                          // 搜索词变化后重画当前视图
+    if (view === 'board') { renderBoard(true); }
+    else if (view === 'table') { renderTable(); }
+    else { renderCharts(); }
+    fixCharts();
+  }
+  function setView(v) {
+    if (view === v) { return; }
+    view = v;
+    savePref(PREF_VIEW, v);                   // 停在哪个视图是页面级习惯，不按数据表分
+    applyView();
+    fixCharts();
+    setTimeout(fixCharts, 60);
+  }
+  function saveKinds() {
+    savePref(prefKey(PREF_KINDS), JSON.stringify(kinds));
+  }
+
+  /* ── 数据读写 ───────────────────────────────── */
+  /* 一个多维表格（= 一个 workbook）里可以有多张数据表（sheet）：read() 返回的 `tables`
+     就是全部；旧后端没有这个字段时按单表回落，行为与从前完全一致。
+     切表是纯前端的事 —— read 不接受参数，换表只是换用哪一份 fields / records 重画。 */
+  function buildTables(s) {
+    if (s && s.tables && s.tables.length) { return s.tables; }
+    return [{
+      sheetId: (s && s.sheetId) || null, name: '', viewMeta: s ? s.viewMeta : null,
+      fields: (s && s.fields) || [], records: (s && s.records) || []
+    }];
+  }
+  function tableName(i) {
+    var t = tables[i];
+    return (t && t.name) || ('数据表 ' + (i + 1));
+  }
+  function useTable(i) {                          // 把某张表的字段与记录接到视图层（不改数据）
+    activeIdx = i;
+    var t = tables[i] || snap || {};
+    fields = t.fields || [];
+    records = t.records || [];
+    resolveFields();
+  }
+  /* 写指令定位：首表就是后端认的默认表（sheetOrder[0]），不带 sheetId 走原路；
+     其余表必须带，否则会写回首表 —— 改的是 A 表、动的是 B 表。 */
+  function curSheetId() {
+    if (tables.length <= 1 || activeIdx === 0) { return null; }
+    return (tables[activeIdx] && tables[activeIdx].sheetId) || null;
+  }
+  /* 分组轴 / 图形选择按数据表隔离：两张表的字段与选项完全不同，串着用会得到一张错图。
+     键尾拼 sheetId（宿主偏好键上限 64 字符，超长就退回页面级 —— 宁可不记也不串味）。 */
+  function prefKey(base) {
+    var t = tables.length > 1 ? tables[activeIdx] : null;
+    var sid = t ? String(t.sheetId || '') : '';
+    return (sid && (base + '.' + sid).length <= 64) ? base + '.' + sid : base;
+  }
+  async function loadTablePrefs() {
+    groupPref = null; kinds = {};
+    if (!(window.repoHost && window.repoHost.getPref)) { return; }
+    try { groupPref = (await window.repoHost.getPref(prefKey(PREF_GROUP))) || null; } catch (e) { groupPref = null; }
+    try {
+      var kk = await window.repoHost.getPref(prefKey(PREF_KINDS));
+      if (kk) { kinds = JSON.parse(kk) || {}; }
+    } catch (e) { kinds = {}; }
+  }
+  function savePref(key, val) {
+    try { if (window.repoHost && window.repoHost.setPref) { window.repoHost.setPref(key, val); } } catch (e) { /* 偏好写失败不影响本次渲染 */ }
+  }
+  function renderTabs() {
+    var host = $('tabs');
+    if (tables.length <= 1) { host.hidden = true; host.innerHTML = ''; return; }
+    host.hidden = false;
+    host.innerHTML = tables.map(function (t, i) {
+      return '<button type="button" class="tab" data-idx="' + i + '" aria-pressed="' + (i === activeIdx ? 'true' : 'false') + '">'
+        + esc(tableName(i)) + '<span class="n">' + ((t.records || []).length) + '</span></button>';
+    }).join('');
+  }
+  async function enterTable(i, silent) {          // 换表：换数据 → 换偏好 → 整套重画
+    useTable(i);
+    await loadTablePrefs();
+    resolveFields();                              // groupPref 变了，字段角色跟着重认
+    renderTabs();
+    render();
+    rerender();
+    if (!silent) { toast('已切到「' + tableName(i) + '」'); }
+  }
+  function switchTable(i) {
+    if (i === activeIdx || !tables[i]) { return; }
+    kw = ''; $('q').value = ''; $('qClr').style.display = 'none';   // 搜索词属于上一张表
+    pendingDelete = null;
+    closeDrawer();                                                  // 抽屉里的行号也属于上一张表
+    savePref(PREF_TABLE, String(tables[i].sheetId || ''));
+    enterTable(i);
+  }
+  function render() {
+    $('btnNew').style.display = editable ? '' : 'none';
+    syncGroupPicker();
+    renderMetrics();
+    applyView();
+    if (drawerRow != null) { renderDrawer(); }
+    var t = stripSite(document.title);
+    var d = new Date();
+    var tm = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    $('pageTitle').textContent = t;
+    /* 搜索覆盖所有字段，占位文案就写成通用的，不写死字段名 */
+    $('q').placeholder = '搜索' + fields.length + ' 个字段的任意内容';
+    $('meta').innerHTML = (tables.length > 1 ? '数据表「' + esc(tableName(activeIdx)) + '」<i>·</i>' : '')
+      + '<b>' + records.length + '</b> 条记录<i>·</i><b>' + fields.length + '</b> 个字段<i>·</i>'
+      + (editable ? '可编辑' : '只读') + '<i>·</i>同步于 ' + esc(tm);
+    $('footSrc').textContent = '数据源 · ' + t;
+    $('footSync').textContent = (editable ? '可编辑' : '只读')
+      + (canDrag() ? ' · 拖拽卡片可改' + F.status.name : '') + ' · 已同步 ' + tm;
+  }
+  async function reload() {
+    snap = await api.read();
+    editable = snap.editable !== false;
+    tables = buildTables(snap);
+    if (pendingSheetId) {                         // 首次读：回到上次看的那张表（还在的话）
+      for (var i = 0; i < tables.length; i++) { if (tables[i].sheetId === pendingSheetId) { activeIdx = i; } }
+      pendingSheetId = null;
+    }
+    if (activeIdx >= tables.length) { activeIdx = Math.max(0, tables.length - 1); }
+    useTable(activeIdx);
+    renderTabs();
+    render();
+  }
+  async function write(col, row, value, okMsg) {
+    try {
+      await api.setCellValue(row, col, value, curSheetId());
+      await reload();
+      toast(okMsg || '已同步到数据表');
+    } catch (e) {
+      toast('写入失败：' + (e && e.message ? e.message : e), true);
+    }
+  }
+
+  /* ── 事件绑定 ───────────────────────────────── */
+  $('q').addEventListener('input', function () {
+    kw = this.value.trim();
+    $('qClr').style.display = kw ? 'block' : 'none';
+    rerender();
+  });
+  $('qClr').addEventListener('click', function () {
+    $('q').value = ''; kw = ''; this.style.display = 'none'; $('q').focus();
+    rerender();
+  });
+  $('vBoard').addEventListener('click', function () { setView('board'); });
+  $('vTable').addEventListener('click', function () { setView('table'); });
+  $('vChart').addEventListener('click', function () { setView('chart'); });
+  $('tabs').addEventListener('click', function (e) {   // 切换多维表格里的哪张数据表
+    var b = e.target.closest ? e.target.closest('.tab') : null;
+    if (!b) { return; }
+    switchTable(Number(b.getAttribute('data-idx')));
+  });
+  $('charts').addEventListener('click', function (e) {   // 每张卡片右上角的图形切换
+    var b = e.target.closest ? e.target.closest('[data-kind]') : null;
+    if (!b) { return; }
+    var ck = b.getAttribute('data-ck');
+    if (!ck) { return; }
+    kinds[ck] = b.getAttribute('data-kind');
+    saveKinds();
+    renderCharts();
+    fixCharts();
+  });
+  $('board').addEventListener('click', function (e) {
+    if (Date.now() - justDragged < 260) { return; }   /* 拖完那一下不当作点击，免得顺手弹抽屉 */
+    var el = e.target.closest ? e.target.closest('[data-add]') : null;
+    if (el) {
+      syncNewForm(el.getAttribute('data-add'));
+      $('nTitle').value = ''; $('nWho').value = '';
+      $('nTitle').placeholder = '写一句能看懂的话';
+      openModal('mNew');
+      (F.title ? $('nTitle') : (F.status ? $('nStatus') : $('nOk'))).focus();
+      return;
+    }
+    var card = e.target.closest ? e.target.closest('.card[data-row]') : null;
+    if (card) { openDrawer(Number(card.getAttribute('data-row'))); }
+  });
+  $('board').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') { return; }
+    var card = e.target.closest ? e.target.closest('.card[data-row]') : null;
+    if (card) { openDrawer(Number(card.getAttribute('data-row'))); }
+  });
+
+  /* ── 拖拽卡片改状态 ─────────────────────────── */
+  var dragRow = null, dragFrom = '', dragName = '', dropCol = null, justDragged = 0;
+
+  function colAt(e) {
+    var el = document.elementFromPoint ? document.elementFromPoint(e.clientX, e.clientY) : e.target;
+    return el && el.closest ? el.closest('.col[data-bucket]') : null;
+  }
+  function markCol(col) {
+    if (dropCol === col) { return; }
+    if (dropCol) { dropCol.classList.remove('drop-on'); }
+    dropCol = col;
+    if (col) { col.classList.add('drop-on'); }
+  }
+  function dragCleanup() {
+    var d = $('board').querySelector('.card.dragging');
+    if (d) { d.classList.remove('dragging'); }
+    if (dropCol) { dropCol.classList.remove('drop-on'); }
+    dropCol = null; dragRow = null; dragFrom = '';
+    document.body.classList.remove('dragging');
+  }
+
+  $('board').addEventListener('dragstart', function (e) {
+    var card = e.target.closest ? e.target.closest('.card[data-row]') : null;
+    if (!card) { return; }
+    if (!canDrag()) { e.preventDefault(); return; }
+    var r = findRecord(Number(card.getAttribute('data-row')));
+    if (!r) { e.preventDefault(); return; }
+    dragRow = r.row;
+    dragFrom = bucketKeyOf(r, F.status);
+    dragName = valOf(r, F.title) || ('#' + pad(r.row));
+    card.classList.add('dragging');
+    document.body.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'row-' + r.row); } catch (x) {}
+    }
+  });
+  $('board').addEventListener('dragover', function (e) {
+    if (dragRow == null) { return; }
+    var host = $('board');
+    e.preventDefault();                                   /* 不 preventDefault 就不会触发 drop */
+    if (e.dataTransfer) { e.dataTransfer.dropEffect = 'move'; }
+    var box = host.getBoundingClientRect();               /* 贴边自动横向滚动，列多时不用先手动滚 */
+    if (e.clientX < box.left + 56) { host.scrollLeft -= 18; }
+    else if (e.clientX > box.right - 56) { host.scrollLeft += 18; }
+    markCol(colAt(e));
+  });
+  $('board').addEventListener('dragleave', function (e) {
+    if (dragRow == null) { return; }
+    if (!e.relatedTarget || !$('board').contains(e.relatedTarget)) { markCol(null); }
+  });
+  $('board').addEventListener('drop', function (e) {
+    if (dragRow == null) { return; }
+    e.preventDefault();
+    var col = colAt(e);
+    var row = dragRow, from = dragFrom, nm = dragName;
+    var key = col ? col.getAttribute('data-bucket') : null;
+    var to = col ? col.getAttribute('data-bname') : '';
+    dragCleanup();
+    justDragged = Date.now();
+    if (key == null) { return; }                          /* 丢在列外（工具栏/空白），当没发生 */
+    if (key === from) { toast('「' + nm + '」已在「' + to + '」列'); return; }
+    write(F.status.col, row, key === '' ? null : key, '「' + nm + '」已移到「' + to + '」');
+  });
+  $('board').addEventListener('dragend', function () { dragCleanup(); justDragged = Date.now(); });
+  $('sheet').addEventListener('click', function (e) {
+    var tr = e.target.closest ? e.target.closest('tr') : null;
+    if (!tr || !tr.parentNode || tr.parentNode.tagName !== 'TBODY') { return; }
+    var rows = visible(), i = Array.prototype.indexOf.call(tr.parentNode.children, tr);
+    if (rows[i]) { openDrawer(rows[i].row); }
+  });
+  $('btnNew').addEventListener('click', function () {
+    var bs = F.status ? bucketsOf(F.status) : [];
+    syncNewForm(bs.length > 1 ? bs[1].key : '');
+    $('nTitle').value = ''; $('nWho').value = '';
+    openModal('mNew');
+    (F.title ? $('nTitle') : (F.status ? $('nStatus') : $('nOk'))).focus();
+  });
+  $('nCancel').addEventListener('click', function () { closeModal('mNew'); });
+  $('nOk').addEventListener('click', async function () {
+    var t = F.title ? $('nTitle').value.trim() : '';
+    if (F.title && !t) { toast('请先填写' + F.title.name, true); $('nTitle').focus(); return; }
+    var values = {};
+    if (F.title) { values[F.title.col] = t; }
+    if (F.status && $('nStatus').value) { values[F.status.col] = $('nStatus').value; }
+    if (F.sub && $('nPri').value) { values[F.sub.col] = $('nPri').value; }
+    if (F.user && $('nWho').value.trim()) { values[F.user.col] = $('nWho').value.trim(); }
+    try {
+      await api.appendRecord(values, curSheetId());
+      closeModal('mNew');
+      await reload();
+      toast('已新增 1 条记录');
+    } catch (e) { toast('新增失败：' + (e && e.message ? e.message : e), true); }
+  });
+  $('groupBy').addEventListener('change', function () {
+    groupPref = this.value || null;
+    savePref(prefKey(PREF_GROUP), groupPref || '');
+    resolveFields();
+    render();
+    rerender();                                  // 看板要回到第一列，图表轴也跟着换
+    toast('已按「' + (F.status ? F.status.name : '') + '」分组');
+  });
+  $('dClose').addEventListener('click', closeDrawer);
+  $('dDone').addEventListener('click', closeDrawer);
+  $('mask').addEventListener('click', function () {
+    if (document.querySelector('.modal.on')) {
+      closeModal(document.querySelector('.modal.on').id);
+    } else { closeDrawer(); }
+  });
+  $('dDel').addEventListener('click', function () {
+    if (drawerRow == null) { return; }
+    var r = null, i;
+    for (i = 0; i < records.length; i++) { if (records[i].row === drawerRow) { r = records[i]; } }
+    if (!r) { return; }
+    pendingDelete = drawerRow;
+    $('delText').textContent = '「' + (valOf(r, F.title) || '未命名记录') + '」将从数据表中移除，此操作不可撤销。';
+    openModal('mDel');
+  });
+  $('delCancel').addEventListener('click', function () { pendingDelete = null; closeModal('mDel'); });
+  $('delOk').addEventListener('click', async function () {
+    if (pendingDelete == null) { return; }
+    try {
+      await api.removeRecordAt(pendingDelete, curSheetId());
+      pendingDelete = null;
+      closeModal('mDel');
+      closeDrawer();
+      await reload();
+      toast('记录已删除');
+    } catch (e) { toast('删除失败：' + (e && e.message ? e.message : e), true); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') { return; }
+    var m = document.querySelector('.modal.on');
+    if (m) { closeModal(m.id); } else { closeDrawer(); }
+  });
+
+  /* ── 启动 ───────────────────────────────────── */
+  window.repoHost && window.repoHost.onTitle(function () { $('pageTitle').textContent = stripSite(); });
+  if (!api) {
+    $('meta').textContent = '未绑定数据表';
+    $('board').innerHTML = '<div class="empty" style="flex:1;text-align:left;max-width:640px;margin:0 auto">'
+      + '<b>这一页需要挂在一张多维表格下打开</b>'
+      + '<span style="display:block;margin-top:10px;line-height:1.9">'
+      + '· 已挂在表格下：检查 HTML 头部 repo-datatable-source 那一行的 content（应填数据表 slugId）是否填对'
+      + '<br>· 想复用到别的表：把上面那个 content 换成目标数据表的 slugId，或在本页所在表格下新建一个 HTML 页面并粘贴本页代码'
+      + '<br>· 列的角色（标题 / 分组 / 人员 / 标签）由字段类型与字段名自动识别，无需改代码</span></div>';
+    return;
+  }
+  $('meta').textContent = '正在读取数据表…';
+  (async function () {
+    if (window.repoHost && window.repoHost.getPref) {
+      try {                                   // 上次停在哪一屏（页面级）
+        var v = await window.repoHost.getPref(PREF_VIEW);
+        if (v === 'board' || v === 'table' || v === 'chart') { view = v; }
+      } catch (e) { /* 读不到就用默认看板 */ }
+      try {                                   // 上次看的是哪张数据表（多表时才有意义）
+        pendingSheetId = (await window.repoHost.getPref(PREF_TABLE)) || null;
+      } catch (e) { pendingSheetId = null; }
+    }
+    await reload();                           // 先拿到数据与表清单
+    await loadTablePrefs();                   // 再按激活的那张表读分组轴 / 图形偏好
+    resolveFields();                          // 两件事都定了才认字段角色，然后重画一遍
+    renderTabs();
+    render();
+    rerender();
+  })().catch(function (e) {
+    $('board').innerHTML = '<div class="empty" style="flex:1"><b>加载失败</b>' + esc(e && e.message ? e.message : e) + '</div>';
+    $('meta').textContent = '读取失败';
+  });
+})();
+</script>
+</body>
+</html>

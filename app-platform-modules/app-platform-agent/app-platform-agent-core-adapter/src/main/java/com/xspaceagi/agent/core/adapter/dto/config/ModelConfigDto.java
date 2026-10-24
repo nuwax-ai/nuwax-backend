@@ -2,11 +2,7 @@ package com.xspaceagi.agent.core.adapter.dto.config;
 
 import com.xspaceagi.agent.core.adapter.dto.CreatorDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.ModelConfig;
-import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
-import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
-import com.xspaceagi.agent.core.spec.enums.ModelFunctionCallEnum;
-import com.xspaceagi.agent.core.spec.enums.ModelTypeEnum;
-import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
+import com.xspaceagi.agent.core.spec.enums.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -26,6 +22,12 @@ public class ModelConfigDto implements Serializable {
     @Schema(description = "空间ID")
     private Long spaceId;
 
+    @Schema(description = "空间（团队）名称，查询全部团队空间模型列表时返回")
+    private String spaceName;
+
+    @Schema(description = "空间类型")
+    private String spaceType;
+
     @Schema(description = "创建者ID", hidden = true)
     private Long creatorId;
 
@@ -38,6 +40,15 @@ public class ModelConfigDto implements Serializable {
     @Schema(description = "模型描述")
     private String description; // 模型描述
 
+    @Schema(description = "模型标签")
+    private String tag; // 模型标签
+
+    @Schema(description = "模型标签颜色，如 #FF5733")
+    private String tagColor; // 模型标签颜色
+
+    @Schema(description = "计费倍率")
+    private String cost; // 计费倍率
+
     @Schema(description = "模型标识")
     private String model; // 模型标识
 
@@ -46,6 +57,9 @@ public class ModelConfigDto implements Serializable {
 
     @Schema(description = "提供商ID")
     private String pid;
+
+    @Schema(description = "供应商图标")
+    private String providerIcon;
 
     @Schema(description = "提供商名称")
     private String providerName;
@@ -119,6 +133,9 @@ public class ModelConfigDto implements Serializable {
 
         @Schema(description = "权重")
         private Integer weight;
+
+        @Schema(description = "0 关闭，空和1为 开启")
+        private Integer useProxy;
 
         public Integer getWeight() {
             return weight == null ? 1 : weight;

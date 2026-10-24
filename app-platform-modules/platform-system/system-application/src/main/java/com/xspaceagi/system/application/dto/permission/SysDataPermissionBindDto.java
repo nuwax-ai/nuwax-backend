@@ -39,6 +39,12 @@ public class SysDataPermissionBindDto implements Serializable {
     @Schema(description = "可创建网页应用数量，-1表示不限制")
     private Integer maxPageAppCount;
 
+    @Schema(description = "可创建全栈应用数量，-1表示不限制")
+    private Integer maxUserAppCount;
+
+    @Schema(description = "全栈应用闲置回收超时(秒)，-1表示不限制（沿用下游默认），0表示不回收（常驻）")
+    private Integer userAppIdleTimeoutSeconds;
+
     @Schema(description = "可创建知识库数量，-1表示不限制")
     private Integer maxKnowledgeCount;
 

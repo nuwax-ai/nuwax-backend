@@ -9,6 +9,7 @@ import java.util.Map;
 
 public interface CreditService {
 
+    boolean bizNoAdded(String bizNo);
     /**
      * 添加用户积分
      */

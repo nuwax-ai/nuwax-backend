@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.repo.infra.dao.mapper.RepoCommentMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.repo.infra.dao.entity.RepoComment">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="pageId" column="page_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="parentId" column="parent_id" jdbcType="BIGINT"/>
+        <result property="content" column="content" jdbcType="LONGVARCHAR"/>
+        <result property="mentions" column="mentions" jdbcType="LONGVARCHAR"/>
+        <result property="anchor" column="anchor" jdbcType="LONGVARCHAR"/>
+        <result property="resolved" column="resolved" jdbcType="TINYINT"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="listByPageId" resultMap="BaseResultMap">
+        SELECT id, _tenant_id, page_id, user_id, parent_id, content, mentions, anchor, resolved, yn, created, modified
+        FROM repo_comment
+        WHERE page_id = #{pageId}
+        AND yn = 1
+        ORDER BY id ASC
+    </select>
+
+    <update id="updateResolved">
+        UPDATE repo_comment
+        SET resolved = #{resolved}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="softDeleteByIds">
+        UPDATE repo_comment
+        SET yn = 0
+        WHERE yn = 1
+        AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

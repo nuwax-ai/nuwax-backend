@@ -1,10 +1,13 @@
 package com.xspaceagi.system.infra.verify.impl;
 
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.LineCaptcha;
 import com.aliyun.captcha20230305.models.VerifyCaptchaRequest;
 import com.aliyun.captcha20230305.models.VerifyCaptchaResponse;
 import com.aliyun.tea.TeaException;
 import com.xspaceagi.system.infra.verify.VerifyCodeSendAndCheckService;
 import com.xspaceagi.system.infra.verify.captcha.CaptchaConfig;
+import com.xspaceagi.system.infra.verify.captcha.ImageCaptchaDto;
 import com.xspaceagi.system.infra.verify.email.SmtpConfig;
 import com.xspaceagi.system.infra.verify.sms.SmsConfig;
 import com.xspaceagi.system.infra.verify.sms.SmsRpcService;
@@ -18,9 +21,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Slf4j
 @Service
 public class VerifyCodeSendAndCheckServiceImpl implements VerifyCodeSendAndCheckService {
+
+    private static final String IMAGE_CAPTCHA_CACHE_PREFIX = "captcha-image:";
+
+    private static final String IMAGE_CAPTCHA_LIMIT_PREFIX = "captcha-image-limit:";
+
+    private static final int IMAGE_CAPTCHA_EXPIRE_SECONDS = 120;
+
+    private static final int IMAGE_CAPTCHA_LIMIT_PER_MINUTE = 10;
 
     @Resource
     private SmsRpcService smsRpcService;
@@ -136,6 +149,48 @@ public class VerifyCodeSendAndCheckServiceImpl implements VerifyCodeSendAndCheck
                 throw (BizException) _error;
             }
             log.error("验证码校验失败", _error);
+        }
+    }
+
+    @Override
+    public ImageCaptchaDto createImageCaptcha(CaptchaConfig captchaConfig, String clientIp) {
+        if (captchaConfig.getOpenImageCaptcha() == null || captchaConfig.getOpenImageCaptcha() == 0) {
+            throw new BizException("图形验证码未开启");
+        }
+        //单IP限流，每分钟最多10次，防止接口被刷
+        String limitKey = IMAGE_CAPTCHA_LIMIT_PREFIX + clientIp;
+        Long count = redisUtil.increment(limitKey, 1);
+        if (count != null && count == 1) {
+            redisUtil.expire(limitKey, 60);
+        }
+        if (count != null && count > IMAGE_CAPTCHA_LIMIT_PER_MINUTE) {
+            throw new BizException("请求过于频繁，请稍后再试");
+        }
+        LineCaptcha captcha = CaptchaUtil.createLineCaptcha(120, 40, 4, 30);
+        String captchaId = UUID.randomUUID().toString().replace("-", "");
+        //缓存验证码2分钟
+        redisUtil.set(IMAGE_CAPTCHA_CACHE_PREFIX + captchaId, captcha.getCode(), IMAGE_CAPTCHA_EXPIRE_SECONDS);
+        ImageCaptchaDto imageCaptchaDto = new ImageCaptchaDto();
+        imageCaptchaDto.setCaptchaId(captchaId);
+        imageCaptchaDto.setImage(captcha.getImageBase64Data());
+        return imageCaptchaDto;
+    }
+
+    @Override
+    public void checkImageCaptcha(CaptchaConfig captchaConfig, String captchaId, String captchaCode) {
+        if (captchaConfig.getOpenImageCaptcha() == null || captchaConfig.getOpenImageCaptcha() == 0) {
+            return;
+        }
+        if (StringUtils.isBlank(captchaId) || StringUtils.isBlank(captchaCode)) {
+            throw new BizException(I18nUtil.systemMessage("Backend.Verify.Captcha.ParamError"));
+        }
+        //一次性消费：GETDEL原子取出并删除，无论校验成功与否验证码都失效，防止并发重放
+        Object expectCode = redisUtil.getAndDelete(IMAGE_CAPTCHA_CACHE_PREFIX + captchaId);
+        if (expectCode == null) {
+            throw new BizException(I18nUtil.systemMessage("Backend.Verify.Captcha.ParamError"));
+        }
+        if (!expectCode.toString().equalsIgnoreCase(captchaCode)) {
+            throw new BizException(I18nUtil.systemMessage("Backend.Verify.Captcha.Failed"));
         }
     }
 }

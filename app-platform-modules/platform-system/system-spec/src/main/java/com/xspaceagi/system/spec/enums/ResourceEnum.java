@@ -18,7 +18,7 @@ public enum ResourceEnum {
 
     // ================== 空间模块 ==================
     SPACE(ResourceTypeEnum.MODULE, "space", "空间模块", "root"),
-//    SPACE_QUERY_LIST(ResourceTypeEnum.OPERATION, "space_query_list", "查询空间列表", "space"),
+    //    SPACE_QUERY_LIST(ResourceTypeEnum.OPERATION, "space_query_list", "查询空间列表", "space"),
 //    SPACE_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "space_query_detail", "查询空间详情", "space"),
     SPACE_CREATE(ResourceTypeEnum.OPERATION, "space_create", "创建团队空间", "space"),
     SPACE_MODIFY(ResourceTypeEnum.OPERATION, "space_modify", "编辑", "space"),
@@ -44,7 +44,7 @@ public enum ResourceEnum {
     AGENT_MIGRATE(ResourceTypeEnum.OPERATION, "agent_migrate", "迁移", "agent_dev"),
     AGENT_API_KEY(ResourceTypeEnum.OPERATION, "agent_api_key", "API Key", "agent_dev"),
     AGENT_EXPORT(ResourceTypeEnum.OPERATION, "agent_export", "导出配置", "agent_dev"),
-//    AGENT_LOG(ResourceTypeEnum.OPERATION, "agent_log", "日志", "agent_dev"),
+    //    AGENT_LOG(ResourceTypeEnum.OPERATION, "agent_log", "日志", "agent_dev"),
     AGENT_DELETE(ResourceTypeEnum.OPERATION, "agent_delete", "删除", "agent_dev"),
     //AGENT_ANALYSE(ResourceTypeEnum.OPERATION, "agent_analyse", "分析", "agent_dev"),
     AGENT_TEMP_CONVERSATION(ResourceTypeEnum.OPERATION, "agent_temp_conversation", "创建临时会话", "agent_dev"),
@@ -70,6 +70,30 @@ public enum ResourceEnum {
     PAGE_APP_MODIFY_FILE(ResourceTypeEnum.OPERATION, "page_app_modify_file", "修改文件", "page_app_dev"),
     PAGE_APP_UPLOAD_FILE(ResourceTypeEnum.OPERATION, "page_app_upload_file", "上传文件", "page_app_dev"),
     PAGE_APP_ROLLBACK_VERSION(ResourceTypeEnum.OPERATION, "page_app_rollback_version", "回滚版本", "page_app_dev"),
+
+    // ================== 全栈应用开发模块 ==================
+    USER_APP_DEV(ResourceTypeEnum.MODULE, "user_app_dev", "全栈应用开发模块", "root"),
+    USER_APP_CREATE(ResourceTypeEnum.OPERATION, "user_app_create", "创建", "user_app_dev"),
+    USER_APP_QUERY(ResourceTypeEnum.OPERATION, "user_app_query", "查询", "user_app_dev"),
+    USER_APP_MODIFY(ResourceTypeEnum.OPERATION, "user_app_modify", "编辑", "user_app_dev"),
+    USER_APP_DELETE(ResourceTypeEnum.OPERATION, "user_app_delete", "删除", "user_app_dev"),
+    USER_APP_DEPLOY(ResourceTypeEnum.OPERATION, "user_app_deploy", "部署", "user_app_dev"),
+    USER_APP_PUBLISH(ResourceTypeEnum.OPERATION, "user_app_publish", "发布", "user_app_dev"),
+
+    // ================== 常规项目开发模块 ==================
+    NORMAL_PROJECT_DEV(ResourceTypeEnum.MODULE, "normal_project_dev", "常规项目开发模块", "root"),
+    NORMAL_PROJECT_CREATE(ResourceTypeEnum.OPERATION, "normal_project_create", "创建", "normal_project_dev"),
+    NORMAL_PROJECT_QUERY(ResourceTypeEnum.OPERATION, "normal_project_query", "查询", "normal_project_dev"),
+    NORMAL_PROJECT_MODIFY(ResourceTypeEnum.OPERATION, "normal_project_modify", "编辑", "normal_project_dev"),
+    NORMAL_PROJECT_DELETE(ResourceTypeEnum.OPERATION, "normal_project_delete", "删除", "normal_project_dev"),
+
+    // ================== 三方应用开发模块 ==================
+    THIRD_APP_DEV(ResourceTypeEnum.MODULE, "third_app_dev", "三方应用开发模块", "root"),
+    THIRD_APP_CREATE(ResourceTypeEnum.OPERATION, "third_app_create", "创建", "third_app_dev"),
+    THIRD_APP_QUERY(ResourceTypeEnum.OPERATION, "third_app_query", "查询", "third_app_dev"),
+    THIRD_APP_MODIFY(ResourceTypeEnum.OPERATION, "third_app_modify", "编辑", "third_app_dev"),
+    THIRD_APP_DELETE(ResourceTypeEnum.OPERATION, "third_app_delete", "删除", "third_app_dev"),
+    THIRD_APP_PUBLISH(ResourceTypeEnum.OPERATION, "third_app_publish", "发布", "third_app_dev"),
 
     // ================== 组件资源模块 ==================
     COMPONENT_LIB_DEV(ResourceTypeEnum.MODULE, "component_lib_dev", "组件资源模块", "root"),
@@ -164,7 +188,7 @@ public enum ResourceEnum {
     MCP_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "mcp_query_detail", "查询详情", "mcp_dev"),
     MCP_SAVE(ResourceTypeEnum.OPERATION, "mcp_save", "保存", "mcp_dev"),
     MCP_EXPORT(ResourceTypeEnum.OPERATION, "mcp_export", "导出", "mcp_dev"),
-//    MCP_LOG(ResourceTypeEnum.OPERATION, "mcp_log", "日志", "mcp_dev"),
+    //    MCP_LOG(ResourceTypeEnum.OPERATION, "mcp_log", "日志", "mcp_dev"),
     MCP_DELETE(ResourceTypeEnum.OPERATION, "mcp_delete", "删除", "mcp_dev"),
     MCP_STOP(ResourceTypeEnum.OPERATION, "mcp_stop", "停止服务", "mcp_dev"),
 
@@ -185,7 +209,7 @@ public enum ResourceEnum {
     SPACE_TASK_EXECUTE_MANUAL(ResourceTypeEnum.OPERATION, "space_task_execute_manual", "手动执行", "space_task_dev"),
     SPACE_TASK_CANCEL(ResourceTypeEnum.OPERATION, "space_task_cancel", "取消任务", "space_task_dev"),
     SPACE_TASK_ENABLE(ResourceTypeEnum.OPERATION, "space_task_enable", "启用", "space_task_dev"),
-//    SPACE_TASK_EXECUTE_RECORD(ResourceTypeEnum.OPERATION, "space_task_execute_record", "执行记录", "space_task_dev"),
+    //    SPACE_TASK_EXECUTE_RECORD(ResourceTypeEnum.OPERATION, "space_task_execute_record", "执行记录", "space_task_dev"),
     SPACE_TASK_MODIFY(ResourceTypeEnum.OPERATION, "space_task_modify", "编辑", "space_task_dev"),
     SPACE_TASK_DELETE(ResourceTypeEnum.OPERATION, "space_task_delete", "删除", "space_task_dev"),
 
@@ -227,6 +251,13 @@ public enum ResourceEnum {
     PUBLISH_AUDIT_PASS(ResourceTypeEnum.OPERATION, "publish_audit_pass", "通过", "publish_audit"),
     PUBLISH_AUDIT_REJECT(ResourceTypeEnum.OPERATION, "publish_audit_reject", "拒绝", "publish_audit"),
     PUBLISH_AUDIT_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "publish_audit_query_detail", "查看", "publish_audit"),
+
+    // ================== OAuth2 范围审核模块 ==================
+    OAUTH2_SCOPE_AUDIT(ResourceTypeEnum.MODULE, "oauth2_scope_audit", "OAuth2范围审核模块", "root"),
+
+    OAUTH2_SCOPE_AUDIT_QUERY(ResourceTypeEnum.OPERATION, "oauth2_scope_audit_query", "查询", "oauth2_scope_audit"),
+    OAUTH2_SCOPE_AUDIT_PASS(ResourceTypeEnum.OPERATION, "oauth2_scope_audit_pass", "通过", "oauth2_scope_audit"),
+    OAUTH2_SCOPE_AUDIT_REJECT(ResourceTypeEnum.OPERATION, "oauth2_scope_audit_reject", "拒绝", "oauth2_scope_audit"),
 
     // ================== 已发布管理模块 ==================
     PUBLISHED_MANAGE(ResourceTypeEnum.MODULE, "published_manage", "已发布管理模块", "root"),
@@ -275,6 +306,32 @@ public enum ResourceEnum {
     CATEGORY_CONFIG_MODIFY(ResourceTypeEnum.OPERATION, "category_config_modify", "编辑", "category_config"),
     CATEGORY_CONFIG_DELETE(ResourceTypeEnum.OPERATION, "category_config_delete", "删除", "category_config"),
 
+    // ================== 敏感词管控模块 ==================
+    SENSITIVE_WORD_MANAGE(ResourceTypeEnum.MODULE, "sensitive_word_manage", "敏感词管控模块", "root"),
+
+    SENSITIVE_WORD_QUERY(ResourceTypeEnum.OPERATION, "sensitive_word_query", "查询", "sensitive_word_manage"),
+
+    SENSITIVE_WORD_ADD(ResourceTypeEnum.OPERATION, "sensitive_word_add", "添加", "sensitive_word_manage"),
+
+    SENSITIVE_WORD_MODIFY(ResourceTypeEnum.OPERATION, "sensitive_word_modify", "编辑", "sensitive_word_manage"),
+
+    SENSITIVE_WORD_DELETE(ResourceTypeEnum.OPERATION, "sensitive_word_delete", "删除", "sensitive_word_manage"),
+
+    SENSITIVE_WORD_ENABLE(ResourceTypeEnum.OPERATION, "sensitive_word_enable", "启用/禁用", "sensitive_word_manage"),
+
+    // ================== 登录方式管理模块 ==================
+    AUTH_METHOD_MANAGE(ResourceTypeEnum.MODULE, "auth_method_manage", "登录方式管理模块", "root"),
+
+    AUTH_METHOD_QUERY(ResourceTypeEnum.OPERATION, "auth_method_query", "查询", "auth_method_manage"),
+
+    AUTH_METHOD_ADD(ResourceTypeEnum.OPERATION, "auth_method_add", "添加", "auth_method_manage"),
+
+    AUTH_METHOD_MODIFY(ResourceTypeEnum.OPERATION, "auth_method_modify", "编辑", "auth_method_manage"),
+
+    AUTH_METHOD_DELETE(ResourceTypeEnum.OPERATION, "auth_method_delete", "删除", "auth_method_manage"),
+
+    AUTH_METHOD_ENABLE(ResourceTypeEnum.OPERATION, "auth_method_enable", "启用/禁用/未登录自动跳转", "auth_method_manage"),
+
     // ================== 系统概览模块 ==================
     SYSTEM_DASHBOARD(ResourceTypeEnum.MODULE, "system_dashboard", "系统概览查询", "root"),
 
@@ -282,11 +339,17 @@ public enum ResourceEnum {
     SYSTEM_TASK_MANAGE(ResourceTypeEnum.MODULE, "system_task_manage", "系统任务管理模块", "root"),
 
     TASK_MANAGE_QUERY_LIST(ResourceTypeEnum.OPERATION, "task_manage_query_list", "查询列表", "system_task_manage"),
+
     TASK_MANAGE_EXECUTE_MANUAL(ResourceTypeEnum.OPERATION, "task_manage_execute_manual", "手动执行", "system_task_manage"),
+
     TASK_MANAGE_ENABLE(ResourceTypeEnum.OPERATION, "task_manage_enable", "启用", "system_task_manage"),
+
     TASK_MANAGE_CANCEL(ResourceTypeEnum.OPERATION, "task_manage_cancel", "停用", "system_task_manage"),
+
     TASK_MANAGE_EXECUTE_RECORD(ResourceTypeEnum.OPERATION, "task_manage_execute_record", "执行记录", "system_task_manage"),
+
     TASK_MANAGE_MODIFY(ResourceTypeEnum.OPERATION, "task_manage_modify", "编辑", "system_task_manage"),
+
     TASK_MANAGE_DELETE(ResourceTypeEnum.OPERATION, "task_manage_delete", "删除", "system_task_manage"),
 
     // ================== 权限管理模块 ==================
@@ -297,48 +360,68 @@ public enum ResourceEnum {
     RESOURCE_MANAGE(ResourceTypeEnum.MODULE, "resource_manage", "资源管理模块", "permission_manage"),
 
     RESOURCE_MANAGE_QUERY(ResourceTypeEnum.OPERATION, "resource_manage_query", "查询", "resource_manage"),
+
     RESOURCE_MANAGE_ADD(ResourceTypeEnum.OPERATION, "resource_manage_add", "新增", "resource_manage"),
+
     RESOURCE_MANAGE_MODIFY(ResourceTypeEnum.OPERATION, "resource_manage_modify", "编辑", "resource_manage"),
+
     RESOURCE_MANAGE_DELETE(ResourceTypeEnum.OPERATION, "resource_manage_delete", "删除", "resource_manage"),
 
     // 2级模块 - 菜单管理模块
     MENU_MANAGE(ResourceTypeEnum.MODULE, "menu_manage", "菜单管理模块", "permission_manage"),
 
     MENU_MANAGE_QUERY(ResourceTypeEnum.OPERATION, "menu_manage_query", "查询", "menu_manage"),
+
     MENU_MANAGE_ADD(ResourceTypeEnum.OPERATION, "menu_manage_add", "新增", "menu_manage"),
+
     MENU_MANAGE_MODIFY(ResourceTypeEnum.OPERATION, "menu_manage_modify", "编辑", "menu_manage"),
+
     MENU_MANAGE_DELETE(ResourceTypeEnum.OPERATION, "menu_manage_delete", "删除", "menu_manage"),
 
     // 2级模块 - 角色管理模块
     ROLE_MANAGE(ResourceTypeEnum.MODULE, "role_manage", "角色管理模块", "permission_manage"),
 
     ROLE_MANAGE_QUERY(ResourceTypeEnum.OPERATION, "role_manage_query", "查询", "role_manage"),
+
     ROLE_MANAGE_ADD(ResourceTypeEnum.OPERATION, "role_manage_add", "新增", "role_manage"),
+
     ROLE_MANAGE_MODIFY(ResourceTypeEnum.OPERATION, "role_manage_modify", "编辑", "role_manage"),
+
     ROLE_MANAGE_DELETE(ResourceTypeEnum.OPERATION, "role_manage_delete", "删除", "role_manage"),
+
     ROLE_MANAGE_BIND_MENU(ResourceTypeEnum.OPERATION, "role_manage_bind_menu", "菜单权限", "role_manage"),
+
     ROLE_MANAGE_BIND_USER(ResourceTypeEnum.OPERATION, "role_manage_bind_user", "绑定用户", "role_manage"),
+
     ROLE_MANAGE_BIND_DATA(ResourceTypeEnum.OPERATION, "role_manage_bind_data", "数据权限", "role_manage"),
 
     // 2级模块 - 用户组管理模块
     USER_GROUP_MANAGE(ResourceTypeEnum.MODULE, "user_group_manage", "用户组管理模块", "permission_manage"),
 
     USER_GROUP_MANAGE_QUERY(ResourceTypeEnum.OPERATION, "user_group_manage_query", "查询", "user_group_manage"),
+
     USER_GROUP_MANAGE_ADD(ResourceTypeEnum.OPERATION, "user_group_manage_add", "新增", "user_group_manage"),
+
     USER_GROUP_MANAGE_MODIFY(ResourceTypeEnum.OPERATION, "user_group_manage_modify", "编辑", "user_group_manage"),
+
     USER_GROUP_MANAGE_DELETE(ResourceTypeEnum.OPERATION, "user_group_manage_delete", "删除", "user_group_manage"),
+
     USER_GROUP_MANAGE_BIND_MENU(ResourceTypeEnum.OPERATION, "user_group_manage_bind_menu", "菜单权限", "user_group_manage"),
+
     USER_GROUP_MANAGE_BIND_USER(ResourceTypeEnum.OPERATION, "user_group_manage_bind_user", "绑定用户", "user_group_manage"),
+
     USER_GROUP_MANAGE_BIND_DATA(ResourceTypeEnum.OPERATION, "user_group_manage_bind_data", "数据权限", "user_group_manage"),
 
 
     // ================== 系统运行日志模块 ==================
     // 1级模块
     SYSTEM_LOG(ResourceTypeEnum.MODULE, "system_log", "系统日志模块", "root"),
+
     // 2级模块 - 系统运行日志
     SYSTEM_RUNNING_LOG(ResourceTypeEnum.MODULE, "system_running_log", "系统运行日志模块", "system_log"),
 
     SYSTEM_RUNNING_LOG_QUERY_LIST(ResourceTypeEnum.OPERATION, "system_running_log_query_list", "查询列表", "system_running_log"),
+
     SYSTEM_RUNNING_LOG_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "system_running_log_query_detail", "查询详情", "system_running_log"),
 
 
@@ -350,93 +433,129 @@ public enum ResourceEnum {
     CONTENT_SPACE(ResourceTypeEnum.MODULE, "content_space", "空间管理", "content_manage"),
 
     CONTENT_SPACE_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_space_query_list", "查询列表", "content_space"),
+
     CONTENT_SPACE_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_space_query_detail", "查询详情", "content_space"),
+
     CONTENT_SPACE_DELETE(ResourceTypeEnum.OPERATION, "content_space_delete", "删除", "content_space"),
 
     // 2级模块 - 智能体管理
     CONTENT_AGENT(ResourceTypeEnum.MODULE, "content_agent", "智能体管理", "content_manage"),
 
     CONTENT_AGENT_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_agent_query_list", "查询列表", "content_agent"),
+
     CONTENT_AGENT_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_agent_query_detail", "查询详情", "content_agent"),
+
     CONTENT_AGENT_DELETE(ResourceTypeEnum.OPERATION, "content_agent_delete", "删除", "content_agent"),
+
     CONTENT_AGENT_ACCESS_CONTROL(ResourceTypeEnum.OPERATION, "content_agent_access_control", "访问授权", "content_agent"),
 
     // 2级模块 - 网页应用管理
     CONTENT_PAGE_APP(ResourceTypeEnum.MODULE, "content_page_app", "网页应用管理", "content_manage"),
 
     CONTENT_PAGE_APP_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_page_app_query_list", "查询列表", "content_page_app"),
+
     CONTENT_PAGE_APP_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_page_app_query_detail", "查询详情", "content_page_app"),
+
     CONTENT_PAGE_APP_DELETE(ResourceTypeEnum.OPERATION, "content_page_app_delete", "删除", "content_page_app"),
+
     CONTENT_PAGE_APP_ACCESS_CONTROL(ResourceTypeEnum.OPERATION, "content_page_app_access_control", "访问授权", "content_page_app"),
 
     // 2级模块 - 知识库管理
     CONTENT_KNOWLEDGE(ResourceTypeEnum.MODULE, "content_knowledge", "知识库管理", "content_manage"),
 
     CONTENT_KNOWLEDGE_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_knowledge_query_list", "查询列表", "content_knowledge"),
+
     CONTENT_KNOWLEDGE_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_knowledge_query_detail", "查询详情", "content_knowledge"),
+
     CONTENT_KNOWLEDGE_DELETE(ResourceTypeEnum.OPERATION, "content_knowledge_delete", "删除", "content_knowledge"),
+
     CONTENT_KNOWLEDGE_ACCESS_CONTROL(ResourceTypeEnum.OPERATION, "content_knowledge_access_control", "访问授权", "content_knowledge"),
 
     // 2级模块 - 数据表管理
     CONTENT_DATATABLE(ResourceTypeEnum.MODULE, "content_datatable", "数据表管理", "content_manage"),
 
     CONTENT_DATATABLE_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_datatable_query_list", "查询列表", "content_datatable"),
+
     CONTENT_DATATABLE_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_datatable_query_detail", "查询详情", "content_datatable"),
+
     CONTENT_DATATABLE_DELETE(ResourceTypeEnum.OPERATION, "content_datatable_delete", "删除", "content_datatable"),
 
     // 2级模块 - 工作流管理
     CONTENT_WORKFLOW(ResourceTypeEnum.MODULE, "content_workflow", "工作流管理", "content_manage"),
 
     CONTENT_WORKFLOW_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_workflow_query_list", "查询列表", "content_workflow"),
+
     CONTENT_WORKFLOW_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_workflow_query_detail", "查询详情", "content_workflow"),
+
     CONTENT_WORKFLOW_DELETE(ResourceTypeEnum.OPERATION, "content_workflow_delete", "删除", "content_workflow"),
 
     // 2级模块 - 插件管理
     CONTENT_PLUGIN(ResourceTypeEnum.MODULE, "content_plugin", "插件管理", "content_manage"),
 
     CONTENT_PLUGIN_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_plugin_query_list", "查询列表", "content_plugin"),
+
     CONTENT_PLUGIN_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_plugin_query_detail", "查询详情", "content_plugin"),
+
     CONTENT_PLUGIN_DELETE(ResourceTypeEnum.OPERATION, "content_plugin_delete", "删除", "content_plugin"),
 
     // 2级模块 - MCP管理
     CONTENT_MCP(ResourceTypeEnum.MODULE, "content_mcp", "MCP管理", "content_manage"),
 
     CONTENT_MCP_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_mcp_query_list", "查询列表", "content_mcp"),
+
     CONTENT_MCP_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_mcp_query_detail", "查询详情", "content_mcp"),
+
     CONTENT_MCP_DELETE(ResourceTypeEnum.OPERATION, "content_mcp_delete", "删除", "content_mcp"),
 
     // 2级模块 - 技能管理
     CONTENT_SKILL(ResourceTypeEnum.MODULE, "content_skill", "技能管理", "content_manage"),
 
     CONTENT_SKILL_QUERY_LIST(ResourceTypeEnum.OPERATION, "content_skill_query_list", "查询列表", "content_skill"),
+
     CONTENT_SKILL_QUERY_DETAIL(ResourceTypeEnum.OPERATION, "content_skill_query_detail", "查询详情", "content_skill"),
+
     CONTENT_SKILL_DELETE(ResourceTypeEnum.OPERATION, "content_skill_delete", "删除", "content_skill"),
 
     // ================== 多语言管理模块 ==================
     I18N_LANG_MANAGE(ResourceTypeEnum.MODULE, "i18n_lang_manage", "多语言管理模块", "root"),
+
     I18N_LANG_QUERY(ResourceTypeEnum.OPERATION, "i18n_lang_query", "查询", "i18n_lang_manage"),
+
     I18N_LANG_ADD(ResourceTypeEnum.OPERATION, "i18n_lang_add", "新增", "i18n_lang_manage"),
+
     I18N_LANG_MODIFY(ResourceTypeEnum.OPERATION, "i18n_lang_modify", "编辑", "i18n_lang_manage"),
+
     I18N_LANG_DELETE(ResourceTypeEnum.OPERATION, "i18n_lang_delete", "删除", "i18n_lang_manage"),
+
     I18N_LANG_TRANSLATE(ResourceTypeEnum.OPERATION, "i18n_lang_translate", "翻译", "i18n_lang_manage"),
 
     // ================== 订阅与积分模块 ==================
     SUBSCRIPTION_POINTS(ResourceTypeEnum.MODULE, "subscription_points", "订阅与积分模块", "root"),
+
     SUBSCRIPTION_POINTS_QUERY(ResourceTypeEnum.OPERATION, "subscription_points_query", "查询", "subscription_points"),
+
     SUBSCRIPTION_POINTS_MODIFY(ResourceTypeEnum.OPERATION, "subscription_points_modify", "编辑", "subscription_points"),
+
     SUBSCRIPTION_POINTS_DELETE(ResourceTypeEnum.OPERATION, "subscription_points_delete", "删除", "subscription_points"),
 
     // ================== 支付与收益模块 ==================
     PAY_EARNINGS(ResourceTypeEnum.MODULE, "pay_earnings", "支付与收益模块", "root"),
+
     PAY_EARNINGS_QUERY(ResourceTypeEnum.OPERATION, "pay_earnings_query", "查询", "pay_earnings"),
+
     PAY_EARNINGS_MODIFY(ResourceTypeEnum.OPERATION, "pay_earnings_modify", "编辑", "pay_earnings"),
+
     MERCHANT_ONBOARDING_AUDIT(ResourceTypeEnum.OPERATION, "merchant_onboarding_audit", "进件审核", "pay_earnings"),
+
     WITHDRAW_AUDIT(ResourceTypeEnum.OPERATION, "withdraw_audit", "提现审核", "pay_earnings"),
 
     // ================== 展示推荐管理模块 ==================
     DISPLAY_RECOMMEND_MANAGE(ResourceTypeEnum.MODULE, "display_recommend_manage", "展示推荐管理模块", "root"),
+
     DISPLAY_RECOMMEND_QUERY(ResourceTypeEnum.OPERATION, "display_recommend_query", "查询", "display_recommend_manage"),
+
     DISPLAY_RECOMMEND_SAVE(ResourceTypeEnum.OPERATION, "display_recommend_save", "保存", "display_recommend_manage"),
+
     DISPLAY_RECOMMEND_DELETE(ResourceTypeEnum.OPERATION, "display_recommend_delete", "删除", "display_recommend_manage");
 
     private final ResourceTypeEnum type;
@@ -465,4 +584,4 @@ public enum ResourceEnum {
         }
         return null;
     }
-    }
+}

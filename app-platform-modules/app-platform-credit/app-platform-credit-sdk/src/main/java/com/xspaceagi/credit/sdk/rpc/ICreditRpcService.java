@@ -8,6 +8,8 @@ public interface ICreditRpcService {
 
     String addCredit(CreditAddRequest request);
 
+    boolean bizNoAdded(String bizNo);
+
     boolean deductCredit(CreditDeductRequest request);
 
     UserCreditSummary getUserCreditSummary(Long userId);

@@ -17,7 +17,23 @@ public final class SkillNameUtil {
     private SkillNameUtil() {
     }
 
+    /**
+     * 从 SKILL.md frontmatter 的 name 回填 enName（目录名/技能名）；
+     * 提取不到时回退 enName/name 原值
+     */
     public static void backfillName(SkillConfigDto skillConfigDto, IFileAccessService iFileAccessService) {
+        doBackfill(skillConfigDto, iFileAccessService, false);
+    }
+
+    /**
+     * 回填 name/description：取 SKILL.md frontmatter ，
+     * 提取不到保留 dto 原值
+     */
+    public static void backfillNameAndDescription(SkillConfigDto skillConfigDto, IFileAccessService iFileAccessService) {
+        doBackfill(skillConfigDto, iFileAccessService, true);
+    }
+
+    private static void doBackfill(SkillConfigDto skillConfigDto, IFileAccessService iFileAccessService, boolean withDescription) {
         if (skillConfigDto == null) {
             return;
         }
@@ -29,6 +45,8 @@ public final class SkillNameUtil {
             }
             return;
         }
+        String nameFromMd = null;
+        String descriptionFromMd = null;
         for (SkillFileDto file : files) {
             if (file == null || Boolean.TRUE.equals(file.getIsDir()) || !"SKILL.MD".equalsIgnoreCase(file.getName())) {
                 continue;
@@ -37,15 +55,37 @@ public final class SkillNameUtil {
             if (StringUtils.isBlank(skillMdContent)) {
                 continue;
             }
-            String skillNameFromMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "name");
-            if (StringUtils.isNotBlank(skillNameFromMd)) {
-                skillConfigDto.setEnName(skillNameFromMd);
-                return;
+            if (StringUtils.isBlank(nameFromMd)) {
+                nameFromMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "name");
+            }
+            if (withDescription && StringUtils.isBlank(descriptionFromMd)) {
+                descriptionFromMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "description");
+            }
+            boolean nameReady = StringUtils.isNotBlank(nameFromMd);
+            boolean descriptionReady = !withDescription || isValidDescription(descriptionFromMd);
+            if (nameReady && descriptionReady) {
+                break;
             }
         }
-        if (StringUtils.isNotBlank(fallbackName)) {
+        if (StringUtils.isNotBlank(nameFromMd)) {
+            skillConfigDto.setEnName(nameFromMd);
+        } else if (StringUtils.isNotBlank(fallbackName)) {
             skillConfigDto.setEnName(fallbackName);
         }
+        if (isValidDescription(descriptionFromMd)) {
+            skillConfigDto.setDescription(descriptionFromMd);
+        }
+    }
+
+    /**
+     * description 值有效性校验：折叠/块样式（>-、| 等）的指示符不是真实值，按未提取到处理，
+     * 保留发布配置的 description
+     */
+    private static boolean isValidDescription(String description) {
+        if (StringUtils.isBlank(description)) {
+            return false;
+        }
+        return !description.matches("^[>|][0-9+\\-]?");
     }
 
     private static String resolveSkillFileContent(SkillFileDto skillFileDto, IFileAccessService iFileAccessService) {

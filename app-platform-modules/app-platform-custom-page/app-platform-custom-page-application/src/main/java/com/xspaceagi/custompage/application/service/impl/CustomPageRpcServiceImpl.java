@@ -27,7 +27,10 @@ import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import com.xspaceagi.system.spec.page.PageQueryVo;
 import com.xspaceagi.system.spec.page.SuperPage;
 import com.xspaceagi.system.spec.utils.DateUtil;
@@ -317,6 +320,22 @@ public class CustomPageRpcServiceImpl implements ICustomPageRpcService {
             }
         }
         return dto;
+    }
+
+    @Override
+    public void checkPageAppPublishPrecondition(Long agentId) {
+        log.info("[RPC] check page app publish precondition, agent Id={}", agentId);
+        if (agentId == null) {
+            throw new IllegalArgumentException("agentId is required");
+        }
+        CustomPageConfigModel configModel = customPageConfigDomainService.getByAgentId(agentId);
+        // 页面项目不存在或未成功构建都不满足发布条件
+        if (configModel == null || !YesOrNoEnum.Y.getKey().equals(configModel.getBuildRunning())) {
+            log.warn("[RPC] page app publish precondition failed, agent Id={}, pageProject={}, buildRunning={}",
+                    agentId, configModel == null ? null : configModel.getId(),
+                    configModel == null ? null : configModel.getBuildRunning());
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.customPagePublishRequiresBuild);
+        }
     }
 
     private void completeCreator(List<CustomPageDto> dtoList) {

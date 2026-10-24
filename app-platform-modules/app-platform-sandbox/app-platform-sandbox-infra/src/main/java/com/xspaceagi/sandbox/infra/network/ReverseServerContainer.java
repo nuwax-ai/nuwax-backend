@@ -1,10 +1,12 @@
 package com.xspaceagi.sandbox.infra.network;
 
 import com.xspaceagi.sandbox.infra.config.ReverseServerProperties;
+import com.xspaceagi.sandbox.infra.dao.entity.SandboxConfig;
 import com.xspaceagi.sandbox.infra.dao.service.SandboxConfigService;
 import com.xspaceagi.sandbox.infra.network.protocol.IdleCheckHandler;
 import com.xspaceagi.sandbox.infra.network.protocol.ProxyMessageDecoder;
 import com.xspaceagi.sandbox.infra.network.protocol.ProxyMessageEncoder;
+import com.xspaceagi.system.sdk.service.INotificationRpcService;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -66,6 +68,9 @@ public class ReverseServerContainer {
     @Getter
     @Resource
     private ReverseServerProperties reverseServerProperties;
+
+    @Resource
+    private INotificationRpcService iNotificationRpcService;
 
     @Resource
     private RedisUtil redisUtil;
@@ -200,6 +205,15 @@ public class ReverseServerContainer {
 
     public void userSandboxOnlineTouch(String key) {
         redisUtil.set("user:sandbox:status:" + key, String.valueOf(System.currentTimeMillis()), 60);
+    }
+
+    public void publishOnlineEvent(SandboxConfig sandboxConfig) {
+        try {
+            iNotificationRpcService.publishEvent(sandboxConfig.getUserId(), "sandbox_online", Map.of("sandboxId", sandboxConfig.getId()));
+        } catch (Exception e) {
+            // ignore
+            logger.warn("publishOnlineEvent error", e);
+        }
     }
 
     public Long getUserSandboxAliveTime(String key) {

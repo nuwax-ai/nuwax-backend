@@ -1,6 +1,6 @@
 package com.xspaceagi.im.application.impl;
 
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
@@ -48,7 +48,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
-    private ConversationApplicationService conversationApplicationService;
+    private ChatApplicationService chatApplicationService;
 
     @Override
     public String executeAgent(String sessionId, String chatType, String message, List<AttachmentDto> attachments, Long tenantId, Long userId, Long agentId) {
@@ -98,7 +98,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
             tryReqDto.setAttachments(attachments != null ? attachments : new ArrayList<>());
             tryReqDto.setFrom(ImChannelEnum.FEISHU.getCode());
 
-            Flux<AgentOutputDto> flux = conversationApplicationService.chat(tryReqDto, new HashMap<>(), false);
+            Flux<AgentOutputDto> flux = chatApplicationService.chat(tryReqDto, new HashMap<>(), false);
 
             AgentExecuteResult finalResult = flux
                     .filter(o -> o.getEventType() == AgentOutputDto.EventTypeEnum.FINAL_RESULT)
@@ -163,7 +163,7 @@ public class FeishuAgentApplicationServiceImpl implements FeishuAgentApplication
             tryReqDto.setAttachments(attachments != null ? attachments : new ArrayList<>());
             tryReqDto.setFrom(ImChannelEnum.FEISHU.getCode());
 
-            Flux<AgentOutputDto> chatFlux = conversationApplicationService.chat(tryReqDto, new HashMap<>(), false);
+            Flux<AgentOutputDto> chatFlux = chatApplicationService.chat(tryReqDto, new HashMap<>(), false);
             StringBuilder accumulated = new StringBuilder();
 
             return chatFlux

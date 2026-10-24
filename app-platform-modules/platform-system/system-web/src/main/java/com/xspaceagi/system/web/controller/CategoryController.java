@@ -48,6 +48,7 @@ public class CategoryController extends BaseController {
         category.setCode(dto.getCode());
         category.setType(dto.getType());
         category.setDescription(dto.getDescription());
+        category.setIcon(dto.getIcon());
 
         return categoryApplicationService.create(category, getUser());
     }
@@ -68,6 +69,7 @@ public class CategoryController extends BaseController {
         category.setCode(dto.getCode());
         category.setType(dto.getType());
         category.setDescription(dto.getDescription());
+        category.setIcon(dto.getIcon());
 
         return categoryApplicationService.update(category, getUser());
     }

@@ -24,5 +24,12 @@
             <artifactId>app-platform-pay-spec</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
+        <!-- ★通知消息追加 IM 推送（NotifyMessageApplicationServiceImpl）需要 IM RPC 契约。
+             ★方向已核：app-platform-im-sdk 只依赖 parent/lombok/swagger/jackson，不反向依赖
+             platform-system ⇒ 不构成循环依赖；system-application 是本仓第一个跨模块直连 IM RPC 的模块。 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-im-sdk</artifactId>
+        </dependency>
     </dependencies>
 </project>

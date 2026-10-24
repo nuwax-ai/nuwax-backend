@@ -43,6 +43,12 @@ public class ImFileShareService {
             return null;
         }
 
+        // 分享可匿名访问，而 customTargetDir 可指向属主机器任意目录（仅属主本人可用）：带该参数的文件地址不支持分享
+        if (filePath.contains("customTargetDir")) {
+            log.warn("Create file share rejected: filePath contains customTargetDir, userId={}, conversationId={}", userId, conversationId);
+            return null;
+        }
+
         // 设置 RequestContext 的租户 ID
         RequestContext.setThreadTenantId(tenantId);
 

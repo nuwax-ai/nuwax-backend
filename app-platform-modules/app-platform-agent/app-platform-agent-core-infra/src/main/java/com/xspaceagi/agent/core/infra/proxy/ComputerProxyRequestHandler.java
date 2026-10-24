@@ -3,6 +3,7 @@ package com.xspaceagi.agent.core.infra.proxy;
 import com.xspaceagi.agent.core.adapter.dto.ConversationDto;
 import com.xspaceagi.agent.core.infra.rpc.SandboxServerConfigService;
 import com.xspaceagi.agent.core.infra.rpc.UserShareRpcService;
+import com.xspaceagi.agent.core.infra.rpc.WorkspaceServiceType;
 import com.xspaceagi.agent.core.infra.rpc.dto.SandboxServerConfig;
 import com.xspaceagi.custompage.sdk.ICustomPageRpcService;
 import com.xspaceagi.custompage.sdk.dto.CustomPageDto;
@@ -31,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +50,10 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
     private static final Pattern AUDIO_PATTERN = Pattern.compile("/computer/audio/(\\d+)/(.*)");
     private static final Pattern IME_PATTERN = Pattern.compile("/computer/ime/(\\d+)/(.*)");
     private static final Pattern TERMINAL_PATTERN = Pattern.compile("/computer/terminal/(\\d+)/(.*)");
+    /** 终端 service_type 契约参数键；值取 WorkspaceServiceType.getContainerType()（与下游沙箱 service_type 参数同源，勿另行硬编码） */
+    private static final String TERMINAL_SERVICE_TYPE_KEY = "service_type";
+    /** 终端 cwd 契约参数键；值取会话的 agentWorkspacePath（chat 侧 agent_work_dir 覆盖同源，勿另行推导） */
+    private static final String TERMINAL_CWD_KEY = "cwd";
 
     private final SandboxServerConfigService sandboxServerConfigService;
     private final UserShareRpcService userShareRpcService;
@@ -433,16 +440,194 @@ public class ComputerProxyRequestHandler extends ChannelInboundHandlerAdapter {
         matcher = TERMINAL_PATTERN.matcher(uri);
         if (matcher.matches()) {
             String cId = matcher.group(1);
+            // 常规项目（normalProject）会话终端定位键改用 devTargetId（常规项目 id），
+            // 与 chat 侧 agent_work_dir 同源（SandboxAgentClient 按 service_type +
+            // devTargetId 定位容器内 /home/user/normalProject/{pid}；本机 electron
+            // 网关为同构镜像目录）——原 cId（conversationId）在容器/本机 normalProject
+            // 层都找不到目录。
+            TerminalTarget target = resolveTerminalTarget(cId, sandboxServer);
             String newUri;
             if (isPageApp) {
-                newUri = "/web/ttyd/" + userId + "/" + cId + "/ws";
+                newUri = "/web/ttyd/" + userId + "/" + target.targetId() + "/ws";
             } else {
-                newUri = "/computer/ttyd/" + userId + "/" + cId + "/ws";
+                newUri = "/computer/ttyd/" + userId + "/" + target.targetId() + "/ws";
+            }
+            // 保留原 query（剔除本代理消费的鉴权参数）——终端契约参数 service_type /
+            // cwd 的唯一载体（浏览器原生 WebSocket 无法设自定义 header）；此前重写
+            // 丢弃 query，云端 Pingora 与本机 electron 网关都收不到。
+            // service_type 兜底补参：前端携带与否依赖会话详情加载时序（切会话/秒开
+            // 终端存在漏带窗口期，漏带时终端初始目录回落工作区根）；本代理在
+            // cId→devTargetId 替换时已权威知道这是常规项目会话，前端未显式携带时
+            // 补 computer-normal-project。仅 computer 轨道补参（pageApp 轨道不掺入
+            // normalProject 语义）。
+            String query = supplementTerminalServiceType(
+                    extractForwardableQuery(uri), !isPageApp && target.normalProject());
+            // cwd 兜底补参：个人电脑自选目录（agentWorkspacePath）会话在客户端走绝对路径
+            // 轨道、不落 normalProject 镜像目录，缺 cwd 时终端只能回落工作区根；上游未
+            // 显式携带时由本代理注入会话目录（与 service_type 兜底同款时机与保护）。
+            query = supplementTerminalCwd(query, resolveTerminalCwd(sandboxServer, isPageApp));
+            if (StringUtils.isNotBlank(query)) {
+                newUri = newUri + "?" + query;
             }
             log.info("Computer proxy rewrite uri: {} -> {}", uri, newUri);
             return newUri;
         }
         return uri;
+    }
+
+    /**
+     * 终端路由定位键解析：常规项目（normalProject）会话用 devTargetId（与 chat 侧
+     * 工作区 key 一致），其余会话维持 conversationId 原语义；normalProject 标志供
+     * TERMINAL 分支 service_type 兜底补参判定。
+     * fromDevTargetType 对 null/未知类型安全回落 TASK_AGENT。
+     */
+    private record TerminalTarget(String targetId, boolean normalProject) {}
+
+    private static TerminalTarget resolveTerminalTarget(
+            String cId, SandboxServerConfig.SandboxServer sandboxServer) {
+        Optional<String> devTargetId = Optional.ofNullable(sandboxServer)
+                .map(SandboxServerConfig.SandboxServer::getCurrentConversation)
+                .filter(conversation -> WorkspaceServiceType.fromDevTargetType(
+                        conversation.getDevTargetType()) == WorkspaceServiceType.NORMAL_PROJECT)
+                .map(ConversationDto::getDevTargetId)
+                .filter(StringUtils::isNotBlank);
+        return devTargetId
+                .map(id -> new TerminalTarget(id, true))
+                .orElseGet(() -> new TerminalTarget(cId, false));
+    }
+
+    /**
+     * 终端 service_type 兜底补参（纯函数，包级可见供单测）：常规项目会话且原 query
+     * 未显式携带 service_type 时补 WorkspaceServiceType.NORMAL_PROJECT 的容器类型值
+     * （前端判定依赖会话详情加载时序，切会话/秒开终端存在漏带窗口期，漏带时终端
+     * 初始目录回落工作区根）。已携带则原样返回——上游（rcoder form_decode / 本机
+     * electron URLSearchParams）重复键按 last-wins 解析，追加会覆盖前端显式值。
+     */
+    static String supplementTerminalServiceType(String rawQuery, boolean normalProject) {
+        if (!normalProject) {
+            return rawQuery;
+        }
+        if (StringUtils.isBlank(rawQuery)) {
+            return normalProjectServiceTypeQuery();
+        }
+        if (rawQueryHasKey(rawQuery, TERMINAL_SERVICE_TYPE_KEY)) {
+            return rawQuery;
+        }
+        return rawQuery + "&" + normalProjectServiceTypeQuery();
+    }
+
+    private static String normalProjectServiceTypeQuery() {
+        return TERMINAL_SERVICE_TYPE_KEY + "=" + WorkspaceServiceType.NORMAL_PROJECT.getContainerType();
+    }
+
+    /**
+     * 终端 cwd 兜底补参（纯函数，包级可见供单测）：个人电脑自选目录会话
+     * （resolveTerminalCwd 给值）且原 query 未显式携带 cwd 时，补会话的
+     * agentWorkspacePath——与 chat 侧 agent_work_dir 覆盖（SandboxAgentClient）同源；
+     * 本机 electron 网关对显式 cwd「存在即用」优先消费。已携带则原样返回——
+     * last-wins 语义下追加会覆盖调用方显式值。
+     * 编码用 form 语义（URLEncoder：空格→+、字面+→%2B、中文→UTF-8 percent），与前端
+     * URLSearchParams / 本机 electron 网关 URLSearchParams / rcoder form_decode 的解码
+     * 语义对齐；「原始串透传、不重编码」原则仅约束存量参数，本层注入的新值必须编码后拼接。
+     */
+    static String supplementTerminalCwd(String rawQuery, String cwdValue) {
+        if (StringUtils.isBlank(cwdValue)) {
+            return rawQuery;
+        }
+        if (StringUtils.isNotBlank(rawQuery) && rawQueryHasKey(rawQuery, TERMINAL_CWD_KEY)) {
+            return rawQuery;
+        }
+        String pair = TERMINAL_CWD_KEY + "=" + URLEncoder.encode(cwdValue, StandardCharsets.UTF_8);
+        return StringUtils.isBlank(rawQuery) ? pair : rawQuery + "&" + pair;
+    }
+
+    /**
+     * 终端 cwd 注入条件（包级可见供单测）：仅 computer 轨道（对齐 service_type 兜底的
+     * 轨道纪律，pageApp 容器不掺入）+ 个人电脑（USER scope）——自选目录是用户本机
+     * 绝对路径，云端容器（GLOBAL 等）会话的目录语义由云端自决，不得泄入。目录值与
+     * chat 侧 agent_work_dir 覆盖同源，不按 normalProject 门控——该覆盖对全会话类型
+     * 生效，普通会话 + 自选目录的同型场景一并覆盖；返回 null 表示不注入。
+     */
+    static String resolveTerminalCwd(SandboxServerConfig.SandboxServer sandboxServer, boolean isPageApp) {
+        if (isPageApp || sandboxServer == null || sandboxServer.getScope() != SandboxScopeEnum.USER) {
+            return null;
+        }
+        return Optional.ofNullable(sandboxServer.getCurrentConversation())
+                .map(ConversationDto::getAgentWorkspacePath)
+                .filter(StringUtils::isNotBlank)
+                .filter(ComputerProxyRequestHandler::isAbsoluteDirForm)
+                .orElse(null);
+    }
+
+    /**
+     * 目录形态预检（宽松子集，镜像下游 normalize_absolute_dir 的接受面）：POSIX /、
+     * Windows 盘符 X:/ 或 X:\、UNC \\。非绝对形态（相对路径/脏数据）不注入——下游
+     * 网关对形态非法的 cwd 直接 400（TTYD_CWD_INVALID），兜底注入不应把本可回落
+     * 工作区根的终端打成硬失败（存在性缺失仍由下游 warn 回落，不在此检查）。
+     */
+    private static boolean isAbsoluteDirForm(String dir) {
+        return dir.startsWith("/") || dir.startsWith("\\\\")
+                || (dir.length() >= 3 && Character.isLetter(dir.charAt(0)) && dir.charAt(1) == ':'
+                        && (dir.charAt(2) == '/' || dir.charAt(2) == '\\'));
+    }
+
+    /**
+     * 原始 query 串中是否已含指定键（按 & 与 = 切分比较；键为纯 ASCII，无需解码，
+     * 与 extractForwardableQuery 的剔除键匹配同一约定）。
+     */
+    private static boolean rawQueryHasKey(String rawQuery, String key) {
+        for (String pair : rawQuery.split("&")) {
+            int eq = pair.indexOf('=');
+            String pairKey = eq >= 0 ? pair.substring(0, eq) : pair;
+            if (key.equals(pairKey)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 提取可转发到上游（rcoder/本机 electron）的 query：剔除本代理消费的鉴权参数
+     * _ticket（登录票据交换）与 sk（分享 key），防止凭据随转发泄漏到沙箱侧。
+     *
+     * 有意做「原始串透传、不解码不重编码」：终端契约参数（service_type/cwd，含
+     * 空格/中文/字面 +）由上游按 form 语义自行解码（rcoder ttyd_params 的
+     * form_decode、本机 electron 网关的 URLSearchParams）。若本层改走
+     * QueryStringDecoder.parameters() 解码再重编码拼回，会引入形态漂移：空格
+     * +↔%20 互换、非法 UTF-8 序列被替换字符固化（透传形态下 rcoder 会对其 400，
+     * 重编码后变成合法但错误的值）、键序重排——透传是唯一零损耗方案。剔除键
+     * （_ticket/sk）为纯 ASCII，原始形态即最终形态，无需解码即可精确匹配。
+     *
+     * query 提取用 Netty QueryStringDecoder.rawQuery()：取未解码 query 串。
+     * 注意其切分点为首个 '?' 或 '#'——'#' 后的内容会被当作 query 返回（HTTP
+     * request-target 规范不含 fragment，仅手工客户端可构造），故此处对返回值
+     * 再截断 '#'，避免凭空造出 query。
+     */
+    private static String extractForwardableQuery(String uri) {
+        String rawQuery = new QueryStringDecoder(uri).rawQuery();
+        if (StringUtils.isBlank(rawQuery)) {
+            return null;
+        }
+        int fragmentStart = rawQuery.indexOf('#');
+        if (fragmentStart >= 0) {
+            rawQuery = rawQuery.substring(0, fragmentStart);
+            if (rawQuery.isEmpty()) {
+                return null;
+            }
+        }
+        StringBuilder forwardable = new StringBuilder();
+        for (String pair : rawQuery.split("&")) {
+            int eq = pair.indexOf('=');
+            String key = eq >= 0 ? pair.substring(0, eq) : pair;
+            if ("_ticket".equals(key) || "sk".equals(key)) {
+                continue;
+            }
+            if (forwardable.length() > 0) {
+                forwardable.append('&');
+            }
+            forwardable.append(pair);
+        }
+        return forwardable.length() > 0 ? forwardable.toString() : null;
     }
 
     /**

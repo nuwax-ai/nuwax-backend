@@ -22,10 +22,11 @@ public class ForSandboxAgentController {
     @PostMapping("/api/v1/4sandbox/memory/query")
     public ReqResult<String> query(@RequestBody MemoryUnitQuery memoryUnitQuery) {
         UserAccessKeyDto userAccessKey = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
+        Long agentId = parseAgentId(userAccessKey);
         MemoryUnitQueryDTO memoryUnitQueryDTO = new MemoryUnitQueryDTO();
         memoryUnitQueryDTO.setTenantId(RequestContext.get().getTenantId());
         memoryUnitQueryDTO.setUserId(RequestContext.get().getUserId());
-        memoryUnitQueryDTO.setAgentId(Long.parseLong(userAccessKey.getTargetId()));
+        memoryUnitQueryDTO.setAgentId(agentId);
         memoryUnitQueryDTO.setCategories(memoryUnitQuery.getCategories());
         memoryUnitQueryDTO.setSubCategories(memoryUnitQuery.getSubCategories());
         memoryUnitQueryDTO.setTags(memoryUnitQuery.getTags());
@@ -40,8 +41,24 @@ public class ForSandboxAgentController {
     @PostMapping("/api/v1/4sandbox/memory/save")
     public ReqResult<String> save(@RequestBody MemorySaveDto memorySaveDto) {
         UserAccessKeyDto userAccessKey = (UserAccessKeyDto) RequestContext.get().getUserAccessKey();
-        iMemoryRpcService.saveMemories(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), Long.parseLong(userAccessKey.getTargetId()), memorySaveDto);
+        iMemoryRpcService.saveMemories(RequestContext.get().getTenantId(), RequestContext.get().getUserId(), parseAgentId(userAccessKey), memorySaveDto);
         return ReqResult.success();
+    }
+
+    /**
+     * 从 AK 的 targetId 反解 agentId。
+     *
+     * <p>Sandbox 型 AK 有两种铸造形态，都要认：{@code "{agentId}-{conversationId}"}（取第一个 '-' 之前）
+     * 与裸 {@code agentId}（取整体）。★解不出来时保持 fail-closed（抛异常让本次调用失败）：
+     * 下游按 {@code agentId != null} 才加过滤条件，一旦返回 null，记忆查询会退化成「该用户全部智能体的记忆」。
+     */
+    private Long parseAgentId(UserAccessKeyDto userAccessKeyDto) {
+        String targetId = userAccessKeyDto.getTargetId();
+        int dash = targetId.indexOf('-');
+        if (dash >= 0) {
+            targetId = targetId.substring(0, dash);
+        }
+        return Long.parseLong(targetId);
     }
 
     @PostMapping("/api/v1/4sandbox/memory/delete")

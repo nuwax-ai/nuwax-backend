@@ -211,6 +211,7 @@ public class HomeController extends BaseController {
         if (userUsedAgentDto != null && userUsedAgentDto.getLastConversationId() != null) {
             homeItemDto.setLastConversationId(userUsedAgentDto.getLastConversationId());
         }
+        homeItemDto.setExtra(publishedDto.getExt());
         return homeItemDto;
     }
 

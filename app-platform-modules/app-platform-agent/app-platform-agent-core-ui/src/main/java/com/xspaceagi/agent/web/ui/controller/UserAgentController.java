@@ -17,6 +17,7 @@ import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -50,20 +51,23 @@ public class UserAgentController {
     @Operation(summary = "查询用户最近编辑的智能体列表")
     @RequestMapping(path = "/edit/list/{size}", method = RequestMethod.GET)
     public ReqResult<List<UserAgentDto>> editList(@PathVariable Integer size) {
-        List<UserAgentDto> userAgentDtos = agentApplicationService.queryRecentEditList(RequestContext.get().getUserId(), size);
-        userAgentDtos.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName())));
-        return ReqResult.success(userAgentDtos);
+        List<UserAgentDto> userAgents = agentApplicationService.queryRecentEditList(RequestContext.get().getUserId(), size);
+        userAgents.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName())));
+        return ReqResult.success(userAgents);
     }
 
-    @Operation(summary = "查询用户最近使用过的智能体列表")
+    @Operation(summary = "查询最近使用过的智能体或应用列表")
     @RequestMapping(path = "/used/list/{size}", method = RequestMethod.GET)
-    public ReqResult<List<UserAgentDto>> usedList(@PathVariable Integer size, @RequestParam(required = false) Integer pageIndex, @RequestParam(required = false) String kw) {
-        List<UserAgentDto> userAgentDtos = agentApplicationService.queryRecentUseList(RequestContext.get().getUserId(), kw, size, pageIndex);
+    public ReqResult<List<UserAgentDto>> usedList(@Parameter(description = "返回数量") @PathVariable Integer size,
+                                                  @Parameter(description = "页码，从 1 开始") @RequestParam(required = false) Integer pageIndex,
+                                                  @Parameter(description = "关键字，按名称搜索") @RequestParam(required = false) String kw,
+                                                  @Parameter(description = "类型过滤：Agent 智能体 / PageApp 网页应用，不传返回全部") @RequestParam(required = false) String type) {
+        List<UserAgentDto> userAgents = agentApplicationService.queryRecentUseList(RequestContext.get().getUserId(), kw, size, pageIndex, type);
         List<TargetRecommendResponse> list = recommendApplicationService.list(TargetRecommend.RecType.ChatBoxNav.name(), TargetRecommend.TargetType.Agent.name());
         Set<Long> navIds = list.stream().map(TargetRecommendResponse::getTargetId).collect(Collectors.toSet());
-        userAgentDtos.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName())));
-        userAgentDtos.removeIf(userAgentDto -> navIds.contains(userAgentDto.getAgentId()));
-        return ReqResult.success(userAgentDtos);
+        userAgents.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName(), "Agent", true)));
+        userAgents.removeIf(userAgentDto -> navIds.contains(userAgentDto.getAgentId()));
+        return ReqResult.success(userAgents);
     }
 
     @Operation(summary = "删除用户最近智能体使用记录")
@@ -77,7 +81,7 @@ public class UserAgentController {
     @RequestMapping(path = "/collect/list/{page}/{size}", method = RequestMethod.GET)
     public ReqResult<List<UserAgentDto>> collectList(@PathVariable Integer page, @PathVariable Integer size) {
         List<UserAgentDto> userAgentDtos = agentApplicationService.queryCollectionList(RequestContext.get().getUserId(), page, size);
-        userAgentDtos.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName())));
+        userAgentDtos.forEach(userAgentDto -> userAgentDto.setIcon(DefaultIconUrlUtil.setDefaultIconUrl(userAgentDto.getIcon(), userAgentDto.getName(), "Agent", true)));
         return ReqResult.success(userAgentDtos);
     }
 

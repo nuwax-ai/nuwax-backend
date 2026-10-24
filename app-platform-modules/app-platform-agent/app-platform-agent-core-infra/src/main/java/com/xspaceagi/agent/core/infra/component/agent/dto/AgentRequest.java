@@ -20,6 +20,8 @@ public class AgentRequest {
     private String project_id;
     private String agent_work_dir;
     private String request_id;
+    private String service_type;
+    private String app_id;
     private List<Attachment> attachments;
     private List<String> data_source_attachments;
     private ModelProvider model_provider;

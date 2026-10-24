@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.repo.infra.dao.mapper.RepoPageMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.repo.infra.dao.entity.RepoPage">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="parentId" column="parent_id" jdbcType="BIGINT"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="slugId" column="slug_id" jdbcType="VARCHAR"/>
+        <result property="position" column="position" jdbcType="VARCHAR"/>
+        <result property="pageType" column="page_type" jdbcType="VARCHAR"/>
+        <result property="contentSnapshot" column="content_snapshot" jdbcType="VARCHAR"/>
+        <result property="mediaSize" column="media_size" jdbcType="BIGINT"/>
+        <result property="htmlSnapshot" column="html_snapshot" jdbcType="VARCHAR"/>
+        <result property="ydocState" column="ydoc_state" jdbcType="LONGVARBINARY"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="lastEditorId" column="last_editor_id" jdbcType="BIGINT"/>
+        <result property="editedAt" column="edited_at" jdbcType="TIMESTAMP"/>
+        <result property="sourceExt" column="source_ext" jdbcType="VARCHAR"/>
+        <result property="originalFileKey" column="original_file_key" jdbcType="VARCHAR"/>
+        <result property="editorIds" column="editor_ids" jdbcType="VARCHAR"/>
+        <result property="aclEnabled" column="acl_enabled" jdbcType="TINYINT"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="contentSize" column="content_size" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, _tenant_id, space_id, parent_id, title, slug_id, position, page_type, content_snapshot,
+        media_size, html_snapshot, ydoc_state, creator_id, last_editor_id, edited_at, source_ext,
+        original_file_key, editor_ids, acl_enabled, yn, created, modified
+    </sql>
+
+    <!-- 轻量列：树/列表场景只取元数据，不拉 content_snapshot/html_snapshot/ydoc_state 三个大字段；
+         contentSize 由 SQL 侧 CHAR_LENGTH(html_snapshot) 计算，媒体大小取 media_size 列
+         （快照回写时预计算，见 updateSnapshot）。解决「我的资料/LibraryNav 对所有空间并发拉
+         全量正文（约 90MB）导致加载极慢」的问题。 -->
+    <sql id="Light_Column_List">
+        id, _tenant_id, space_id, parent_id, title, slug_id, position, page_type, media_size,
+        creator_id, last_editor_id, edited_at, source_ext, original_file_key,
+        editor_ids, acl_enabled, yn, created, modified,
+        CHAR_LENGTH(html_snapshot) AS content_size
+    </sql>
+
+    <select id="listRootsBySpaceId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE space_id = #{spaceId}
+        AND parent_id IS NULL
+        AND yn = 1
+        ORDER BY position ASC
+    </select>
+
+    <select id="findBySlugId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM repo_page
+        WHERE slug_id = #{slugId}
+        AND yn = 1
+        LIMIT 1
+    </select>
+
+    <select id="listChildren" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE space_id = #{spaceId}
+        AND parent_id = #{parentId}
+        AND yn = 1
+        ORDER BY position ASC
+    </select>
+
+    <select id="listBySpaceId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE space_id = #{spaceId}
+        AND yn = 1
+    </select>
+
+    <update id="updateTitle">
+        UPDATE repo_page
+        SET title = #{title}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="updateParentAndPosition">
+        UPDATE repo_page
+        SET parent_id = #{parentId},
+            position = #{position}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="softDeleteByIds">
+        UPDATE repo_page
+        SET yn = 0
+        WHERE yn = 1
+        AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="updateSnapshot">
+        UPDATE repo_page
+        SET content_snapshot = #{contentSnapshot},
+            media_size = #{mediaSize},
+            html_snapshot = #{htmlSnapshot},
+            last_editor_id = #{lastEditorId},
+            edited_at = #{editedAt},
+            editor_ids = #{editorIds}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="updateMediaSize">
+        UPDATE repo_page
+        SET media_size = #{mediaSize}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <update id="updateAclEnabled">
+        UPDATE repo_page
+        SET acl_enabled = #{aclEnabled}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+
+    <!-- 最近编辑：本空间页面 ∪ 被分享到本空间的页面。租户条件由拦截器注入，子查询同表自动携带。
+         门户/列表场景只取元数据（Light 列），正文三个大字段由 findById/findBySlugId 单独承载 -->
+    <select id="listRecent" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page p
+        WHERE p.yn = 1
+        AND (
+            p.space_id IN
+            <foreach collection="spaceIds" item="sid" open="(" separator="," close=")">
+                #{sid}
+            </foreach>
+            OR p.id IN (
+                SELECT s.page_id
+                FROM repo_share s
+                WHERE s.yn = 1
+                AND s.target_space_id IN
+                <foreach collection="spaceIds" item="sid" open="(" separator="," close=")">
+                    #{sid}
+                </foreach>
+            )
+        )
+        ORDER BY p.edited_at DESC
+        LIMIT #{size}
+    </select>
+
+    <!-- 按 ID 批量取页面：所有调用点（门户最近访问/我分享的/与我共享/收藏、空间接收分享）均为列表
+         元数据场景，只取 Light 列；需要正文请走 findById/findBySlugId -->
+    <select id="listByIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE yn = 1
+        AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- 我编辑过的页面：last_editor_id 精确 ∪ editor_ids JSON 粗筛（应用层精确过滤）。
+         门户「最近访问」场景只取元数据（Light 列），不拉正文 -->
+    <select id="listRecentByEditor" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE yn = 1
+        AND (
+            last_editor_id = #{userId}
+            OR editor_ids LIKE CONCAT('%', #{userId}, '%')
+        )
+        ORDER BY edited_at DESC
+        LIMIT #{size}
+    </select>
+
+    <!-- 空间集合内的页面（纯成员空间，「我的资料」），按编辑时间倒序分页。列表场景只取元数据 -->
+    <select id="listBySpaceIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Light_Column_List"/>
+        FROM repo_page
+        WHERE yn = 1
+        AND space_id IN
+        <foreach collection="spaceIds" item="sid" open="(" separator="," close=")">
+            #{sid}
+        </foreach>
+        ORDER BY edited_at DESC
+        LIMIT #{from}, #{size}
+    </select>
+
+    <!-- 返回实体而非 byte[]：MyBatis 把数组返回类型按多行查询处理，会抛 argument type mismatch -->
+    <select id="selectYdocStateById" resultType="com.xspaceagi.repo.infra.dao.entity.RepoPage">
+        SELECT ydoc_state
+        FROM repo_page
+        WHERE id = #{id}
+        AND yn = 1
+        LIMIT 1
+    </select>
+
+    <!-- 存量回填：只取主键，正文由调用方逐页取，避免一次性拉全库大字段（约 90MB） -->
+    <select id="listIdsForMediaBackfill" resultType="java.lang.Long">
+        SELECT id
+        FROM repo_page
+        WHERE yn = 1
+        ORDER BY id
+    </select>
+
+    <!-- 删除页面时判断文件能否物理删除：除待删子树外是否还有页面引用这些 key
+         （original_file_key 等值 或 正文/HTML 快照含 /api/f/{key} 子串）。
+         每个 key 出一列 k{index}，一次扫表判定全部 key —— 逐 key 查会退化成 N 次全表扫，
+         而 content_snapshot + html_snapshot 合计约 90MB。 -->
+    <select id="countReferencesForFileKeys" resultType="java.util.Map">
+        SELECT
+        <foreach collection="fileKeys" item="fkey" index="i" separator=",">
+            SUM(CASE WHEN original_file_key = #{fkey}
+                OR LOCATE(CONCAT('/api/f/', #{fkey}), content_snapshot) > 0
+                OR LOCATE(CONCAT('/api/f/', #{fkey}), html_snapshot) > 0
+                THEN 1 ELSE 0 END) AS k${i}
+        </foreach>
+        FROM repo_page
+        WHERE yn = 1
+        AND id NOT IN
+        <foreach collection="excludeIds" item="eid" open="(" separator="," close=")">
+            #{eid}
+        </foreach>
+    </select>
+
+    <update id="updateYdocState">
+        UPDATE repo_page
+        SET ydoc_state = #{ydocState},
+            last_editor_id = #{lastEditorId},
+            edited_at = #{editedAt}
+        WHERE id = #{id}
+        AND yn = 1
+    </update>
+</mapper>

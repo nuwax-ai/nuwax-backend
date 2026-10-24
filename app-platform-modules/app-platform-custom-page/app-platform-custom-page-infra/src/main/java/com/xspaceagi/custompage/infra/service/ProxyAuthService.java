@@ -99,8 +99,8 @@ public class ProxyAuthService {
             }
             proxyAuthVo = buildProxyAuthVo(token, agentId, env);
             if (env == ProxyConfig.ProxyEnv.prod && backendVo.getPublishType() == PublishTypeEnum.AGENT) {
-                // 添加最近使用
-                agentApplicationService.addOrUpdateRecentUsed(proxyAuthVo.getUser().getUserId(), backendVo.getDevAgentId());
+                // 添加最近使用（网页应用智能体，子类型固定为 PageApp）
+                agentApplicationService.addOrUpdateRecentUsed(proxyAuthVo.getUser().getUserId(), backendVo.getDevAgentId(), "PageApp");
                 // 使用人数增加
                 conversationApplicationService.createConversationForPageApp(proxyAuthVo.getUser().getUserId(), backendVo.getDevAgentId());
             }

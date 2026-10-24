@@ -11,4 +11,8 @@ public interface IModelApiProxyConfigService {
     BackendModelDto getBackendModelConfig(String userApiKey, Long id, String traceId);
 
     FrontendModelDto generateUserFrontendModelConfig(Long tenantId, Long userId, Long agentId, BackendModelDto backendModel, String siteUrl);
+
+    String checkAndReturnNewText(Long tenantId, String text);
+
+    boolean enabledSensitiveFilter();
 }

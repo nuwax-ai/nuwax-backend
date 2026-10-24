@@ -16,6 +16,7 @@
 
 package com.xspaceagi.agent.core.infra.component.model.anthropic.api;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -112,6 +113,15 @@ public final class AnthropicApi {
 	private static final String HEADER_ANTHROPIC_BETA = "anthropic-beta";
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
+
+	/**
+	 * SSE 流空闲超时配置：首包上限（容忍慢 TTFT）与后续 chunk 间隔上限。
+	 * 放在 PING 过滤之前，思考阶段的 ping 事件会正常重置计时；
+	 * 超时抛出 TimeoutException 并取消订阅，释放底层 HTTP exchange。
+	 */
+	private static final Duration STREAM_FIRST_CHUNK_TIMEOUT = Duration.ofSeconds(180);
+
+	private static final Duration STREAM_CHUNK_IDLE_TIMEOUT = Duration.ofSeconds(180);
 
 	private final String completionsPath;
 
@@ -239,6 +249,10 @@ public final class AnthropicApi {
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
+			// Idle-timeout guard: no first chunk within 180s, or no new chunk for 60s,
+			// means the SSE stream is hung -> TimeoutException cancels the subscription
+			// and releases the underlying JDK HttpClient exchange.
+			.timeout(Mono.delay(STREAM_FIRST_CHUNK_TIMEOUT), chunk -> Mono.delay(STREAM_CHUNK_IDLE_TIMEOUT))
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
 			.map(content -> ModelOptionsUtils.jsonToObject(content, StreamEvent.class))
@@ -2022,14 +2036,31 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		private static final Logger logger = LoggerFactory.getLogger(ToolUseAggregationEvent.class);
+
 		void squashIntoContentBlock() {
-			Map<String, Object> map = (StringUtils.hasText(this.partialJson))
-					? ModelOptionsUtils.jsonToMap(this.partialJson) : Map.of();
+			Map<String, Object> map = Map.of();
+			if (StringUtils.hasText(this.partialJson)) {
+				try {
+					map = ModelOptionsUtils.jsonToMap(this.partialJson);
+				}
+				catch (Exception e) {
+					// 模型输出了非法的工具入参 JSON（如字符串值内含未转义的双引号）。
+					// 不能让 JsonParseException 从流式聚合中抛出炸掉整个响应，
+					// 降级为空参数：工具会走正常的空参/错误结果路径，模型看到结果后有机会自我纠正。
+					logger.warn("Invalid tool_use input JSON from model, tool={}, error={}, raw={}", this.name,
+							e.getMessage(), truncateForLog(this.partialJson));
+				}
+			}
 			this.toolContentBlocks.add(new ContentBlockStartEvent.ContentBlockToolUse("tool_use", this.id, this.name, map));
 			this.index = null;
 			this.id = null;
 			this.name = null;
 			this.partialJson = "";
+		}
+
+		private static String truncateForLog(String text) {
+			return text.length() <= 500 ? text : text.substring(0, 500) + "...(truncated)";
 		}
 
 		@Override

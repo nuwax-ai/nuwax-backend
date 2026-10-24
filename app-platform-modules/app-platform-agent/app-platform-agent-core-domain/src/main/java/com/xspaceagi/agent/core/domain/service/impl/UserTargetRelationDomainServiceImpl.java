@@ -67,7 +67,19 @@ public class UserTargetRelationDomainServiceImpl implements UserTargetRelationDo
     }
 
     @Override
-    public List<UserTargetRelation> queryRecentUseList(Long userId, Published.TargetType targetType, Integer size, Integer pageIndex) {
+    @DSTransactional
+    public boolean unRecordAll(Published.TargetType targetType, UserTargetRelation.OpType type, Long targetId) {
+        Assert.notNull(targetType, "targetType不能为空");
+        Assert.notNull(type, "type不能为空");
+        Assert.notNull(targetId, "targetId不能为空");
+        return userTargetRelationRepository.remove(new LambdaQueryWrapper<UserTargetRelation>()
+                .eq(UserTargetRelation::getTargetType, targetType)
+                .eq(UserTargetRelation::getTargetId, targetId)
+                .eq(UserTargetRelation::getType, type));
+    }
+
+    @Override
+    public List<UserTargetRelation> queryRecentUseList(Long userId, Published.TargetType targetType, Integer size, Integer pageIndex, String targetSubType) {
         Assert.notNull(userId, "userId must be non-null");
         Assert.notNull(size, "size must be non-null");
         if (size > 1000 || size <= 0) {
@@ -77,6 +89,14 @@ public class UserTargetRelationDomainServiceImpl implements UserTargetRelationDo
         queryWrapper.eq(UserTargetRelation::getUserId, userId);
         queryWrapper.eq(UserTargetRelation::getType, UserTargetRelation.OpType.Conversation);
         queryWrapper.eq(UserTargetRelation::getTargetType, targetType);
+        // 按子类型过滤：type=PageApp 只查网页应用；type=Agent 只查智能体（非 PageApp，含 ChatBot/TaskAgent）
+        if (targetSubType != null && !targetSubType.isEmpty()) {
+            if ("PageApp".equals(targetSubType)) {
+                queryWrapper.eq(UserTargetRelation::getTargetSubType, "PageApp");
+            } else {
+                queryWrapper.ne(UserTargetRelation::getTargetSubType, "PageApp");
+            }
+        }
         queryWrapper.orderByDesc(UserTargetRelation::getModified);
         if (pageIndex != null && pageIndex > 0) {
             queryWrapper.last("limit " + (pageIndex - 1) * size + "," + size);
@@ -102,8 +122,24 @@ public class UserTargetRelationDomainServiceImpl implements UserTargetRelationDo
     }
 
     @Override
+    public List<Long> queryAllCollectionIds(Long userId, Published.TargetType targetType) {
+        Assert.notNull(userId, "userId must be non-null");
+        Assert.notNull(targetType, "targetType must be non-null");
+        LambdaQueryWrapper<UserTargetRelation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserTargetRelation::getUserId, userId);
+        queryWrapper.eq(UserTargetRelation::getTargetType, targetType);
+        queryWrapper.eq(UserTargetRelation::getType, UserTargetRelation.OpType.Collect);
+        return userTargetRelationRepository.list(queryWrapper).stream().map(UserTargetRelation::getTargetId).toList();
+    }
+
+    @Override
     public List<UserTargetRelation> queryDevCollectionList(Long userId, Published.TargetType targetType, Integer page, Integer size) {
         return queryList(userId, targetType, UserTargetRelation.OpType.DevCollect, page, size);
+    }
+
+    @Override
+    public List<UserTargetRelation> queryEnableList(Long userId, Published.TargetType targetType, Integer page, Integer size) {
+        return queryList(userId, targetType, UserTargetRelation.OpType.Enable, page, size);
     }
 
     private List<UserTargetRelation> queryList(Long userId, Published.TargetType targetType, UserTargetRelation.OpType opType, Integer page, Integer size) {
@@ -235,5 +271,19 @@ public class UserTargetRelationDomainServiceImpl implements UserTargetRelationDo
     @Override
     public void delete(Long id) {
         userTargetRelationRepository.removeById(id);
+    }
+
+    @Override
+    public int deleteByTarget(Published.TargetType targetType, Long targetId) {
+        List<UserTargetRelation> relations = userTargetRelationRepository.list(new LambdaQueryWrapper<UserTargetRelation>()
+                .eq(UserTargetRelation::getTargetType, targetType)
+                .eq(UserTargetRelation::getTargetId, targetId));
+        if (relations.isEmpty()) {
+            return 0;
+        }
+        userTargetRelationRepository.remove(new LambdaQueryWrapper<UserTargetRelation>()
+                .eq(UserTargetRelation::getTargetType, targetType)
+                .eq(UserTargetRelation::getTargetId, targetId));
+        return relations.size();
     }
 }

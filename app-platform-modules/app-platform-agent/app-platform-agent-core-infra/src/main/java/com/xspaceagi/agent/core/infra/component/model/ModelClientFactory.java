@@ -23,14 +23,16 @@ import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
@@ -76,7 +78,17 @@ public class ModelClientFactory {
     });
 
     private ClientHttpRequestFactory getRequestFactory() {
-        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        // Socket read timeout (responseTimeout) for non-streaming (RestClient) calls: without it a
+        // server that accepts the connection but never responds blocks the calling thread forever.
+        // Spring 6.1's factory has no setter for it, so set it on the HttpClient's default
+        // RequestConfig; the factory copies that config per request and merges its own timeouts in.
+        RequestConfig defaultRequestConfig = RequestConfig.custom()
+                .setResponseTimeout(Timeout.ofMinutes(5))
+                .build();
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(defaultRequestConfig)
+                .build();
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         factory.setConnectTimeout(15000);
         factory.setConnectionRequestTimeout(Duration.ofSeconds(60));
         return factory;
@@ -89,8 +101,6 @@ public class ModelClientFactory {
 
     @PostConstruct
     private void init() {
-        // Disable HttpClient's keep-alive feature, which may cause connection timeout in some network environments
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
         webClientBuilder.filter(WebClientRequestAndResponseFilter.requestFilter)
                 .filter(WebClientRequestAndResponseFilter.responseFilter)
                 .clientConnector(new JdkClientHttpConnector(ex));
@@ -245,7 +255,7 @@ public class ModelClientFactory {
                     .webClientBuilder(cloneWebClientBuilder())
                     .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
                     .build();
-            chatModel = new AnthropicChatModel(api, anthropicChatOptions, ToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+            chatModel = new AnthropicChatModel(api, anthropicChatOptions, DefaultToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
         }
 
         Assert.notNull(chatModel, "chatModel must be non-null");

@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 @Service
 public class ElasticsearchServiceImpl implements SearchService, ISearchRpcService {
 
+    /** 单个 bulk 请求最多包含的文档数，避免请求体和内存无上限增长 */
+    private static final int MAX_BULK_SIZE = 50;
+
     private final Set<String> indexNameSet = new ConcurrentHashSet<>();
 
     @Value("${search.elasticsearch.url}")
@@ -77,11 +80,22 @@ public class ElasticsearchServiceImpl implements SearchService, ISearchRpcServic
 
     @Override
     public void bulkIndex(List<SearchDocument> list) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        // 分片提交，避免一次 bulk 把所有文档和序列化结果都压在堆里
+        for (int from = 0; from < list.size(); from += MAX_BULK_SIZE) {
+            int to = Math.min(from + MAX_BULK_SIZE, list.size());
+            bulkIndexChunk(list.subList(from, to));
+        }
+    }
+
+    private void bulkIndexChunk(List<SearchDocument> list) {
         Assert.noNullElements(list, "list cannot be left blank.");
         String finalIndexName = createIndexIfNotExists(list.get(0).getClass());
         BulkRequest.Builder br = new BulkRequest.Builder();
         for (SearchDocument object : list) {
-            log.info("构建文档索引, id {}, finalIndexName {}", object.getId(), finalIndexName);
+            log.debug("构建文档索引, id {}, finalIndexName {}", object.getId(), finalIndexName);
             br.operations(op -> op.index(idx -> idx.index(finalIndexName).id(object.getId()).document(object)));
         }
 

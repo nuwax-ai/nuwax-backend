@@ -39,6 +39,12 @@ public class ModelProxyServer {
     public static AttributeKey<TraceContext> traceContextAttributeKey = AttributeKey.newInstance("traceContext");
     public static AttributeKey<String> backendUrlAttributeKey = AttributeKey.newInstance("backendUrl");
     public static AttributeKey<Queue<Map<String, String>>> logRequestQueueAttributeKey = AttributeKey.newInstance("logRequestQueue");
+    /**
+     * 后端连接建立时绑定的目标 authority（scheme://host:port）。
+     * 一条后端连接在协议层只能服务一个 host（HTTPS 的 SNI 在握手时已按首个目标写死），
+     * 复用前必须比对本属性，不一致禁止复用，否则请求会被发到错误的厂商（表现为间歇性 404）。
+     */
+    public static AttributeKey<String> boundAuthorityAttributeKey = AttributeKey.newInstance("boundAuthority");
 
     @Value("${model-api-proxy.port:18086}")
     private int port;
@@ -115,7 +121,7 @@ public class ModelProxyServer {
                     protected void initChannel(Channel ch) {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast("httpClientCodec", new HttpClientCodec());
-                        p.addLast(new BackendProxyHandler(tokenLogService));
+                        p.addLast(new BackendProxyHandler(tokenLogService, modelApiProxyConfigService));
                     }
                 });
         return bootstrap;
@@ -136,7 +142,7 @@ public class ModelProxyServer {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(sslContext.newHandler(ch.alloc(), host, port));
                         p.addLast("httpClientCodec", new HttpClientCodec());
-                        p.addLast(new BackendProxyHandler(tokenLogService));
+                        p.addLast(new BackendProxyHandler(tokenLogService, modelApiProxyConfigService));
                     }
                 });
         return bootstrap;

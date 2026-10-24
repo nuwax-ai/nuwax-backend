@@ -336,7 +336,7 @@ public class ImChannelTestService {
                     return errorResponse("连接企业微信服务器失败，响应为空");
 
                 } catch (Exception e) {
-                    log.error("WeCom API error", e);
+                    log.error("WeWork API error", e);
                     return errorResponse("连接企业微信服务器异常: " + e.getMessage());
                 }
             } else {
@@ -344,7 +344,7 @@ public class ImChannelTestService {
             }
 
         } catch (Exception e) {
-            log.error("WeCom connectivity test failed", e);
+            log.error("WeWork connectivity test failed", e);
             return ImChannelConfigTestResponse.builder()
                     .success(false)
                     .message(e.getMessage())

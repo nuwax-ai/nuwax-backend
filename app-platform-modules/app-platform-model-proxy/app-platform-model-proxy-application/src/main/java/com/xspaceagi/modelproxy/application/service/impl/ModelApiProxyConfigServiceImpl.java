@@ -5,6 +5,7 @@ import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
 import com.xspaceagi.agent.core.sdk.IModelRpcService;
 import com.xspaceagi.agent.core.sdk.dto.ModelInfoDto;
+import com.xspaceagi.agent.core.spec.enums.UsageScenarioEnum;
 import com.xspaceagi.modelproxy.infra.rpc.UserAccessKeyRpcService;
 import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
@@ -13,10 +14,14 @@ import com.xspaceagi.pricing.sdk.dto.PriceEstimate;
 import com.xspaceagi.pricing.sdk.rpc.IPricingRpcService;
 import com.xspaceagi.pricing.spec.enums.TargetTypeEnum;
 import com.xspaceagi.system.application.dto.TenantConfigDto;
+import com.xspaceagi.system.application.dto.UserDto;
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
+import com.xspaceagi.system.application.service.UserApplicationService;
+import com.xspaceagi.system.infra.dao.entity.User;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.server.IUserMetricRpcService;
+import com.xspaceagi.system.sdk.service.ISensitiveWordRpcService;
 import com.xspaceagi.system.sdk.service.dto.BizType;
 import com.xspaceagi.system.sdk.service.dto.PeriodType;
 import com.xspaceagi.system.sdk.service.dto.UserAccessKeyDto;
@@ -68,6 +73,12 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
 
+    @Resource
+    private UserApplicationService userApplicationService;
+
+    @Resource
+    private ISensitiveWordRpcService iSensitiveWordRpcService;
+
     @Value("${model-api-proxy.base-api-url:}")
     private String baseApiUrl;
 
@@ -107,6 +118,9 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
             List<ModelConfigDto.ApiInfo> apiInfoList = modelInfoDto.getApiInfoList();
             if (apiInfoList == null || apiInfoList.isEmpty()) {
                 throw new BizException("5000", "Model API Key is invalid.");
+            }
+            if (modelInfoDto.getUsageScenarios() != null && !modelInfoDto.getUsageScenarios().contains(UsageScenarioEnum.OpenApi)) {
+                throw new BizException("4030", "The model does not support external calls.");
             }
             TenantConfigDto tenantConfigDto = tenantConfigApplicationService.getTenantConfig(userAccessKeyDto.getTenantId());
             ModelConfigDto.ApiInfo apiInfo = apiInfoList.get(userAccessKeyDto.getUserId().intValue() % apiInfoList.size());
@@ -163,6 +177,11 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
                 throw new BizException("CREDIT_NOT_ENOUGH_PRICE", priceEstimate.getMessage());
             }
         }
+        UserDto userDto = userApplicationService.queryById(userAccessKeyDto.getUserId(), false);
+        if (userDto == null || userDto.getStatus() != User.Status.Enabled) {
+            throw new BizException("4030", "User is not enabled.");
+        }
+        backendModelDto.setLang(userDto.getLang());
         // 缓存1分钟，1分钟内如果token超了无法实时体现
         redisUtil.set(cacheKey, JSON.toJSONString(backendModelDto), 60);
         return backendModelDto;
@@ -242,5 +261,15 @@ public class ModelApiProxyConfigServiceImpl implements IModelApiProxyConfigServi
         frontendModelDto.setBaseUrl(siteUrl + "/api/proxy/model");
         frontendModelDto.setApiKey(userAccessKeyDto.getAccessKey());
         return frontendModelDto;
+    }
+
+    @Override
+    public String checkAndReturnNewText(Long tenantId, String text) {
+        return iSensitiveWordRpcService.checkAndReturnNewText(tenantId, text);
+    }
+
+    @Override
+    public boolean enabledSensitiveFilter() {
+        return iSensitiveWordRpcService.enabledSensitiveFilter();
     }
 }

@@ -1,5 +1,6 @@
 package com.xspaceagi.agent.core.adapter.dto;
 
+import com.xspaceagi.agent.core.adapter.dto.config.AgentConfigDto;
 import com.xspaceagi.agent.core.adapter.repository.entity.AgentComponentConfig;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -39,6 +40,9 @@ public class TryReqDto implements Serializable {
     @Schema(description = "前端选中的技能ID列表")
     private List<Long> skillIds;
 
+    @Schema(description = "选择的资料库文档列表")
+    private List<SelectedDocDto> selectedDocs;
+
     @Schema(description = "长期记忆中是否过滤敏感信息")
     private Boolean filterSensitive;
 
@@ -51,6 +55,11 @@ public class TryReqDto implements Serializable {
     @Schema(description = "代理模式")
     private String agentMode;
 
+    @Schema(description = "代理模式下的配置", hidden = true)
+    private AgentConfigDto agentConfig;
+
+    private Map<String, Object> imVars;
+
     @Data
     public static class SelectedComponentDto {
         @Schema(description = "组件ID")
@@ -58,5 +67,15 @@ public class TryReqDto implements Serializable {
 
         @Schema(description = "组件类型")
         private AgentComponentConfig.Type type; // 组件类型，可选值：Plugin, Workflow, Trigger, Knowledge, Variable, Database
+    }
+
+    @Data
+    public static class SelectedDocDto {
+        @Schema(description = "选择的资料库文档ID")
+        private String slugId;
+        @Schema(description = "选择的资料库文档名称")
+        private String title;
+        @Schema(description = "选择的资料库文档类型")
+        private String pageType;
     }
 }

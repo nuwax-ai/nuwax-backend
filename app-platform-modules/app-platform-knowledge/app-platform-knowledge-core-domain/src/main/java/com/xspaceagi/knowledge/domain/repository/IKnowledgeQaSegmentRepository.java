@@ -5,6 +5,7 @@ import com.xspaceagi.knowledge.domain.model.KnowledgeQaSegmentModel;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.infra.service.IQueryViewService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -137,9 +138,21 @@ public interface IKnowledgeQaSegmentRepository extends IQueryViewService<Knowled
 
     /**
      * 根据rawId查询问答id列表
-     * 
+     *
      * @param rawId rawId
      * @return
      */
     List<Long> queryQaIdList(Long rawId);
+
+    /**
+     * 全量重置问答的向量化状态(跨所有租户),用于迁移到新向量库后重新向量化。
+     * 将所有有效(yn=1)问答的 has_embedding 置为 0、created 置为指定时间(当天0点),
+     * 使其重新进入定时任务的向量化查询窗口(has_embedding=0 且 created 在最近N天内)。
+     * <p>
+     * 注意:属一次性迁移操作,重复调用会把已重灌的 has_embedding=1 又改回 0 导致重复向量化。
+     *
+     * @param todayZero 重置后的创建时间(当天0点)
+     * @return 受影响行数
+     */
+    int resetAllForVectorRebuild(LocalDateTime todayZero);
 }

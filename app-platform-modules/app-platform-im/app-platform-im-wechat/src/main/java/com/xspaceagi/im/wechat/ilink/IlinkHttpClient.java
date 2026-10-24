@@ -25,12 +25,17 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * iLink 网关 HTTP 客户端（对齐 openclaw-weixin src/api/api.ts）
@@ -40,6 +45,9 @@ public class IlinkHttpClient {
     private static final Logger log = LoggerFactory.getLogger(IlinkHttpClient.class);
 
     private static final String CHANNEL_VERSION = "1.0.3";
+
+    /** 硬超时在 request timeout 基础上的余量（ms）：request timeout 仍按自身语义先触发，这里只兜 body 挂死 */
+    private static final long HARD_TIMEOUT_MARGIN_MS = 2_000L;
 
     private final HttpClient httpClient;
     private final String skRouteTag;
@@ -53,6 +61,48 @@ public class IlinkHttpClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
+    }
+
+    /**
+     * 硬超时兜底：JDK HttpClient 的 {@link HttpRequest#timeout} 只约束"响应头到达"，
+     * 之后 ofString 的 body 聚合读取没有任何超时——上游先回头、body 挂住时 {@link HttpClient#send}
+     * 会无限期阻塞（长轮询线程堆积的根因）。这里改为 sendAsync + 限时 get，把头+body 全程框死；
+     * 超时则取消底层请求并抛 {@link HttpTimeoutException}，与 request timeout 的异常类型一致，
+     * 调用方（如 getUpdatesLenient 的 isTimeout）按既有"超时"语义处理。
+     */
+    private HttpResponse<String> sendWithHardTimeout(HttpRequest request, long requestTimeoutMs)
+            throws IOException, InterruptedException {
+        CompletableFuture<HttpResponse<String>> future =
+                httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        long hardTimeoutMs = Math.max(requestTimeoutMs, 1) + HARD_TIMEOUT_MARGIN_MS;
+        try {
+            return future.get(hardTimeoutMs, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            // 中断同样必须取消底层请求：sendAsync 的 request-timeout 计时器在响应头到达后已停止，
+            // 不取消的话这个交换会无人看管地继续——正是本方法要消灭的 body 挂死形态
+            future.cancel(true);
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            if (cause instanceof RuntimeException re) {
+                throw re;
+            }
+            if (cause instanceof IOException io) {
+                throw io;
+            }
+            if (cause instanceof InterruptedException ie) {
+                future.cancel(true);
+                Thread.currentThread().interrupt();
+                throw ie;
+            }
+            throw new IOException(cause.getMessage(), cause);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            // 只带 path 不带 query：getQrCodeStatus 的 URL 含 qrcode 登录凭证，不能随异常消息进日志
+            throw new HttpTimeoutException(
+                    "hard timeout (headers+body) after " + hardTimeoutMs + "ms: " + request.uri().getPath());
+        }
     }
 
     public BaseInfo buildBaseInfo() {
@@ -216,7 +266,7 @@ public class IlinkHttpClient {
         if (StringUtils.isNotBlank(skRouteTag)) {
             rb.header("SKRouteTag", skRouteTag);
         }
-        HttpResponse<String> resp = httpClient.send(rb.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = sendWithHardTimeout(rb.build(), 30_000);
         if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
             throw new IOException("get_bot_qrcode HTTP " + resp.statusCode() + ": " + resp.body());
         }
@@ -234,7 +284,7 @@ public class IlinkHttpClient {
         if (StringUtils.isNotBlank(skRouteTag)) {
             rb.header("SKRouteTag", skRouteTag);
         }
-        HttpResponse<String> resp = httpClient.send(rb.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = sendWithHardTimeout(rb.build(), timeoutMs);
         if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
             throw new IOException("get_qrcode_status HTTP " + resp.statusCode() + ": " + resp.body());
         }
@@ -256,7 +306,7 @@ public class IlinkHttpClient {
         if (StringUtils.isNotBlank(skRouteTag)) {
             rb.header("SKRouteTag", skRouteTag);
         }
-        HttpResponse<String> resp = httpClient.send(rb.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = sendWithHardTimeout(rb.build(), timeoutMs);
         if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
             String errBody = resp.body();
             String safe = WechatIlinkLogRedaction.redactJsonBodyForLog(errBody != null ? errBody : "");

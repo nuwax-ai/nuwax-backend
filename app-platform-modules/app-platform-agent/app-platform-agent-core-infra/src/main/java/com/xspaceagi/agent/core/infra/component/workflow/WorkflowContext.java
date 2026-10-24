@@ -152,6 +152,7 @@ public class WorkflowContext implements Serializable {
         AgentContext agentContext0 = new AgentContext();
         BeanUtils.copyProperties(this.agentContext, agentContext0);
         agentContext0.setContextMessages(null);
+        agentContext0.setExecutionMessagesComplete(false);
         return agentContext0;
     }
 

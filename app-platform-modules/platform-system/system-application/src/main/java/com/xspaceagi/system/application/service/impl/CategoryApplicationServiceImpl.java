@@ -108,6 +108,9 @@ public class CategoryApplicationServiceImpl implements CategoryApplicationServic
         if (category.getDescription() != null) {
             existing.setDescription(category.getDescription());
         }
+        if (category.getIcon() != null) {
+            existing.setIcon(category.getIcon());
+        }
         existing.setModified(new Date());
 
         categoryService.updateById(existing);

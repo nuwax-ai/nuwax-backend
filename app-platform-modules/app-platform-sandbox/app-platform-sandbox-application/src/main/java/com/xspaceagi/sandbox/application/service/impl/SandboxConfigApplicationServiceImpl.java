@@ -65,11 +65,6 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
     @Resource
     private IAgentRpcService iAgentRpcService;
 
-    static {
-        // disable keep alive，暂不使用连接池
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
-    }
-
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
 
     @Override
@@ -126,6 +121,16 @@ public class SandboxConfigApplicationServiceImpl implements SandboxConfigApplica
         }
         dto.setServerPort(reverseServerProperties.getOuter().getPort());
         return dto;
+    }
+
+    @Override
+    public SandboxConfigDto getByDeviceId(Long userId, String deviceId) {
+        SandboxConfig entity = sandboxConfigService.queryUserConfigByDeviceId(userId, deviceId);
+        if (entity == null) {
+            return null;
+        }
+        // 复用 getByKey，沿用其 serverHost 轮询 + serverPort 填充逻辑
+        return getByKey(entity.getConfigKey());
     }
 
     @Override

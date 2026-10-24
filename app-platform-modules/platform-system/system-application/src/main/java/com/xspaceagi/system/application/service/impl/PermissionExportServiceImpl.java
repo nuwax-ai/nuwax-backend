@@ -234,6 +234,8 @@ public class PermissionExportServiceImpl implements PermissionExportService {
         dp.setMaxSpaceCount(e.getMaxSpaceCount());
         dp.setMaxAgentCount(e.getMaxAgentCount());
         dp.setMaxPageAppCount(e.getMaxPageAppCount());
+        dp.setMaxUserAppCount(e.getMaxUserAppCount());
+        dp.setUserAppIdleTimeoutSeconds(e.getUserAppIdleTimeoutSeconds());
         dp.setMaxKnowledgeCount(e.getMaxKnowledgeCount());
         dp.setKnowledgeStorageLimitGb(normalizeExportDecimal(e.getKnowledgeStorageLimitGb()));
         dp.setMaxDataTableCount(e.getMaxDataTableCount());

@@ -19,6 +19,10 @@
         </dependency>
         <dependency>
             <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-knowledge-core-application</artifactId>
         </dependency>
         <dependency>
@@ -36,6 +40,12 @@
         <dependency>
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-file-application</artifactId>
+        </dependency>
+        <!-- 连接器 SDK 门面：会话转换时把「用户已启用的连接器」整理进会话变量（IConnectorApiService）。
+             实现（ConnectorApiServiceImpl）在 connector-ui，同属 web-bootstrap 聚合，成品里 bean 必然在场。 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-sdk</artifactId>
         </dependency>
     </dependencies>
 </project>

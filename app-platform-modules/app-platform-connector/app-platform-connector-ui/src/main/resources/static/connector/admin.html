@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>女娲 · 连接器（官方管理端）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23262320'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23F5F2EC' font-family='serif'%3E%E5%A5%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ 登录视图 ============ -->
+<div id="view-login" class="login-screen hidden">
+  <div class="login-card">
+    <div class="login-band">
+      <div class="brand-serif">女娲 · 连接器</div>
+      <div class="brand-sub">NUWAX CONNECTOR · ADMIN</div>
+    </div>
+    <form id="login-form" class="login-body" autocomplete="off">
+      <label class="field">
+        <span class="field-label">手机号</span>
+        <input id="login-phone" type="text" maxlength="20" placeholder="请输入手机号" required>
+      </label>
+      <label class="field">
+        <span class="field-label">密码</span>
+        <input id="login-password" type="password" placeholder="请输入密码" required>
+      </label>
+      <button type="submit" class="btn btn-coal btn-block">登 录</button>
+      <p class="login-hint">官方全局连接器治理（新增 / 编辑 / 启停用 / 工具维护 / 导入官方包 / 执行审计）。</p>
+    </form>
+  </div>
+</div>
+
+<!-- ============ 主视图 ============ -->
+<div id="view-app" class="hidden">
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div>
+        <div class="brand-serif light">女娲 · 连接器</div>
+        <div class="brand-sub light">NUWAX CONNECTOR · 官方管理端</div>
+      </div>
+      <div class="masthead-right">
+        <a href="index.html" class="btn btn-ghost-light btn-sm">← 总览</a>
+        <a href="space.html" class="btn btn-ghost-light btn-sm">空间管理</a>
+        <span id="user-badge" class="user-badge"></span>
+        <button id="btn-logout" class="btn btn-ghost-light">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="official">官方连接器目录</button>
+    <button class="tab" data-tab="audit">执行审计</button>
+  </nav>
+
+  <main class="content">
+
+    <!-- 官方目录 -->
+    <section id="tab-official" class="tab-panel">
+      <div class="toolbar">
+        <input id="admin-keyword" class="input-search" type="text" placeholder="搜索官方连接器（名称 / service）">
+        <select id="admin-status-filter" class="filter-select" title="按状态筛选">
+          <option value="">状态：全部</option>
+          <option value="enabled">仅启用</option>
+          <option value="disabled">仅停用</option>
+        </select>
+        <select id="admin-auth-filter" class="filter-select" title="按认证方式筛选">
+          <option value="">认证：全部</option>
+          <option value="no_auth">免鉴权</option>
+          <option value="api_key">API Key</option>
+          <option value="bearer">Bearer</option>
+          <option value="oauth2">OAuth 2.0</option>
+          <option value="oauth2_device">扫码授权（设备码）</option>
+          <option value="custom">自定义</option>
+        </select>
+        <span style="flex:1"></span>
+        <button id="btn-save-order" class="btn btn-coal">保存排序</button>
+        <button id="btn-export-selected" class="btn btn-outline">导出所选</button>
+        <button id="btn-export-all" class="btn btn-outline">导出全部</button>
+        <button id="btn-new-provider" class="btn btn-coal">新增官方连接器</button>
+        <button id="btn-import" class="btn btn-outline">导入官方包</button>
+      </div>
+      <div class="card" style="overflow:auto">
+        <table class="admin-table" id="admin-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="admin-check-all" title="全选当前筛选结果"></th>
+              <th>连接器</th>
+              <th>service</th>
+              <th>认证</th>
+              <th>工具数</th>
+              <th>状态</th>
+              <th>更新时间</th>
+              <th>排序</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="admin-pager" class="admin-pager"></div>
+      <p class="login-hint" style="margin-top:8px">官方连接器为全局可见（space_id=0、全员可见）。新增 / 编辑 / 工具维护落库后全员生效；「停用」后从官方目录移除，启用需重新录入或走调试接口。拖拽行或点排序按钮调整全局顺序后点「保存排序」生效；筛选激活时排序禁用。</p>
+    </section>
+
+    <!-- 执行审计 -->
+    <section id="tab-audit" class="tab-panel hidden">
+      <div class="toolbar">
+        <span id="runs-summary" class="conn-summary"></span>
+        <span style="flex:1"></span>
+        <button id="btn-refresh-runs" class="btn btn-outline">刷新</button>
+      </div>
+      <div class="card" style="overflow:auto">
+        <table class="admin-table" id="runs-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>connectionId</th>
+              <th>actionId</th>
+              <th>agentId</th>
+              <th>状态</th>
+              <th>errorCode</th>
+              <th>耗时</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="runs-pager" class="admin-pager"></div>
+      <p class="login-hint" style="margin-top:8px">执行审计覆盖全部空间的连接器工具执行（redactedSummary 已脱敏，不含凭证明文）。</p>
+    </section>
+
+  </main>
+
+  <footer class="footer-band">
+    <span>凭证明文不出连接器模块边界 · SSRF 防护永远生效 · 个人连接，不跨用户共享</span>
+  </footer>
+</div>
+
+<!-- 详情抽屉 -->
+<div id="drawer-mask" class="drawer-mask hidden"></div>
+<aside id="drawer" class="drawer hidden">
+  <div class="drawer-head coal-band-sm">
+    <h3 id="drawer-title" class="card-title">连接器详情</h3>
+    <button id="drawer-close" class="btn btn-ghost-light btn-sm">关闭</button>
+  </div>
+  <div id="drawer-body" class="drawer-body"></div>
+</aside>
+
+<!-- 新增 / 编辑官方连接器抽屉 -->
+<div id="provider-drawer-mask" class="drawer-mask hidden"></div>
+<aside id="provider-drawer" class="drawer hidden">
+  <div class="drawer-head coal-band-sm">
+    <h3 id="provider-drawer-title" class="card-title">新增官方连接器</h3>
+    <button id="provider-drawer-close" class="btn btn-ghost-light btn-sm">关闭</button>
+  </div>
+  <div class="drawer-body">
+    <form id="provider-form" autocomplete="off">
+      <label class="field">
+        <span class="field-label">service（唯一标识，创建后不可改）</span>
+        <input id="prov-service" type="text" placeholder="小写字母开头，小写字母/数字/下划线，如 github" required>
+      </label>
+      <label class="field">
+        <span class="field-label">显示名称</span>
+        <input id="prov-display" type="text" placeholder="目录卡片展示名称" required>
+      </label>
+      <label class="field">
+        <span class="field-label">描述（可选）</span>
+        <textarea id="prov-desc" rows="2" placeholder="连接器介绍，展示在目录卡片"></textarea>
+      </label>
+      <label class="field">
+        <span class="field-label">Base URL</span>
+        <input id="prov-baseurl" type="text" placeholder="https://api.example.com" required>
+      </label>
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">认证方式</span>
+          <select id="prov-authtype">
+            <option value="no_auth">免鉴权</option>
+            <option value="api_key">API Key</option>
+            <option value="bearer">Bearer</option>
+            <option value="oauth2">OAuth 2.0</option>
+            <option value="oauth2_device">扫码授权（设备码）</option>
+            <option value="custom">自定义</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">分类（可选）</span>
+          <input id="prov-category" type="text" placeholder="如 代码托管">
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">标签（可选，逗号分隔）</span>
+        <input id="prov-tags" type="text" placeholder="如 github,dev">
+      </label>
+      <div class="field">
+        <span class="field-label">认证配置</span>
+        <div id="prov-auth-editor" class="auth-editor"></div>
+      </div>
+      <button id="provider-submit" type="submit" class="btn btn-coal btn-block">创建官方连接器</button>
+      <p class="login-hint">创建为官方全局连接器（space_id=0、managed_by=system、全员可见，任意空间目录可见）。OAuth 连接器的 App 配置为平台公共 App，客户端加密落库不回显明文。</p>
+    </form>
+  </div>
+</aside>
+
+<!-- 动作编辑抽屉 -->
+<div id="action-drawer-mask" class="drawer-mask hidden"></div>
+<aside id="action-drawer" class="drawer hidden">
+  <div class="drawer-head coal-band-sm">
+    <h3 id="action-drawer-title" class="card-title">新增工具</h3>
+    <button id="action-drawer-close" class="btn btn-ghost-light btn-sm">关闭</button>
+  </div>
+  <div class="drawer-body">
+    <form id="action-form" autocomplete="off">
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">actionKey（创建后不可改）</span>
+          <input id="act-key" type="text" placeholder="如 get_repo" required>
+        </label>
+        <label class="field">
+          <span class="field-label">工具名称</span>
+          <input id="act-name" type="text" placeholder="如 查询仓库" required>
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">工具说明（供 Agent 判断何时调用）</span>
+        <textarea id="act-desc" rows="3" placeholder="说明用途、关键入参约定与返回结构"></textarea>
+      </label>
+      <label class="field">
+        <span class="field-label">标签（可选，逗号分隔）</span>
+        <input id="act-tags" type="text" placeholder="如 演示">
+      </label>
+
+      <label class="field">
+        <span class="field-label">执行类型</span>
+        <select id="act-exec-type">
+          <option value="DECLARATIVE">HTTP 接口</option>
+          <option value="PLUGIN">绑定插件</option>
+          <option value="WORKFLOW">绑定工作流</option>
+        </select>
+      </label>
+
+      <div id="act-bind-box" class="hidden">
+        <label class="field" id="act-bind-space-field">
+          <span class="field-label">空间（筛选可绑定的插件/工作流）</span>
+          <select id="act-bind-space"><option value="">— 请选择 —</option></select>
+        </label>
+        <label class="field">
+          <span class="field-label" id="act-bind-label">绑定插件（仅已发布）</span>
+          <select id="act-bind-select"><option value="">— 请选择 —</option></select>
+        </label>
+        <p class="editor-hint" id="act-bind-desc"></p>
+        <button type="button" class="btn btn-outline btn-sm" id="act-bind-refresh">刷新列表</button>
+      </div>
+
+      <div id="act-http-box">
+      <div class="section-band">HTTP 请求声明</div>
+      <div class="row-2">
+        <label class="field" style="max-width:120px">
+          <span class="field-label">方法</span>
+          <select id="spec-method">
+            <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">路径（{名称} 占位符取输入参数）</span>
+          <input id="spec-path" type="text" placeholder="/repos/{owner}/{repo}" required>
+        </label>
+      </div>
+      <div class="row-2">
+        <label class="field">
+          <span class="field-label">超时毫秒（可选）</span>
+          <input id="spec-timeout" type="number" min="0" placeholder="缺省">
+        </label>
+        <label class="field">
+          <span class="field-label">响应提取路径（可选）</span>
+          <input id="spec-extract" type="text" placeholder="如 $.data.list；缺省取响应整体">
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">原样请求体（可选，与 Body 映射二选一）</span>
+        <input id="spec-bodyraw" type="text" placeholder="填输入参数名，其值原样作为请求体发送">
+      </label>
+
+      <div class="kv-editor">
+        <div class="kv-editor-head"><span>Query 参数映射</span>
+          <button type="button" class="btn btn-outline btn-sm" id="add-query">＋ 添加</button></div>
+        <div id="spec-query" class="kv-rows"></div>
+      </div>
+      <div class="kv-editor">
+        <div class="kv-editor-head"><span>Header 映射</span>
+          <button type="button" class="btn btn-outline btn-sm" id="add-header">＋ 添加</button></div>
+        <div id="spec-headers" class="kv-rows"></div>
+      </div>
+      <div class="kv-editor">
+        <div class="kv-editor-head"><span>Body 字段（类型化 · 支持嵌套）</span>
+          <button type="button" class="btn btn-outline btn-sm" id="add-body">＋ 添加字段</button></div>
+        <div id="spec-body" class="kv-rows body-tree"></div>
+      </div>
+      <p class="editor-hint">映射值三种写法：输入参数名（缺失即报错）· opt:参数名（可选，缺失则整个字段省略）· literal:固定值<br>
+        字段类型：string / number / boolean / object / array。object 可加子字段；array 指向一个「值为整个数组」的输入参数，其元素结构可声明。</p>
+
+      </div>
+
+      <div class="section-band">输入参数声明（类型化 Arg 树）</div>
+      <div class="kv-editor">
+        <div class="kv-editor-head"><span>输入参数（名称 / 说明 / 类型 / 必填；Object 与 Object 数组可加下级参数）</span>
+          <button type="button" class="btn btn-outline btn-sm" id="add-arg">＋ 添加</button></div>
+        <div id="act-args" class="kv-rows"></div>
+      </div>
+
+      <button id="action-submit" type="submit" class="btn btn-coal btn-block" style="margin-top:16px">保存工具</button>
+      <p class="login-hint">管理端维护官方工具（managed_by=system）；绑定插件/工作流时自动带入其入参（可编辑），执行时透传。保存后在工具列表「调试」验证。</p>
+    </form>
+  </div>
+</aside>
+
+<!-- 导入官方包抽屉 -->
+<div id="import-drawer-mask" class="drawer-mask hidden"></div>
+<aside id="import-drawer" class="drawer hidden">
+  <div class="drawer-head coal-band-sm">
+    <h3 class="card-title">导入官方包</h3>
+    <button id="import-drawer-close" class="btn btn-ghost-light btn-sm">关闭</button>
+  </div>
+  <div class="drawer-body">
+    <label class="field">
+      <span class="field-label">导入包（「导出」生成的 JSON；粘贴或选择文件）</span>
+      <textarea id="import-json" rows="8" spellcheck="false" placeholder='{"source":"open_connector","providers":[{"service":"...","authType":"...","baseUrl":"...","actions":[{"actionKey":"...","httpSpec":{...}}]}]}'></textarea>
+    </label>
+    <div class="field">
+      <input id="import-file" type="file" accept=".json,application/json">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button id="btn-import-preview" class="btn btn-outline">预览导入 diff</button>
+      <button id="btn-import-apply" class="btn btn-coal" disabled>确认导入</button>
+    </div>
+    <div id="import-report" style="margin-top:16px"></div>
+    <p class="login-hint">导入目标为官方目录（space_id=0、全员可见）；service 已存在且被手工保护区占用的条目自动跳过。落库前请先预览确认。</p>
+  </div>
+</aside>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/common.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

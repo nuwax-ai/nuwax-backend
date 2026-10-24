@@ -56,15 +56,17 @@ public class UserCreditController {
         //每日积分发放，bizNo一样，只会发放一次
         if (dailyGiftCredit > 0) {
             String bizNo = "DGC" + RequestContext.get().getUserId() + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            CreditAddRequest request = new CreditAddRequest();
-            request.setCreditType(CreditTypeEnum.ACTIVITY);
-            request.setUserId(RequestContext.get().getUserId());
-            request.setAmount(BigDecimal.valueOf(dailyGiftCredit));
-            request.setTenantId(RequestContext.get().getTenantId());
-            request.setBizNo(bizNo);
-            request.setExpireTime(Date.from(LocalDate.now().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()));
-            request.setRemark(I18nUtil.systemMessage("Backend.Credit.DailyGift.Remark"));
-            creditService.addCredit(request);
+            if (!creditService.bizNoAdded(bizNo)) {
+                CreditAddRequest request = new CreditAddRequest();
+                request.setCreditType(CreditTypeEnum.ACTIVITY);
+                request.setUserId(RequestContext.get().getUserId());
+                request.setAmount(BigDecimal.valueOf(dailyGiftCredit));
+                request.setTenantId(RequestContext.get().getTenantId());
+                request.setBizNo(bizNo);
+                request.setExpireTime(Date.from(LocalDate.now().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()));
+                request.setRemark(I18nUtil.systemMessage("Backend.Credit.DailyGift.Remark"));
+                creditService.addCredit(request);
+            }
         }
         UserCreditSummary userCreditSummary = creditService.getUserCreditSummary(RequestContext.get().getUserId());
         userCreditSummary.setDailyGiftCredit(BigDecimal.valueOf(dailyGiftCredit));

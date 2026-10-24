@@ -2,6 +2,7 @@ package com.xspaceagi.custompage.application.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PluginApplicationService;
 import com.xspaceagi.agent.core.adapter.application.PublishApplicationService;
 import com.xspaceagi.agent.core.adapter.application.ResourceGroupApplicationService;
@@ -32,6 +33,7 @@ import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
 import jakarta.annotation.Resource;
@@ -74,6 +76,8 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
     private ISandboxConfigRpcService sandboxConfigRpcService;
     @Resource
     private ResourceGroupApplicationService resourceGroupApplicationService;
+    @Resource
+    private ConversationApplicationService conversationApplicationService;
 
     // 需要事务
     @Transactional(rollbackFor = Exception.class)
@@ -179,6 +183,7 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
 
         log.info("[create] create project succeeded, project Id={}, name={}", projectId, model.getName());
         configResult.getData().setDevAgentId(agentResult.getData());
+        configResult.getData().setSandboxId(sandboxId);
         return ReqResult.success(configResult.getData());
     }
 
@@ -687,6 +692,13 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
                 // 不抛异常,老数据没有智能体,删除会异常
             }
 
+            // 项目会话随项目删除联动清理（含消息、收藏及云端沙箱工作区）；清理失败不阻断项目删除
+            try {
+                conversationApplicationService.deleteByDevTarget(ProjectTypeEnum.PageApp.name(), projectId);
+            } catch (Exception e) {
+                log.warn("[delete Project] project Id={},delete pageapp conversations failed", projectId, e);
+            }
+
             log.info("[delete Project] project Id={},delete project succeeded", projectId);
             return result;
         } catch (Exception e) {
@@ -932,5 +944,6 @@ public class CustomPageConfigApplicationServiceImpl implements ICustomPageConfig
         resourceGroupDto.setSpaceId(spaceId);
         return resourceGroupApplicationService.add(resourceGroupDto);
     }
+
 
 }

@@ -47,6 +47,9 @@
         <if test="queryMap.question != null and queryMap.question != ''">
             and question like concat('%',#{queryMap.question},'%')
         </if>
+        <if test="queryMap.docId != null">
+            and doc_id = #{queryMap.docId}
+        </if>
 
         <include refid="SysCommonSql.base_where"></include>
         and yn = 1
@@ -99,15 +102,26 @@
         group by doc_id
 
     </select>
+    <select id="queryEmbeddingStatus" resultMap="embeddingStatusDtoMap">
+
+        select doc_id,
+               count(*)                                              qaCount,
+               sum(case when has_embedding = 1 then 1 else 0 end) as qaEmbeddingCount
+        from knowledge_qa_segment
+        where yn = 1
+          and doc_id = #{docId}
+        group by doc_id
+
+    </select>
 
     <select id="queryListForEmbeddingQaAndEmbeddings" resultMap="BaseResultMap">
         select *
         from knowledge_qa_segment
         where yn = 1
-        and has_embedding = 0
-        and doc_id != 0
+          and has_embedding = 0
+          and doc_id != 0
         and created > DATE_SUB(NOW(), INTERVAL #{day} DAY)
-        limit #{startIndex}, #{endIndex}
+            limit #{startIndex}, #{endIndex}
         order by id desc
     </select>
 
@@ -115,10 +129,10 @@
         select *
         from knowledge_qa_segment
         where yn = 1
-        and has_embedding = 0
-        and  doc_id = 0
-        and created > DATE_SUB(NOW(), INTERVAL #{day} DAY)
-        limit #{startIndex}, #{endIndex}
+          and has_embedding = 0
+          and  doc_id = 0
+          and created > DATE_SUB(NOW(), INTERVAL #{day} DAY)
+            limit #{startIndex}, #{endIndex}
         order by id desc
     </select>
 

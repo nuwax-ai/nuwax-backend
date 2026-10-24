@@ -66,7 +66,10 @@ public class ProxyConfigService {
     @Value("${custom-page.docker-proxy.enable}")
     private boolean enableDockerProxy;
 
-    private static final Integer DEFAULT_NGINX_PORT = 8099;
+    // rcoder 预览 nginx 端口（prod sandbox 动态分支 buildDirectDevServerUrl 用）。
+    // 默认 8099（兼容旧部署）；部署侧按实际 rcoder nginx NodePort 配置，如 .13 K8s 为 31203。
+    @Value("${custom-page.nginx-port:8099}")
+    private Integer customPageNginxPort;
 
     public BackendVo selectBackend(String basePath, String realUri, ProxyConfig.ProxyEnv env, Long agentId) {
 
@@ -130,9 +133,11 @@ public class ProxyConfigService {
 
                 SandboxConfigValue sandboxConfigValue = loadSandboxConfigValue(customPageConfig);
                 String devUrl = "";
+                String devApiKey = null;
                 if (enableDockerProxy) {
                     if (sandboxConfigValue != null && sandboxConfigValue.getVncPort() > 0) {
                         devUrl = sandboxConfigValue.getHostWithScheme() + ":" + sandboxConfigValue.getVncPort();
+                        devApiKey = sandboxConfigValue.getApiKey();
                     } else {
                         if (customPageDockerProxyBaseUrl.startsWith("http://")
                                 || customPageDockerProxyBaseUrl.startsWith("https://")) {
@@ -143,6 +148,7 @@ public class ProxyConfigService {
                     }
                 } else if (sandboxConfigValue != null) {
                     devUrl = buildDirectDevServerUrl(sandboxConfigValue.getHostWithScheme(), customPageBuildModel.getDevPort());
+                    devApiKey = sandboxConfigValue.getApiKey();
                 } else {
                     if (customPageDevServerHost.startsWith("http://")
                             || customPageDevServerHost.startsWith("https://")) {
@@ -157,15 +163,19 @@ public class ProxyConfigService {
                         .healthCheckPath("/health")
                         .env(ProxyConfig.ProxyEnv.dev)
                         .requireAuth(false)
-                        .backends(List.of(new ProxyConfigBackend(devUrl, 1)))
+                        .backends(List.of(new ProxyConfigBackend(devUrl, 1, devApiKey)))
                         .build();
                 customPageConfig.getProxyConfigs().add(devProxyConfig);
             }
             if (env == ProxyConfig.ProxyEnv.prod) {
                 String prodUrl = null;
+                String prodApiKey = null;
                 SandboxConfigValue sandboxConfigForProd = loadSandboxConfigValue(customPageConfig);
                 if (sandboxConfigForProd != null) {
-                    prodUrl = buildDirectDevServerUrl(sandboxConfigForProd.getHostWithScheme(), DEFAULT_NGINX_PORT);
+                    prodUrl = buildDirectDevServerUrl(sandboxConfigForProd.getHostWithScheme(), customPageNginxPort);
+                    if (prodUrl != null) {
+                        prodApiKey = sandboxConfigForProd.getApiKey();
+                    }
                 }
                 if (prodUrl == null) {
                     prodUrl = customPageProdServerHost;
@@ -180,7 +190,7 @@ public class ProxyConfigService {
                         .healthCheckPath("/health")
                         .env(ProxyConfig.ProxyEnv.prod)
                         .requireAuth(false)
-                        .backends(List.of(new ProxyConfigBackend(prodUrl, 1)))
+                        .backends(List.of(new ProxyConfigBackend(prodUrl, 1, prodApiKey)))
                         .build();
                 customPageConfig.getProxyConfigs().add(prodProxyConfig);
             }
@@ -223,6 +233,8 @@ public class ProxyConfigService {
         backendVo.setRequireAuth(customPageConfig.getNeedLogin() != null && customPageConfig.getNeedLogin() == 1);
         backendVo.setDevAgentId(customPageConfig.getDevAgentId());
         backendVo.setPublishType(customPageConfig.getPublishType());
+        // 沙箱直连 backend 构造期已绑定鉴权 key；配置来源 backend 为 null，代理不下发该头
+        backendVo.setApiKey(proxyConfig.getBackends().get(0).getApiKey());
 
         // 对于ONLINE_DEPLOY项目，完整的代理路径，因为前端开发服务器配置了base URL
         if (customPageConfig.getProjectType() == ProjectType.ONLINE_DEPLOY && proxyConfig.getPath().equals("/")) {

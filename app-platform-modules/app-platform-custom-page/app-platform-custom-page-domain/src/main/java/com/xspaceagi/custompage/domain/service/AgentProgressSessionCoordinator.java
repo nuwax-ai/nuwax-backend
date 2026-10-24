@@ -53,6 +53,13 @@ public class AgentProgressSessionCoordinator {
         redisUtil.set(buildDoneKey(projectId, requestId), "1", DONE_TTL_SECONDS);
     }
 
+    public boolean isTurnDone(Long projectId, String requestId) {
+        if (projectId == null || StringUtils.isBlank(requestId)) {
+            return false;
+        }
+        return redisUtil.get(buildDoneKey(projectId, requestId)) != null;
+    }
+
     public void clearTurnDone(Long projectId, String requestId) {
         if (projectId == null || StringUtils.isBlank(requestId)) {
             return;
@@ -92,6 +99,10 @@ public class AgentProgressSessionCoordinator {
     }
 
     private boolean isUserTurnStillInProgress(Long projectId, CustomPageConversationModel user) {
+        // 流已结束会写 Redis done；避免异常结束未落 ASSISTANT 时续采一直挂起
+        if (isTurnDone(projectId, user.getRequestId())) {
+            return false;
+        }
         CustomPageConversationModel assistantForTurn = customPageConversationRepository
                 .findAssistantByProjectIdAndRequestId(projectId, user.getRequestId());
         if (assistantForTurn == null) {

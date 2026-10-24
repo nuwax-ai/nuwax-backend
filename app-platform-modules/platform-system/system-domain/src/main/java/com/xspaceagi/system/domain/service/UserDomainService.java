@@ -26,7 +26,28 @@ public interface UserDomainService {
 
     User queryUserByUid(String uid);
 
+    /**
+     * 按「租户 + 账号类型 + 身份关联标识」查询虚拟身份行（account_type 为 agent / group）。
+     * <p>与 {@link #queryById} 不同，本方法显式带租户条件：调用方是写路径（惰性创建虚拟身份），
+     * 必须自己收口租户，不能依赖用户域刻意的租户豁免。
+     *
+     * @param tenantId       租户 id
+     * @param accountType    账号类型，取 {@code User.ACCOUNT_TYPE_AGENT} / {@code User.ACCOUNT_TYPE_GROUP}
+     * @param principalRefId 身份关联标识（agent id / IM 群标识）
+     * @return 命中的用户行；不存在返回 null
+     */
+    User queryByPrincipal(Long tenantId, String accountType, String principalRefId);
+
     List<User> queryUserListByIds(List<Long> userIds);
+
+    /**
+     * 按关键词搜索用户（同租户内；用户名或昵称模糊匹配），按 ID 升序返回。
+     *
+     * @param kw    关键词（空白返回空列表）
+     * @param limit 返回条数上限
+     * @return 用户列表
+     */
+    List<User> searchUsers(String kw, int limit);
 
     /**
      * 根据用户UID列表查询用户列表,uid是字符串

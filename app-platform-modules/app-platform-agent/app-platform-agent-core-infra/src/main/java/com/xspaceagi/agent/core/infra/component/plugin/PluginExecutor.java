@@ -80,6 +80,8 @@ public class PluginExecutor {
             params = new HashMap<>();
             pluginContext.setParams(params);
         }
+        // 移除 value 为空（null 或空字符串）的参数，避免向插件执行器传递无效空参数
+        params.entrySet().removeIf(entry -> entry.getValue() == null || "".equals(entry.getValue()));
         sysVars.remove(GlobalVariableEnum.CHAT_CONTEXT.name());
         if (pluginContext.getAgentContext().getUser() != null) {
             ClientSecretRequest clientSecretRequest = new ClientSecretRequest();

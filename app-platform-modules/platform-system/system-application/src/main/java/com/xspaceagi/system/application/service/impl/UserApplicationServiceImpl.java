@@ -14,6 +14,7 @@ import com.xspaceagi.system.domain.service.UserDomainService;
 import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.infra.dao.entity.SysGroup;
 import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.infra.dao.service.UserAuthIdentityService;
 import com.xspaceagi.system.infra.dao.service.UserService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
@@ -48,6 +49,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
     @Resource
     private UserDomainService userDomainService;
+
+    @Resource
+    private UserAuthIdentityService userAuthIdentityService;
 
     @Resource
     private UserService userService;
@@ -263,6 +267,8 @@ public class UserApplicationServiceImpl implements UserApplicationService {
             user.setUserName(null);
         }
         queryWrapper.ne(User::getStatus, User.Status.Deleted);
+        // 只返回自然人：智能体身份（agent）与群代理身份（group）是虚拟主体，不属于「用户」
+        queryWrapper.eq(User::getAccountType, User.ACCOUNT_TYPE_USER);
         IPage<User> userPageResult = userService.page(userPage, queryWrapper);
         List<UserDto> userDtoList = userPageResult.getRecords().stream()
                 .map(this::convert)
@@ -278,6 +284,11 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
     @Override
     public UserDto queryById(Long userId) {
+        return queryById(userId, true);
+    }
+
+    @Override
+    public UserDto queryById(Long userId, boolean withLangMap) {
         Assert.notNull(userId, "id must be non-null");
         User user = userDomainService.queryById(userId);
         if (user == null) {
@@ -304,7 +315,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
             userDomainService.update(update);
             userDto.setLang(lang);
         }
-        userDto.setLangMap(i18nApplicationService.querySystemLangMap(userDto.getTenantId(), I18nSideEnum.Backend.getSide(), userDto.getLang()));
+        if (withLangMap){
+            userDto.setLangMap(i18nApplicationService.querySystemLangMap(userDto.getTenantId(), I18nSideEnum.Backend.getSide(), userDto.getLang()));
+        }
         return userDto;
     }
 
@@ -355,6 +368,12 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     }
 
     @Override
+    public List<UserDto> searchUsers(String kw, int limit) {
+        List<User> userList = userDomainService.searchUsers(kw, limit);
+        return userList.stream().map(this::convert).collect(Collectors.toList());
+    }
+
+    @Override
     public List<Long> queryUserIdList(Long lastId, Integer size) {
         return userDomainService.queryUserIdList(lastId, size);
     }
@@ -398,5 +417,7 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         update.setPhone("--");
         update.setStatus(User.Status.Deleted);
         userDomainService.update(update);
+        // 级联删除外部身份绑定
+        userAuthIdentityService.deleteByUser(userId);
     }
 }

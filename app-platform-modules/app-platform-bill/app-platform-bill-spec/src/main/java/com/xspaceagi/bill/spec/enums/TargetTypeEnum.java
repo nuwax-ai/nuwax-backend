@@ -7,7 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum TargetTypeEnum {
     PLAN("Plan", "订阅计划"),
-    CREDIT_PACKAGE("CreditPackage", "积分套餐");
+    CREDIT_PACKAGE("CreditPackage", "积分套餐"),
+    DESK_BUDDY("DeskBuddy", "桌搭");
 
     private final String code;
     private final String desc;

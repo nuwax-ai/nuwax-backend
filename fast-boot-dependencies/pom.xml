@@ -52,12 +52,6 @@
                 <artifactId>fastjson2</artifactId>
                 <version>2.0.60</version>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/cn.hutool/hutool-all -->
-            <dependency>
-                <groupId>cn.hutool</groupId>
-                <artifactId>hutool-all</artifactId>
-                <version>5.8.32</version>
-            </dependency>
             <!-- hutool拼音功能依赖的底层引擎 -->
             <dependency>
                 <groupId>com.belerweb</groupId>
@@ -146,18 +140,6 @@
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons.lang3.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-collections4</artifactId>
-                <version>4.4</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>okhttp</artifactId>
-                <version>4.12.0</version>
-            </dependency>
-
             <!--sharding jdbc-->
             <dependency>
                 <groupId>org.apache.shardingsphere</groupId>
@@ -186,12 +168,6 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>druid</artifactId>
                 <version>${druid.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.github.ben-manes.caffeine</groupId>
-                <artifactId>caffeine</artifactId>
-                <version>3.1.8</version>
             </dependency>
 
             <dependency>
@@ -373,7 +349,7 @@
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
-                <version>5.8.12</version>
+                <version>5.8.37</version>
             </dependency>
             <dependency>
                 <groupId>cn.hutool</groupId>
@@ -484,7 +460,7 @@
             <dependency>
                 <groupId>org.apache.pdfbox</groupId>
                 <artifactId>pdfbox</artifactId>
-                <version>3.0.3</version>
+                <version>3.0.8</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>commons-logging</artifactId>
@@ -508,11 +484,6 @@
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
                 <version>5.3.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.knuddels</groupId>
-                <artifactId>jtokkit</artifactId>
-                <version>1.1.0</version>
             </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>

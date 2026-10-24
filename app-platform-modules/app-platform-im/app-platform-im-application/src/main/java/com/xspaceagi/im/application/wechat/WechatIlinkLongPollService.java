@@ -80,9 +80,9 @@ public class WechatIlinkLongPollService {
     /** 共用 Hash 上配置缓存 TTL（秒）；≤0 表示不写/不读 Redis 缓存（每次打库） */
     private final int pollConfigCacheTtlSeconds = IlinkConstants.DEFAULT_POLL_CONFIG_CACHE_TTL_SECONDS;
 
-    /** 调度任务 cron，默认约每秒触发一次 */
+    /** 调度任务 cron，默认每 3 秒触发一次 */
     private final String pollScheduleCron = IlinkConstants.DEFAULT_POLL_SCHEDULE_CRON;
-    /** 冷启动（buf 为空）时 getUpdates 超时，默认 35s */
+    /** 冷启动（buf 为空）时 getUpdates 超时，默认 5s */
     private final int getUpdatesColdTimeoutMs = IlinkConstants.DEFAULT_GET_UPDATES_POLL_TIMEOUT_MS;
     /** 热态（buf 非空）时 getUpdates 超时，默认 300ms */
     private final int getUpdatesHotTimeoutMs = IlinkConstants.DEFAULT_GET_UPDATES_HOT_TIMEOUT_MS;

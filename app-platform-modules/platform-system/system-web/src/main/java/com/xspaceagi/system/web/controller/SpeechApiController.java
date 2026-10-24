@@ -30,10 +30,6 @@ import java.util.UUID;
 @RestController
 public class SpeechApiController {
 
-    static {
-        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
-    }
-
     @Value("${stt.api.base-url:}")
     private String baseUrl;
 

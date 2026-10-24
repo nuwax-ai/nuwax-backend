@@ -28,5 +28,13 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-custom-page-sdk</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-sdk</artifactId>
+        </dependency>
     </dependencies>
 </project>

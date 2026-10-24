@@ -131,6 +131,12 @@ public class TaskCenterManageController extends BaseManageController {
         }
         checkTenantId(scheduleTaskDto1);
         scheduleTaskApiService.deleteById(id);
+        // TASK 会话随任务删除联动清理（会话 uid 即任务 taskId）；清理失败不阻断任务删除
+        try {
+            conversationApplicationService.deleteTaskConversationByTaskId(scheduleTaskDto1.getTaskId());
+        } catch (Exception e) {
+            log.warn("Failed to delete task conversation for schedule task, taskId={}", scheduleTaskDto1.getTaskId(), e);
+        }
         return ReqResult.success();
     }
 

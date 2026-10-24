@@ -51,6 +51,11 @@ public interface ICustomPageRpcService {
     CustomPageDto queryDetailByAgentId(Long agentId);
 
     /**
+     * 网页应用发布前置校验：按开发智能体ID反查页面项目，须先构建（build_running=1）
+     */
+    void checkPageAppPublishPrecondition(Long agentId);
+
+    /**
      * 统计网页应用总数
      *
      * @return 网页应用总数

@@ -15,6 +15,9 @@ public class MemoryMergeResultDto {
     @JsonPropertyDescription("生成新的记忆")
     private List<MergeUnit> insertMemories;
 
+    @JsonPropertyDescription("旧记忆已被新事实完全取代、没有任何保留价值时，返回需要软删的记忆ID列表")
+    private List<Long> deleteMemoryIds;
+
     @Data
     public static class MergeUnitWithID {
         @JsonPropertyDescription("记忆ID")

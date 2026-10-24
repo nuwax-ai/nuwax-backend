@@ -172,10 +172,11 @@ public interface AgentApplicationService {
      *
      * @param userId
      * @param agentId
+     * @param targetSubType 目标子类型：ChatBot/TaskAgent 智能体，PageApp 网页应用
      */
-    void addOrUpdateRecentUsed(Long userId, Long agentId);
+    void addOrUpdateRecentUsed(Long userId, Long agentId, String targetSubType);
 
-    void addOrUpdateRecentUsed(Long userId, Long agentId, Long conversationId);
+    void addOrUpdateRecentUsed(Long userId, Long agentId, Long conversationId, String targetSubType);
 
     /**
      * 获取用户最近编辑的智能体列表
@@ -185,7 +186,7 @@ public interface AgentApplicationService {
     /**
      * 获取用户最近使用过的智能体列表
      */
-    List<UserAgentDto> queryRecentUseList(Long userId, String kw, Integer size, Integer pageIndex);
+    List<UserAgentDto> queryRecentUseList(Long userId, String kw, Integer size, Integer pageIndex, String type);
 
     /**
      * 获取用户最近使用过的智能体列表

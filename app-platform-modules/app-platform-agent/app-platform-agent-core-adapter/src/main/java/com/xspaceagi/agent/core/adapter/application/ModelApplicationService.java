@@ -39,6 +39,22 @@ public interface ModelApplicationService {
     List<ModelConfigDto> queryModelConfigLisBySpaceId(Long spaceId);
 
     /**
+     * 查询当前用户个人空间下的模型列表
+     *
+     * @param userId 当前登录用户ID
+     */
+    List<ModelConfigDto> queryPersonalModelList(Long userId);
+
+    /**
+     * 查询当前用户所属全部团队空间下的模型列表，结果按所属团队标注 spaceId / spaceName
+     *
+     * @param userId 当前登录用户ID
+     */
+    List<ModelConfigDto> queryTeamModelList(Long userId);
+
+    List<ModelConfigDto> queryAllSpaceModelList(Long userId);
+
+    /**
      * 查询可使用的模型列表
      *
      * @return

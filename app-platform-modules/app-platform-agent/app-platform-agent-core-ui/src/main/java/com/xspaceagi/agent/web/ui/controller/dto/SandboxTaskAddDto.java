@@ -35,4 +35,7 @@ public class SandboxTaskAddDto {
 
     @Schema(description = "定时任务执行时间，例如 2026-10-22T00:00:00，固定周期的可以不传")
     private Date lockTime;
+
+    @Schema(description = "指定任务归属的空间ID（可选）。传入后仅校验当前用户是否为该空间成员，不校验智能体所在空间；不传则回落到用户个人空间")
+    private Long spaceId;
 }

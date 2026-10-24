@@ -2,7 +2,10 @@ package com.xspaceagi.knowledge.domain.service.impl;
 
 import cn.idev.excel.FastExcelFactory;
 import cn.idev.excel.read.listener.PageReadListener;
+import com.google.common.collect.Lists;
+import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.knowledge.core.spec.utils.Commons;
+import com.xspaceagi.knowledge.core.spec.utils.Constants;
 import com.xspaceagi.knowledge.core.spec.utils.ThreadTenantUtil;
 import com.xspaceagi.knowledge.domain.dto.EmbeddingStatusDto;
 import com.xspaceagi.knowledge.domain.dto.qa.QAEmbeddingDto;
@@ -37,10 +40,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -62,6 +68,9 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
 
     @Resource
     private VectorDBService vectorDBService;
+
+    @Resource
+    private ModelApplicationService modelApplicationService;
 
     @Resource
     private KnowledgeRawSegmentDomainService knowledgeRawSegmentDomainService;
@@ -421,7 +430,9 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
      */
     @Override
     public void batchAddEmbeddingQa(List<KnowledgeQaSegmentModel> models, UserContext userContext) {
-
+        if (models == null || models.isEmpty()) {
+            return;
+        }
 
         var kbIds = models.stream().map(KnowledgeQaSegmentModel::getKbId).distinct().toList();
         var knowledgeConfigList = this.knowledgeConfigRepository.queryListByIds(kbIds);
@@ -429,29 +440,64 @@ public class KnowledgeQaSegmentDomainService implements IKnowledgeQaSegmentDomai
                 .filter(item -> Objects.nonNull(item.getEmbeddingModelId()))
                 .collect(Collectors.toMap(KnowledgeConfigModel::getId, KnowledgeConfigModel::getEmbeddingModelId, (a, b) -> a));
 
+        // 按 kbId 分组,每个知识库一个并发任务(同库串行写避免 collection 竞争,跨库并发提速)
+        Map<Long, List<KnowledgeQaSegmentModel>> kbIdGroup = models.stream()
+                .collect(Collectors.groupingBy(KnowledgeQaSegmentModel::getKbId));
 
-
-        try {
-            for (KnowledgeQaSegmentModel model : models) {
-
-                var kbId = model.getKbId();
-                var embeddingModelId = kbId2EmbeddingModelIdMap.get(kbId);
-
-                // 更新向量数据库的数据, rawText为空
-                var qAEmbeddingDto = QAEmbeddingDto.convertFromModelAndEmbedding(model, "",embeddingModelId);
-
-                // 更新向量数据库的数据
-                vectorDBService.addEmbeddingQa(qAEmbeddingDto, false);
-                // 更新问答的embedding状态
-                var qaId = model.getId();
-                var qaIds = Collections.singletonList(qaId);
-                this.knowledgeQaSegmentRepository.batchChangeEmbeddingStatus(qaIds, true, userContext);
-            }
-        } catch (Exception e) {
-            log.error("Batch embed new QAs failed", e);
-            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeVectorizationFailed, e.getMessage());
+        var executor = this.threadTenantUtil.obtainEmbeddingExecutor();
+        List<Future<?>> futures = new ArrayList<>();
+        for (Map.Entry<Long, List<KnowledgeQaSegmentModel>> entry : kbIdGroup.entrySet()) {
+            Long kbId = entry.getKey();
+            List<KnowledgeQaSegmentModel> kbModels = entry.getValue();
+            Long embeddingModelId = kbId2EmbeddingModelIdMap.get(kbId);
+            // submit 会自动包 TenantRunnable,传播当前线程的租户上下文
+            futures.add(executor.submit(() ->
+                    embedManualQaForKb(kbModels, embeddingModelId, userContext)));
         }
 
+        // 等待全部完成,聚合异常(保持原"有失败即抛"语义)
+        List<Exception> errors = new ArrayList<>();
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                log.error("Batch embed new QAs failed", e);
+                errors.add(e);
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeVectorizationFailed,
+                    "批量向量化有 " + errors.size() + " 个知识库任务失败");
+        }
+    }
+
+    /**
+     * 单个知识库内手动问答向量化(同库串行,避免同 collection 并发写竞争):按 BATCH_SIZE 批量 embedding + 写 Milvus + 更新状态。
+     * 手动添加的问答无原始分段文本,rawText 为空。
+     */
+    private void embedManualQaForKb(List<KnowledgeQaSegmentModel> kbModels, Long embeddingModelId,
+            UserContext userContext) {
+        var batches = Lists.partition(kbModels, Constants.BATCH_SIZE);
+        for (List<KnowledgeQaSegmentModel> batch : batches) {
+            List<QAEmbeddingDto> qaEmbeddingDtos = new ArrayList<>();
+            for (KnowledgeQaSegmentModel model : batch) {
+                qaEmbeddingDtos.add(QAEmbeddingDto.convertFromModelOnly(model, ""));
+            }
+            // 批量查询,进行向量化
+            List<String> questions = batch.stream().map(KnowledgeQaSegmentModel::getQuestion).toList();
+            List<float[]> embeddings = modelApplicationService.embeddings(questions, embeddingModelId);
+            for (int i = 0; i < qaEmbeddingDtos.size(); i++) {
+                qaEmbeddingDtos.get(i).setEmbeddings(QAEmbeddingDto.convertToBigDecimalList(embeddings.get(i)));
+            }
+            vectorDBService.addEmbeddingQaForBatch(qaEmbeddingDtos, false);
+            var qaIds = batch.stream().map(KnowledgeQaSegmentModel::getId).toList();
+            this.knowledgeQaSegmentRepository.batchChangeEmbeddingStatus(qaIds, true, userContext);
+        }
+    }
+
+    @Override
+    public int resetAllForVectorRebuild(LocalDateTime todayZero) {
+        return this.knowledgeQaSegmentRepository.resetAllForVectorRebuild(todayZero);
     }
 
 }

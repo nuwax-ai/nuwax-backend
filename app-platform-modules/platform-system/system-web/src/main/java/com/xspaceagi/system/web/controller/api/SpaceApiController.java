@@ -80,7 +80,7 @@ public class SpaceApiController {
     @Operation(summary = "查询用户空间列表")
     @RequestMapping(path = "/list", method = RequestMethod.GET)
     public ReqResult<List<SpaceDto>> list() {
-        List<SpaceDto> spaceDtoList = spaceApplicationService.queryListByUserId(RequestContext.get().getUserId());
+        List<SpaceDto> spaceDtoList = spaceApplicationService.queryVisibleListByUserId(RequestContext.get().getUserId());
         spaceDtoList.forEach(spaceDto -> {
             SpaceUserDto spaceUserDto = spaceApplicationService.querySpaceUser(spaceDto.getId(), RequestContext.get().getUserId());
             if (spaceUserDto != null) {

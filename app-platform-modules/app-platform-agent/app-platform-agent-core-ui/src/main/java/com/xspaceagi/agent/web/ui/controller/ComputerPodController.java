@@ -34,16 +34,18 @@ public class ComputerPodController {
 
     @Operation(summary = "启动容器")
     @PostMapping(value = "/pod/ensure", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Object> podEnsure(@RequestParam("cId") Long cId) {
-        ComputerPodResultDto result = computerPodApplicationService.ensurePod(cId);
+    public ReqResult<Object> podEnsure(@RequestParam("cId") Long cId,
+            @RequestParam(value = "appStage", required = false) String appStage) {
+        ComputerPodResultDto result = computerPodApplicationService.ensurePod(cId, appStage);
         return buildResponse(result);
     }
 
     @Operation(summary = "重启容器(销毁后重建)")
     @PostMapping(value = "/pod/restart", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Object> podRestart(@RequestParam("cId") Long cId) {
+    public ReqResult<Object> podRestart(@RequestParam("cId") Long cId,
+            @RequestParam(value = "appStage", required = false) String appStage) {
         checkConversationPermission(cId);
-        ComputerPodResultDto result = computerPodApplicationService.restart(cId);
+        ComputerPodResultDto result = computerPodApplicationService.restart(cId, appStage);
         return buildResponse(result);
     }
 
@@ -57,15 +59,17 @@ public class ComputerPodController {
 
     @Operation(summary = "容器保活")
     @PostMapping(value = "/pod/keepalive", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Object> podKeepalive(@RequestParam("cId") Long cId) {
-        ComputerPodResultDto result = computerPodApplicationService.keepalive(cId);
+    public ReqResult<Object> podKeepalive(@RequestParam("cId") Long cId,
+            @RequestParam(value = "appStage", required = false) String appStage) {
+        ComputerPodResultDto result = computerPodApplicationService.keepalive(cId, appStage);
         return buildResponse(result);
     }
 
     @Operation(summary = "查询容器 VNC 服务状态")
     @GetMapping(value = "/pod/vnc-status", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ReqResult<Object> podVncStatus(@RequestParam("cId") Long cId) {
-        ComputerPodResultDto result = computerPodApplicationService.getVncStatus(cId);
+    public ReqResult<Object> podVncStatus(@RequestParam("cId") Long cId,
+            @RequestParam(value = "appStage", required = false) String appStage) {
+        ComputerPodResultDto result = computerPodApplicationService.getVncStatus(cId, appStage);
         return buildResponse(result);
     }
 

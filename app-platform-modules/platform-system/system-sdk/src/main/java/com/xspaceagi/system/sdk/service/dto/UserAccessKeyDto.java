@@ -66,6 +66,7 @@ public class UserAccessKeyDto {
         @Schema(description = "API 授权配置")
         private List<ApiConfig> apiConfigs;
         private List<Long> modelIds;
+        private Long agentVirtualUserId;//智能体拟人化虚拟用户ID
         private Object ext;
     }
 

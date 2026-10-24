@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>连接器 · 用户连接启停 + 状态字段拆分 + 统一查询与四档排序 —— 需求与验收清单 v3.0</title>
+<link rel="stylesheet" href="https://static-resources.nuwax.com/tailwind.min.css">
+<style>
+:root{
+  --paper:#f2efe6;
+  --paper-2:#eae5d8;
+  --card:#fbfaf5;
+  --ink:#17150f;
+  --ink-2:#4a453a;
+  --ink-3:#837b6a;
+  --rule:#d3cab6;
+  --rule-2:#e2dccb;
+  --seal:#b1351d;
+  --seal-2:#d9603f;
+  --seal-bg:#f6e3dc;
+  --jade:#2c6a4f;
+  --jade-bg:#e0ebe3;
+  --amber:#96650f;
+  --amber-bg:#f5ebd5;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --serif:"Songti SC","STSong","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --mono:"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15.5px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(242,239,230,.9);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.topbar-in{max-width:1120px;margin:0 auto;padding:11px 28px 9px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:.02em;white-space:nowrap;flex:1}
+.brand em{color:var(--seal);font-style:normal}
+.nav{display:flex;gap:2px;flex-wrap:wrap;order:3;width:100%;padding-top:7px;border-top:1px solid var(--rule-2)}
+.nav a{
+  font-size:12.5px;color:var(--ink-3);text-decoration:none;padding:4px 9px;border-radius:3px;
+  font-family:var(--mono);letter-spacing:.01em;transition:color .18s,background .18s;
+}
+.nav a:hover{color:var(--ink);background:var(--paper-2)}
+.nav a.on{color:var(--seal);background:var(--seal-bg);font-weight:600}
+.progress-mini{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.pbar{width:88px;height:5px;background:var(--rule-2);border-radius:99px;overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--seal);transition:width .3s}
+
+/* ---------- 封面 ---------- */
+.hero{padding:64px 0 40px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--seal);margin-bottom:18px}
+h1{font-family:var(--serif);font-size:44px;line-height:1.22;margin:0 0 18px;font-weight:700;letter-spacing:-.01em}
+h1 .thin{color:var(--ink-3);font-weight:400}
+.lede{font-size:17px;color:var(--ink-2);max-width:66ch;margin:0 0 26px}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{
+  font-family:var(--mono);font-size:11.5px;padding:4px 11px;border-radius:99px;border:1px solid;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.badge i{width:6px;height:6px;border-radius:99px;display:block}
+.b-jade{color:var(--jade);border-color:#b6cfc0;background:var(--jade-bg)}
+.b-jade i{background:var(--jade)}
+.b-amber{color:var(--amber);border-color:#ddc894;background:var(--amber-bg)}
+.b-amber i{background:var(--amber)}
+.b-ink{color:var(--ink-2);border-color:var(--rule);background:var(--card)}
+.b-ink i{background:var(--ink-3)}
+
+/* ---------- 章节 ---------- */
+section{padding:52px 0 8px;scroll-margin-top:64px}
+.sec-head{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:26px}
+.sec-num{font-family:var(--mono);font-size:13px;color:var(--seal);font-weight:600;letter-spacing:.06em;padding-top:6px}
+h2{font-family:var(--serif);font-size:27px;margin:0;font-weight:700;letter-spacing:-.005em}
+h2 small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);font-weight:400;letter-spacing:.08em;margin-top:5px;text-transform:uppercase}
+h3{font-family:var(--serif);font-size:19px;margin:34px 0 12px;font-weight:700}
+h3:first-child{margin-top:0}
+h4{font-size:14.5px;margin:22px 0 10px;font-weight:700;color:var(--ink)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin:5px 0}
+a{color:var(--seal);text-decoration:none;border-bottom:1px solid rgba(177,53,29,.3)}
+a:hover{border-bottom-color:var(--seal)}
+code{
+  font-family:var(--mono);font-size:.875em;background:var(--paper-2);
+  padding:1.5px 5px;border-radius:3px;color:#7d2d18;border:1px solid var(--rule-2);
+}
+strong{font-weight:700}
+.reveal{opacity:0;transform:translateY(12px);animation:up .6s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes up{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;animation:none}}
+
+/* ---------- 需求引用 ---------- */
+.quote{
+  border-left:4px solid var(--seal);background:var(--card);padding:16px 20px;margin:0 0 18px;
+  font-family:var(--serif);font-size:17px;line-height:1.7;color:var(--ink);
+  box-shadow:0 1px 0 var(--rule-2);
+}
+.quote cite{display:block;font-family:var(--mono);font-size:11.5px;font-style:normal;color:var(--ink-3);margin-top:9px;letter-spacing:.04em}
+
+/* ---------- 表格 ---------- */
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{
+  text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--rule);
+  background:var(--paper-2);white-space:nowrap;
+}
+td{padding:10px 14px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#f7f5ec}
+td.mono,th.mono{font-family:var(--mono);font-size:12.5px}
+.mut{color:var(--ink-3)}
+.ok{color:var(--jade);font-weight:600}
+.gold{color:var(--amber);font-weight:600}
+.no{color:var(--seal);font-weight:600}
+
+/* ---------- 代码 ---------- */
+.cb{position:relative;margin:0 0 18px;border:1px solid var(--rule);background:#1c1a15;border-radius:4px;overflow:hidden}
+.cb-bar{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#262319;border-bottom:1px solid #35311f}
+.cb-label{font-family:var(--mono);font-size:11px;color:#9b9382;letter-spacing:.08em;text-transform:uppercase}
+.cb-copy{
+  font-family:var(--mono);font-size:11px;color:#c9c0a8;background:#332f22;border:1px solid #4a452f;
+  padding:2px 9px;border-radius:3px;cursor:pointer;transition:all .16s;
+}
+.cb-copy:hover{background:var(--seal);border-color:var(--seal);color:#fff}
+.cb-copy.done{background:var(--jade);border-color:var(--jade);color:#fff}
+pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.72;color:#e6e0cf}
+pre .c{color:#7d7663}
+pre .k{color:#e79b6f}
+pre .s{color:#a3c98a}
+
+/* ---------- 决策卡 ---------- */
+.dec{border:1px solid var(--rule);border-left:4px solid var(--seal);background:var(--card);padding:18px 22px;margin:0 0 16px}
+.dec h4{margin:0 0 8px;font-size:16px;font-family:var(--serif)}
+.dec .why{font-size:14px;color:var(--ink-2);margin:0}
+.dec .why b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--seal);margin-right:8px}
+.dec .cost{margin-top:12px;padding-top:11px;border-top:1px dashed var(--rule);font-size:13.5px;color:var(--ink-2)}
+.dec .cost b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-right:8px}
+
+/* ---------- 验收清单 ---------- */
+.grp{border:1px solid var(--rule);background:var(--card);margin:0 0 18px}
+.grp-h{padding:11px 16px;background:var(--paper-2);border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grp-h h4{margin:0;font-size:14.5px}
+.grp-h .cnt{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.chk{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--rule-2);cursor:pointer;transition:background .15s}
+.chk:last-child{border-bottom:none}
+.chk:hover{background:#f7f5ec}
+.chk input{
+  appearance:none;-webkit-appearance:none;flex:0 0 17px;width:17px;height:17px;margin:4px 0 0;
+  border:1.5px solid var(--ink-3);background:transparent;cursor:pointer;position:relative;transition:all .16s;border-radius:2px;
+}
+.chk input:checked{background:var(--jade);border-color:var(--jade)}
+.chk input:checked::after{content:"";position:absolute;left:4.5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.chk-body{flex:1;min-width:0}
+.chk-t{font-size:14.5px;font-weight:600;margin:0 0 3px}
+.chk input:checked ~ .chk-body .chk-t{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1px}
+.chk-d{font-size:13px;color:var(--ink-2);margin:0}
+.chk-d code{font-size:12px}
+.exp{margin-top:6px;font-size:12.5px;font-family:var(--mono);color:var(--jade);display:block;line-height:1.72}
+.exp b{color:var(--ink-3);font-weight:600;letter-spacing:.06em;margin-right:7px}
+.exp .mut{display:inline}
+.chk input:checked ~ .chk-body{opacity:.62}
+
+/* ---------- 文件清单 ---------- */
+.files{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);background:var(--card)}
+.files div{padding:8px 14px;border-bottom:1px solid var(--rule-2);display:flex;gap:12px;align-items:baseline}
+.files div:last-child{border-bottom:none}
+.files .tag{flex:0 0 62px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 0 0}
+.t-new{color:var(--jade);font-weight:700}
+.t-mod{color:var(--ink-3)}
+.t-done{color:var(--amber);font-weight:700}
+.files .p{color:var(--ink-2);word-break:break-all}
+.files .p b{color:var(--ink);font-weight:600}
+
+/* ---------- 提示块 ---------- */
+.note{border:1px solid var(--rule);border-top:3px solid var(--amber);background:var(--amber-bg);padding:15px 18px;margin:0 0 18px;font-size:14px}
+.note h4{margin:0 0 7px;font-size:14.5px;font-family:var(--serif)}
+.note ul{margin-bottom:0}
+.note.good{border-top-color:var(--jade);background:var(--jade-bg)}
+.note.good h4{color:var(--jade)}
+.note.warn h4{color:var(--amber)}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:13.5px;margin:0 0 18px}
+.kv dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.05em;padding-top:3px;white-space:nowrap}
+.kv dd{margin:0}
+
+footer{margin-top:64px;padding:26px 0 46px;border-top:2px solid var(--ink);font-size:12.5px;color:var(--ink-3);font-family:var(--mono);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media (max-width:820px){
+  .wrap{padding:0 18px}.topbar-in{padding:10px 18px}
+  h1{font-size:31px}.lede{font-size:15.5px}
+  h2{font-size:22px}
+  .hero{padding:40px 0 28px}
+  section{padding:38px 0 6px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">连接器 <em>·</em> 启停 + 排序</div>
+    <nav class="nav" id="nav">
+      <a href="#s1">01 需求</a>
+      <a href="#s2">02 接口契约</a>
+      <a href="#s3">03 状态语义</a>
+      <a href="#s4">04 设计决策</a>
+      <a href="#s5">05 验收清单</a>
+      <a href="#s6">06 实测证据</a>
+      <a href="#s7">07 改动文件</a>
+      <a href="#s8">08 限制与待办</a>
+      <a href="#s9">09 复现步骤</a>
+    </nav>
+    <div class="progress-mini">
+      <span id="ptxt">0 / 0</span>
+      <span class="pbar"><i id="pfill"></i></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker reveal">需求说明 · 开发验收清单 · v3.0 —— 统一查询 + 四档排序版</div>
+  <h1 class="reveal" style="animation-delay:.06s">
+    用户连接启停<span class="thin">　·　</span>状态字段拆分<span class="thin">　·　</span>统一查询与四档排序
+  </h1>
+  <p class="lede reveal" style="animation-delay:.12s">
+    本文档面向<strong>开发验收人</strong>。v1.0 交付「用户连接维度的启停 + 已连接优先排序」；
+    <strong>v2.0 把「用户启不启用」从 <code>status</code> 里拆出来独立成 <code>enabled</code> 列</strong>，
+    修掉「停用一条已过期的连接，看不出它已经过期」与「token 刷新会静默抹掉用户的停用决定」两个真实缺陷；
+    <strong>v3.0 把连接器查询统一收敛到 <code>/providers</code> 一个接口</strong>（官方 / 全部空间 / 指定空间 / 我已启用），
+    每条结果标注「我连了没」与<strong>「我启用了没」</strong>两个正交字段，排序随之从三档细化为<strong>四档</strong>。
+    文档给出需求原文与解读、接口契约、状态语义、十一项关键设计决策（含理由与代价），
+    以及可逐条勾选的验收清单、已跑通的实测证据、改动文件清单与已知限制。
+    验收时<strong>不需要读全部代码</strong>，照着第 05 节的清单跑即可。
+  </p>
+  <div class="badges reveal" style="animation-delay:.18s">
+    <span class="badge b-jade"><i></i>本地已编译 + 端到端实测通过</span>
+    <span class="badge b-amber"><i></i>testagent 尚未部署</span>
+    <span class="badge b-ink"><i></i>43 项验收点</span>
+    <span class="badge b-ink"><i></i>一次 ADD COLUMN（可 DROP 回滚）</span>
+    <span class="badge b-ink"><i></i>改动限于 connector 模块 + 技能</span>
+  </div>
+</header>
+
+<!-- ================= 01 ================= -->
+<section id="s1">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2>需求原文与解读<small>Requirement</small></h2>
+  </div>
+
+  <h3>需求一：用户连接维度的启停</h3>
+  <div class="quote">
+    用户虽然连接了，但是可以不启用，连接器还是看得到
+    <cite>—— 用户原话，场景定义</cite>
+  </div>
+
+  <p><strong>背景问题</strong>（v1.0 之前）：<code>connector_connection.status</code> 只有 <code>active</code>/<code>expired</code>/<code>error</code>/<code>disconnected</code> 四个值，且<strong>全部由系统写入</strong>（建连置 active、refresh 失败置 expired）；用户侧只有 <code>DELETE</code> —— 断开即删凭证行 + 删连接行。</p>
+  <p>也就是说「连接了、但暂时不想让它生效」<strong>没有任何手段</strong>：要么留着生效，要么删掉、下次用还得重新授权。能启停的只有<strong>连接器</strong>与<strong>动作</strong>两级，都要求空间管理员权限，作用于目录条目而非用户自己那条连接。</p>
+
+  <h4>要做成什么</h4>
+  <ul>
+    <li><strong>停用 ≠ 删除</strong>：停用后 <strong>凭证保留</strong>、连接<strong>仍在「我的连接」列表</strong>、连接器在目录里<strong>仍显示「已连接」</strong>。</li>
+    <li>停用后<strong>不再被执行解析选中</strong> —— 调该连接器的动作会被明确拒绝。</li>
+    <li>随时可启用回来，<strong>不必重新走一遍授权</strong>。</li>
+  </ul>
+
+  <h3>需求二：列表排序优化</h3>
+  <div class="quote">
+    排序优化，已连接的排在前面，已连接且启用的排在最前面
+    <cite>—— 用户原话</cite>
+  </div>
+  <p class="mut" style="font-size:13.5px">v1.0 解读为三档。v3.0 起细化为<strong>四档</strong>（见需求四与 D9）：档 0/1 拆开，是为了让「我启用了、但凭证已过期」的连接器<strong>排在未连接之前、却不占住首位</strong>。</p>
+  <p>作用于连接器目录列表（排序为接口固定行为，不接受排序参数）：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:70px">档位</th><th>含义</th><th class="mono">判定</th><th style="width:150px">档内顺序</th></tr></thead>
+      <tbody>
+        <tr><td class="mono ok">0</td><td><strong>可用</strong></td><td class="mono">存在 <b>enabled=1 且 status='active'</b> 的连接</td><td class="mono mut">sort_order, id</td></tr>
+        <tr><td class="mono gold">1</td><td><strong>已启用但凭证异常</strong><span class="mut">（过期 / 出错）</span></td><td class="mono">存在 <b>enabled=1</b> 的连接，但不满足档 0</td><td class="mono mut">sort_order, id</td></tr>
+        <tr><td class="mono">2</td><td>已连接未启用</td><td class="mono">存在连接行，但不满足档 1</td><td class="mono mut">sort_order, id</td></tr>
+        <tr><td class="mono mut">3</td><td>未连接</td><td class="mono">以上皆不成立</td><td class="mono mut">sort_order, id</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">档内回落到原有的目录权重 <code>sort_order, id</code>，因此<strong>未连接那一大档的顺序与改动前逐条一致</strong> —— 这是验收时最容易查、也最该查的一点。</p>
+  <p class="mut" style="font-size:13.5px">档 2/3 的判据是<strong>「连接行存在」</strong>，与目录侧 <code>connected</code> 标签同源（v1.0 用的是 <code>status &lt;&gt; 'disconnected'</code>；现在 <code>disconnected</code> 已是不再写入的历史兼容值，直接用行存在更直白，两者在现有数据上等价）。</p>
+  <p class="mut" style="font-size:13.5px"><strong>实现上不需要写 <code>NOT EXISTS</code></strong>：三个 <code>EXISTS</code> 子查询级联 <code>DESC</code>，三个布尔位恰好切出四种组合（见 D9）。</p>
+
+  <h3>需求三：把「用户是否连接」与「是否启用」分开</h3>
+  <div class="quote">
+    把用户是否连接 与 是否启用状态分开，不然太乱了
+    <cite>—— 用户原话，v2.0 的需求</cite>
+  </div>
+
+  <p>v1.0 用 <code>status='disabled'</code> 表达「用户停用」。但 <code>status</code> 这一列在 v1.0 之前就已经承载着<strong>凭证健康度</strong>（<code>active</code>/<code>expired</code>/<code>error</code>），两者是<strong>正交</strong>的两件事，硬塞进一列就出现两个真实缺陷：</p>
+  <ul>
+    <li><strong>表达不了「我停用了一条已经过期的连接」</strong>：写成 <code>disabled</code> 就把 <code>expired</code> 覆盖了，用户下次启用时看不出这凭证其实已经死了。</li>
+    <li><strong>系统流程会静默改写用户的决定</strong>：<code>markExpired()</code> 无条件写 <code>expired</code>、token 刷新成功无条件写 <code>active</code> —— 「停用」不过是这两个值之一，会被覆盖掉。停用过的连接被刷新碰到就自己「复活」了。</li>
+  </ul>
+  <p>所以 v2.0 把用户开关拆成独立列 <code>enabled</code>：<strong><code>status</code> 只保留凭证健康度（系统写），<code>enabled</code> 只表达用户意图（用户写）</strong>。两个字段各归其位后，上面两个缺陷不靠加守卫、靠结构本身就消失了。</p>
+
+  <h3>需求四：连接器查询统一收敛到一个接口<span class="thin">　</span><span class="tag t-new">v3.0</span></h3>
+  <div class="quote">
+    /api/connector/providers 统一用这个接口<br>
+    1. 查询所有官方的连接器　2. 查询所有空间的连接器　3. 查询指定空间的连接器<br>
+    4. 查询我自己已经启用的连接器<br>
+    5. 所有查询结果都要标注出来当前用户是否连接和是否启用<br>
+    6. 当前用户已启用和已连接的排训前面
+    <cite>—— 用户原话，v3.0 的需求（「排训」= 排序）</cite>
+  </div>
+  <p>六条里 1/2/3 是<strong>既有能力</strong>（v2.0 之前就已支持），本次<strong>未改动</strong>；4/5/6 是新做的。用一个接口承载全部形态，<strong>不给 <code>/connections</code> 加同类过滤参数</strong>：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:60px">#</th><th>查询形态</th><th class="mono">怎么调</th><th style="width:90px">本次</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>所有官方的连接器</td><td class="mono">?scope=official</td><td class="mut">已有</td></tr>
+        <tr><td class="mono">2</td><td>所有空间（我有权限的）的连接器</td><td class="mono">不传 spaceId</td><td class="mut">已有</td></tr>
+        <tr><td class="mono">3</td><td>指定空间的连接器</td><td class="mono">?spaceId=57（或 scope=space）</td><td class="mut">已有</td></tr>
+        <tr><td class="mono ok">4</td><td><strong>我自己已启用的连接器</strong></td><td class="mono">?connectionEnabled=true</td><td class="ok">新增</td></tr>
+        <tr><td class="mono ok">5</td><td><strong>标注「是否连接」「是否启用」</strong></td><td class="mono">响应里的 connected / connectionEnabled</td><td class="ok">新增</td></tr>
+        <tr><td class="mono ok">6</td><td><strong>已启用和已连接的排前面</strong></td><td class="mono">四档排序（服务端固定）</td><td class="ok">三档→四档</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">「已启用」的口径由用户拍板：<strong>严格只看用户开关 <code>enabled=1</code>，不掺 <code>status</code></strong>。因此「启用了但凭证已过期」的连接器<strong>算已启用</strong>——查询时它在结果里，真去执行才报 <code>connection_expired</code>。这与 3.3 的「可用」是两个不同的问题，别混。</p>
+</section>
+
+<!-- ================= 02 ================= -->
+<section id="s2">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2>接口契约<small>API Contract</small></h2>
+  </div>
+
+  <h3>2.1 新增：启用 / 停用连接</h3>
+  <div class="tw">
+    <table>
+      <tbody>
+        <tr><th style="width:120px">方法 / 路径</th><td class="mono">POST /api/connector/connections/{id}/status</td></tr>
+        <tr><th>参数</th><td class="mono">id 路径参数（连接 ID）<br>enabled query，缺省 <b>true</b>，取值 <code>true</code>/<code>false</code></td></tr>
+        <tr><th>鉴权</th><td>登录态；服务端按 <code>user_id</code> 校验归属，<strong>非本人一律视为不存在</strong></td></tr>
+        <tr><th>返回</th><td class="mono">ReqResult&lt;ConnectionDto&gt;（含 <b>enabled</b> / status / profile / providerService / modified 等）</td></tr>
+        <tr><th>写入范围</th><td><strong>只写 <code>enabled</code> 一列</strong>。不碰 <code>status</code> —— 那是凭证健康度，由系统写。<span class="mut">这是 v2.0 与 v1.0 的关键差别：v1.0 这个接口会写 <code>status='disabled'</code>。</span></td></tr>
+        <tr><th>幂等</th><td>重复 disable → <code>enabled</code> 仍为 false、<strong><code>status</code> 原样不动</strong>；重复 enable → <code>enabled</code> 仍为 true、<code>status</code> 同样不动</td></tr>
+        <tr><th>负路径</th><td class="mono">connection_not_found</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>回 <code>ConnectionDto</code> 而不是 <code>Void</code>：连接控制器其它写接口都回 DTO，且 <code>enabled</code> 与 <code>status</code> <strong>两个字段</strong>共同决定这条连接现在能不能用，回传让调用方一次拿全，不必再查一次。</p>
+  <div class="note good">
+    <h4>接口路径与参数一个字没改</h4>
+    <p style="margin:0">仍是 <code>POST /connections/{id}/status?enabled=</code>。调用方（含技能脚本 <code>connector.py set-connection-status</code>）<strong>无需改动</strong>，只是返回体里多了一个 <code>enabled</code> 字段、且 <code>status</code> 不再被这个接口改写。</p>
+  </div>
+
+  <div class="note warn">
+    <h4>验收时请一并核对：模块内的调试控制台「没有」启停开关</h4>
+    <p style="margin:0">这是<strong>有意</strong>的，不是漏做。启停是<strong>连接维度</strong>的操作（一条连接一个开关），而目录卡片是 provider 维度（一个连接器底下可能有多条连接，见 3.3）。能力中心已定调「悬停展示 连接/断开 按钮，<strong>不展示开关</strong>」，因此本次不碰前端。</p>
+  </div>
+
+  <h3>2.2 排序与标注：复用既有列表接口，无新增接口</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono">接口</th><th>说明</th><th>本次变化</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GET /api/connector/providers</td><td>目录列表（<strong>分页</strong>）</td><td>排序固定为<strong>四档</strong>；每条<strong>新增 <code>connectionEnabled</code> 标注</strong>；<strong>新增 <code>?connectionEnabled=</code> 过滤</strong></td></tr>
+        <tr><td class="mono">GET /api/connector/providers/overview</td><td>总览全量（不分页，前端分组用）</td><td>排序与标注同上，与 <code>/providers</code> 顺序<strong>保持一致</strong>；无过滤参数</td></tr>
+        <tr><td class="mono">GET /api/connector/providers/{service}</td><td>详情 + 动作列表</td><td>同样补 <code>connectionEnabled</code> 标注</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">三个接口都<strong>不接受</strong>排序参数。需要别的排序口径时由客户端自行二次排序。</p>
+
+  <h3>2.3 新增过滤参数 <code>connectionEnabled</code><span class="thin">　</span><span class="tag t-new">v3.0</span></h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono" style="width:230px">参数</th><th>取值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">connectionEnabled</td><td class="mono">true</td><td><strong>只看我启用了的连接器</strong>（需求 4）——注意含「启用了但凭证过期」的</td></tr>
+        <tr><td class="mono mut">connectionEnabled</td><td class="mono">false</td><td>只看我没启用的（含<strong>未连接</strong> + 连了但停用）</td></tr>
+        <tr><td class="mono mut">connectionEnabled</td><td class="mono mut">不传</td><td>不过滤（<strong>行为与改动前一致</strong>，向后兼容）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">与既有 <code>connected</code> 参数<strong>可组合</strong>：<code>?connected=connected&amp;connectionEnabled=false</code> = 我连了但停用的。两者互不替代——<code>connected</code> 问「有没有连接行」，<code>connectionEnabled</code> 问「用户开没开」。</p>
+  <div class="note warn">
+    <h4>验收时注意：参数必须是「包装类型」才能分辨「没传」</h4>
+    <p style="margin:0">服务端用 <code>Boolean</code>（对象）而不是 <code>boolean</code>（基本类型）接收：<code>boolean</code> 分不出「没传」和「传了 false」，而这两者语义正好相反（不过滤 vs 只看没启用的）。同理，若在<strong>未部署该改动的实例</strong>上打 <code>?connectionEnabled=true</code>，Spring 会<strong>静默忽略</strong>这个未声明的参数并返回全量——<strong>别把这个当成「过滤生效但没数据」</strong>，先确认实例版本。</p>
+  </div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section id="s3">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2>状态语义<small>Status Semantics</small></h2>
+  </div>
+
+  <h3>3.1 「已连接」「启用」「凭证健康」在代码里是五个不同的概念</h3>
+  <p>这是最容易在验收时搞混的地方，先钉死口径。<strong>前三个是库里真实存在的字段，后两个（<code>connected</code> / <code>connectionEnabled</code>）是接口响应上<em>派生</em>出来的标注</strong> —— 它们不新存数据，只是把前三个字段按用户维度聚合后答一个「是/否」问题：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>概念</th><th class="mono">落在哪个字段</th><th class="mono">取值</th><th>谁控制</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>目录条目</strong>是否启用</td>
+          <td class="mono">connector_provider.status</td>
+          <td class="mono">enabled / disabled</td>
+          <td>空间管理员（<code>POST /providers/{service}/status</code>）</td>
+        </tr>
+        <tr style="background:var(--paper-2)">
+          <td><strong>我这条连接</strong>：用户要不要用</td>
+          <td class="mono"><b>connector_connection.enabled</b></td>
+          <td class="mono">1 / 0（true / false）</td>
+          <td><strong>用户本人</strong>（<code>POST /connections/{id}/status</code>）<br><span class="mut">建连时置 1</span></td>
+        </tr>
+        <tr style="background:var(--paper-2)">
+          <td><strong>我这条连接</strong>：凭证还能不能用</td>
+          <td class="mono"><b>connector_connection.status</b></td>
+          <td class="mono">active / expired / error</td>
+          <td><strong>系统</strong>（建连、token 刷新、验活）<br><span class="mut">用户碰不到</span></td>
+        </tr>
+        <tr>
+          <td><strong>我有没有</strong>这个连接器的连接</td>
+          <td class="mono">ProviderDto.connected</td>
+          <td class="mono">true / false（派生）</td>
+          <td>无（由<strong>连接行是否存在</strong>派生，不看 enabled/status）</td>
+        </tr>
+        <tr style="background:var(--paper-2)">
+          <td><strong>我启用了没</strong><span class="tag t-new">v3.0</span></td>
+          <td class="mono"><b>ProviderDto.connectionEnabled</b></td>
+          <td class="mono">true / false（派生）</td>
+          <td>无（由<strong>连接行 enabled=1</strong> 派生，<strong>不看 status</strong>）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <h4>命名陷阱（三个）</h4>
+    <p style="margin:0 0 6px">① <code>ProviderDto.status</code> 指的是<strong>目录条目</strong>的启停（第一行），<strong>不是</strong>「我的连接」的启停。两者名字相近但语义无关，reviewer 容易看错。</p>
+    <p style="margin:0 0 6px">② <code>connector_connection</code> 上<strong>也有一个叫 <code>status</code> 的列</strong>，但它在 v2.0 里<strong>只表示凭证健康度</strong>，不再表示用户启停。判断「用户启用了没有」要看 <code>enabled</code>。<span class="mut">v1.0 里 <code>status='disabled'</code> 表示用户停用，这个值已随 v2.0 移除。</span></p>
+    <p style="margin:0">③ 新的响应字段叫 <code>connectionEnabled</code> 而<strong>不是</strong> <code>enabled</code>：<code>ProviderDto</code> 里已有 <code>status</code> 表示目录条目启停，再叫 <code>enabled</code> 会和它看混。<code>connection</code> 前缀点明它属于「我的连接」这一维度（见 D10）。</p>
+  </div>
+
+  <h3>3.2 <code>connector_connection</code> 上的两个字段，各管一件事</h3>
+
+  <p><strong>① <code>enabled</code> —— 用户开关（v2.0 新增列）</strong></p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono">值</th><th>含义</th><th>写入方</th><th>列表可见 / connected</th><th>参与执行解析</th></tr></thead>
+      <tbody>
+        <tr><td class="mono ok">1 / true</td><td>用户启用（<strong>默认</strong>，建连即为真）</td><td>用户；建连流程</td><td class="ok">可见，true</td><td class="ok">是（还须 status=active）</td></tr>
+        <tr><td class="mono">0 / false</td><td>用户主动停用</td><td><strong>用户本人</strong></td><td class="ok">可见，<strong>仍 true</strong></td><td class="no">否</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">DDL：<code>enabled tinyint(1) NOT NULL DEFAULT 1</code>，通过 <code>ALTER TABLE … ADD COLUMN … AFTER status</code> 增加。<code>DEFAULT 1</code> 让<strong>全部存量连接自动视为「启用」</strong>，与改动前行为逐字节一致。</p>
+
+  <p style="margin-top:18px"><strong>② <code>status</code> —— 凭证健康度（语义收窄，不再有用户意图）</strong></p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono">值</th><th>含义</th><th>写入方</th><th>列表可见 / connected</th><th>参与执行解析</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">active</td><td>凭证正常</td><td>建连 / token 刷新成功</td><td class="ok">可见，true</td><td class="ok">是（还须 enabled=1）</td></tr>
+        <tr><td class="mono">expired</td><td>凭证过期（OAuth refresh 失败）</td><td>系统</td><td class="ok">可见，true</td><td class="no">否</td></tr>
+        <tr><td class="mono">error</td><td>验活 / 执行出错</td><td>系统</td><td class="ok">可见，true</td><td class="no">否</td></tr>
+        <tr><td class="mono mut">disconnected</td><td>历史兼容值（实际断开由 <strong>DELETE 行</strong>承担，代码<strong>不再写入</strong>此值）</td><td class="mut">—</td><td class="mut">查不到</td><td class="no">否</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">枚举 <code>ConnectionStatusEnum</code> 里的 <code>DISABLED</code> 已删除；<code>DISCONNECTED</code> 保留但标注为历史兼容值（<code>listByUser</code>/<code>countByProvider</code> 仍有防御性 <code>ne</code> 条件）。</p>
+
+  <h3>3.3 可用性 = 两个字段同时成立（正交，不是二选一）</h3>
+  <p>这是 v2.0 最该被验收的一点。<code>enabled</code> 与 <code>status</code> <strong>互不覆盖</strong>，四种组合各自成立：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono" style="width:110px">enabled</th><th class="mono" style="width:140px">status</th><th>能执行吗</th><th>执行时的错误码</th></tr></thead>
+      <tbody>
+        <tr><td class="mono ok">1</td><td class="mono ok">active</td><td class="ok">能</td><td class="mut">—</td></tr>
+        <tr><td class="mono ok">1</td><td class="mono no">expired / error</td><td class="no">不能</td><td class="mono">connection_expired</td></tr>
+        <tr><td class="mono no">0</td><td class="mono ok">active</td><td class="no">不能</td><td class="mono">connection_disabled</td></tr>
+        <tr><td class="mono no">0</td><td class="mono no">expired / error</td><td class="no">不能</td><td class="mono">connection_disabled</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">最后一行是<strong>判断顺序</strong>的体现：先判 <code>enabled</code>、再判 <code>status</code>。既停用又过期时报 <code>connection_disabled</code> —— 先解决用户意图（去启用），启用后自然会看到 <code>connection_expired</code>（去重新授权）。<span class="mut">顺序反了会让用户在「去授权」和「去启用」之间来回跑。</span></p>
+  <div class="note good">
+    <h4>终于能表达「我停用了一条已经过期的连接」</h4>
+    <p style="margin:0">第 3、4 行两种组合里都能看到：<strong>停用不会把 <code>expired</code> 抹成别的值</strong>，启用也不会把它「治」成 <code>active</code>。下次启用时 UI 上仍能看到 <code>expired</code>，用户就知道该去重新授权 —— 而不是被一句「启用成功」骗着去撞一个已经死掉的 token。</p>
+  </div>
+  <div class="note warn">
+    <h4>v3.0 提醒：「可用」≠ <code>connectionEnabled</code></h4>
+    <p style="margin:0">本节的「可用」是<strong>第 1 行</strong>（<code>enabled=1</code> <b>且</b> <code>status='active'</code>）；而接口标注 <code>connectionEnabled</code> 只回答「用户开没开」，<strong>第 1、2 两行都是 true</strong>。两者不是一回事：<code>connectionEnabled=true</code> 只保证「用户想用」，不保证「现在能用」。<span class="mut">排序档 0 / 档 1 的拆分正是这个差别的落地（见 D9）。</span></p>
+  </div>
+
+  <h3>3.4 为什么「已连接」是 provider 级、而「可用」是 connection 级</h3>
+  <p>因为一个 provider 底下可以有多条连接，是 <strong>N : 1</strong>。该项目里就真实存在：<code>ably_control</code> 有 2 条连接。所以「这个连接器启用了没有」在 provider 粒度上<strong>不是一个事实，而是一个策略</strong>（当前策略：<em>任一连接满足 <code>enabled=1 且 status='active'</code> 即算可用</em>）。</p>
+  <p class="mut" style="font-size:13.5px">v3.0 的两个标注沿用同一套「<strong>任一连接满足即算</strong>」的聚合口径：<code>connected</code> = 任一连接行存在；<code>connectionEnabled</code> = 任一连接行 <code>enabled=1</code>。三处口径同源，不会互相打架。</p>
+</section>
+
+<!-- ================= 04 ================= -->
+<section id="s4">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2>关键设计决策<small>Design Decisions · 验收人重点看这里</small></h2>
+  </div>
+
+  <p>下面 11 条是本次实现里<strong>有取舍、可能引起争议</strong>的地方。每条都写了理由和代价 —— 如果验收时认为某条取舍不对，直接在这条下面提，改起来都是局部的。<span class="mut">D1 是 v2.0 的核心，D2 是 v1.0 到 v2.0 行为变动最明显的一条；D9–D11 是 v3.0 新增。</span></p>
+
+  <div class="dec">
+    <h4>D1 · 把「用户开关」从 <code>status</code> 里拆出来，独立成 <code>enabled</code> 列 <span class="tag t-new">v2.0 核心</span></h4>
+    <p class="why"><b>为什么</b>「用户启不启用」与「凭证健不健康」是<strong>正交</strong>的两件事：前者的写者是用户，后者的写者是系统。挤在一列时值域互斥，就必然有二选一的丢失。拆开之后，两个真实缺陷<strong>不靠加守卫、靠结构本身就消失了</strong>：</p>
+    <p class="why" style="margin-top:-6px">① <code>ConnectorOAuthServiceImpl.markExpired()</code> 无条件写 <code>expired</code>、refresh 成功分支无条件写 <code>active</code> —— 以前这两个流程会<strong>静默抹掉用户的停用决定</strong>（停用过的连接被刷新碰到就自己「复活」）。现在它们只写 <code>status</code>，碰不到 <code>enabled</code>，<strong>这两个方法的代码一行都没改</strong>，行为却自动正确了。</p>
+    <p class="why" style="margin-top:-6px">② 「我停用了一条已经过期的连接」以前<strong>表达不出来</strong>（<code>disabled</code> 覆盖 <code>expired</code>）；现在两个字段各存一份，两种事实同时保留。</p>
+    <p class="cost"><b>代价</b> 一次 DDL（<code>ADD COLUMN</code>）。已用 <code>DEFAULT 1</code> 兜住兼容性：存量行全部视为「启用」，与改动前行为逐字节一致；回滚只需 <code>DROP COLUMN</code>。另外判断「可用」从看一个字段变成看两个（见 3.3 的矩阵），调用方要知道这个口径。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D2 · 启用/停用<strong>不再改写 <code>status</code></strong>（v1.0 行为已废止）</h4>
+    <p class="why"><b>为什么</b>v1.0 里「启用」会把 <code>status</code> 置成 <code>active</code>，即使这条连接的 token 其实早就死了 —— 等于<strong>谎报凭证健康</strong>，用户要撞一次墙才发现。v2.0 把这个接口收窄成<strong>只写 <code>enabled</code> 一列</strong>：启用一条 <code>expired</code> 的连接，它<strong>仍然是 <code>expired</code></strong>，执行直接报 <code>connection_expired</code>，提示去重新授权。</p>
+    <p class="why" style="margin-top:-6px">代价的另一面是：<code>status</code> 现在<strong>只有系统会写</strong>，「这条凭证还行不行」这个判断永远来自真实调用（<code>ensureFreshOAuthToken</code> 刷新、验活、执行），不再有人工的乐观写入。</p>
+    <p class="cost"><b>代价</b> 用户点「启用」后如果凭证确实过期，<strong>不会得到「成功」的错觉</strong>，而是立刻看到 <code>connection_expired</code>。这是刻意的：宁可当场说清，也不要先给个假绿灯。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D3 · 两个错误码各指一条明路：<code>connection_disabled</code> / <code>connection_expired</code></h4>
+    <p class="why"><b>为什么</b>三种落空指向的<strong>解法完全不同</strong>：<code>connection_required</code> → 去连接；<code>connection_disabled</code> → 去启用；<code>connection_expired</code> → 去重新授权。混用会把用户引到错的方向 —— <strong>重连只会多出一条连接</strong>，原来那条还停着；而给一条停用的连接点「重新授权」也是白费。</p>
+    <p class="why" style="margin-top:-6px"><code>connection_expired</code> 这个错误码<strong>本来就存在</strong>，但在本次之前<strong>全仓没有任何地方抛出它</strong>（死码）。用户拿着过期连接执行，收到的却是误导性的「请先建立连接」。本次是它<strong>第一次真正接线</strong>。</p>
+    <p class="cost"><b>代价</b> 执行侧落空时要能区分三种情况，因此 <code>firstBlocked</code> 的判据从「<code>status='disabled'</code>」扩展成「<code>enabled=0</code> 或 <code>status&lt;&gt;'active'</code>」，再在 Java 里按 <code>enabled</code> 优先分类。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D4 · 执行侧<strong>挡两处</strong>，缺一不可</h4>
+    <p class="why"><b>为什么</b>①<strong>显式 <code>connectionId</code> 分支原先完全不看 status</strong> —— 不补这一处，调用方传一个连接 ID 就能静默绕过用户的停用决定，「启用/停用」就成了一句空话。②<strong>自动解析分支</strong>：<code>firstExecutable</code>（v1.0 叫 <code>firstActive</code>，本次<b>改名并加固条件</b>）已同时固定 <code>enabled=1</code> 与 <code>status='active'</code>，停用与过期都天然被过滤；但落空后要能区分「没建过」「建了但停用」「建了但凭证坏了」，否则会报误导性的「请先建立连接」。</p>
+    <p class="cost"><b>代价</b> 连带效果：<code>verifyConnection</code>（内部用显式 connectionId 执行）对停用连接会失败。这是<strong>预期行为</strong> —— 停用的连接不该被验活。<br>另一处代价：两处判断都写成「先 <code>enabled</code> 后 <code>status</code>」的固定顺序，顺序反了会让用户在「去授权」和「去启用」之间来回跑（见 3.3 末行）。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D5 · 排序必须落在 SQL，且<strong>不能用 <code>?</code> 占位符</strong></h4>
+    <p class="why"><b>为什么</b>①<code>/providers</code> 是<strong>分页</strong>的，在 Java 里补排序太晚 —— 某一页可能整页一条已连接的都没有，正确的行根本不在这一页。②<b class="mut" style="color:var(--seal)">只内联 <code>Long</code></b>（<code>tenantId</code>/<code>userId</code>，取自登录态而非请求参数，<code>Long.toString()</code> 不含引号、无注入面）而<strong>不用 <code>?</code></strong>：分页的 count 语句会剥掉 <code>ORDER BY</code>，占位符会与参数绑定表错位。</p>
+    <p class="cost"><b>代价</b> 表达式写进了 <code>.last("ORDER BY …")</code>（lambda wrapper 的排序方法只认 SFunction，表达不了子查询），并因此<strong>不能</strong>再调用 <code>orderByAsc</code>（否则会拼出两个 ORDER BY）。验收时请重点核对分页 <code>total</code> 是否正确。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D6 · 排序档 2 的判据是<strong>「连接行存在」</strong>，不是某个 <code>status</code> 值</h4>
+    <p class="why"><b>为什么</b>要与目录侧「已连接」标签<strong>同源</strong>：目录侧的 <code>connected</code> 问的就是「有没有建过连接」（<code>listByUser</code>，<strong>停用的也算</strong>）。档 2 直接用「行存在」，与这个标签<strong>不可能互相矛盾</strong> —— 不会出现「标签说已连接、排序说没连接」。</p>
+    <p class="why" style="margin-top:-6px">v1.0 用的是 <code>cc.status &lt;&gt; 'disconnected'</code>。改用行存在后，<code>enabled=0</code> 的连接自然落入档 2，符合「已连接但不可执行」的定义。<span class="mut">两者在现有数据上等价：<code>disconnected</code> 已是历史兼容值、代码不再写入。</span>v3.0 起 <code>status</code> 为 <code>expired</code>/<code>error</code> 但 <code>enabled=1</code> 的连接<strong>前移到档 1</strong>（v2.0 时它们同在「已连接」这一档，见 D9）。</p>
+    <p class="cost"><b>代价</b> 档 2 是「存在连接行、但用户没启用」的集合，语义比 v2.0 收窄了一点（凭证异常的那部分被 D9 提到档 1）。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D7 · 前端一行没改，靠后端排好 + 前端稳定排序</h4>
+    <p class="why"><b>为什么</b>控制台 <code>app.js</code> 的 <code>tabBaseList</code> 按 <code>connected</code> 分组，用的是 JS 的<strong>稳定排序</strong>，档内会原样保留后端顺序。所以后端排好后，4 个 tab（全部/我的/官方/已连接）的顺序自动都对了，不需要动前端。</p>
+    <p class="cost"><b>代价</b> 这个「隐式依赖稳定排序」比较隐蔽，已写进仓库记忆；若日后前端改成显式排序，需同步。<br>v2.0 额外收益：前端只用 <code>p.connected</code>，而「已连接」的语义（行存在）本次<strong>没变</strong>，所以拆列对前端完全透明。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D8 · 两个同名不同义的 <code>connected</code> 各自正名</h4>
+    <p class="why"><b>为什么</b>改动前 SDK 侧 <code>ConnectorApiServiceImpl</code> 有个私有方法叫 <code>connectedServices</code>，判据是 <code>status='active'</code>（问「能不能跑」）；而目录侧 <code>ConnectorCatalogController.servicesOfUser</code> 的 <code>connected</code> 判据是 <code>listByUser</code>（问「建过没有」）。<strong>同名不同义</strong>，是「乱」的第三个来源，读代码的人极易看错。本次把 SDK 侧那个改名为 <code>executableServices</code>，名字直接说出判据。</p>
+    <p class="cost"><b>代价</b> SDK 对外方法 <code>hasActiveConnection</code> <strong>不改名</strong>（它是对外契约，改名会扩散出 connector 模块，违反「改动不扩散」的约束），只把内部实现换成 <code>firstExecutable</code>。所以那个略显含糊的对外名字还在，属于已知遗留。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D9 · 排序从<strong>三档细化为四档</strong>，把「已启用但凭证异常」单独拎出来 <span class="tag t-new">v3.0</span></h4>
+    <p class="why"><b>为什么</b>v3.0 把「已启用」的口径定为<strong>只看用户开关 <code>enabled=1</code></strong>（需求四原文：查询「我自己已经启用的连接器」）。而 v2.0 的档 0「可用」= <code>enabled=1 <b>且</b> status='active'</code>，比用户口径<strong>更严格</strong>，差异恰好落在「用户启用了、但 token 已过期」这一类上。若沿用三档，这类连接器要么被算进「可用」占住队首（点进去必然 <code>connection_expired</code>，是假绿灯），要么掉到「已连接未启用」里和真正的未启用混作一团（用户会说「我明明启用了，怎么排在没启用的后面」）。两难，所以<strong>拆成两档</strong>。</p>
+    <p class="why" style="margin-top:-6px">实现上<strong>不需要写 <code>NOT EXISTS</code></strong>：三个 <code>EXISTS</code> 子查询级联 <code>DESC</code>，三个布尔位恰好切出四种组合。</p>
+    <div class="tw" style="margin:10px 0 4px">
+      <table>
+        <thead><tr><th style="width:150px">档位</th><th class="mono" style="width:100px">子查询 1<br>enabled=1 AND active</th><th class="mono" style="width:100px">子查询 2<br>enabled=1</th><th class="mono" style="width:100px">子查询 3<br>行存在</th></tr></thead>
+        <tbody>
+          <tr><td class="ok">0 可用</td><td class="mono ok">1</td><td class="mono ok">1</td><td class="mono ok">1</td></tr>
+          <tr><td class="gold">1 已启用但凭证异常</td><td class="mono no">0</td><td class="mono ok">1</td><td class="mono ok">1</td></tr>
+          <tr><td>2 已连接未启用</td><td class="mono no">0</td><td class="mono no">0</td><td class="mono ok">1</td></tr>
+          <tr><td class="mut">3 未连接</td><td class="mono no">0</td><td class="mono no">0</td><td class="mono no">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cost"><b>代价</b> 档 0 与档 1 在 API 上<strong>无字段可区分</strong>（两者 <code>connected</code> 与 <code>connectionEnabled</code> 都是 true），要靠<strong>位置</strong>或直接看连接详情里的 <code>status</code> 才知道差别。这是有意为之 —— 用户口径要的就是「启用了就算启用」，凭证健康度是执行时才需要知道的事（对应错误码 <code>connection_expired</code>）。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D10 · 新标注字段叫 <code>connectionEnabled</code>，<strong>不叫 <code>enabled</code></strong> <span class="tag t-new">v3.0</span></h4>
+    <p class="why"><b>为什么</b><code>ProviderDto</code> 里<strong>已经有一个</strong>含义是「启用」的字段：<code>status</code>（取值 <code>enabled</code>/<code>disabled</code>），指的是<strong>连接器目录条目本身</strong>由空间管理员设定的启停。再往同一个响应体里塞一个叫 <code>enabled</code> 的字段，两者会在评审、日志、前端代码里反复看混（3.1 的命名陷阱①）。加 <code>connection</code> 前缀直接点明它属于「<strong>我的连接</strong>」这一维度，与 <code>connected</code> 成对。</p>
+    <p class="cost"><b>代价</b> 名字偏长，且与连接对象上的列名 <code>enabled</code> <strong>不一致</strong>（一个是响应字段、一个是数据库列/连接 DTO 字段）。这是刻意的取舍：<strong>优先避免同响应体内歧义</strong>，两个语境各自自洽。</p>
+  </div>
+
+  <div class="dec">
+    <h4>D11 · 顺带修掉「过滤集合为空时语义反转」的既有缺陷 <span class="tag t-new">v3.0</span></h4>
+    <p class="why"><b>为什么</b>新增的「只看我启用的」过滤天生会遇到「我一个都没启用」这种输入。而 MyBatis-Plus 的 <code>in(condition, …)</code> 在 <code>condition=false</code> 时会<strong>整条跳过条件</strong>——原代码正是靠「集合非空」当 condition。于是<strong>一个连接都没有的用户调 <code>?connected=connected</code>，拿到的是全量列表</strong>而不是空。这是个既有缺陷（v1.0 就在），本次因为要复用同一套机制而一并修掉。</p>
+    <p class="why" style="margin-top:-6px">修法是抽出 <code>filterByServices(wrapper, services, include)</code> 统一处理四种组合：<strong>正向且集合为空 → 恒假条件</strong> <code>eq(id, -1L)</code>（与 repository 里既有的 <code>visibleWrapper</code> 同法，也避开了 <code>in ()</code> 的语法错）；<strong>反向且集合为空 → 不拼条件</strong>（本来就一条都不该排除）。</p>
+    <p class="cost"><b>代价</b> 无行为代价，但这条<strong>没能端到端实测</strong>：本地唯一可用的 AK 名下有 8 条连接，构造不出「零连接用户」。该分支是<strong>按构造正确</strong>（与既有恒假手法一致），验收如需覆盖，请用一个新账号（本地唯一可用的 AK 名下有 9 条连接、覆盖 8 个 service，构造不出「零连接用户」）。</p>
+  </div>
+</section>
+
+<!-- ================= 05 ================= -->
+<section id="s5">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2>验收清单<small>Acceptance Checklist · 43 项</small></h2>
+  </div>
+  <p>勾选状态存在浏览器本地（<code>localStorage</code>），刷新不丢。前置条件见第 09 节。命令里的 <code>$AK</code> 指本地 sandbox AK。</p>
+
+  <div class="grp">
+    <div class="grp-h"><h4>A · 启停基本行为</h4><span class="cnt" data-cnt="A"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="a1">
+      <span class="chk-body">
+        <p class="chk-t">停用一条连接：<code>enabled</code> 变 false，<strong><code>status</code> 保持 <code>active</code> 不变</strong> <span class="mut">← v2.0 核心</span></p>
+        <p class="chk-d"><code>POST /connections/{id}/status?enabled=false</code></p>
+        <span class="exp"><b>期望</b>success=true，data.enabled = <b>false</b>，data.status 仍是 <b>"active"</b>（不是 "disabled"，该值已不存在）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="a2">
+      <span class="chk-body">
+        <p class="chk-t">幂等：连续两次停用结果一致，且 <code>status</code> 始终不被触碰</p>
+        <p class="chk-d">同一 id 再发一次 <code>?enabled=false</code></p>
+        <span class="exp"><b>期望</b>仍回 enabled=false、status 不变，不报错</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="a3">
+      <span class="chk-body">
+        <p class="chk-t">停用后该连接<strong>仍在「我的连接」列表</strong></p>
+        <p class="chk-d"><code>GET /connections</code></p>
+        <span class="exp"><b>期望</b>该条仍在，且 <code>enabled=false</code> 与 <code>status</code> 两个字段都在返回体里 ← 需求原文「连接器还是看得到」</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="a4">
+      <span class="chk-body">
+        <p class="chk-t">停用后目录侧仍标「已连接」</p>
+        <p class="chk-d"><code>GET /providers?...connected=true</code> 里查该 service</p>
+        <span class="exp"><b>期望</b>connected 仍为 <b>true</b>（connected 只看行存在，不看 enabled/status）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="a5">
+      <span class="chk-body">
+        <p class="chk-t">停用<strong>不会</strong>把连接器从目录里过滤掉</p>
+        <p class="chk-d"><code>GET /providers</code> 全量里搜该 service</p>
+        <span class="exp"><b>期望</b>仍在列表中（只是排序落到档 2）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="a6">
+      <span class="chk-body">
+        <p class="chk-t">启用回来 → <code>enabled=true</code>，<strong><code>status</code> 依然不动</strong></p>
+        <p class="chk-d"><code>POST /connections/{id}/status?enabled=true</code></p>
+        <span class="exp"><b>期望</b>data.enabled = true；data.status 与停用前<strong>逐字相同</strong>（若停用前是 expired，现在仍是 expired —— 见 C 组）</span>
+      </span></label>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h"><h4>B · 启停真的生效（执行侧拦截）</h4><span class="cnt" data-cnt="B"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="b1">
+      <span class="chk-body">
+        <p class="chk-t">不传 connectionId 执行该连接器动作 → 被拒</p>
+        <p class="chk-d"><code>POST /runtime/execute</code>，body <code>{"actionId":…}</code>（不带 connectionId）</p>
+        <span class="exp"><b>期望</b>errorCode = <b>connection_disabled</b>，文案指向「启用」<br><span class="mut">前置：该 service 的<strong>所有</strong>连接都已 enabled=0（否则会自动落到另一条可用连接）</span></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b2">
+      <span class="chk-body">
+        <p class="chk-t"><strong>显式传该停用连接 id，同样被拒</strong>（关键：不可绕过）</p>
+        <p class="chk-d"><code>execute</code> 带 <code>connectionId={停用连接ID}</code></p>
+        <span class="exp"><b>期望</b>同样 connection_disabled ← 这是 D4 的核心，改动前这里<strong>完全不看 status</strong></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b3">
+      <span class="chk-body">
+        <p class="chk-t">报错语义正确：提示「启用」而不是「去连接」</p>
+        <p class="chk-d">看 b1/b2 的 message</p>
+        <span class="exp"><b>期望</b>含「已停用」；<strong>不</strong>出现 connection_required</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b4">
+      <span class="chk-body">
+        <p class="chk-t">启用后同一动作执行恢复成功</p>
+        <p class="chk-d">先 <code>?enabled=true</code>，再重跑同一条 execute</p>
+        <span class="exp"><b>期望</b>success=true，上游返回真实数据（建议用只读类动作，如 github 的 get_profile）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b5">
+      <span class="chk-body">
+        <p class="chk-t">回归：<strong>未连接</strong>的连接器仍报 <code>connection_required</code></p>
+        <p class="chk-d">挑一个从未建过连接的连接器执行其动作</p>
+        <span class="exp"><b>期望</b>connection_required，且带 <b>authorizeHint</b>（原行为未被破坏）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b6">
+      <span class="chk-body">
+        <p class="chk-t">停用<strong>不会</strong>给「去授权」入口</p>
+        <p class="chk-d">看 b1/b2 响应里有无 authorizeHint</p>
+        <span class="exp"><b>期望</b>无 authorizeHint —— 停用不是「没授权」，不该引导重连</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="b7">
+      <span class="chk-body">
+        <p class="chk-t"><strong>凭证过期</strong>（<code>enabled=1</code>、<code>status='expired'</code>）→ <code>connection_expired</code> <span class="mut">← 该错误码首次被抛出</span></p>
+        <p class="chk-d">把某条连接手工置为 <code>enabled=1, status='expired'</code>，执行其动作（显式传该 connectionId）</p>
+        <span class="exp"><b>期望</b>errorCode = <b>connection_expired</b>，文案含「请重新授权」<br>改造前这里报的是误导性的 <code>connection_required</code>（「请先建立连接」）—— 连接明明建了</span>
+      </span></label>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h"><h4>C · 启停边界与负路径</h4><span class="cnt" data-cnt="C"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="c1">
+      <span class="chk-body">
+        <p class="chk-t">不存在的连接 id → <code>connection_not_found</code></p>
+        <p class="chk-d"><code>POST /connections/999999/status?enabled=false</code></p>
+        <span class="exp"><b>期望</b>connection_not_found</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c2">
+      <span class="chk-body">
+        <p class="chk-t">他人的连接 id → 同样 <code>connection_not_found</code>（不泄露存在性）</p>
+        <p class="chk-d">用另一个账号的连接 id 调停用</p>
+        <span class="exp"><b>期望</b>connection_not_found（而非 forbidden）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c3">
+      <span class="chk-body">
+        <p class="chk-t">断开后再调 status → <code>connection_not_found</code></p>
+        <p class="chk-d">先 <code>DELETE /connections/{id}</code>，再用同一 id 调 status</p>
+        <span class="exp"><b>期望</b>connection_not_found ← 证明断开确实是<strong>删行</strong>，不是写墓碑值</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c4">
+      <span class="chk-body">
+        <p class="chk-t"><strong>交叉：停用一条已过期的连接 → <code>status</code> 仍为 <code>expired</code></strong> <span class="mut">← v2.0 最该验的一条</span></p>
+        <p class="chk-d">手工置 <code>status='expired'</code>，调 <code>?enabled=false</code>，再 <code>GET /connections/{id}</code></p>
+        <span class="exp"><b>期望</b><code>enabled=false</code> 且 <code>status</code> 仍是 <b>expired</b><br>改造前这里只能二选一：写成 disabled 就把 expired 覆盖了</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c5">
+      <span class="chk-body">
+        <p class="chk-t"><strong>交叉：启用后 <code>status</code> 依然不变，<code>expired</code> 不会被「治」成 <code>active</code></strong></p>
+        <p class="chk-d">承 c4，调 <code>?enabled=true</code>，再看一次详情</p>
+        <span class="exp"><b>期望</b><code>enabled=true</code> 而 <code>status</code> 仍为 <b>expired</b>；随即执行该动作应报 <code>connection_expired</code><br><b>不</b>应出现「启用成功、status 变 active」——那是 v1.0 的谎报行为，D2 已废止</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c6">
+      <span class="chk-body">
+        <p class="chk-t"><strong>判断顺序：既停用又过期时，报 <code>connection_disabled</code></strong></p>
+        <p class="chk-d">承 c4/c5 的组合（<code>enabled=0, status='expired'</code>）执行该动作</p>
+        <span class="exp"><b>期望</b>connection_disabled（先判 <code>enabled</code>）<br>顺序反了会让用户在「去启用」与「去授权」之间来回跑</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="c7">
+      <span class="chk-body">
+        <p class="chk-t"><em>代码审查项</em>：<code>firstExecutable</code> 同时固定 <code>enabled=true</code> 与 <code>status='active'</code>；<code>countByProvider</code> 不按两者过滤</p>
+        <p class="chk-d">审查 <code>ConnectorConnectionRepository</code> 的 <code>firstExecutable</code> / <code>firstBlocked</code> / <code>countByProvider</code></p>
+        <span class="exp"><b>期望</b>①<code>firstExecutable</code> 两个条件都在（自动解析天然跳过停用与过期）；②<code>countByProvider</code> <strong>不过滤</strong> <code>enabled</code>/<code>status</code>，存量停用连接仍挡住 <code>deleteProvider</code>（避免留下悬挂 credential 行）</span>
+      </span></label>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h"><h4>D · 排序四档 + 启用标注与过滤 <span class="tag t-new">v3.0</span></h4><span class="cnt" data-cnt="D"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="d1">
+      <span class="chk-body">
+        <p class="chk-t">列表首页前 N 条 = 该用户已连接的 service</p>
+        <p class="chk-d"><code>GET /providers?pageNum=1&pageSize=20</code>，N = 已连接 service <strong>去重后</strong>条数</p>
+        <span class="exp"><b>期望</b>前 N 条全部 connected=true（档 0/1/2 都算），第 N+1 条起才出现 connected=false（档 3）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d2">
+      <span class="chk-body">
+        <p class="chk-t"><strong>停用一条连接 → 该 service 落到档 2</strong>（核心验收点）</p>
+        <p class="chk-d">把某 connected service 的连接<strong>全部</strong>停用（<code>enabled=0</code>）后重看列表；若该 service 只有一条连接，停它即可</p>
+        <span class="exp"><b>期望</b>它从队首挪到「已连接组的最后一名」，<strong>仍在所有未连接（档 3）之前</strong>；同时 <code>connectionEnabled</code> 变为 <b>false</b></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d3">
+      <span class="chk-body">
+        <p class="chk-t">档 2 的条目 connected 仍为 <code>true</code>、connectionEnabled 为 <code>false</code></p>
+        <p class="chk-d">看 d2 那条的两个标注字段</p>
+        <span class="exp"><b>期望</b>connected=true 且 connectionEnabled=false ← 两个标注各答各的问题，档位与「已连接」标签不矛盾（D6）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d4">
+      <span class="chk-body">
+        <p class="chk-t">同一 provider 有两条连接（一条可用、一条被停用）→ 仍在<strong>档 0</strong></p>
+        <p class="chk-d">挑一个有两条的 service，停用其中一条（本项目 <code>ably_control</code> 有 2 条）</p>
+        <span class="exp"><b>期望</b>它仍在档 0（<strong>任一</strong>连接满足 <code>enabled=1 且 status='active'</code> 即算可用）← 3.4 的 N:1 语义</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d5">
+      <span class="chk-body">
+        <p class="chk-t">档内顺序 = <code>sort_order, id</code></p>
+        <p class="chk-d">看档 0、档 1、档 2 内部的相对顺序</p>
+        <span class="exp"><b>期望</b>与该子集在改动前的相对顺序完全一致（新增的档 1 只做<strong>分档</strong>，不改变档内次序）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d6">
+      <span class="chk-body">
+        <p class="chk-t">未连接那一大档的顺序与改动前<strong>逐条一致</strong></p>
+        <p class="chk-d">最直接的回归：拿改动前的列表 diff 未连接部分</p>
+        <span class="exp"><b>期望</b>零差异（档内回落 sort_order, id）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d7">
+      <span class="chk-body">
+        <p class="chk-t"><code>/providers/overview</code> 与 <code>/providers</code> 顺序一致</p>
+        <p class="chk-d">两个接口各取前 12 条对比</p>
+        <span class="exp"><b>期望</b>逐条相同</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d8">
+      <span class="chk-body">
+        <p class="chk-t">分页跨档位<strong>无重复、无遗漏</strong></p>
+        <p class="chk-d">用 <code>pageSize=5</code> 翻两页，与 <code>pageSize=20</code> 的前 10 条比对</p>
+        <span class="exp"><b>期望</b>完全一致，不出现同一条出现在两页</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d9">
+      <span class="chk-body">
+        <p class="chk-t">分页 <code>total</code> 正确（count 语句没被 ORDER BY 子查询带崩）</p>
+        <p class="chk-d">看返回的 total 与 pages</p>
+        <span class="exp"><b>期望</b>total 与改动前的全量条数一致 ← D5 里那个 <code>?</code> 占位符风险点，务必核对</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d10">
+      <span class="chk-body">
+        <p class="chk-t"><strong>档 1 判别性用例：把权重序第 0 位的连接置 <code>status='expired'</code>（<code>enabled</code> 保持 1）→ 落到档 1</strong> <span class="tag t-new">v3.0</span></p>
+        <p class="chk-d">挑<strong>权重序最靠前</strong>的那个已连接 service（本项目是 github / 连接 39），<code>UPDATE connector_connection SET status='expired' WHERE id=…</code>，再查第一页</p>
+        <span class="exp"><b>期望</b>它从第 <b>0</b> 位落到第 <b>7</b> 位 —— <strong>在全部可用（档 0）之后、所有未连接（档 3）之前</strong>；且 <code>connected=true</code>、<code>connectionEnabled=true</code>（两个标注都不变）<br><span class="mut">⚠️ 别用权重序<em>末尾</em>的 service 做这个实验：它在档 0 与档 1 都会落到同一位，<strong>用例没有判别力</strong></span></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d11">
+      <span class="chk-body">
+        <p class="chk-t">每条结果都带 <code>connectionEnabled</code>，且<strong>不是 <code>null</code></strong> <span class="tag t-new">v3.0</span></p>
+        <p class="chk-d"><code>GET /providers?pageSize=200</code>，统计字段的取值分布</p>
+        <span class="exp"><b>期望</b>1298/1298 条都有该字段（<code>null</code> 数为 <b>0</b>）；档 0/1/2 为 true，档 3 为 false ← 恒有值，调用方无需判空<br><span class="mut">管理侧 <code>ConnectorSystemController</code> 无用户维度，该字段保持 <code>null</code>，与既有 <code>connected</code> 一致</span></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d12">
+      <span class="chk-body">
+        <p class="chk-t"><code>?connectionEnabled=true|false</code> 两者<strong>恰好划分</strong>全量 <span class="tag t-new">v3.0</span></p>
+        <p class="chk-d"><code>GET /providers?connectionEnabled=true</code> 与 <code>?connectionEnabled=false</code> 各取 total</p>
+        <span class="exp"><b>期望</b>两个 total <strong>相加 = 不带参数的全量 total</strong>（实测 8 + 1290 = 1298）；<code>=true</code> 那批 <code>connected</code> 全为 true，<code>=false</code> 那批含「未连接」与「连了但停用」<br><span class="mut">不传参数 = 不过滤（向后兼容，行为不变）</span></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="d13">
+      <span class="chk-body">
+        <p class="chk-t">口径确认：<strong>已启用但凭证过期</strong>的连接器<strong>仍算「已启用」</strong>，出现在 <code>?connectionEnabled=true</code> 里 <span class="tag t-new">v3.0</span></p>
+        <p class="chk-d">承 d10（github 已置 expired）；调 <code>?connectionEnabled=true</code> 看它是否仍在结果中</p>
+        <span class="exp"><b>期望</b><strong>在</strong>，且 <code>connectionEnabled=true</code>、<code>connected=true</code> ← 用户拍板的口径：严格只看 <code>enabled</code>；凭证健康度由执行侧用 <code>connection_expired</code> 提示，<strong>不在这里过滤</strong>（见 D9 的代价、8.2）</span>
+      </span></label>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h"><h4>E · 排序在各类过滤/范围下不异常</h4><span class="cnt" data-cnt="E"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="e1">
+      <span class="chk-body">
+        <p class="chk-t"><code>connected=true</code> 时仍分档（三档都在这一组里）</p>
+        <p class="chk-d"><code>GET /providers?connected=true</code>；再组合 <code>&amp;connectionEnabled=false</code> 对照</p>
+        <span class="exp"><b>期望</b>顺序为 <b>档 0 可用 → 档 1 已启用但凭证异常 → 档 2 已连接未启用</b>；加 <code>connectionEnabled=false</code> 后<strong>只剩档 2 那一段</strong></span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="e2">
+      <span class="chk-body">
+        <p class="chk-t"><code>connected=unconnected</code> 时顺序不乱</p>
+        <p class="chk-d"><code>GET /providers?connected=unconnected</code></p>
+        <span class="exp"><b>期望</b>全为档 3，纯 sort_order 序，且不含任何已连接 service</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="e3">
+      <span class="chk-body">
+        <p class="chk-t"><code>scope=official</code> 顺序正常</p>
+        <p class="chk-d"><code>GET /providers?scope=official</code></p>
+        <span class="exp"><b>期望</b>官方目录里已连接（且启用）的仍排前面</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="e4">
+      <span class="chk-body">
+        <p class="chk-t"><code>scope=space&amp;spaceId=</code> 顺序正常</p>
+        <p class="chk-d"><code>GET /providers?scope=space&spaceId={id}&status=all</code></p>
+        <span class="exp"><b>期望</b>空间自建里已连接的排前面；不报错</span>
+      </span></label>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h"><h4>F · 回归 / 构建 / 部署</h4><span class="cnt" data-cnt="F"></span></div>
+
+    <label class="chk"><input type="checkbox" data-k="f1">
+      <span class="chk-body">
+        <p class="chk-t"><code>/providers</code> 不带 <code>spaceId</code> 仍返回用户<strong>全部空间</strong></p>
+        <p class="chk-d">上一版刚修的「spaceId 硬必填」，别被这次改动带回去</p>
+        <span class="exp"><b>期望</b>不报「spaceId 必填」，返回官方 + 各空间自建</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="f2">
+      <span class="chk-body">
+        <p class="chk-t">连接的既有接口不受影响（除 DTO 多一个 <code>enabled</code> 字段）</p>
+        <p class="chk-d">列表 / 详情 / 验活 / 断开 四个接口各跑一次</p>
+        <span class="exp"><b>期望</b>行为与改动前一致；断开仍连凭证行一起删。新增字段是<strong>向后兼容</strong>的（老调用方忽略即可）</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="f3">
+      <span class="chk-body">
+        <p class="chk-t">前端总览页顺序正确，且<strong>无需改前端</strong></p>
+        <p class="chk-d">打开控制台总览页看列表顺序</p>
+        <span class="exp"><b>期望</b>已连接且启用的在最前 ← D7 的稳定排序依赖</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="f4">
+      <span class="chk-body">
+        <p class="chk-t">前端 4 个 tab 内顺序都正确</p>
+        <p class="chk-d">全部 / 我的 / 官方 / 已连接</p>
+        <span class="exp"><b>期望</b>每个 tab 内都是「已连接且启用 → 已连接 → 未连接」</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="f5">
+      <span class="chk-body">
+        <p class="chk-t">JDK 17 <strong>全量</strong>编译通过</p>
+        <p class="chk-d">见 09 节；<strong>不要</strong>用 <code>-pl</code>（会撞 assembly repack 的 mapper 重复）</p>
+        <span class="exp"><b>期望</b>BUILD SUCCESS</span>
+      </span></label>
+
+    <label class="chk"><input type="checkbox" data-k="f6">
+      <span class="chk-body">
+        <p class="chk-t">DDL 只有<strong>一次 <code>ADD COLUMN</code></strong>，且未新增 mapper XML</p>
+        <p class="chk-d">审查 <code>sql/update-20260805.sql</code>（建表定义 + 末尾「增量升级」段），并确认库里 <code>connector_connection.enabled</code> 已存在</p>
+        <span class="exp"><b>期望</b>唯一 ALTER 是 <code>ADD COLUMN enabled tinyint(1) NOT NULL DEFAULT 1</code>；回滚 = <code>DROP COLUMN</code>。排序走 wrapper 子查询、不依赖 XML</span>
+      </span></label>
+  </div>
+
+  <div class="note warn">
+    <h4>部署状态：testagent 上既没有启停接口，也没有 <code>enabled</code> 列，更没有 v3.0 的标注与过滤</h4>
+    <p style="margin:0 0 8px">线上目前 <code>POST /connections/{id}/status</code> 不存在（404），<code>/providers</code> 仍是纯 <code>sort_order, id</code> 排序（<strong>非四档</strong>），库表也没有 <code>enabled</code> 列；v3.0 的 <code>connectionEnabled</code> 字段与 <code>?connectionEnabled=</code> 过滤同样还没有 —— 线上传这个参数会被 <strong>Spring 静默忽略</strong>（不报错、直接返回全量），<strong>别把这个当成「过滤生效但没数据」</strong>。所以：<strong>在 testagent 上验收一定不通过</strong>，请对本地实例验收，或先部署。</p>
+    <p style="margin:0 0 8px">部署顺序<strong>不能颠倒</strong>：必须先执行 9.1 的 <code>ADD COLUMN</code>，再发新代码。反过来的话，新代码在缺列的表上会直接报 <code>Unknown column 'enabled'</code> —— 这是本次唯一有硬顺序要求的步骤。<span class="mut">反过来先加列再发代码是安全的：<code>DEFAULT 1</code> 让旧代码眼中的行为与改前逐字节一致。</span></p>
+    <p style="margin:0">部署后请<strong>重跑一遍 A/B 组</strong>（启停与执行侧拦截），因为线上是「中间版本」，并非整体落后 —— 有些早前的改动已在线上，有些没有。</p>
+  </div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section id="s6">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2>本地实测证据<small>Verified Evidence</small></h2>
+  </div>
+  <p>下面是在<strong>本地实例</strong>上已经真实跑通的结果，可作为期望值的参照。<span class="mut">操作人：开发。测试环境：本地 8081 + 共享库。</span></p>
+
+  <h3>6.1 状态矩阵：同一批连接、同一批动作，四种组合各跑一次</h3>
+  <p>这张表是 v2.0 的<strong>核心证据</strong> —— 它证明 <code>enabled</code> 与 <code>status</code> 确实正交，且判断顺序为先 <code>enabled</code> 后 <code>status</code>（即 3.3 的矩阵）：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="mono" style="width:80px">enabled</th><th class="mono" style="width:110px">status</th><th>执行结果</th><th style="width:210px">用的连接 / 动作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono ok">1</td><td class="mono ok">active</td>
+          <td class="ok">success=true，上游真实数据 <code>{"login":"ffay","id":2667623}</code></td>
+          <td class="mono">github id=39<br>action 6 get_profile</td>
+        </tr>
+        <tr>
+          <td class="mono no">0</td><td class="mono ok">active</td>
+          <td class="no">errorCode = <b>connection_disabled</b><br>「连接已停用，请先启用或改用其他连接: ably_control」</td>
+          <td class="mono">ably_control id=51<br>action 76 get_account_stats</td>
+        </tr>
+        <tr>
+          <td class="mono ok">1</td><td class="mono no">expired</td>
+          <td class="no">errorCode = <b>connection_expired</b><br>「连接凭证已失效（expired），请重新授权或改用其他连接: 51」</td>
+          <td class="mono">同上<br><span class="mut">（手工置 expired 模拟 refresh 失败）</span></td>
+        </tr>
+        <tr>
+          <td class="mono no">0</td><td class="mono no">expired</td>
+          <td class="no">errorCode = <b>connection_disabled</b> ← 先判 <code>enabled</code></td>
+          <td class="mono">同上</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">第 2、3、4 行全部在<strong>执行解析阶段</strong>就被拒，<strong>未触达上游</strong>（零外部副作用）。第 1 行是唯一一次真实外部调用，用的是只读免费的 <code>get_profile</code>。</p>
+
+  <h3>6.2 拆列的核心：停用不再改写凭证健康度（反向交叉用例）</h3>
+  <p>把 <code>ably_control</code>（id=51）置为 <code>enabled=1, status='expired'</code> 后，走一遍「停用 → 启用」的完整用户操作，每步都查一次详情：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:210px">步骤</th><th class="mono" style="width:230px">查询到的状态</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>起点（手工置 expired）</td><td class="mono">status=expired　enabled=1</td><td class="mut">模拟 refresh 失败后的连接</td></tr>
+        <tr><td>执行动作 →</td><td class="mono no">connection_expired</td><td>凭证坏了，如实报「去重新授权」</td></tr>
+        <tr><td><strong>调 <code>?enabled=false</code> 停用</strong></td><td class="mono">status=<b>expired</b>　enabled=0</td><td class="ok"><strong>expired 被完整保留</strong> ← 改造前这里会被覆盖成 disabled</td></tr>
+        <tr><td>停用状态下执行 →</td><td class="mono no">connection_disabled</td><td>用户意图优先</td></tr>
+        <tr><td><strong>调 <code>?enabled=true</code> 启用</strong></td><td class="mono">status=<b>expired</b>　enabled=1</td><td class="ok"><strong>没有谎报成 active</strong> ← 改造前这里会谎报</td></tr>
+        <tr><td>启用后执行 →</td><td class="mono no">connection_expired</td><td class="ok">如实提示「去重新授权」，而不是让用户再点一次启用白跑</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note good">
+    <h4>「我停用了一条已经过期的连接」终于表达得出来</h4>
+    <p style="margin:0">第 3 行与第 5 行是本次改造的<strong>全部意义</strong>：<code>expired</code> 与「被停用」两种事实同时保留、互不覆盖。这两行在改造前<strong>做不到</strong> —— 一个字段只能装一个值。</p>
+  </div>
+
+  <h3>6.3 两处拦截都生效（含「不可绕过」）</h3>
+  <p>先把 <code>ably_control</code> 的两条连接（id=50、51）都停用，再分别用两种调用方式执行 action 76：</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>调用方式</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td>不传 connectionId（走自动解析）</td><td class="mono no">connection_disabled　「连接已停用，请先启用或改用其他连接: <b>ably_control</b>」</td></tr>
+        <tr><td>显式传 <code>connectionId=51</code></td><td class="mono no">connection_disabled　「…: <b>51</b>」</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mut" style="font-size:13.5px">两处的报错<strong>细节不同</strong>（一处带 service 名、一处带 connectionId）是因为它们分属两个代码分支（自动解析落空 / 显式指定），但错误码一致 —— 显式传 ID 绕不过去，这正是 D4 要挡的洞。</p>
+
+  <h3>6.4 可见性与排序四档</h3>
+  <p>测试时该用户共 9 条连接、<b>8</b> 个去重 service：<code>github, ably_control, anthropic, asana, deepseek, add02, s_add02, s_qwen_image</code>（<code>ably_control</code> 有 2 条，故 provider 粒度的标注与过滤按 <b>8</b> 计）。全库可见 provider 共 <b>1298</b> 条 = 官方 1283 + 空间 57 的 15。</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:250px">检查点</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GET /connections（停用后）</td><td class="ok">该条仍在列表，<code>enabled=false</code>、<code>status=active</code> 两个字段都在</td></tr>
+        <tr><td class="mono">GET /providers?connected=true（停用后）</td><td class="ok"><code>ably_control</code> 仍 <b>connected=true</b>（8 个 service 一个不少）← 需求原文「连接器还是看得到」</td></tr>
+        <tr><td><strong>全量标注覆盖</strong></td><td class="ok"><b>1298/1298</b> 条都带 <code>connectionEnabled</code>，<code>null</code> 数为 <b>0</b>；档 0/1/2 为 true、档 3 为 false</td></tr>
+        <tr><td><strong>过滤恰好划分</strong></td><td class="ok"><code>?connectionEnabled=true</code> → <b>8</b> 条；<code>=false</code> → <b>1290</b> 条；<b>8 + 1290 = 1298</b>，无重无漏</td></tr>
+        <tr><td>排序基线（两条均可用）</td><td class="mono">ably_control 位于第 <b>2</b> 位（档 0）</td></tr>
+        <tr><td><strong>把 ably_control 两条都停用</strong></td><td class="mono">落到第 <b>8</b> 位 —— 排在 7 个可用 service 之后、<strong>所有未连接之前</strong>（档 2），且 connected 仍为 <b>true</b>、connectionEnabled 变 <b>false</b></td></tr>
+        <tr><td><strong>档 1 判别性用例：github 连接 39 置 <code>status='expired'</code>（<code>enabled=1</code>）</strong></td><td class="mono gold">从第 <b>0</b> 位落到第 <b>7</b> 位 —— 正好在 7 个可用之后、未连接之前（<b>档 1</b>）；<code>connected=true</code>、<code>connectionEnabled=true</code> 都<strong>不变</strong>；<code>?connectionEnabled=true</code> 仍返回它（集合大小仍为 8）</td></tr>
+        <tr><td>对照：同一连接改为<strong>停用</strong>（<code>enabled=0</code>，status 仍 active）</td><td class="mono">同样落到第 <b>7</b> 位，但落在<strong>档 2</strong>（github 之外 7 个可用之后）；<code>connectionEnabled</code> 变 false，<code>?connectionEnabled=true</code> 的结果 <b>8 → 7</b></td></tr>
+        <tr><td>档内顺序</td><td class="mono ok">档 3 那一大段（ima, todo_demo, echo_test, 17track, …）与改动前逐条一致</td></tr>
+        <tr><td>分页</td><td class="mono ok"><code>pageSize=5</code> 连翻 3 页无重复无遗漏；跨档边界不错乱</td></tr>
+        <tr><td><code>/providers/overview</code> 与 <code>/providers/{service}</code></td><td class="ok">两条返回路径都带 <code>connected</code> / <code>connectionEnabled</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note good">
+    <h4>判别性用例为什么选 github（第 0 位）</h4>
+    <p style="margin:0 0 6px">第一次实验用的是权重序<strong>末尾</strong>的 <code>s_qwen_image</code>，置 <code>expired</code> 后它仍在第 7 位 —— 看起来像「档 1 没生效」。其实是它在<strong>档 0 和档 1 都会落到同一位</strong>，<strong>用例本身没有判别力</strong>。换成权重序第 0 位的 github 后，位置从 0 → 7 的变化才真正证明档 1 生效。验收时请照此挑样本。</p>
+    <p style="margin:0">「已启用」只认 <code>enabled</code>，所以两个实验的过滤器表现不同：<strong>置 expired 但保持 <code>enabled=1</code></strong> 时 github <strong>仍在</strong> <code>?connectionEnabled=true</code> 的结果里（集合仍为 8）；<strong>停用</strong>后它退出该集合（8 → 7）。这一对照正是 d13 要验的口径。</p>
+  </div>
+
+  <h3>6.5 负路径与回归</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>场景</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">POST /connections/999999/status</td><td class="mono no">connection_not_found</td></tr>
+        <tr><td class="mono">连续两次 --disable</td><td class="mono ok">均返回 enabled=false，且 status 始终未被触碰（幂等）</td></tr>
+        <tr><td class="mono">未连接的连接器执行动作</td><td class="mono ok">仍 <b>connection_required</b> + authorizeHint（原行为未破坏）</td></tr>
+        <tr><td class="mono">断开后再调 status</td><td class="mono no">connection_not_found ← 证明断开是<strong>删行</strong>而非写墓碑值</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note good">
+    <h4>共享库状态已复原</h4>
+    <p style="margin:0">测试前后 9 条连接的 <code>enabled</code> 与 <code>status</code> <strong>逐条一致</strong>（全部 <code>enabled=1</code>、<code>status='active'</code>），<strong>未新建、未删除任何连接</strong>。测试期间产生的 <code>connector_run_log</code> 审计条目（含被拒的 connection_disabled / connection_expired 记录）属真实调用记录，未删除。</p>
+  </div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section id="s7">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2>改动文件清单<small>Changed Files</small></h2>
+  </div>
+  <p>两个根目录：后端 <code>agent-platform-4connector/</code>，技能 <code>connector-development/</code>。<span class="mut">工作目录副本，该目录非 git 仓库，无 commit 可对。下表是 <b>v2.0（状态拆分）+ v3.0（统一查询与四档排序）</b> 相对 v1.0 的增量。</span></p>
+
+  <h4>后端 · 状态拆分（v2.0 核心，沿调用链自下而上）</h4>
+  <div class="files">
+    <div><span class="tag t-mod">修改</span><span class="p">agent-platform-4connector/sql/<b>update-20260805.sql</b>　<span class="mut">建表定义 <code>status</code> 注释收窄为「凭证健康度」+ 新增 <code>enabled</code> 列；文件末尾追加「增量升级」段（<code>ADD COLUMN</code> + 存量 <code>disabled</code> 迁移）</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-spec/…/enums/<b>ConnectionStatusEnum.java</b>　<span class="mut">移除 <code>DISABLED("disabled")</code>；javadoc 重写为「凭证健康度」并注明「不要再加表达用户意图的值」</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-domain/…/entity/<b>ConnectorConnection.java</b>　<span class="mut">新增 <code>Boolean enabled</code> 字段，javadoc 写明与 <code>status</code> 的分工</span></span></div>
+    <div><span class="tag t-done">重命名</span><span class="p">…-connector-infra/…/repository/<b>ConnectorConnectionRepository.java</b>　<span class="mut"><code>firstActive</code> → <b><code>firstExecutable</code></b> 并加 <code>enabled=true</code> 条件；<code>firstBlocked</code> 判据改为 <code>(enabled=0 OR status&lt;&gt;'active') AND status&lt;&gt;'disconnected'</code>；<code>listByUser</code>/<code>countByProvider</code> <strong>未动</strong></span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-application/…/service/<b>ConnectorConnectionServiceImpl.java</b>　<span class="mut"><code>setEnabled</code> 改为<strong>只写 <code>enabled</code></strong>（不再碰 status）；建连显式置 <code>enabled=true</code>；解析改调 <code>firstExecutable</code></span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-application/…/service/<b>ConnectorOAuthServiceImpl.java</b>　<span class="mut">建连显式置 <code>enabled=true</code>（一行）。<strong><code>markExpired</code> 与 refresh 成功分支的代码一行未改</strong> —— 它们从此只写 <code>status</code>，缺陷自然消失</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-application/…/exec/<b>ConnectorExecutionServiceImpl.java</b>　<span class="mut"><code>resolveConnection</code> 三分支重写：先判 <code>enabled</code>（→ <code>connection_disabled</code>）再判 <code>status</code>（→ <b><code>connection_expired</code></b>，该错误码首次被抛出），最后才是 <code>connection_required</code></span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-ui/…/controller/dto/<b>ConnectionDto.java</b>　<span class="mut">新增 <code>Boolean enabled</code> 字段</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-ui/…/controller/<b>ConnectorConnectionController.java</b>　<span class="mut"><code>toDto</code> 补 <code>setEnabled</code>；<code>@Operation</code> 摘要改写。<strong>接口路径与参数未动</strong></span></span></div>
+    <div><span class="tag t-done">重命名</span><span class="p">…-connector-ui/…/sdk/<b>ConnectorApiServiceImpl.java</b>　<span class="mut">私有方法 <code>connectedServices</code> → <b><code>executableServices</code></b>（判据 <code>enabled &amp;&amp; status=='active'</code>）；guide 改调 <code>firstExecutable</code>。<code>IConnectorApiService</code> 对外契约<strong>未动</strong></span></span></div>
+  </div>
+
+  <h4>后端 · 排序（v1.0 引入，v2.0 改判据，v3.0 扩为四档）</h4>
+  <div class="files">
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-infra/…/repository/<b>ConnectorProviderRepository.java</b>　<span class="mut"><code>orderByConnectionFirst</code>：v2.0 把档 0 判据改为 <code>enabled=1 AND status='active'</code>、末档改为<strong>行存在</strong>；<b>v3.0 由两个子查询扩为三个</b>（中间插入 <code>EXISTS(… enabled=1)</code>），切成四档</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-domain/…/service/<b>ConnectorCatalogService.java</b>、…-application/…/service/<b>ConnectorCatalogServiceImpl.java</b>、…-ui/…/controller/<b>ConnectorCatalogController.java</b>　<span class="mut">v1.0 引入的 <code>userId</code> 透传；<b>v3.0 起</b> <code>pageProviders</code> 再透传两个过滤参数</span></span></div>
+  </div>
+
+  <h4>后端 · v3.0 统一查询（启用标注 + 启用过滤 + 空集合修正）</h4>
+  <div class="files">
+    <div><span class="tag t-new">新增</span><span class="p">…-connector-ui/…/controller/dto/<b>ProviderDto.java</b>　<span class="mut">新增 <code>Boolean connectionEnabled</code>（与 <code>connected</code> 并列，javadoc 写明「我启用了没」与 <code>status</code> 的分工）</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-ui/…/controller/<b>ConnectorCatalogController.java</b>　<span class="mut"><code>listProviders</code> 新增可选参数 <code>Boolean connectionEnabled</code>（<strong>包装类型</strong>，<code>boolean</code> 分不出「没传」与「传了 false」）；原 <code>servicesOfUser</code> 改为私有 record <code>MyConnections</code> + <code>connectionsOfUser</code>，<strong>一次查询产出连接集合与启用集合</strong>；新增 <code>fillConnectionFlags</code>，三条返回路径（<code>/providers</code>、<code>/providers/overview</code>、<code>/providers/{service}</code>）统一打标</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-infra/…/repository/<b>ConnectorProviderRepository.java</b>　<span class="mut"><code>pageVisible</code> 加启用过滤分支；抽出私有 <code>filterByServices(wrapper, services, include)</code> <strong>顺带修掉空集合语义反转</strong>（见 D11）：正向且集合为空 → 恒假 <code>eq(id, -1L)</code>，反向且集合为空 → 不拼条件</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">…-connector-ui/…/sdk/<b>ConnectorApiServiceImpl.java</b>　<span class="mut">仅 javadoc 里对 controller 私有方法的引用同步（<code>servicesOfUser</code> → <code>connectionsOfUser</code>），<strong>逻辑未动</strong></span></span></div>
+  </div>
+
+  <h4>技能与文档</h4>
+  <div class="files">
+    <div><span class="tag t-mod">修改</span><span class="p">connector-development/scripts/<b>connector.py set-connection-status</b>　<span class="mut">docstring 与 <code>--enable/--disable</code> 帮助文案改写（停用只写 <code>enabled</code>、不改凭证健康度）。<strong>逻辑未变</strong> —— 接口路径与参数没动</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">connector-development/scripts/<b>connector.py connectors</b>　<span class="mut"><span class="tag t-new">v3.0</span> 新增 <code>--connected {connected,unconnected}</code> 与 <code>--connection-enabled {true,false}</code>；docstring 重写为「三个正交字段 + 四档排序」</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">connector-development/references/<b>api_reference.md</b>　<span class="mut">连接对象补 <code>enabled</code> 字段；status 取值表移除 <code>disabled</code>、拆成「开关 + 健康度」两套；新增 <code>connection_expired</code> 的处置指引；<b>v3.0 补</b> <code>/providers</code> 的 <code>connectionEnabled</code> 参数、三个状态标注表与四档排序说明</span></span></div>
+    <div><span class="tag t-mod">修改</span><span class="p">connector-development/<b>SKILL.md</b>　<span class="mut">脚本表措辞；故障排查新增 <code>connection_expired</code>（不要与 <code>connection_disabled</code> 混为一谈），<code>connection_disabled</code> 条目改为按 <code>enabled=false</code> 定位；<b>v3.0 新增</b>「我已启用的连接器」一行</span></span></div>
+  </div>
+
+  <div class="note">
+    <h4>验收人可跳过的东西</h4>
+    <p style="margin:0">前端 <code>static/connector/**</code>（一行未改 —— 它只用 <code>p.connected</code>，而该字段语义未变；新增的 <code>connectionEnabled</code> 向后兼容，前端暂不消费）、<code>ConnectorProvider</code> 实体、<code>ConnectionStatusEnum</code>、以及上述未列出的所有文件，本次均未改动。<span class="mut">管理侧 <code>ConnectorSystemController</code> 也一行未改 —— 它没有「当前用户连接」维度，<code>connectionEnabled</code> 保持 <code>null</code>，与既有 <code>connected</code> 一致。</span></p>
+  </div>
+</section>
+
+<!-- ================= 08 ================= -->
+<section id="s8">
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <h2>已知限制与待办<small>Known Limits</small></h2>
+  </div>
+
+  <h3>8.1 两处已知遗留（都不影响本次验收）</h3>
+  <p><strong>① <code>getOwned</code> 不排除 <code>disconnected</code></strong>（v1.0 就存在的防御性小洞）。<code>getOwned</code> 只校验 <code>id + user_id</code>，而 <code>setEnabled</code> 走的正是它。目前<strong>到不了</strong>这条路径：<code>disconnect</code> 是 DELETE 行（凭证行一起删），<code>disconnected</code> 又是代码不再写入的历史值。但若日后有人把「断开」改成写墓碑值而不是删行，<code>?enabled=true</code> 会把墓碑复活，而 <code>credential_id</code> 指向的凭证行已不存在 → 执行报 <code>credential_not_found</code>。</p>
+  <p class="mut" style="font-size:13.5px">是否补由验收人定：补法是 <code>setEnabled</code> 里加一行 <code>if (DISCONNECTED.equals(status)) throw CONNECTION_NOT_FOUND;</code>。<strong>v2.0 没有补</strong> —— 本次的目标是拆分语义，不是扩大改动面。</p>
+  <p style="margin-top:14px"><strong>② 对外方法 <code>IConnectorApiService.hasActiveConnection</code> 的名字仍未改</strong>（D8 的代价）。它的语义是「有没有<strong>可执行</strong>的连接」（实现已换成 <code>firstExecutable</code>），但名字停留在 <code>active</code> 时代。改名会扩散出 connector 模块，违反「改动不扩散」的约束，故只把模块<strong>内部</strong>的私有方法正名为 <code>executableServices</code>。</p>
+
+  <h3>8.2 有意为之、请勿当 bug 报的几条</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:280px">现象</th><th>为什么是有意的</th></tr></thead>
+      <tbody>
+        <tr><td><strong>启用一条 <code>expired</code> 连接后，它<em>仍然</em>是 <code>expired</code></strong>，执行报 <code>connection_expired</code></td><td>D2：启用只写 <code>enabled</code>。宁可当场说清「去重新授权」，也不给一个会撞墙的假绿灯。<span class="mut">这是 v2.0 与 v1.0 行为差别最明显的一条。</span></td></tr>
+        <tr><td>停用的连接调动作报 <code>connection_disabled</code> 而不是 <code>connection_required</code></td><td>D3：两者指向的动作不同，混用会把用户引去重连</td></tr>
+        <tr><td><strong>既停用又过期</strong>时报 <code>connection_disabled</code>（而不是 <code>expired</code>）</td><td>判断顺序：先解决用户意图（去启用），启用后自然会看到 <code>connection_expired</code>。顺序反了会让用户在两个动作间来回跑</td></tr>
+        <tr><td>停用的连接<strong>仍</strong>显示「已连接」</td><td>需求原文「连接器还是看得到」；也是 D6 的档位依据</td></tr>
+        <tr><td>控制台卡片上<strong>没有</strong>启停开关</td><td>启停是连接维度；能力中心已定调不展示开关</td></tr>
+        <tr><td>Agent/SDK 侧「已连接」与目录侧「已连接」口径不同</td><td>SDK 用 <code>firstExecutable</code>（含启用与健康度），目录用 <code>listByUser</code>（含停用）。Agent 侧本就该看到「不可用」。<span class="mut">同名字段两种口径确实是个坑，内部方法已借本次正名。</span></td></tr>
+        <tr><td>排序不接受参数</td><td>固定行为；别的口径由客户端二次排序。<span class="mut">v3.0 新增的是<strong>过滤参数</strong>（<code>connectionEnabled</code>），排序本身仍无参数。</span></td></tr>
+        <tr><td><code>?connectionEnabled=true</code> 的结果里<strong>包含凭证已过期</strong>的连接器 <span class="tag t-new">v3.0</span></td><td>用户拍板的口径：「已启用」严格只看 <code>enabled=1</code>，不掺 <code>status</code>。凭证健康度是执行时才需要知道的事（<code>connection_expired</code>），不在<strong>列表过滤</strong>里替用户做决定。见 D9 与验收点 d13。</td></tr>
+        <tr><td>档 0 与档 1 在返回体里<strong>看不出区别</strong> <span class="tag t-new">v3.0</span></td><td>两者的 <code>connected</code> 与 <code>connectionEnabled</code> 都是 true，差别只在<strong>顺序</strong>。要精确区分得看连接详情的 <code>status</code>（D9 的代价）。</td></tr>
+        <tr><td><code>?connectionEnabled=true</code> 在线上被<strong>静默忽略</strong> <span class="tag t-new">v3.0</span></td><td>testagent 上还没有这个参数，Spring 对未声明的 query param 不报错、直接返回全量。别当成「过滤生效但没数据」—— 见 05 末尾的部署状态。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>8.3 待办</h3>
+  <ul>
+    <li><strong>部署</strong>：v2.0 与 v3.0 的这几项改动 testagent 上还没有；部署时<strong>务必先执行 <code>sql/update-20260805.sql</code> 末尾的 <code>ADD COLUMN</code></strong>（旧代码不认这列也能跑，但新代码依赖它）。部署后需重跑 A 组、B 组、C 组与 <strong>D 组</strong>（v3.0 的四档与标注）。</li>
+    <li><strong>未实测分支</strong>：D11 的「过滤集合为空」语义修正<strong>没有端到端实测</strong>（本地唯一 AK 名下有 9 条连接，构造不出零连接用户），属按构造正确。<span class="mut">如需覆盖，请用一个新账号跑 d12 的对照。</span></li>
+    <li><strong>文档小项</strong>：<code>ProviderDto.status</code> 的 swagger 描述宜补一句「这是<em>目录条目</em>启停，不是你的连接启停」，避免后来人看错（见 3.1 命名陷阱①）。</li>
+    <li><strong>其余命名收口</strong>：<code>hasActiveConnection</code> 的改名（见 8.1②）留着，等一次能接受跨模块扩散的窗口再做。</li>
+    <li><strong>共享库残留</strong>：本轮实测在 <code>connector_run_log</code> 追加了若干条执行审计（含被拒的 <code>connection_disabled</code>/<code>connection_expired</code>），属真实调用记录，未清理。</li>
+  </ul>
+</section>
+
+<!-- ================= 09 ================= -->
+<section id="s9">
+  <div class="sec-head">
+    <div class="sec-num">09</div>
+    <h2>复现步骤<small>How to Verify Locally</small></h2>
+  </div>
+
+  <h3>9.1 建表、编译与启动</h3>
+  <div class="cb">
+    <div class="cb-bar"><span class="cb-label">sql · 部署前必须先执行（幂等：列已存在时跳过）</span><button class="cb-copy">复制</button></div>
+<pre><span class="c">-- v2.0 唯一的 DDL。本地库与 testagent 是同一个库，执行前先看清影响到谁。</span>
+ALTER TABLE `connector_connection`
+    ADD COLUMN `enabled` tinyint(1) NOT NULL DEFAULT '1'
+        COMMENT '用户启用开关：1启用/0停用。停用仅停止被解析执行，凭证保留' AFTER `status`;
+
+<span class="c">-- 拆分前若已有用户停用的连接（status='disabled'），迁移为新表达。新库上此语句为 no-op。</span>
+UPDATE `connector_connection` SET `status` = 'active', `enabled` = 0 WHERE `status` = 'disabled';
+
+<span class="c">-- 回滚：ALTER TABLE `connector_connection` DROP COLUMN `enabled`;</span></pre>
+  </div>
+  <div class="cb" style="margin-top:14px">
+    <div class="cb-bar"><span class="cb-label">bash · 编译与启动</span><button class="cb-copy">复制</button></div>
+<pre><span class="c"># 必须 JDK 17；必须全量 install（-pl 会撞 assembly repack 的 mapper 重复）</span>
+<span class="k">export</span> JAVA_HOME=/Users/nuwax/Library/Java/JavaVirtualMachines/ms-17.0.17/Contents/Home
+mvn -T 1C -DskipTests install
+
+<span class="c"># 启动（dev profile 自动激活，约 25–90s 起来）</span>
+$JAVA_HOME/bin/java -jar \
+  app-platform-bootstrap/app-platform-web-bootstrap/target/app-platform-web-bootstrap-0.0.1-SNAPSHOT.jar</pre>
+  </div>
+
+  <h3>9.2 验收命令</h3>
+  <p class="mut" style="font-size:13.5px">下面的 <code>jq</code> 只用于裁剪输出，没装可换成 <code>python3 -m json.tool</code>。示例用连接 <code>39</code>（github）与动作 <code>6</code>（get_profile，只读免费）；<strong>请替换成你自己的连接与动作 id</strong>。</p>
+  <div class="cb">
+    <div class="cb-bar"><span class="cb-label">bash · 把 $AK 换成你自己的本地 AK</span><button class="cb-copy">复制</button></div>
+<pre><span class="k">export</span> AK=&lt;本地 sandbox AK&gt;
+B=http://localhost:8081/api/v1/4sandbox/connector
+ID=39        <span class="c"># 换成你要测的连接 id</span>
+
+<span class="c"># 1) 基线：记录 enabled 与 status 两个字段（末尾要逐字复原）</span>
+curl -s <span class="s">"$B/connections"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'.data[] | {id, providerService, status, enabled}'</span>
+
+<span class="c"># 2) 停用 → enabled 变 false，status 必须原样不动  ← A 组核心</span>
+curl -s -X POST <span class="s">"$B/connections/$ID/status?enabled=false"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{enabled: .data.enabled, status: .data.status}'</span>
+<span class="c"># 期望 {enabled: false, status: "active"}  ← 不是 "disabled"，该值已不存在</span>
+
+<span class="c"># 3) 可见性：仍在列表、目录仍标已连接  ← 需求原文「连接器还是看得到」</span>
+curl -s <span class="s">"$B/connections"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'.data[] | select(.id=='"$ID"')'</span>
+curl -s <span class="s">"$B/providers?connected=true&pageSize=50"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'[.data.records[].service]'</span>   <span class="c"># 该 service 仍在</span>
+
+<span class="c"># 4) 执行侧拦截：不传 connectionId（注意：该 service 的所有连接都须已停用）</span>
+curl -s -X POST <span class="s">"$B/runtime/execute"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> -d <span class="s">'{"actionId":6}'</span> \
+  | jq <span class="s">'{errorCode: .data.errorCode, message: .data.message}'</span>   <span class="c"># 期望 connection_disabled</span>
+
+<span class="c"># 5) 不可绕过：显式传这条停用连接</span>
+curl -s -X POST <span class="s">"$B/runtime/execute"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> -d <span class="s">'{"actionId":6,"connectionId":'"$ID"'}'</span> \
+  | jq <span class="s">'{errorCode: .data.errorCode}'</span>          <span class="c"># 同样 connection_disabled</span>
+
+<span class="c"># 6) 【需要 SQL】交叉用例：把该连接手工置为「已过期」</span>
+<span class="c">#    UPDATE connector_connection SET status='expired' WHERE id=$ID;   -- enabled 保持 1</span>
+<span class="c"># 6.1 启用状态下执行 → 期望 connection_expired（改造前是误导性的 connection_required）</span>
+curl -s -X POST <span class="s">"$B/runtime/execute"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> -d <span class="s">'{"actionId":6,"connectionId":'"$ID"'}'</span> \
+  | jq <span class="s">'{errorCode: .data.errorCode}'</span>
+<span class="c"># 6.2 停用 → 期望 status 仍为 expired（不被停用抹掉）</span>
+curl -s -X POST <span class="s">"$B/connections/$ID/status?enabled=false"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{enabled: .data.enabled, status: .data.status}'</span>   <span class="c"># 期望 {false, "expired"}</span>
+<span class="c"># 6.3 再启用 → 期望 status 仍为 expired（不谎报成 active）</span>
+curl -s -X POST <span class="s">"$B/connections/$ID/status?enabled=true"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{enabled: .data.enabled, status: .data.status}'</span>   <span class="c"># 期望 {true, "expired"}</span>
+
+<span class="c"># 7) 统一查询：四档排序 + 两个标注（停用期间该 service 应落到档 2）</span>
+curl -s <span class="s">"$B/providers?pageNum=1&pageSize=20"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'[.data.records[] | {service, connected, connectionEnabled}]'</span>
+
+<span class="c"># 7.1) 标注恒有值：1298 条里 connectionEnabled 为 null 的应为 0</span>
+curl -s <span class="s">"$B/providers?pageSize=2000"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{total: .data.total, nullCnt: ([.data.records[] | select(.connectionEnabled == null)] | length)}'</span>
+
+<span class="c"># 7.2) 启用过滤：两个 total 相加应等于全量 total（实测 8 + 1290 = 1298）</span>
+curl -s <span class="s">"$B/providers?connectionEnabled=true"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{on: .data.total, services: [.data.records[].service]}'</span>
+curl -s <span class="s">"$B/providers?connectionEnabled=false"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{off: .data.total}'</span>
+
+<span class="c"># 7.3) 档 1 判别性用例：挑权重序【最靠前】的已连接 service 置 expired（enabled 保持 1）</span>
+<span class="c">#      UPDATE connector_connection SET status='expired' WHERE id=$ID;   -- 用 github(39) 这类靠前的</span>
+curl -s <span class="s">"$B/providers?pageNum=1&pageSize=20"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'[.data.records[] | {service, connectionEnabled}]'</span>
+<span class="c"># 期望它从第 0 位落到第 7 位（档 1），且 connectionEnabled 仍为 true；</span>
+<span class="c"># 别用权重序末尾的 service —— 它在档 0/档 1 位置相同，看不出差别</span>
+
+<span class="c"># 8) 分页 total（D5 的风险点，务必核对）</span>
+curl -s <span class="s">"$B/providers?pageNum=2&pageSize=5"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'{total: .data.total, pages: .data.pages, recs: [.data.records[].service]}'</span>
+
+<span class="c"># 9) 复原（务必执行！）—— enabled 与 status 都要还原</span>
+curl -s -X POST <span class="s">"$B/connections/$ID/status?enabled=true"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'.data.enabled'</span>          <span class="c"># 期望 true</span>
+<span class="c"># 若第 6 步改过 status：UPDATE connector_connection SET status='active' WHERE id=$ID;</span>
+curl -s <span class="s">"$B/connections"</span> -H <span class="s">"Authorization: Bearer $AK"</span> \
+  | jq <span class="s">'[.data[] | select(.enabled != true or .status != "active")]'</span>   <span class="c"># 期望 []</span></pre>
+  </div>
+
+  <div class="note warn">
+    <h4>共库警告</h4>
+    <p style="margin:0 0 8px">本地 dev 的 MySQL <strong>就是 testagent 同一个库</strong>。所以验收时请遵守：</p>
+    <ul style="margin-bottom:0">
+      <li>用<strong>既有连接</strong>测，不要新建连接；不要删任何连接。</li>
+      <li>每条连接测完<strong>必须把 <code>enabled</code> 与 <code>status</code> 都还原</strong>（见命令 9），并在末尾确认「没有 <code>enabled != true</code> 或 <code>status != 'active'</code> 的残留」。</li>
+      <li>第 6 步的 <code>status='expired'</code> 是<strong>手工制造</strong>的，用完<strong>必须改回 <code>active</code></strong> —— 留着一条假的过期连接会污染后续测试。</li>
+      <li>验证执行侧时优先用<strong>只读类动作</strong>，避免产生真实外部副作用。<span class="mut">被拒的调用（disabled/expired）根本不会触达上游，只有「启用且健康」那一次会真实调用。</span></li>
+      <li>命令里的 AK 用<strong>本地</strong>的，不要用生产 AK。</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <span>连接器 · 用户连接启停 + 状态字段拆分 + 统一查询与四档排序 —— 需求与验收清单 v3.0</span>
+  <span id="foot-stat">本地已实测 · testagent 未部署</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'ctog-sort-spec-v3';   // v3.0：清单项从 39 变 43（D 组新增 d10–d13），键必须换，否则旧的勾选状态会错位
+
+  /* ---------- 勾选状态持久化 + 进度 ---------- */
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.chk input[type=checkbox]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+
+  function refresh(){
+    var done = 0;
+    boxes.forEach(function(b){ if (b.checked) done++; });
+    var pct = boxes.length ? Math.round(done * 100 / boxes.length) : 0;
+    var fill = document.getElementById('pfill');
+    var txt = document.getElementById('ptxt');
+    if (fill) fill.style.width = pct + '%';
+    if (txt) txt.textContent = done + ' / ' + boxes.length;
+    // 分组计数
+    document.querySelectorAll('.cnt[data-cnt]').forEach(function(el){
+      var g = el.getAttribute('data-cnt').toLowerCase();
+      var all = boxes.filter(function(b){ return (b.getAttribute('data-k') || '').indexOf(g) === 0; });
+      var d = all.filter(function(b){ return b.checked; }).length;
+      el.textContent = d + ' / ' + all.length;
+    });
+  }
+
+  boxes.forEach(function(b){
+    var k = b.getAttribute('data-k');
+    if (saved[k]) b.checked = true;
+    b.addEventListener('change', function(){
+      saved[k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+
+  /* ---------- 复制按钮 ---------- */
+  document.querySelectorAll('.cb').forEach(function(cb){
+    var btn = cb.querySelector('.cb-copy');
+    var pre = cb.querySelector('pre');
+    if (!btn || !pre) return;
+    btn.addEventListener('click', function(){
+      var text = pre.innerText;
+      function ok(){ btn.textContent = '已复制'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('done'); }, 1400); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok, fallback);
+      } else { fallback(); }
+      function fallback(){
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+
+  /* ---------- 导航高亮 ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var targets = Object.keys(map).map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        links.forEach(function(a){ a.classList.remove('on'); });
+        var a = map[en.target.id];
+        if (a) a.classList.add('on');
+      });
+    }, { rootMargin: '-70px 0px -72% 0px', threshold: 0 });
+    targets.forEach(function(t){ io.observe(t); });
+  }
+})();
+</script>
+</body>
+</html>

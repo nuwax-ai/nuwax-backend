@@ -73,7 +73,7 @@ public class TaskConversationController {
             if (publishedDto == null) {
                 return ReqResult.error("智能体不存在或已下架");
             }
-            agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), taskConversationAddOrUpdateDto.getAgentId());
+            agentApplicationService.addOrUpdateRecentUsed(RequestContext.get().getUserId(), taskConversationAddOrUpdateDto.getAgentId(), publishedDto.getTargetSubType().name());
             AgentConfigDto agentConfigDto = JSON.parseObject(publishedDto.getConfig(), AgentConfigDto.class);
             if (agentConfigDto.getOpenScheduledTask() != AgentConfig.OpenStatus.Open) {
                 return ReqResult.error("智能体未开启定时会话");

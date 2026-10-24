@@ -32,9 +32,6 @@ public class TenantController {
     @Value("${spring.servlet.multipart.max-file-size:100MB}")
     private String maxFileSize;
 
-    @Value("${license:}")
-    private String license;
-
     @Value("${model-api-proxy.base-api-url:}")
     private String baseApiUrl;
 
@@ -65,6 +62,7 @@ public class TenantController {
         tenantConfigDto.setMpAppId(null);
         tenantConfigDto.setMpAppSecret(null);
         tenantConfigDto.setSandboxConfig(null);
+        tenantConfigDto.setLicenseContent(null);
         tenantConfigDto.setVersion(version);
         tenantConfigDto.setSupportCustomDomain(StringUtils.equals(supportCustomDomain, "true"));
         tenantConfigDto.setEnabledSandbox(true);
@@ -95,9 +93,6 @@ public class TenantController {
         }
         if (StringUtils.isBlank(tenantConfigDto.getLoginPageSubText())) {
             tenantConfigDto.setLoginPageSubText("Comprehensive workflow and plugin development, RAG knowledge base and data table storage, MCP integration and open capabilities");
-        }
-        if (StringUtils.isNotBlank(license)) {
-            tenantConfigDto.setCommercialEdition(true);
         }
 
         String siteUrl = tenantConfigDto.getSiteUrl();

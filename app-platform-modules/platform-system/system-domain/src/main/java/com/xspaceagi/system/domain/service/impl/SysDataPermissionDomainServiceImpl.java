@@ -47,6 +47,8 @@ public class SysDataPermissionDomainServiceImpl implements SysDataPermissionDoma
         updateObject.setMaxSpaceCount(dataPermission.getMaxSpaceCount());
         updateObject.setMaxAgentCount(dataPermission.getMaxAgentCount());
         updateObject.setMaxPageAppCount(dataPermission.getMaxPageAppCount());
+        updateObject.setMaxUserAppCount(dataPermission.getMaxUserAppCount());
+        updateObject.setUserAppIdleTimeoutSeconds(dataPermission.getUserAppIdleTimeoutSeconds());
         updateObject.setMaxKnowledgeCount(dataPermission.getMaxKnowledgeCount());
         updateObject.setKnowledgeStorageLimitGb(dataPermission.getKnowledgeStorageLimitGb());
         updateObject.setMaxDataTableCount(dataPermission.getMaxDataTableCount());

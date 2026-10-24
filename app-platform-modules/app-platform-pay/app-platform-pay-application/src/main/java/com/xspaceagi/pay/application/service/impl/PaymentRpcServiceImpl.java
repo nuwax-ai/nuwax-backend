@@ -1,5 +1,7 @@
 package com.xspaceagi.pay.application.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.xspaceagi.bill.sdk.rpc.IBillRpcService;
 import com.xspaceagi.pay.application.schedule.PayOrderPollRunner;
 import com.xspaceagi.pay.application.support.PayGatewayOutboundExecutor;
@@ -34,6 +36,7 @@ import com.xspaceagi.pay.sdk.enums.PayChannel;
 import com.xspaceagi.pay.sdk.enums.PayClientScene;
 import com.xspaceagi.pay.sdk.enums.PayMode;
 import com.xspaceagi.pay.sdk.enums.PaymentStatus;
+import com.xspaceagi.pay.sdk.support.PayOrderExtKeys;
 import com.xspaceagi.pay.spec.enums.PayOrderGatewaySyncStatus;
 import com.xspaceagi.pay.spec.exception.PayGatewayClientException;
 import com.xspaceagi.system.spec.common.RequestContext;
@@ -49,8 +52,12 @@ import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class PaymentRpcServiceImpl implements IPaymentRpcService {
 
@@ -294,11 +301,39 @@ public class PaymentRpcServiceImpl implements IPaymentRpcService {
         if (row == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.pay_order_not_found);
         }
+        boolean sync = request.getSyncFromChannel() == null || request.getSyncFromChannel();
+        if (!sync) {
+            // 调用方明确不要渠道同步（如开放接口终态轮询降频）——直接返回本地状态
+            return buildLocalStatusResponse(row);
+        }
         PaymentStatusQueryResponse resp = payGatewayOutboundExecutor.invoke(
                 tenantId,
                 outbound -> payOrderStatusQuerySupport.queryOrderStatus(outbound, row, true));
         PayOrderGatewayQueryMerger.mergeIntoRow(row, resp);
         payOrderRepository.save(row);
+        return resp;
+    }
+
+    /** 本地状态直返（不查渠道、不写库）——供终态轮询降频用 */
+    private PaymentStatusQueryResponse buildLocalStatusResponse(PayOrderModel row) {
+        PaymentStatusQueryResponse resp = PaymentStatusQueryResponse.builder()
+                .gatewayPaymentOrderNo(row.getGatewayPaymentOrderNo())
+                .orderAmount(row.getOrderAmount())
+                .payChannel(row.getPayChannel())
+                .payMode(row.getPayMode())
+                .build();
+        try {
+            if (row.getGatewayOrderStatus() != null && !row.getGatewayOrderStatus().isBlank()) {
+                resp.setStatus(PaymentStatus.valueOf(row.getGatewayOrderStatus()));
+            }
+        } catch (IllegalArgumentException ignored) {
+            // 非标准状态值保持 null
+        }
+        if (row.getPaidAt() != null) {
+            // 与网关渠道同步路径的 paidAt 格式保持一致（yyyyMMdd HHmmss）
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd HHmmss").withZone(java.time.ZoneId.of("Asia/Shanghai"));
+            resp.setPaidAt(fmt.format(row.getPaidAt().toInstant()));
+        }
         return resp;
     }
 
@@ -359,10 +394,28 @@ public class PaymentRpcServiceImpl implements IPaymentRpcService {
 
     private OrderCreateResponse recreateForSwitchedPayMode(
             PayOrderModel row, PayMode targetPayMode, long orderAmount, String subject, String ext) {
+        // 已支付订单禁止重建（防重复收款）：即使本地状态仍为 PENDING，已有网关单号+PAID 的行也不允许被清空重来。
+        // 先强制同步一次渠道终态
+        if (row.getGatewayPaymentOrderNo() != null
+                && !PaymentStatus.PAID.name().equals(row.getGatewayOrderStatus())) {
+            try {
+                syncChannelStatus(row);
+            } catch (Exception syncEx) {
+                // fail-closed：渠道查询失败时拒绝重建
+                throw new BizException(ErrorCodeEnum.INVALID_PARAM.getCode(),
+                        "Cannot verify order status before recreate; please retry");
+            }
+        }
+        if (PaymentStatus.PAID.name().equals(row.getGatewayOrderStatus())) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.pay_open_out_trade_no_paid);
+        }
+        // ext 合并：旧ext合并到新ext
+        // 防 mode 切换时 webhook 订阅被静默丢弃
+        String mergedExt = mergeExtPreservingOpenKeys(row.getExt(), ext);
         row.setPayMode(targetPayMode);
         row.setOrderAmount(orderAmount);
         row.setSubject(subject);
-        row.setExt(ext);
+        row.setExt(mergedExt);
         row.setPayChannel(null);
         row.setPlatformFee(0L);
         row.setProviderFee(0L);
@@ -375,6 +428,40 @@ public class PaymentRpcServiceImpl implements IPaymentRpcService {
         row.setBizNotifyStatus(null);
         payOrderRepository.save(row);
         return callGatewayAndFinish(row, targetPayMode);
+    }
+
+    /**
+     * 渠道状态同步（recreate 前调用）
+     */
+    private void syncChannelStatus(PayOrderModel row) {
+        long tenantId = row.getTenantId() != null ? row.getTenantId() : resolveTenantId();
+        PaymentStatusQueryResponse resp = payGatewayOutboundExecutor.invoke(
+                tenantId,
+                outbound -> payOrderStatusQuerySupport.queryOrderStatus(outbound, row, true));
+        PayOrderGatewayQueryMerger.mergeIntoRow(row, resp);
+        payOrderRepository.save(row);
+    }
+
+    /**
+     * ext 合并：mode切换重建时，旧ext中的开放接口订阅字段合并到新ext
+     * 防 recreate 把 OPEN_NOTIFY_URL 抹掉导致 webhook 订阅静默丢失。
+     */
+    private String mergeExtPreservingOpenKeys(String oldExt, String newExt) {
+        if (oldExt == null || oldExt.isBlank()) {
+            return newExt;
+        }
+        try {
+            JSONObject oldObj = JSON.parseObject(oldExt);
+            JSONObject newObj = newExt == null || newExt.isBlank() ? new JSONObject() : JSON.parseObject(newExt);
+            for (String key : new String[]{PayOrderExtKeys.OPEN_NOTIFY_URL, PayOrderExtKeys.OPEN_PROJECT_ID}) {
+                if (oldObj.containsKey(key) && !newObj.containsKey(key)) {
+                    newObj.put(key, oldObj.get(key));
+                }
+            }
+            return newObj.toJSONString();
+        } catch (Exception e) {
+            return newExt != null ? newExt : oldExt;
+        }
     }
 
     /**

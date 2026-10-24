@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-@Tag(name = "Git 版本管理接口", description = "通过 workspaceType 区分两种工作区：taskAgent（通用智能体会话，传 cId）和 pageApp（网页应用，传 projectId）")
+@Tag(name = "Git 版本管理接口", description = "通过 workspaceType 区分两种工作区")
 @RestController
 @RequestMapping("/api/git")
 @Slf4j

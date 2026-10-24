@@ -70,6 +70,13 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-file-sdk</artifactId>
         </dependency>
+        <!-- IM RPC 契约：chatbot 侧原生 IM 工具（ImChatToolProvider / ImChatToolExecutor）直接依赖。
+             ★im-sdk 只有 lombok + swagger-annotations + jackson-databind，不反向依赖任何平台模块，
+               经 agent-core-adapter → system-application 也已传递可达，此处显式声明是因为「直接用就直接声明」。 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-im-sdk</artifactId>
+        </dependency>
         <!-- production dependencies -->
 
         <dependency>
@@ -92,6 +99,18 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webflux</artifactId>
+        </dependency>
+
+        <!-- ASR/TTS 上游 WebSocket 客户端（reactor-netty） -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.jaredmdobson</groupId>
+            <artifactId>concentus</artifactId>
+            <version>1.0.2</version>
         </dependency>
 
     </dependencies>

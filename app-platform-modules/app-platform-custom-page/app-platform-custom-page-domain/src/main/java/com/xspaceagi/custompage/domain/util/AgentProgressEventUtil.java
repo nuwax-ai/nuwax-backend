@@ -19,8 +19,48 @@ public final class AgentProgressEventUtil {
     private AgentProgressEventUtil() {
     }
 
-    public static boolean shouldPersist(String eventName) {
-        return !"ping".equalsIgnoreCase(eventName);
+    /**
+     * 是否进入内存缓冲并在终态一次性落库。
+     * 仅排除超高频、对历史回放无关键的流式片段（思考过程）；工具结果与助手正文必须保留。
+     */
+    public static boolean shouldPersist(String eventName, String data) {
+        if (isEphemeralStreamEvent(eventName)) {
+            return false;
+        }
+        return !isEphemeralStreamEvent(extractSubType(data));
+    }
+
+    private static boolean isEphemeralStreamEvent(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String n = name.trim().toLowerCase();
+        // 思考流式 chunk 量极大且非执行结果；tool_call_update / agent_message_chunk 含结果与回复，必须落库
+        return "ping".equals(n) || "agent_thought_chunk".equals(n);
+    }
+
+    private static String extractSubType(String data) {
+        if (data == null || data.isBlank() || !JSON.isValidObject(data)) {
+            return null;
+        }
+        try {
+            Map<String, Object> payload = OBJECT_MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
+            });
+            Object subType = payload.get("subType");
+            if (subType != null) {
+                return String.valueOf(subType);
+            }
+            Object dataObj = payload.get("data");
+            if (dataObj instanceof Map<?, ?> dataMap) {
+                Object nested = dataMap.get("subType");
+                if (nested != null) {
+                    return String.valueOf(nested);
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static boolean isFinalEvent(String eventName, String data) {

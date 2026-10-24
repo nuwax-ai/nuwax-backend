@@ -29,6 +29,12 @@ public class ModelConfig {
 
     private String description; // 模型描述
 
+    private String tag; // 模型标签
+
+    private String tagColor; // 模型标签颜色
+
+    private String cost; // 计费倍率，默认 1.00（自由文本，需容纳非数值展示值）
+
     private String model; // 模型标识
 
     private ModelTypeEnum type; // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other

@@ -1,0 +1,82 @@
+[
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.ConversationAgent.gitPush.success",
+    "fieldValue": "Git commit successful",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MyComputerManage.sessionTooltip",
+    "fieldValue": "Open in messages",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.message.description",
+    "fieldValue": "伙伴",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.message.name",
+    "fieldValue": "伙伴",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.ConversationAgent.gitPush.success",
+    "fieldValue": "Git 提交成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MyComputerManage.sessionTooltip",
+    "fieldValue": "在消息中打开",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.ConversationAgent.gitPush.success",
+    "fieldValue": "Git 提交成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MyComputerManage.sessionTooltip",
+    "fieldValue": "在訊息中開啟",
+    "remark": null
+  }
+]

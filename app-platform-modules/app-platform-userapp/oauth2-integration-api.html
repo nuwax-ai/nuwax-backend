@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAuth2 接入接口文档 · app-platform</title>
+<link rel="stylesheet" href="https://static-resources.nuwax.com/tailwind.min.css">
+<link rel="stylesheet" href="https://static-resources.nuwax.com/g-fonts.css">
+<style>
+:root{
+  --bg:#0a0d0e;
+  --bg-2:#0d1214;
+  --panel:#111819;
+  --panel-2:#151e20;
+  --panel-3:#1a2427;
+  --line:rgba(255,255,255,.075);
+  --line-2:rgba(255,255,255,.14);
+  --ink:#e9eeef;
+  --ink-2:#98a6a9;
+  --ink-3:#5f6d70;
+  --amber:#ffb020;
+  --amber-2:rgba(255,176,32,.13);
+  --teal:#2ee6c5;
+  --teal-2:rgba(46,230,197,.11);
+  --red:#ff5f56;
+  --red-2:rgba(255,95,86,.11);
+  --violet:#a78bfa;
+  --violet-2:rgba(167,139,250,.11);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --rail:264px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:15px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* ── 大气层：网格 + 光晕 + 噪点 ───────────────────────── */
+.atmos{position:fixed;inset:0;pointer-events:none;z-index:0}
+.atmos::before{
+  content:"";position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,#000 20%,transparent 78%);
+}
+.atmos::after{
+  content:"";position:absolute;left:50%;top:-320px;width:1100px;height:640px;
+  transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(255,176,32,.09),transparent 62%);
+  filter:blur(28px);
+}
+.grain{
+  position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.32;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+/* ── 骨架 ─────────────────────────────────────────────── */
+.shell{position:relative;z-index:2;display:grid;grid-template-columns:var(--rail) minmax(0,1fr)}
+.rail{
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(13,18,20,.92),rgba(10,13,14,.96));
+  backdrop-filter:blur(8px);
+  padding:30px 0 40px;
+}
+.rail::-webkit-scrollbar{width:6px}
+.rail::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
+.brand{padding:0 24px 24px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.brand-mark{
+  display:flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+  color:var(--amber);text-transform:uppercase;
+}
+.brand-mark i{
+  width:7px;height:7px;border-radius:50%;background:var(--amber);
+  box-shadow:0 0 0 4px var(--amber-2);animation:pulse 2.6s ease-in-out infinite;font-style:normal;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+.brand-sub{margin-top:9px;font-size:12.5px;color:var(--ink-3);font-family:var(--mono);line-height:1.6}
+.rail nav{padding:0 12px}
+.rail nav a{
+  display:flex;gap:11px;align-items:baseline;
+  padding:7px 12px;border-radius:6px;text-decoration:none;
+  color:var(--ink-2);font-size:13.5px;transition:color .18s,background .18s;
+  border:none;border-left:2px solid transparent;
+}
+.rail nav a .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);transition:color .18s}
+.rail nav a:hover{color:var(--ink);background:rgba(255,255,255,.035)}
+.rail nav a.on{color:var(--amber);background:var(--amber-2);border-left-color:var(--amber)}
+.rail nav a.on .n{color:var(--amber)}
+.rail-foot{
+  margin:22px 24px 0;padding-top:16px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.9;
+}
+.rail-foot b{color:var(--ink-2);font-weight:400}
+/* ── 主区 ─────────────────────────────────────────────── */
+main{min-width:0;padding:0 clamp(22px,4.4vw,72px) 120px;max-width:1180px}
+.hero{padding:78px 0 46px;border-bottom:1px solid var(--line);position:relative}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--teal);
+  border:1px solid rgba(46,230,197,.28);background:var(--teal-2);
+  padding:5px 12px;border-radius:3px;
+}
+h1{
+  margin:26px 0 0;font-size:clamp(38px,5.4vw,64px);line-height:1.04;
+  font-weight:700;letter-spacing:-.028em;
+}
+h1 em{font-style:normal;color:var(--amber)}
+.hero-lede{margin:22px 0 0;max-width:64ch;font-size:16.5px;color:var(--ink-2);line-height:1.85}
+.meta-strip{
+  display:flex;flex-wrap:wrap;gap:0;margin-top:34px;
+  border:1px solid var(--line);background:var(--panel);border-radius:8px;overflow:hidden;
+}
+.meta-strip div{
+  flex:1 1 150px;padding:14px 20px;border-right:1px solid var(--line);
+}
+.meta-strip div:last-child{border-right:none}
+.meta-strip span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.meta-strip strong{display:block;margin-top:5px;font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink)}
+/* ── 章节 ─────────────────────────────────────────────── */
+section{padding-top:74px;scroll-margin-top:16px}
+.sec-head{display:flex;gap:20px;align-items:flex-start;margin-bottom:8px}
+.sec-num{
+  font-family:var(--mono);font-size:34px;line-height:1;font-weight:600;
+  color:transparent;-webkit-text-stroke:1px var(--line-2);flex:none;padding-top:4px;
+}
+h2{margin:0;font-size:clamp(25px,2.9vw,33px);letter-spacing:-.02em;font-weight:700;line-height:1.22}
+.sec-tag{
+  display:block;margin-top:9px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.13em;color:var(--ink-3);text-transform:uppercase;
+}
+h3{margin:44px 0 14px;font-size:19.5px;font-weight:600;letter-spacing:-.012em;display:flex;align-items:center;gap:11px}
+h3::before{content:"";width:14px;height:2px;background:var(--amber);flex:none}
+h4{margin:28px 0 10px;font-size:15.5px;font-weight:600;color:var(--ink)}
+p{margin:13px 0;color:var(--ink-2)}
+p strong,li strong{color:var(--ink);font-weight:600}
+ul,ol{color:var(--ink-2);padding-left:22px;margin:13px 0}
+li{margin:7px 0}
+a{color:var(--teal);text-decoration:none;border-bottom:1px solid rgba(46,230,197,.3)}
+a:hover{border-bottom-color:var(--teal)}
+code{
+  font-family:var(--mono);font-size:.875em;
+  background:var(--panel-3);border:1px solid var(--line);
+  padding:1.5px 6px;border-radius:4px;color:var(--ink);
+  white-space:nowrap;
+}
+code.k{color:var(--amber);background:var(--amber-2);border-color:rgba(255,176,32,.2)}
+code.t{color:var(--teal);background:var(--teal-2);border-color:rgba(46,230,197,.2)}
+/* ── 端点卡 ───────────────────────────────────────────── */
+.ep{
+  margin:20px 0;border:1px solid var(--line);border-radius:9px;
+  background:linear-gradient(180deg,var(--panel),var(--bg-2));
+  overflow:hidden;position:relative;
+  transition:border-color .22s,transform .22s;
+}
+.ep:hover{border-color:var(--line-2)}
+.ep::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--mc,var(--amber))}
+.ep-bar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:15px 20px 15px 24px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.014);
+}
+.m{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.09em;
+  padding:3.5px 9px;border-radius:4px;flex:none;
+  color:var(--mc);background:color-mix(in srgb,var(--mc) 13%,transparent);
+  border:1px solid color-mix(in srgb,var(--mc) 32%,transparent);
+}
+.pth{font-family:var(--mono);font-size:14.5px;color:var(--ink);word-break:break-all;font-weight:500}
+.lock{margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-3);
+  border:1px solid var(--line-2);padding:3px 9px;border-radius:20px;flex:none}
+.ep-body{padding:20px 24px 24px}
+.ep-desc{margin:0 0 4px;color:var(--ink-2);font-size:14.5px}
+/* ── 表格 ─────────────────────────────────────────────── */
+.tw{margin:18px 0;border:1px solid var(--line);border-radius:8px;overflow:auto;background:var(--bg-2)}
+table{width:100%;border-collapse:collapse;font-size:13.6px;min-width:560px}
+th{
+  text-align:left;padding:11px 16px;background:var(--panel-2);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:11px 16px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top;line-height:1.65}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.022)}
+td code{white-space:nowrap}
+.req{color:var(--red);font-family:var(--mono);font-size:11px;letter-spacing:.05em}
+.opt{color:var(--ink-3);font-family:var(--mono);font-size:11px;letter-spacing:.05em}
+/* ── 代码块 ───────────────────────────────────────────── */
+.cb{margin:16px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#080b0c}
+.cb-top{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;
+  background:var(--panel-2);border-bottom:1px solid var(--line);
+}
+.cb-top .d{width:9px;height:9px;border-radius:50%;background:var(--line-2)}
+.cb-top .lbl{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.07em}
+.cb-top .cp{
+  margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  color:var(--ink-3);background:none;border:1px solid var(--line-2);border-radius:4px;
+  padding:3px 10px;cursor:pointer;transition:all .18s;
+}
+.cb-top .cp:hover{color:var(--amber);border-color:var(--amber)}
+.cb-top .cp.ok{color:var(--teal);border-color:var(--teal)}
+pre{
+  margin:0;padding:16px 18px;overflow-x:auto;
+  font-family:var(--mono);font-size:12.8px;line-height:1.78;color:#cdd8da;
+}
+pre::-webkit-scrollbar{height:8px}
+pre::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+.s-c{color:var(--ink-3)}          /* 注释 */
+.s-k{color:var(--amber)}          /* 关键字/方法 */
+.s-s{color:var(--teal)}           /* 字符串 */
+.s-n{color:var(--violet)}         /* 数字/变量 */
+.s-e{color:var(--red)}            /* 强调 */
+/* ── 提示块 ───────────────────────────────────────────── */
+.note{
+  margin:18px 0;padding:14px 18px 14px 20px;border-radius:7px;
+  border:1px solid var(--line);border-left:3px solid var(--amber);
+  background:var(--amber-2);font-size:14px;color:var(--ink-2);
+}
+.note.warn{border-left-color:var(--red);background:var(--red-2)}
+.note.ok{border-left-color:var(--teal);background:var(--teal-2)}
+.note b{color:var(--ink);font-weight:600}
+.note .tt{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+/* ── 流程 ─────────────────────────────────────────────── */
+.flow{margin:22px 0;counter-reset:f}
+.flow-step{
+  position:relative;padding:0 0 24px 46px;counter-increment:f;
+  border-left:1px solid var(--line);margin-left:13px;
+}
+.flow-step:last-child{border-left-color:transparent;padding-bottom:0}
+.flow-step::before{
+  content:counter(f,decimal-leading-zero);
+  position:absolute;left:-13px;top:0;width:26px;height:26px;border-radius:50%;
+  background:var(--bg);border:1px solid var(--line-2);
+  font-family:var(--mono);font-size:10.5px;color:var(--amber);
+  display:flex;align-items:center;justify-content:center;
+}
+.flow-step h5{margin:2px 0 5px;font-size:15px;font-weight:600;color:var(--ink)}
+.flow-step p{margin:0;font-size:14px}
+/* ── 杂项 ─────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.mini{
+  border:1px solid var(--line);border-radius:8px;padding:16px 18px;
+  background:var(--panel);transition:border-color .2s,transform .2s;
+}
+.mini:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.mini h5{margin:0 0 7px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--amber)}
+.mini p{margin:0;font-size:13.6px}
+.pill{
+  display:inline-block;font-family:var(--mono);font-size:11px;padding:2.5px 9px;
+  border-radius:20px;border:1px solid var(--line-2);color:var(--ink-2);margin:0 6px 6px 0;
+}
+.pill.a{color:var(--amber);border-color:rgba(255,176,32,.34);background:var(--amber-2)}
+.pill.t{color:var(--teal);border-color:rgba(46,230,197,.34);background:var(--teal-2)}
+.pill.v{color:var(--violet);border-color:rgba(167,139,250,.34);background:var(--violet-2)}
+.pill.r{color:var(--red);border-color:rgba(255,95,86,.34);background:var(--red-2)}
+.rule{height:1px;background:var(--line);margin:34px 0}
+.hl{color:var(--amber);font-weight:600}
+.hl-t{color:var(--teal);font-weight:600}
+/* ── 响应式 ───────────────────────────────────────────── */
+.burger{display:none}
+@media(max-width:1000px){
+  .shell{grid-template-columns:1fr}
+  .rail{
+    position:fixed;left:0;top:0;z-index:60;width:280px;
+    transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .rail.open{transform:translateX(0)}
+  .burger{
+    display:flex;position:fixed;right:16px;top:16px;z-index:61;
+    width:44px;height:44px;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;
+    color:var(--amber);font-family:var(--mono);font-size:17px;cursor:pointer;
+  }
+  main{padding:0 20px 90px}
+  .hero{padding-top:96px}
+  .meta-strip div{flex:1 1 100%;border-right:none;border-bottom:1px solid var(--line)}
+  .grid-2{grid-template-columns:minmax(0,1fr)}
+}
+.rv{opacity:0;transform:translateY(16px)}
+.rv.in{opacity:1;transform:none;transition:opacity .62s ease,transform .62s cubic-bezier(.22,1,.36,1)}
+@media(prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div class="atmos"></div>
+<div class="grain"></div>
+<div class="burger" id="burger">≡</div>
+
+<div class="shell">
+<aside class="rail" id="rail">
+  <div class="brand">
+    <div class="brand-mark"><i></i>app-platform</div>
+    <div class="brand-sub">Authorization Server<br>RFC 6749 · RFC 7009</div>
+  </div>
+  <nav id="toc">
+    <a href="#s01"><span class="n">01</span>概览与接入流程</a>
+    <a href="#s02"><span class="n">02</span>接入准备（设置页）</a>
+    <a href="#s03"><span class="n">03</span>授权码模式</a>
+    <a href="#s04"><span class="n">04</span>刷新令牌</a>
+    <a href="#s05"><span class="n">05</span>客户端凭证</a>
+    <a href="#s06"><span class="n">06</span>撤销令牌</a>
+    <a href="#s07"><span class="n">07</span>scope 与接口白名单</a>
+    <a href="#s08"><span class="n">08</span>凭证与令牌规格</a>
+    <a href="#s09"><span class="n">09</span>错误码</a>
+    <a href="#s10"><span class="n">10</span>端到端接入示例</a>
+  </nav>
+  <div class="rail-foot">
+    <b>模块</b> app-platform-userapp<br>
+    <b>文档版本</b> v1 · 2026-09-11
+  </div>
+</aside>
+
+<main>
+  <header class="hero">
+    <div class="eyebrow">接口文档 · Integration Guide</div>
+    <h1>平台 OAuth2<br><em>接入接口文档</em></h1>
+    <p class="hero-lede">
+      平台作为 OAuth2 授权方（Authorization Server），三方应用通过标准 OAuth2 协议获取
+      <code class="k">access_token</code>，并用该令牌调用平台开放接口。本文档覆盖接入配置接口、
+      四个协议端点、scope 白名单规则、凭证与令牌规格，以及可直接复制的端到端示例。
+    </p>
+    <div class="meta-strip">
+      <div><span>授权模式</span><strong>3 种</strong></div>
+      <div><span>协议端点</span><strong>4 个</strong></div>
+      <div><span>配置接口</span><strong>4 个</strong></div>
+      <div><span>令牌形态</span><strong>Opaque</strong></div>
+      <div><span>默认 access TTL</span><strong>7200s</strong></div>
+    </div>
+  </header>
+
+  <!-- ════════════ 01 概览 ════════════ -->
+  <section id="s01">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div>
+        <h2>概览与接入流程</h2>
+        <span class="sec-tag">Overview / Endpoint Map</span>
+      </div>
+    </div>
+
+    <p>
+      平台在 <code>userapp</code> 模块内实现完整的 OAuth2 授权方能力，以
+      <code>user_project</code> 作为接入应用配置表（<code>projectType = ThirdApp</code>）。
+      三方应用先在平台侧登记为「三方应用」并取得 <code class="k">Client ID</code> /
+      <code class="k">Client Secret</code>，再通过标准协议端点换取令牌。
+    </p>
+
+    <div class="grid-2">
+      <div class="mini">
+        <h5>// 不透明令牌</h5>
+        <p>令牌是随机不透明串而非 JWT，配合 Redis 存储实现即时撤销，避免引入签名密钥轮换问题。</p>
+      </div>
+      <div class="mini">
+        <h5>// 前缀分派</h5>
+        <p>access_token 固定以 <code>oa-</code> 开头，拦截器据此分派，无需每次请求先查一次 Redis。</p>
+      </div>
+      <div class="mini">
+        <h5>// 独立令牌体系</h5>
+        <p>access_token 不复用平台登录态，只能调用 scope 白名单内的接口，越权返回 403。</p>
+      </div>
+      <div class="mini">
+        <h5>// 租户隔离</h5>
+        <p>接入应用不跨租户。协议请求与设置页一样由域名 / <code>x-tenant-id</code> 解析租户，解析不到即失败。</p>
+      </div>
+    </div>
+
+    <h3>端点总览</h3>
+
+    <h4>协议端点（面向三方应用）</h4>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>方法</th><th>路径</th><th>登录态</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="m" style="--mc:var(--teal)">GET</span></td>
+            <td><code>/api/oauth2/authorize</code></td>
+            <td>必需</td>
+            <td>授权端点，签发授权码并 302 回跳</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/oauth2/token</code></td>
+            <td>免登录</td>
+            <td>令牌端点，支持三种授权模式</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--teal)">GET</span> <span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/oauth2/userinfo</code></td>
+            <td>access_token</td>
+            <td>返回授权用户公开信息</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/oauth2/revoke</code></td>
+            <td>免登录</td>
+            <td>撤销令牌并清除授权关系</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>接入配置接口（面向平台内项目设置页）</h4>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>方法</th><th>路径</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/user-project/oauth2/create</code></td>
+            <td>创建三方应用（自动生成凭证）</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/user-project/oauth2/update</code></td>
+            <td>更新应用基本信息（名称 / 描述 / 图标）</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--teal)">GET</span></td>
+            <td><code>/api/user-project/oauth2/setting/{projectId}</code></td>
+            <td>查询认证信息（不含密钥明文）</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--teal)">GET</span></td>
+            <td><code>/api/user-project/oauth2/secret/{projectId}</code></td>
+            <td>查看密钥明文（审计留痕）</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/user-project/oauth2/setting/save</code></td>
+            <td>保存主页地址与回调地址</td>
+          </tr>
+          <tr>
+            <td><span class="m" style="--mc:var(--amber)">POST</span></td>
+            <td><code>/api/user-project/oauth2/credential/regenerate/{projectId}</code></td>
+            <td>重新生成凭证（旧凭证立即失效）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="tt">登录态约定</span>
+      <code>/api/oauth2/token</code> 与 <code>/api/oauth2/revoke</code> 在免登录白名单内，靠
+      <b>客户端凭证</b>（client_id + client_secret）自行认证；
+      <code>/api/oauth2/authorize</code> 与 <code>/api/oauth2/userinfo</code>
+      <b>不在白名单</b>，前者要求平台登录态、后者要求有效的 access_token。
+    </div>
+
+    <h3>接入流程</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <h5>在平台侧创建三方应用</h5>
+        <p>调创建接口落一条 <code>project_type = ThirdApp</code> 的项目记录，<b>凭证在创建时即自动生成</b>
+          （设置页接口在凭证缺失时也会兜底生成）。</p>
+      </div>
+      <div class="flow-step">
+        <h5>配置回调地址</h5>
+        <p>通过保存设置接口登记 <code>redirect_uri</code>。授权码模式<b>要求回调地址精确匹配</b>，未配置则无法发起授权。</p>
+      </div>
+      <div class="flow-step">
+        <h5>引导用户授权，换取令牌</h5>
+        <p>浏览器跳转授权端点 → 用户登录态下签发授权码 → 应用后端用授权码调用令牌端点，拿到
+          <code>access_token</code> 与 <code>refresh_token</code>。</p>
+      </div>
+      <div class="flow-step">
+        <h5>调用接口</h5>
+        <p>请求头携带 <code>Authorization: Bearer &lt;access_token&gt;</code>，仅可访问令牌所持 scope 覆盖的路径
+          —— 当前只开放 <code>profile</code>，即可调 <code>/api/oauth2/userinfo</code>；
+          access_token 到期后用 refresh_token 轮换续签。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 02 接入准备 ════════════ -->
+  <section id="s02">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div>
+        <h2>接入准备（设置页接口）</h2>
+        <span class="sec-tag">Credential &amp; Setting · 需登录 + 空间权限</span>
+      </div>
+    </div>
+
+    <p>
+      对应三方应用详情页「设置」tab 的 <b>OAuth2 认证信息</b> 卡片。先由创建接口落一条
+      <code>projectType = ThirdApp</code> 的项目记录，其余五个接口再对它做读写：
+      后者共用同一套前置校验 —— <code>projectId</code> 必须指向一条三方应用记录，
+      且当前登录用户对其所在空间有访问权限，否则一律拒绝（fail-closed）。
+    </p>
+
+    <h3>响应包装</h3>
+    <p>本组接口返回平台统一的 <code>ReqResult</code> 包装：</p>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">ReqResult&lt;T&gt;</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,        <span class="s-c">// "0000" 成功；其余为失败码</span>
+  <span class="s-s">"displayCode"</span>: <span class="s-s">"0000"</span>, <span class="s-c">// 与 code 同值</span>
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: { },
+  <span class="s-s">"tid"</span>: <span class="s-s">"..."</span>          <span class="s-c">// 链路追踪标识</span>
+}</pre>
+    </div>
+    <div class="note warn">
+      <span class="tt">注意 code 的取值</span>
+      失败时 <code>code</code> 只区分 <b>参数/业务错误</b>（<code class="k">4000</code>）、
+      <b>未登录</b>（<code class="k">4010</code>）、<b>空间权限不足</b>（<code class="k">4030</code>）与
+      <b>系统异常</b>（<code>5000</code>），<b>具体原因以 message 为准</b>。
+      细分业务码（如 3330 / 3335 / 3337）仅用于服务端 i18n 文案，不体现在对外 JSON 的 code 上。
+    </div>
+
+    <!-- 2.0 -->
+    <h3>2.0　创建三方应用</h3>
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/user-project/oauth2/create</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">三方应用<b>没有独立源表</b>，创建即在 <code>user_project</code> 落一行
+          （<code>project_type = ThirdApp</code>、<code>ref_id</code> 为空，项目 id 即该表主键）。
+          建行后<b>立即生成一对 OAuth2 凭证</b>，返回体与查询认证信息一致 ——
+          但<b>不含密钥明文</b>，明文仍需另调 <code>/secret/{projectId}</code>。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>位置</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>spaceId</code></td><td>body</td><td><span class="opt">选填</span></td><td>空间 ID；<b>不传则取当前用户的个人空间</b>。显式传入需为该空间成员，否则 4030</td></tr>
+              <tr><td><code>name</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用名称，≤128 字符；留空按当前语言取默认名</td></tr>
+              <tr><td><code>description</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用描述，≤512 字符</td></tr>
+              <tr><td><code>icon</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用图标地址</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="tt">回调地址不在这里填</span>
+          <code>redirect_uri</code> 与 <code>homepage_url</code> 建行后经
+          <code>POST /setting/save</code> 维护，与设置页的编辑语义保持一致。
+          未配置回调地址时授权码模式无法发起（<code>redirect_uri</code> 缺失）。
+        </div>
+
+        <div class="note warn">
+          <span class="tt">与常规项目创建的区别</span>
+          三方应用不是开发态项目：<b>不分配沙箱</b>（<code>sandbox_id</code> 留空）、
+          <b>不创建用户工作目录、不建资料库协作目录</b>，因此没有
+          <code>workspacePath</code> / <code>sandboxId</code> 参数。
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/user-project/oauth2/create'</span> \
+  -H <span class="s-s">'Content-Type: application/json'</span> \
+  -H <span class="s-s">'Cookie: ticket=&lt;登录票据&gt;'</span> \
+  -d <span class="s-s">'{"name":"我的三方应用","description":"示例接入应用"}'</span></pre>
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"displayCode"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: {
+    <span class="s-s">"projectId"</span>: <span class="s-n">1024</span>,
+    <span class="s-s">"clientId"</span>: <span class="s-s">"nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8"</span>,
+    <span class="s-s">"hasClientSecret"</span>: <span class="s-n">true</span>,
+    <span class="s-s">"homepageUrl"</span>: <span class="s-n">null</span>,
+    <span class="s-s">"redirectUri"</span>: <span class="s-n">null</span>,
+    <span class="s-s">"scopes"</span>: [<span class="s-s">"profile"</span>],
+    <span class="s-s">"enabled"</span>: <span class="s-n">true</span>
+  },
+  <span class="s-s">"tid"</span>: <span class="s-s">"..."</span>
+}</pre>
+        </div>
+
+        <p>后续接口一律使用返回的 <code>projectId</code>。</p>
+      </div>
+    </div>
+
+    <!-- 2.1 -->
+    <h3>2.1　更新应用基本信息</h3>
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/user-project/oauth2/update</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">更新三方应用的<b>展示信息</b>：名称、描述、图标。目标行必须是
+          <code>project_type = ThirdApp</code>，其余类型（常规项目、Agent、网页应用等）一律拒绝。
+          返回体与查询认证信息一致，便于前端一次请求刷新整张卡片。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>位置</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>projectId</code></td><td>body</td><td><span class="req">必填</span></td><td>统一项目 ID（即创建接口返回的 <code>projectId</code>）</td></tr>
+              <tr><td><code>name</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用名称，≤128 字符；<b>传 null 不更新</b>，传空串 / 空白串报错（不允许无名应用）</td></tr>
+              <tr><td><code>description</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用描述，≤512 字符；<b>传 null 不更新，传空串即清空</b></td></tr>
+              <tr><td><code>icon</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用图标地址；<b>传 null 不更新，传空串即清空</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="tt">null = 不更新，空串 = 清空</span>
+          传入的非 null 值会先 <code>trim</code> 再写入，因此<b>空串是有效指令</b>（清空该字段），
+          与 <code>null</code>（保持原值）语义不同。仅 <code>name</code> 例外：空值会被拒绝，
+          避免出现无名应用。
+        </div>
+
+        <div class="note warn">
+          <span class="tt">与 /setting/save 的空值语义不同</span>
+          <code>/setting/save</code> 对 <code>homepageUrl</code> / <code>redirectUri</code> 采用
+          「空串等同不修改」的折叠语义，因此这两个字段<b>目前无法清空</b>，只能覆盖为新值。
+          两个接口在同一控制器内语义不一致，接入时请以各自参数表为准。
+        </div>
+
+        <div class="note warn">
+          <span class="tt">长度上限仅文档约定</span>
+          <code>name</code> / <code>description</code> 的字符数上限对应数据库列宽，
+          <b>服务端尚未做入口校验</b>；超出会导致写库报错（5000）。接入方请在提交前自行截断。
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/user-project/oauth2/update'</span> \
+  -H <span class="s-s">'Content-Type: application/json'</span> \
+  -H <span class="s-s">'Cookie: ticket=&lt;登录票据&gt;'</span> \
+  -d <span class="s-s">'{"projectId":1024,"name":"我的三方应用 v2","description":"清空图标下面的示例"}'</span></pre>
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">清空描述与图标</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/user-project/oauth2/update'</span> \
+  -H <span class="s-s">'Content-Type: application/json'</span> \
+  -H <span class="s-s">'Cookie: ticket=&lt;登录票据&gt;'</span> \
+  -d <span class="s-s">'{"projectId":1024,"description":"","icon":""}'</span></pre>
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"displayCode"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: {
+    <span class="s-s">"projectId"</span>: <span class="s-n">1024</span>,
+    <span class="s-s">"clientId"</span>: <span class="s-s">"nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8"</span>,
+    <span class="s-s">"hasClientSecret"</span>: <span class="s-n">true</span>,
+    <span class="s-s">"homepageUrl"</span>: <span class="s-s">"https://example.com"</span>,
+    <span class="s-s">"redirectUri"</span>: <span class="s-s">"https://example.com/oauth/callback"</span>,
+    <span class="s-s">"scopes"</span>: [<span class="s-s">"profile"</span>],
+    <span class="s-s">"enabled"</span>: <span class="s-n">true</span>
+  },
+  <span class="s-s">"tid"</span>: <span class="s-s">"..."</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.2 -->
+    <h3>2.2　查询 OAuth2 认证信息</h3>
+    <div class="ep" style="--mc:var(--teal)">
+      <div class="ep-bar">
+        <span class="m">GET</span>
+        <span class="pth">/api/user-project/oauth2/setting/{projectId}</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">返回认证信息卡片所需字段，<b>不包含密钥明文</b>。若该应用尚未生成凭证，本接口会
+          <b>自动生成一对新凭证</b>（原型语义：平台已为该项目自动生成 OAuth2 凭证）。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>位置</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>projectId</code></td><td>path</td><td><span class="req">必填</span></td><td>统一项目 ID（<code>user_project</code> 主键）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>响应字段（data）</h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>projectId</code></td><td>number</td><td>统一项目 ID（<code>user_project</code> 主键），即后续接口所用的 <code>projectId</code></td></tr>
+              <tr><td><code>clientId</code></td><td>string</td><td>OAuth2 Client ID，形如 <code>nwxa_&lt;32位hex&gt;</code></td></tr>
+              <tr><td><code>hasClientSecret</code></td><td>boolean</td><td>是否已生成密钥；明文需另调 <code>/secret/{projectId}</code></td></tr>
+              <tr><td><code>homepageUrl</code></td><td>string</td><td>应用主页地址，可为空</td></tr>
+              <tr><td><code>redirectUri</code></td><td>string</td><td>OAuth2 回调地址，可为空</td></tr>
+              <tr><td><code>scopes</code></td><td>string[]</td><td>本应用允许申请的 scope；未配置时返回平台默认值</td></tr>
+              <tr><td><code>enabled</code></td><td>boolean</td><td>OAuth2 接入是否启用；停用后所有令牌立即失效</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"displayCode"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: {
+    <span class="s-s">"projectId"</span>: <span class="s-n">1024</span>,
+    <span class="s-s">"clientId"</span>: <span class="s-s">"nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8"</span>,
+    <span class="s-s">"hasClientSecret"</span>: <span class="s-n">true</span>,
+    <span class="s-s">"homepageUrl"</span>: <span class="s-s">"https://example.com"</span>,
+    <span class="s-s">"redirectUri"</span>: <span class="s-s">"https://example.com/oauth/callback"</span>,
+    <span class="s-s">"scopes"</span>: [<span class="s-s">"profile"</span>],
+    <span class="s-s">"enabled"</span>: <span class="s-n">true</span>
+  },
+  <span class="s-s">"tid"</span>: <span class="s-s">"..."</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.3 -->
+    <h3>2.3　查看 Client Secret 明文</h3>
+    <div class="ep" style="--mc:var(--teal)">
+      <div class="ep-bar">
+        <span class="m">GET</span>
+        <span class="pth">/api/user-project/oauth2/secret/{projectId}</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">对应原型中密钥输入框的「睁眼」按钮。<code>data</code> 直接返回密钥明文字符串，
+          每次调用都会写入审计日志（记录 projectId / clientId / userId，<b>日志不含密钥本身</b>）。</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>位置</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>projectId</code></td><td>path</td><td><span class="req">必填</span></td><td>统一项目 ID</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: <span class="s-s">"nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2"</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.4 -->
+    <h3>2.4　保存接入设置</h3>
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/user-project/oauth2/setting/save</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">保存主页地址与回调地址，返回更新后的完整配置（结构同 2.2）。</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>位置</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>projectId</code></td><td>body</td><td><span class="req">必填</span></td><td>统一项目 ID</td></tr>
+              <tr><td><code>homepageUrl</code></td><td>body</td><td><span class="opt">选填</span></td><td>应用主页地址；<b>留空表示不修改</b></td></tr>
+              <tr><td><code>redirectUri</code></td><td>body</td><td><span class="opt">选填</span></td><td>OAuth2 回调地址；<b>留空表示不修改</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="tt">地址校验规则</span>
+          两项都必须是<b>绝对的 http / https 地址</b>，且 host 非空、<b>不得携带 fragment</b>（<code>#</code> 片段）。
+          不满足则返回 <code class="k">4000</code> + 地址格式不合法提示。留空与传空串都不会清空已登记的值。
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">请求体</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"projectId"</span>: <span class="s-n">1024</span>,
+  <span class="s-s">"homepageUrl"</span>: <span class="s-s">"https://example.com"</span>,
+  <span class="s-s">"redirectUri"</span>: <span class="s-s">"https://example.com/oauth/callback"</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 -->
+    <h3>2.5　重新生成凭证</h3>
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/user-project/oauth2/credential/regenerate/{projectId}</span>
+        <span class="lock">登录 + 空间权限</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">同时重新生成 <code>clientId</code> 与 <code>clientSecret</code>。
+          响应中的密钥明文<b>仅本次返回</b>，请立即保存。</p>
+
+        <div class="note warn">
+          <span class="tt">旧凭证立即失效</span>
+          重新生成后 <code>clientId</code> 发生变更，旧值在库中不再存在。由于令牌校验按
+          <code>clientId</code> 反查接入应用，<b>该应用已签发的全部 access_token 与 refresh_token 会立即失效</b>，
+          持有旧令牌的调用方需重新走授权流程。
+        </div>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"code"</span>: <span class="s-s">"0000"</span>,
+  <span class="s-s">"message"</span>: <span class="s-s">"success"</span>,
+  <span class="s-s">"data"</span>: {
+    <span class="s-s">"clientId"</span>: <span class="s-s">"nwxa_2d17ab60c3f9481e057b2ac6d3f80194"</span>,
+    <span class="s-s">"clientSecret"</span>: <span class="s-s">"nwxa_s_7f2c40a9e615d83b0471cf5a2e9860db31ac74fe0529b6d8"</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <h3>本组接口失败响应</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>code</th><th>触发场景</th></tr></thead>
+        <tbody>
+          <tr><td><code class="k">4000</code></td><td>projectId 为空；目标记录不存在；目标不是三方应用（仅三方应用支持 OAuth2 接入配置）；主页地址或回调地址格式不合法</td></tr>
+          <tr><td><code class="k">4010</code></td><td>未登录或登录超时（携带 Referer 时可能以 4011 跳转登录页）</td></tr>
+          <tr><td><code class="k">4030</code></td><td>当前用户对该应用所在空间无访问权限</td></tr>
+          <tr><td><code>5000</code></td><td>系统异常，<code>message</code> 含具体原因</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note ok">
+      <span class="tt">密钥安全</span>
+      Client Secret 以 <b>AES/GCM 加密落库</b>，不会出现在列表、详情或任何通用项目 DTO 中，
+      只能通过 <code>/secret/{projectId}</code> 单独获取并留审计。<b>请勿将密钥写入前端代码或公开仓库</b>。
+    </div>
+  </section>
+
+  <!-- ════════════ 03 授权码模式 ════════════ -->
+  <section id="s03">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div>
+        <h2>授权码模式</h2>
+        <span class="sec-tag">authorization_code · 需要用户登录态</span>
+      </div>
+    </div>
+
+    <p>适用于「代表某个用户调用平台接口」的场景，是最完整也最推荐的接入方式。三步走：</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <h5>浏览器跳转授权端点</h5>
+        <p>三方应用把用户导向 <code>/api/oauth2/authorize</code>。用户此时须已登录平台，
+          平台校验客户端与回调地址后签发一次性授权码，302 回跳到 <code>redirect_uri</code>。</p>
+      </div>
+      <div class="flow-step">
+        <h5>后端用授权码换取令牌</h5>
+        <p>应用<b>服务端</b>调用 <code>/api/oauth2/token</code>，用授权码 + 客户端凭证换取
+          <code>access_token</code> 和 <code>refresh_token</code>。授权码一次性，用后立即作废。</p>
+      </div>
+      <div class="flow-step">
+        <h5>携带令牌调用接口</h5>
+        <p>请求头加 <code>Authorization: Bearer &lt;access_token&gt;</code>，即可访问令牌 scope 覆盖的接口。</p>
+      </div>
+    </div>
+
+    <!-- 3.1 -->
+    <h3>3.1　授权端点</h3>
+    <div class="ep" style="--mc:var(--teal)">
+      <div class="ep-bar">
+        <span class="m">GET</span>
+        <span class="pth">/api/oauth2/authorize</span>
+        <span class="lock">需平台登录态</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">校验客户端、回调地址与 scope，签发一次性授权码并 302 回跳。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>client_id</code></td><td><span class="req">必填</span></td><td>平台分配的 Client ID</td></tr>
+              <tr><td><code>redirect_uri</code></td><td><span class="req">必填</span></td><td>回调地址，必须与该应用<b>登记值精确相等</b></td></tr>
+              <tr><td><code>response_type</code></td><td><span class="req">必填</span></td><td>固定为 <code>code</code></td></tr>
+              <tr><td><code>scope</code></td><td><span class="opt">选填</span></td><td>逗号分隔；留空表示授予该应用登记（或平台默认）的全部 scope</td></tr>
+              <tr><td><code>state</code></td><td><span class="opt">选填</span></td><td>防 CSRF 的透传值，<b>成功与错误回跳都会原样带回</b>，强烈建议携带</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>成功响应：302 回跳</h4>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">302 Found · Location</span><button class="cp">复制</button></div>
+<pre>https://example.com/oauth/callback?code=<span class="s-n">Kf3nQ8xLp2Rv7TzA9mWc4YbH6dJs1EgU</span>&amp;state=<span class="s-n">abc123</span></pre>
+        </div>
+        <p>回跳参数统一做百分号编码；<b>值为空的可选参数不会出现在回跳地址中</b>（例如未传 state 则无该参数）。</p>
+
+        <h4>失败响应</h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>场景</th><th>响应形式</th><th>error</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>client_id 不存在 / 已停用 / 非三方应用</td>
+                <td><b>JSON 400</b>，不跳转</td>
+                <td><code>invalid_client</code></td>
+              </tr>
+              <tr>
+                <td>未登记回调地址，或 redirect_uri 与登记值不一致</td>
+                <td><b>JSON 400</b>，不跳转</td>
+                <td><code>invalid_request</code></td>
+              </tr>
+              <tr>
+                <td>response_type 不是 <code>code</code></td>
+                <td>302 回跳</td>
+                <td><code>unsupported_response_type</code></td>
+              </tr>
+              <tr>
+                <td>scope 含平台不支持的项，或超出该应用被允许的范围</td>
+                <td>302 回跳</td>
+                <td><code>invalid_scope</code></td>
+              </tr>
+              <tr>
+                <td>同意页未启用（<code>oauth2.auto-consent=false</code>）</td>
+                <td>302 回跳</td>
+                <td><code>temporarily_unavailable</code></td>
+              </tr>
+              <tr>
+                <td>用户未登录</td>
+                <td>4010；携带 Referer 时以 4011 跳转登录页</td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="tt">为什么不跳转</span>
+          当 <b>客户端或回调地址不可信</b>时，平台<b>不会</b>把错误重定向到该地址（否则等于把未验证的
+          <code>redirect_uri</code> 变成开放重定向跳板，参见 RFC 6749 §4.1.2.1），而是直接返回 JSON 错误。
+          只有在校验通过之后，才以 302 + <code>error</code> 参数的形式把失败原因交回应用。
+        </div>
+
+        <div class="note">
+          <span class="tt">当前版本无同意页</span>
+          平台目前不渲染用户同意页（<code>oauth2.auto-consent</code> 默认 <code>true</code>），
+          校验通过后直接签发授权码。该开关置为 <code>false</code> 时授权请求一律以
+          <code>temporarily_unavailable</code> 拒绝，<b>不会静默放行</b>。
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.2 -->
+    <h3>3.2　令牌端点（授权码换令牌）</h3>
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/oauth2/token</span>
+        <span class="lock">免登录 · 客户端凭证认证</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">请求体为 <code>application/x-www-form-urlencoded</code>。
+          客户端凭证可放在表单参数，也可用 HTTP Basic（<code>Authorization: Basic base64(client_id:client_secret)</code>）；
+          <b>表单参数优先</b>于 Basic。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>grant_type</code></td><td><span class="req">必填</span></td><td><code>authorization_code</code></td></tr>
+              <tr><td><code>code</code></td><td><span class="req">必填</span></td><td>授权端点返回的授权码</td></tr>
+              <tr><td><code>redirect_uri</code></td><td><span class="req">必填</span></td><td><b>必须与授权请求中的值完全一致</b>，缺失亦判失败</td></tr>
+              <tr><td><code>client_id</code></td><td><span class="req">必填</span></td><td>也可改用 HTTP Basic</td></tr>
+              <tr><td><code>client_secret</code></td><td><span class="req">必填</span></td><td>也可改用 HTTP Basic</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>成功响应</h4>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK · Cache-Control: no-store</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"access_token"</span>: <span class="s-s">"oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk"</span>,
+  <span class="s-s">"token_type"</span>: <span class="s-s">"Bearer"</span>,
+  <span class="s-s">"expires_in"</span>: <span class="s-n">7200</span>,
+  <span class="s-s">"refresh_token"</span>: <span class="s-s">"or-3Pz9WqLm6Tv2Rk8YbNc4HdJf1EgU5Ax7Vo0NtXrMsQ"</span>,
+  <span class="s-s">"scope"</span>: <span class="s-s">"profile"</span>
+}</pre>
+        </div>
+        <p>令牌端点的响应体是 <b>RFC 6749 规定的扁平 JSON</b>，不被平台的
+          <code>ReqResult</code> 包装，且固定带上 <code>Cache-Control: no-store</code> 与
+          <code>Pragma: no-cache</code>。</p>
+
+        <h4>失败响应</h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>HTTP</th><th>error</th><th>触发场景</th></tr></thead>
+            <tbody>
+              <tr><td><code class="k">401</code></td><td><code>invalid_client</code></td><td>client_id 不存在 / 已停用；client_secret 不正确；未提供客户端凭证</td></tr>
+              <tr><td><code class="k">400</code></td><td><code>unsupported_grant_type</code></td><td>grant_type 不是三种受支持模式之一</td></tr>
+              <tr><td><code class="k">400</code></td><td><code>invalid_grant</code></td><td>授权码无效、已过期或已被使用；授权码属于另一个客户端；redirect_uri 缺失或与授权请求不一致</td></tr>
+              <tr><td><code class="k">400</code></td><td><code>invalid_scope</code></td><td>请求的 scope 非法或超出应用允许范围</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">400 · 错误响应结构</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"error"</span>: <span class="s-s">"invalid_grant"</span>,
+  <span class="s-s">"error_description"</span>: <span class="s-s">"authorization code is invalid, expired or already used"</span>
+}</pre>
+        </div>
+        <div class="note">
+          <span class="tt">授权码一次性</span>
+          授权码在令牌端点被取用后<b>立即作废</b>（无论后续校验是否通过），因此重放同一个授权码一定失败。
+          授权码默认有效期 <b>300 秒</b>。
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.3 -->
+    <h3>3.3　用户信息端点</h3>
+    <div class="ep" style="--mc:var(--teal)">
+      <div class="ep-bar">
+        <span class="m">GET</span> <span class="m" style="--mc:var(--amber)">POST</span>
+        <span class="pth">/api/oauth2/userinfo</span>
+        <span class="lock">Bearer access_token</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">返回令牌所属授权用户的公开信息。要求令牌持有
+          <code class="t">profile</code> scope。</p>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">请求</span><button class="cp">复制</button></div>
+<pre><span class="s-k">GET</span> /api/oauth2/userinfo
+<span class="s-k">Authorization</span>: Bearer oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk</pre>
+        </div>
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"sub"</span>: <span class="s-s">"1024"</span>,
+  <span class="s-s">"user_id"</span>: <span class="s-n">1024</span>,
+  <span class="s-s">"name"</span>: <span class="s-s">"示例用户"</span>,
+  <span class="s-s">"avatar"</span>: <span class="s-s">"https://.../avatar.png"</span>,
+  <span class="s-s">"tenant_id"</span>: <span class="s-n">1</span>
+}</pre>
+        </div>
+        <p>响应同样是扁平 JSON，不带 <code>ReqResult</code> 包装。<code>sub</code> 为字符串形式的用户 ID。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 04 刷新令牌 ════════════ -->
+  <section id="s04">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div>
+        <h2>刷新令牌</h2>
+        <span class="sec-tag">refresh_token · 轮换机制</span>
+      </div>
+    </div>
+
+    <p>access_token 到期后，用 refresh_token 换取新的一对令牌，避免用户重新授权。</p>
+
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/oauth2/token</span>
+        <span class="lock">免登录 · 客户端凭证认证</span>
+      </div>
+      <div class="ep-body">
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>grant_type</code></td><td><span class="req">必填</span></td><td><code>refresh_token</code></td></tr>
+              <tr><td><code>refresh_token</code></td><td><span class="req">必填</span></td><td>上一次令牌响应中返回的 refresh_token</td></tr>
+              <tr><td><code>client_id</code> / <code>client_secret</code></td><td><span class="req">必填</span></td><td>也可改用 HTTP Basic</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>响应结构与授权码模式一致，含<b>新的</b> <code>access_token</code> 与
+          <b>新的</b> <code>refresh_token</code>。</p>
+
+        <div class="note warn">
+          <span class="tt">令牌轮换</span>
+          刷新成功后<b>旧 refresh_token 立即作废</b>，应用必须用响应中的新值替换本地存储的旧值。
+          重复使用旧 refresh_token 会返回 <code>invalid_grant</code>。
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>HTTP</th><th>error</th><th>触发场景</th></tr></thead>
+            <tbody>
+              <tr><td><code class="k">401</code></td><td><code>invalid_client</code></td><td>客户端凭证错误或客户端已停用</td></tr>
+              <tr><td><code class="k">400</code></td><td><code>invalid_grant</code></td><td>refresh_token 无效 / 已过期 / 已被轮换；refresh_token 不属于该客户端；<b>用户授权已被撤销</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 05 客户端凭证 ════════════ -->
+  <section id="s05">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div>
+        <h2>客户端凭证模式</h2>
+        <span class="sec-tag">client_credentials · 无用户上下文</span>
+      </div>
+    </div>
+
+    <p>适用于应用<b>以自身身份</b>调用平台接口、不代表任何终端用户的场景（服务端到服务端）。</p>
+
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/oauth2/token</span>
+        <span class="lock">免登录 · 客户端凭证认证</span>
+      </div>
+      <div class="ep-body">
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>grant_type</code></td><td><span class="req">必填</span></td><td><code>client_credentials</code></td></tr>
+              <tr><td><code>scope</code></td><td><span class="opt">选填</span></td><td>逗号分隔；留空表示授予全部允许范围</td></tr>
+              <tr><td><code>client_id</code> / <code>client_secret</code></td><td><span class="req">必填</span></td><td>也可改用 HTTP Basic</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ul>
+          <li>响应中 <b>不包含 refresh_token</b>，access_token 到期后重新请求即可。</li>
+          <li>令牌被绑定到该接入应用的<b>创建者</b>账号（与平台 AK 的语义一致），因此调用
+            <code>/api/oauth2/userinfo</code> 会返回创建者的信息。</li>
+          <li>若该应用没有创建者，返回 <code class="k">400</code> + <code>invalid_client</code> +
+            <code>the client has no owner</code>。</li>
+          <li>当前平台只开放 <code>profile</code>，因此该模式下签发的令牌<b>仅能读取创建者信息</b>；
+            传入其它 <code>scope</code> 会被判为 <code>invalid_scope</code>。</li>
+        </ul>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">200 OK</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"access_token"</span>: <span class="s-s">"oa-Qm4Wz8LpT2Rv6Kc9YbN3HdJf1EgU5Ax7Vo0NtXrMsPk"</span>,
+  <span class="s-s">"token_type"</span>: <span class="s-s">"Bearer"</span>,
+  <span class="s-s">"expires_in"</span>: <span class="s-n">7200</span>,
+  <span class="s-s">"scope"</span>: <span class="s-s">"profile"</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 06 撤销 ════════════ -->
+  <section id="s06">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div>
+        <h2>撤销令牌</h2>
+        <span class="sec-tag">revoke · RFC 7009</span>
+      </div>
+    </div>
+
+    <div class="ep" style="--mc:var(--amber)">
+      <div class="ep-bar">
+        <span class="m">POST</span>
+        <span class="pth">/api/oauth2/revoke</span>
+        <span class="lock">免登录 · 客户端凭证认证</span>
+      </div>
+      <div class="ep-body">
+        <p class="ep-desc">撤销令牌并清除该用户对该客户端的授权关系。用户解除授权、应用卸载、
+          或检测到令牌泄露时调用。</p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>token</code></td><td><span class="req">必填</span></td><td>要撤销的 access_token 或 refresh_token</td></tr>
+              <tr><td><code>token_type_hint</code></td><td><span class="opt">选填</span></td><td>仅用于服务端日志，不影响撤销逻辑</td></tr>
+              <tr><td><code>client_id</code> / <code>client_secret</code></td><td><span class="req">必填</span></td><td>也可改用 HTTP Basic</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="tt">撤销粒度是「用户 × 客户端」，不是单个令牌</span>
+          撤销会记录一个用户级撤销时间戳，并删除授权关系。效果是：<b>该用户对该客户端已签发的全部令牌中，
+          签发时间早于撤销时刻的，一律立即失效</b>；此后 refresh_token 也无法再续签
+          （返回 <code>invalid_grant</code> + <code>the authorization has been revoked</code>）。
+        </div>
+
+        <ul>
+          <li>无论令牌是否有效、是否属于该客户端，<b>一律返回 200 与空 JSON 对象</b>
+            （RFC 7009：不向调用方泄露令牌状态）。</li>
+          <li>只能撤销<b>自己客户端</b>名下的令牌；传入其它客户端的令牌会被静默忽略。</li>
+          <li>客户端认证失败仍返回 <code class="k">401</code> + <code>invalid_client</code>。</li>
+        </ul>
+
+        <div class="cb">
+          <div class="cb-top"><span class="d"></span><span class="lbl">请求 / 响应</span><button class="cp">复制</button></div>
+<pre><span class="s-k">POST</span> /api/oauth2/revoke
+<span class="s-k">Content-Type</span>: application/x-www-form-urlencoded
+
+token=oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk
+&amp;token_type_hint=access_token
+&amp;client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8
+&amp;client_secret=nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2
+
+<span class="s-c"># 200 OK</span>
+{}</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ 07 scope ════════════ -->
+  <section id="s07">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div>
+        <h2>scope 与接口白名单</h2>
+        <span class="sec-tag">Scope Registry · 权限边界</span>
+      </div>
+    </div>
+
+    <p>
+      access_token 不是平台登录令牌，<b>只能调用显式开放的接口</b>。每个 scope 对应一组路径模式，
+      令牌校验时按请求路径逐条匹配，未命中即拒绝（fail-closed）。
+    </p>
+
+    <h3>平台支持的 scope</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>scope</th><th>放行路径</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code class="t">profile</code></td>
+            <td><code>/api/oauth2/userinfo</code></td>
+            <td>读取授权用户自身信息</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="pill t">默认值</span>应用未配置允许范围时，平台授予
+      <code>profile</code> 一项。</p>
+
+    <div class="note warn">
+      <span class="tt">当前仅开放 profile</span>
+      access_token <b>只能读取授权用户自身信息</b>，尚不能调用平台的开放接口
+      （<code>/api/v1/**</code>）。开放接口的 scope 后续再放，届时本页会同步更新。
+    </div>
+
+    <h3>三层判定规则</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <h5>应用允许范围</h5>
+        <p>取自接入应用的 <code>oauth_scope</code> 配置（逗号分隔）。为空时取平台默认
+          <code>profile</code>；非空但全部非法时回落默认值，避免出现「零权限」的哑客户端。</p>
+      </div>
+      <div class="flow-step">
+        <h5>授权时收窄</h5>
+        <p>授权请求携带的 <code>scope</code> 必须是应用允许范围的<b>子集</b>。
+          含平台不支持的项、或超出允许范围 → <code>invalid_scope</code>。
+          留空则授予全部允许范围。</p>
+      </div>
+      <div class="flow-step">
+        <h5>调用时逐请求判定</h5>
+        <p>每次携带 access_token 的请求，其路径必须命中该令牌所持 scope 的任一路径模式，
+          否则返回 <code class="k">403</code>（平台错误码 <code>4030</code>，权限不足）。</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <span class="tt">动态收窄</span>
+      若管理员事后收窄了应用的 <code>oauth_scope</code>，<b>已签发的令牌会同步收窄</b> ——
+      令牌原 scope 与当前允许范围取交集后再做路径判定。换句话说，权限收紧立即对存量令牌生效，
+      无需等待令牌过期。
+    </div>
+
+    <div class="note warn">
+      <span class="tt">常见 403 场景</span>
+      用 access_token 去调 <code>/api/oauth2/userinfo</code> 以外的任何接口 —— 当前
+      <code>profile</code> 只放行该路径，其余路径一律返回 <code class="k">403</code>。
+    </div>
+  </section>
+
+  <!-- ════════════ 08 规格 ════════════ -->
+  <section id="s08">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div>
+        <h2>凭证与令牌规格</h2>
+        <span class="sec-tag">Credential Format · TTL · Invalidations</span>
+      </div>
+    </div>
+
+    <h3>格式</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>名称</th><th>前缀</th><th>主体</th><th>熵</th></tr></thead>
+        <tbody>
+          <tr><td>Client ID</td><td><code>nwxa_</code></td><td>32 位小写 hex</td><td>16 字节</td></tr>
+          <tr><td>Client Secret</td><td><code>nwxa_s_</code></td><td>48 位小写 hex</td><td>24 字节</td></tr>
+          <tr><td>access_token</td><td><code class="k">oa-</code></td><td>43 位 url-safe 随机串</td><td>32 字节</td></tr>
+          <tr><td>refresh_token</td><td><code class="k">or-</code></td><td>43 位 url-safe 随机串</td><td>32 字节</td></tr>
+          <tr><td>授权码</td><td>无前缀</td><td>32 位 url-safe 随机串</td><td>24 字节</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>令牌由 <code>SecureRandom</code> 生成，是不可猜测的<b>不透明字符串</b>（非 JWT），
+      本身不携带任何可解出的信息，必须回源校验。</p>
+
+    <h3>有效期</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>对象</th><th>默认 TTL</th><th>续期 / 轮换</th></tr></thead>
+        <tbody>
+          <tr><td>授权码</td><td><code>300s</code></td><td>一次性，取用即作废</td></tr>
+          <tr><td>access_token</td><td><code>7200s</code></td><td><b>滑动续期</b>：每次校验通过后重置为满 TTL</td></tr>
+          <tr><td>refresh_token</td><td><code>2592000s</code>（30 天）</td><td>每次刷新时轮换，旧值立即作废</td></tr>
+          <tr><td>授权关系</td><td><code>2592000s</code>（30 天）</td><td>刷新时依据其存在性判断授权是否仍有效</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <span class="tt">滑动续期的含义</span>
+      access_token 每被成功校验一次，其过期时间就重置为完整 TTL。因此
+      <b>持续活跃的调用不会因 7200 秒到期而中断</b>；但令牌的绝对存活时间可能超过 7200 秒。
+      长时间空闲后，令牌会在最后一次调用后的 7200 秒过期。
+    </div>
+
+    <h3>服务端配置项</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>配置</th><th>默认</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>oauth2.access-token-ttl</code></td><td>7200</td><td>access_token 有效期（秒）</td></tr>
+          <tr><td><code>oauth2.refresh-token-ttl</code></td><td>2592000</td><td>refresh_token 有效期（秒）</td></tr>
+          <tr><td><code>oauth2.code-ttl</code></td><td>300</td><td>授权码有效期（秒）</td></tr>
+          <tr><td><code>oauth2.grant-ttl</code></td><td>2592000</td><td>授权关系与撤销记录有效期（秒）</td></tr>
+          <tr><td><code>oauth2.auto-consent</code></td><td>true</td><td>是否跳过用户同意页直接签发授权码</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>令牌失效的全部场景</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>触发动作</th><th>影响范围</th></tr></thead>
+        <tbody>
+          <tr><td>用户撤销授权（<code>/revoke</code>）</td><td>该用户对该客户端<b>签发时间早于撤销时刻</b>的全部令牌立即失效，且 refresh_token 无法再续签</td></tr>
+          <tr><td>调用「重新生成凭证」</td><td>client_id 变更，<b>该应用全部令牌立即失效</b>（含所有用户）</td></tr>
+          <tr><td>应用停用 OAuth2 接入（<code>oauth_enabled = false</code>）</td><td>该应用全部令牌立即失效，协议端点返回 <code>invalid_client</code></td></tr>
+          <tr><td>应用被删除 / 类型变更</td><td>同上，按「客户端不存在」处理</td></tr>
+          <tr><td>管理员收窄 <code>oauth_scope</code></td><td>存量令牌权限同步收窄，越权路径返回 403</td></tr>
+          <tr><td>授权用户被禁用或删除</td><td>该用户相关令牌请求被拒（账号不可用）</td></tr>
+          <tr><td>access_token 自然到期</td><td>仅该令牌失效，可用 refresh_token 续签</td></tr>
+          <tr><td>refresh_token 被轮换</td><td>旧的 refresh_token 立即作废</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ════════════ 09 错误码 ════════════ -->
+  <section id="s09">
+    <div class="sec-head">
+      <div class="sec-num">09</div>
+      <div>
+        <h2>错误码</h2>
+        <span class="sec-tag">Error Reference</span>
+      </div>
+    </div>
+
+    <h3>协议端点（RFC 6749 / 7009 形式）</h3>
+    <p>错误体为扁平 JSON：<code>{ "error": "...", "error_description": "..." }</code>。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>error</th><th>HTTP</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><code class="k">invalid_client</code></td><td>401 / 400</td><td>客户端认证失败：client_id 不存在或已停用、client_secret 不正确、未提供凭证、客户端无创建者</td></tr>
+          <tr><td><code class="k">invalid_grant</code></td><td>400</td><td>授权码或刷新令牌无效、已过期、已被使用、不属于该客户端、redirect_uri 不一致、授权已被撤销</td></tr>
+          <tr><td><code class="k">invalid_scope</code></td><td>400</td><td>请求的 scope 非法或超出应用允许范围</td></tr>
+          <tr><td><code class="k">unsupported_grant_type</code></td><td>400</td><td>grant_type 不受支持</td></tr>
+          <tr><td><code class="k">unsupported_response_type</code></td><td>302</td><td>response_type 不是 <code>code</code></td></tr>
+          <tr><td><code class="k">temporarily_unavailable</code></td><td>302</td><td>同意页未启用，无法完成授权</td></tr>
+          <tr><td><code class="k">invalid_request</code></td><td>400</td><td>客户端或回调地址不可信（此时以 JSON 返回、不跳转）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>平台通用错误码</h3>
+    <p>设置页接口与 access_token 越权均使用平台统一 <code>ReqResult</code> 错误体。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>code</th><th>含义</th><th>典型场景</th></tr></thead>
+        <tbody>
+          <tr><td><code class="k">4000</code></td><td>参数错误</td><td>projectId 缺失、目标非三方应用、地址格式非法、scope 非法</td></tr>
+          <tr><td><code class="k">4010</code></td><td>未登录或登录超时</td><td>调用设置页接口未携带登录态</td></tr>
+          <tr><td><code class="k">4030</code></td><td>无权限</td><td>空间权限不足；access_token 越权访问白名单外的接口</td></tr>
+          <tr><td><code>5000</code></td><td>系统异常</td><td>服务端内部错误</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>细分业务码（服务端文案标识）</h3>
+    <div class="note">
+      <span class="tt">这些码不直接出现在对外 JSON 中</span>
+      下表编码用于服务端按语言重算错误文案，对外响应里的 <code>code</code> 仍是
+      <code>4000 / 4010 / 4030</code>，<b>具体原因请读 <code>message</code></b>。
+      列出它们是为了排障时能把日志里的枚举名对上号。
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>编码</th><th>枚举名</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td>3330</td><td><code>oauth2ClientNotFound</code></td><td>OAuth2 客户端不存在或已停用</td></tr>
+          <tr><td>3331</td><td><code>oauth2RedirectUriMismatch</code></td><td>回调地址与登记的不一致</td></tr>
+          <tr><td>3332</td><td><code>oauth2InsufficientScope</code></td><td>access_token 权限不足，无法访问该接口</td></tr>
+          <tr><td>3333</td><td><code>oauth2InvalidGrant</code></td><td>授权码或令牌无效、已过期或已被使用</td></tr>
+          <tr><td>3334</td><td><code>oauth2ClientSecretInvalid</code></td><td>客户端密钥不正确</td></tr>
+          <tr><td>3335</td><td><code>oauth2ThirdAppOnly</code></td><td>仅三方应用支持 OAuth2 接入配置</td></tr>
+          <tr><td>3336</td><td><code>oauth2RedirectUriRequired</code></td><td>未配置回调地址，无法发起授权</td></tr>
+          <tr><td>3337</td><td><code>oauth2UrlInvalid</code></td><td>主页地址或回调地址格式不合法</td></tr>
+          <tr><td>3338</td><td><code>oauth2InvalidScope</code></td><td>申请的权限范围不合法或超出应用允许范围</td></tr>
+          <tr><td>3339</td><td><code>userProjectThirdAppOnly</code></td><td>仅三方应用支持该操作（应用层兜底；接口层先由 3335 拦下）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ════════════ 10 示例 ════════════ -->
+  <section id="s10">
+    <div class="sec-head">
+      <div class="sec-num">10</div>
+      <div>
+        <h2>端到端接入示例</h2>
+        <span class="sec-tag">Walkthrough · curl</span>
+      </div>
+    </div>
+
+    <p>把 <code>&lt;tenant-domain&gt;</code> 换成本租户的访问域名（协议请求的租户由域名或
+      <code>x-tenant-id</code> 头解析，接入应用不跨租户）。</p>
+
+    <h3>步骤 1　拼接授权链接</h3>
+    <p>回跳地址必须做 URL 编码，且与登记值精确一致：</p>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">浏览器跳转</span><button class="cp">复制</button></div>
+<pre>https://&lt;tenant-domain&gt;/api/oauth2/authorize
+  ?client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8
+  &amp;redirect_uri=https%3A%2F%2Fexample.com%2Foauth%2Fcallback
+  &amp;response_type=code
+  &amp;scope=profile
+  &amp;state=Xk92LmQ7</pre>
+    </div>
+    <p>用户授权后浏览器被回跳到
+      <code>https://example.com/oauth/callback?code=...&amp;state=Xk92LmQ7</code>，
+      应用需校验回跳的 <code>state</code> 与发起时一致。</p>
+
+    <h3>步骤 2　换取令牌</h3>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/oauth2/token'</span> \
+  -H <span class="s-s">'Content-Type: application/x-www-form-urlencoded'</span> \
+  -d <span class="s-s">'grant_type=authorization_code'</span> \
+  -d <span class="s-s">'code=Kf3nQ8xLp2Rv7TzA9mWc4YbH6dJs1EgU'</span> \
+  -d <span class="s-s">'redirect_uri=https://example.com/oauth/callback'</span> \
+  -d <span class="s-s">'client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8'</span> \
+  -d <span class="s-s">'client_secret=nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2'</span></pre>
+    </div>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">响应</span><button class="cp">复制</button></div>
+<pre>{
+  <span class="s-s">"access_token"</span>: <span class="s-s">"oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk"</span>,
+  <span class="s-s">"token_type"</span>: <span class="s-s">"Bearer"</span>,
+  <span class="s-s">"expires_in"</span>: <span class="s-n">7200</span>,
+  <span class="s-s">"refresh_token"</span>: <span class="s-s">"or-3Pz9WqLm6Tv2Rk8YbNc4HdJf1EgU5Ax7Vo0NtXrMsQ"</span>,
+  <span class="s-s">"scope"</span>: <span class="s-s">"profile"</span>
+}</pre>
+    </div>
+
+    <h3>步骤 3　调用用户信息</h3>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS <span class="s-s">'https://&lt;tenant-domain&gt;/api/oauth2/userinfo'</span> \
+  -H <span class="s-s">'Authorization: Bearer oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk'</span></pre>
+    </div>
+
+    <h3>步骤 4　调用其它接口</h3>
+    <p>当前平台<b>尚未开放任何开放接口</b>（只支持 <code>profile</code>），用该令牌调用
+      <code>/api/oauth2/userinfo</code> 以外的路径一律返回 <code class="k">403</code> +
+      <code>4030</code>，例如：</p>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash · 预期 403</span><button class="cp">复制</button></div>
+<pre>curl -sS <span class="s-s">'https://&lt;tenant-domain&gt;/api/v1/...'</span> \
+  -H <span class="s-s">'Authorization: Bearer oa-8Kx2mQv7Rn4TzLp9YcWb3HdJ6gUf1EsA0iVo5NtXrMk'</span></pre>
+    </div>
+
+    <h3>步骤 5　刷新令牌</h3>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/oauth2/token'</span> \
+  -H <span class="s-s">'Content-Type: application/x-www-form-urlencoded'</span> \
+  -d <span class="s-s">'grant_type=refresh_token'</span> \
+  -d <span class="s-s">'refresh_token=or-3Pz9WqLm6Tv2Rk8YbNc4HdJf1EgU5Ax7Vo0NtXrMsQ'</span> \
+  -d <span class="s-s">'client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8'</span> \
+  -d <span class="s-s">'client_secret=nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2'</span></pre>
+    </div>
+    <p>响应里的 <code>refresh_token</code> 是<b>新值</b>，请用它覆盖本地存储的旧值。</p>
+
+    <h3>步骤 6　撤销授权</h3>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/oauth2/revoke'</span> \
+  -H <span class="s-s">'Content-Type: application/x-www-form-urlencoded'</span> \
+  -d <span class="s-s">'token=or-3Pz9WqLm6Tv2Rk8YbNc4HdJf1EgU5Ax7Vo0NtXrMsQ'</span> \
+  -d <span class="s-s">'token_type_hint=refresh_token'</span> \
+  -d <span class="s-s">'client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8'</span> \
+  -d <span class="s-s">'client_secret=nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2'</span>
+
+<span class="s-c"># 200 OK</span>
+{}</pre>
+    </div>
+
+    <h3>客户端凭证模式（服务端到服务端）</h3>
+    <div class="cb">
+      <div class="cb-top"><span class="d"></span><span class="lbl">bash</span><button class="cp">复制</button></div>
+<pre>curl -sS -X POST <span class="s-s">'https://&lt;tenant-domain&gt;/api/oauth2/token'</span> \
+  -H <span class="s-s">'Content-Type: application/x-www-form-urlencoded'</span> \
+  -d <span class="s-s">'grant_type=client_credentials'</span> \
+  -d <span class="s-s">'scope=profile'</span> \
+  -d <span class="s-s">'client_id=nwxa_9f4c1e77b2a05d386e1f7c4a0b95d2e8'</span> \
+  -d <span class="s-s">'client_secret=nwxa_s_3b8e5a1f9c47d0268ba3e5f1c9047d2a6e83b5f0c17a94d2'</span></pre>
+    </div>
+
+    <div class="rule"></div>
+
+    <h3>接入检查清单</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>检查项</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>是否已登记 <code>redirect_uri</code>，且与授权请求、令牌请求中的值<b>完全一致</b>（含协议、端口、路径、末尾斜杠）</td></tr>
+          <tr><td>2</td><td>授权请求是否携带 <code>state</code>，回跳时是否校验</td></tr>
+          <tr><td>3</td><td>申请的 <code>scope</code> 是否在该应用的允许范围内</td></tr>
+          <tr><td>4</td><td>refresh_token 是否按轮换语义<b>覆盖更新</b>，而非继续使用旧值</td></tr>
+          <tr><td>5</td><td>Client Secret 是否只存放于服务端，未进入前端代码或公开仓库</td></tr>
+          <tr><td>6</td><td>是否处理了 <code>403</code>（scope 不足）与 <code>401</code>（令牌失效）并区分重试策略</td></tr>
+          <tr><td>7</td><td>令牌是否以 <code>Bearer</code> 形式放在 <code>Authorization</code> 头，而非查询串</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note ok">
+      <span class="tt">实现位置</span>
+      协议端点 <code>OAuth2Controller</code> · 设置页 <code>ThirdAppOAuth2Controller</code> ·
+      scope 白名单 <code>OAuth2ScopeRegistry</code> · 令牌与授权码 <code>OAuth2AuthorizationServiceImpl</code> ·
+      拦截器分支 <code>AuthInterceptor</code>（模块 <code>app-platform-userapp</code>）。
+      <code>ApiKeyInterceptor</code> 未做改动，OAuth2 令牌不会被放行到 <code>/api/v1/**</code>。
+    </div>
+  </section>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 复制按钮
+    document.querySelectorAll('.cb').forEach(function (box) {
+      var btn = box.querySelector('.cp');
+      var pre = box.querySelector('pre');
+      if (!btn || !pre) return;
+      btn.addEventListener('click', function () {
+        var text = pre.innerText;
+        var done = function (label, cls) {
+          btn.textContent = label;
+          btn.classList.add(cls);
+          setTimeout(function () { btn.textContent = '复制'; btn.classList.remove(cls); }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done('已复制', 'ok'); },
+            function () { done('复制失败', ''); });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done('已复制', 'ok'); }
+          catch (e) { done('复制失败', ''); }
+          document.body.removeChild(ta);
+        }
+      });
+    });
+
+    // 目录高亮
+    var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var secs = Array.prototype.slice.call(document.querySelectorAll('section'));
+    var sync = function () {
+      var cur = secs[0];
+      secs.forEach(function (s) { if (s.getBoundingClientRect().top <= 130) cur = s; });
+      links.forEach(function (a) {
+        a.classList.toggle('on', a.getAttribute('href') === '#' + cur.id);
+      });
+    };
+    sync();
+    window.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+
+    // 移动端目录
+    var rail = document.getElementById('rail');
+    var burger = document.getElementById('burger');
+    burger.addEventListener('click', function () { rail.classList.toggle('open'); });
+    links.forEach(function (a) {
+      a.addEventListener('click', function () { rail.classList.remove('open'); });
+    });
+    document.addEventListener('click', function (e) {
+      if (rail.classList.contains('open') && !rail.contains(e.target) && e.target !== burger) {
+        rail.classList.remove('open');
+      }
+    });
+
+    // 首屏入场
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && document.body.animate) {
+      document.querySelectorAll('.hero > *').forEach(function (el, i) {
+        el.animate(
+          [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }],
+          { duration: 720, delay: i * 95, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' }
+        );
+      });
+    }
+  });
+  </script>
+
+</main>
+</div>
+</body>
+</html>

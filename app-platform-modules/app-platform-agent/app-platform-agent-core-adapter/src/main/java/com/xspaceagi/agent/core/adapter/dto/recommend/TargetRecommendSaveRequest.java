@@ -3,6 +3,8 @@ package com.xspaceagi.agent.core.adapter.dto.recommend;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class TargetRecommendSaveRequest {
 
@@ -25,6 +27,10 @@ public class TargetRecommendSaveRequest {
     private String icon;
 
     private String placeholder;
+
+    private String category;
+
+    private List<RecommendPrompt> prompts;
 
     private Integer sort;
 }

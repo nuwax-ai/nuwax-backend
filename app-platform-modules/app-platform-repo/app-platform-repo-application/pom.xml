@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>app-platform-repo</artifactId>
+        <groupId>com.xspaceagi</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-repo-application</artifactId>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-repo-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-repo-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-repo-infra</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-log-sdk</artifactId>
+        </dependency>
+        <!-- 文件读取（导出时图片转内嵌：/api/f/{key} → base64） -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-file-application</artifactId>
+        </dependency>
+        <!-- 需求3：docx 导出（docx4j 原生构建）。不用 docx4j-ImportXHTML：其传递依赖
+             openhtmltopdf-pdfbox 1.0.10 只兼容 pdfbox 2.x，与平台知识库的 pdfbox 3.0.3
+             冲突（NoSuchFieldError: COURIER_BOLD_OBLIQUE） -->
+        <dependency>
+            <groupId>org.docx4j</groupId>
+            <artifactId>docx4j-core</artifactId>
+            <version>11.4.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.docx4j</groupId>
+            <artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+            <version>11.4.8</version>
+        </dependency>
+        <!-- 需求3：pdf 导出（flying-saucer + OpenPDF，避开与知识库 pdfbox 3 的冲突） -->
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-pdf</artifactId>
+            <version>9.4.0</version>
+        </dependency>
+        <!-- 需求3：流程图导出成图（后端解析 data-flow JSON 自绘 SVG → 栅格化 PNG 内嵌 docx/pdf） -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>1.17</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-codec</artifactId>
+            <version>1.17</version>
+        </dependency>
+        <!-- AI 编辑会话：调 IConversationRpcService#createRepoDocConversation 创建文档编辑会话 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-agent-core-sdk</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

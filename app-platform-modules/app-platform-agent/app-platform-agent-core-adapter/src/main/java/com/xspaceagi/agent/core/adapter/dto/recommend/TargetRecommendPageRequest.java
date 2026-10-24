@@ -12,4 +12,6 @@ public class TargetRecommendPageRequest {
     private String recType;
 
     private String targetType;
+
+    private String category;
 }

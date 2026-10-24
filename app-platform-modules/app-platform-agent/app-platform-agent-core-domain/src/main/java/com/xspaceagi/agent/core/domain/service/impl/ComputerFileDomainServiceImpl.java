@@ -109,63 +109,87 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     }
 
     @Override
-    public Map<String, Object> getFileList(Long userId, Long cId, String proxyPath, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 查询文件列表, userId={}, cId={}", userId, cId);
-        return computerFileClient.getFileList(userId, cId, proxyPath, customTargetDir);
+    public Map<String, Object> getFileList(Long conversationUserId, Long cId, String proxyPath, UserContext userContext, String customTargetDir, String relativePath, Boolean recursive, Integer depth, String type, Integer limit) {
+        log.info("[Domain] 查询文件列表, conversationUserId={}, cId={}, relativePath={}, recursive={}, depth={}, type={}, limit={}", conversationUserId, cId, relativePath, recursive, depth, type, limit);
+        return computerFileClient.getFileList(conversationUserId, cId, proxyPath, customTargetDir, relativePath, recursive, depth, type, limit);
     }
 
     @Override
-    public Map<String, Object> filesUpdate(Long userId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 更新文件列表, userId={}, cId={}", userId, cId);
-        return computerFileClient.filesUpdate(userId, cId, files, customTargetDir);
+    public Map<String, Object> resolveExistingFile(Long conversationUserId, Long cId, String proxyPath, String filePath, String customTargetDir) {
+        log.info("[Domain] 解析文件是否存在, conversationUserId={}, cId={}, filePath={}", conversationUserId, cId, filePath);
+        return computerFileClient.resolveExistingFile(conversationUserId, cId, proxyPath, filePath, customTargetDir);
     }
 
     @Override
-    public Map<String, Object> uploadFile(Long userId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 上传文件, userId={}, cId={}, filePath={}", userId, cId, filePath);
-        return computerFileClient.uploadFile(userId, cId, filePath, file, customTargetDir);
+    public Map<String, Object> getFileMeta(Long conversationUserId, Long cId, List<String> filePaths, String customTargetDir) {
+        log.info("[Domain] 查询文件元数据, conversationUserId={}, cId={}, count={}", conversationUserId, cId, filePaths != null ? filePaths.size() : 0);
+        return computerFileClient.getFileMeta(conversationUserId, cId, filePaths, customTargetDir);
     }
 
     @Override
-    public Map<String, Object> uploadFiles(Long userId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 批量上传文件, userId={}, cId={}, fileCount={}", userId, cId, files != null ? files.size() : 0);
-        return computerFileClient.uploadFiles(userId, cId, filePaths, files, customTargetDir);
+    public Map<String, Object> searchFiles(Long conversationUserId, Long cId, String proxyPath, String kw, UserContext userContext, String customTargetDir, String relativePath, String type, Integer limit, Integer maxVisit, Integer timeoutMs) {
+        log.info("[Domain] 搜索文件, conversationUserId={}, cId={}, kw={}, relativePath={}, type={}", conversationUserId, cId, kw, relativePath, type);
+        return computerFileClient.searchFiles(conversationUserId, cId, proxyPath, kw, customTargetDir, relativePath, type, limit, maxVisit, timeoutMs);
     }
 
     @Override
-    public Map<String, Object> importProject(Long userId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 导入项目, userId={}, cId={}, fileName={}", userId, cId, file != null ? file.getOriginalFilename() : null);
-        return computerFileClient.importProject(userId, cId, file, customTargetDir);
+    public Map<String, Object> filesUpdate(Long conversationUserId, Long cId, List<ComputerFileInfo> files, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 更新文件列表, conversationUserId={}, cId={}", conversationUserId, cId);
+        return computerFileClient.filesUpdate(conversationUserId, cId, files, customTargetDir);
     }
 
     @Override
-    public Flux<DataBuffer> downloadAllFiles(Long userId, Long cId, String logId, UserContext userContext, String customTargetDir) {
-        log.info("[Domain] 下载全部文件, logId={}, userId={}, cId={}", logId, userId, cId);
-        return computerFileClient.downloadAllFiles(userId, cId, logId, customTargetDir)
+    public Map<String, Object> uploadFile(Long conversationUserId, Long cId, String filePath, MultipartFile file, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 上传文件, conversationUserId={}, cId={}, filePath={}", conversationUserId, cId, filePath);
+        return computerFileClient.uploadFile(conversationUserId, cId, filePath, file, customTargetDir);
+    }
+
+    @Override
+    public Map<String, Object> generateFile(Long conversationUserId, Long cId, String fileName, String content, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 生成文件, conversationUserId={}, cId={}, fileName={}", conversationUserId, cId, fileName);
+        return computerFileClient.generateFile(conversationUserId, cId, fileName, content, customTargetDir);
+    }
+
+    @Override
+    public Map<String, Object> uploadFiles(Long conversationUserId, Long cId, List<String> filePaths, List<MultipartFile> files, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 批量上传文件, conversationUserId={}, cId={}, fileCount={}", conversationUserId, cId, files != null ? files.size() : 0);
+        return computerFileClient.uploadFiles(conversationUserId, cId, filePaths, files, customTargetDir);
+    }
+
+    @Override
+    public Map<String, Object> importProject(Long conversationUserId, Long cId, MultipartFile file, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 导入项目, conversationUserId={}, cId={}, fileName={}", conversationUserId, cId, file != null ? file.getOriginalFilename() : null);
+        return computerFileClient.importProject(conversationUserId, cId, file, customTargetDir);
+    }
+
+    @Override
+    public Flux<DataBuffer> downloadAllFiles(Long conversationUserId, Long cId, String logId, UserContext userContext, String customTargetDir) {
+        log.info("[Domain] 下载全部文件, logId={}, conversationUserId={}, cId={}", logId, conversationUserId, cId);
+        return computerFileClient.downloadAllFiles(conversationUserId, cId, logId, customTargetDir)
                 .doOnError(WebClientResponseException.NotFound.class, e -> {
-                    handleDownloadFileNotFound(logId, userId, cId, e);
+                    handleDownloadFileNotFound(logId, conversationUserId, cId, e);
                 })
                 .doOnError(WebClientResponseException.class, e -> {
-                    handleDownloadHttpError(logId, userId, cId, e);
+                    handleDownloadHttpError(logId, conversationUserId, cId, e);
                 })
                 .doOnError(Throwable.class, e -> {
-                    handleDownloadGenericError(logId, userId, cId, e);
+                    handleDownloadGenericError(logId, conversationUserId, cId, e);
                 });
     }
 
     @Override
-    public Map<String, Object> getLogs(Long userId, Long cId, int tailLines, UserContext userContext) {
-        log.info("[Domain] 获取沙盒日志, userId={}, cId={}, tailLines={}", userId, cId, tailLines);
-        return computerFileClient.getLogs(userId, cId, tailLines);
+    public Map<String, Object> getLogs(Long conversationUserId, Long cId, int tailLines, UserContext userContext) {
+        log.info("[Domain] 获取沙盒日志, conversationUserId={}, cId={}, tailLines={}", conversationUserId, cId, tailLines);
+        return computerFileClient.getLogs(conversationUserId, cId, tailLines);
     }
 
     /**
      * 处理下载文件未找到错误（404）
      */
-    private void handleDownloadFileNotFound(String logId, Long userId, Long cId, WebClientResponseException.NotFound e) {
+    private void handleDownloadFileNotFound(String logId, Long conversationUserId, Long cId, WebClientResponseException.NotFound e) {
         String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
-        log.warn("[Domain] logId={}, 下载文件不存在, userId={}, cId={}, errorDetail={}",
-                logId, userId, cId, errorMessage);
+        log.warn("[Domain] logId={}, 下载文件不存在, conversationUserId={}, cId={}, errorDetail={}",
+                logId, conversationUserId, cId, errorMessage);
 
         log.debug("[Domain] logId={}, 下载404错误详情, status={}, responseBody={}",
                 logId, e.getStatusCode(), e.getResponseBodyAsString());
@@ -174,18 +198,18 @@ public class ComputerFileDomainServiceImpl implements IComputerFileDomainService
     /**
      * 处理下载HTTP错误
      */
-    private void handleDownloadHttpError(String logId, Long userId, Long cId, WebClientResponseException e) {
+    private void handleDownloadHttpError(String logId, Long conversationUserId, Long cId, WebClientResponseException e) {
         String errorMessage = extractErrorMessage(e.getResponseBodyAsString());
-        log.error("[Domain] logId={}, 下载文件HTTP错误, userId={}, cId={}, status={}, errorMessage={}",
-                logId, userId, cId, e.getStatusCode(), errorMessage);
+        log.error("[Domain] logId={}, 下载文件HTTP错误, conversationUserId={}, cId={}, status={}, errorMessage={}",
+                logId, conversationUserId, cId, e.getStatusCode(), errorMessage);
     }
 
     /**
      * 处理下载通用异常
      */
-    private void handleDownloadGenericError(String logId, Long userId, Long cId, Throwable e) {
-        log.error("[Domain] logId={}, 下载文件异常, userId={}, cId={}, errorType={}, errorMessage={}",
-                logId, userId, cId, e.getClass().getSimpleName(), e.getMessage(), e);
+    private void handleDownloadGenericError(String logId, Long conversationUserId, Long cId, Throwable e) {
+        log.error("[Domain] logId={}, 下载文件异常, conversationUserId={}, cId={}, errorType={}, errorMessage={}",
+                logId, conversationUserId, cId, e.getClass().getSimpleName(), e.getMessage(), e);
     }
 }
 

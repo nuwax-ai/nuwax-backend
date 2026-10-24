@@ -22,6 +22,18 @@
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-file-sdk</artifactId>
         </dependency>
+
+        <!-- IM 内部 RPC 契约（接口 + DTO）：实现放在本模块，接口供其他模块按需依赖 -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-im-sdk</artifactId>
+        </dependency>
+
+        <!-- ImRpcProperties 用 @ConfigurationProperties，需要 spring-boot（由 spring-boot-starter 提供） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

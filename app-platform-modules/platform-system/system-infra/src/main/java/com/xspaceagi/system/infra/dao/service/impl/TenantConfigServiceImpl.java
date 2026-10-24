@@ -11,6 +11,7 @@ import com.xspaceagi.system.infra.dao.service.TenantConfigService;
 import com.xspaceagi.system.infra.dao.service.TenantService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.jackson.JsonSerializeUtil;
+import com.xspaceagi.system.spec.license.DeviceFingerprint;
 import com.xspaceagi.system.spec.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.collections4.CollectionUtils;
@@ -580,6 +581,19 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .required(false)
                 .sort(89)
                 .build());
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("openImageCaptcha")
+                .description("是否开启图形验证码")
+                .value(0)
+                .notice("是否开启图形验证码，开启后登录等操作需要输入图形验证码，与阿里云验证码相互独立")
+                .placeholder("1:开启,0:关闭")
+                .category(TenantConfig.ConfigCategory.BaseConfig)
+                .inputType(TenantConfig.InputType.Select)
+                .dataType(TenantConfig.DataType.Number)
+                .minHeight(100)
+                .required(true)
+                .sort(89)
+                .build());
 
         tenantConfigDefaultList.add(TenantConfig.builder()
                 .name("mpAppId")
@@ -643,6 +657,25 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .value("")
                 .notice("登录页底部展示信息，比如备案信息")
                 .placeholder("请输入登录页底部展示信息")
+                .category(TenantConfig.ConfigCategory.BaseConfig)
+                .inputType(TenantConfig.InputType.Textarea)
+                .dataType(TenantConfig.DataType.String)
+                .minHeight(100)
+                .required(false)
+                .sort(99)
+                .build());
+
+        List<String> detect = DeviceFingerprint.detect();
+        String deviceDesc = "请联系官方获取试用或商业授权";
+        if (!detect.isEmpty()) {
+            deviceDesc = deviceDesc + "，当前设备信息：" + detect.get(0);
+        }
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("licenseContent")
+                .description(deviceDesc)
+                .value("")
+                .notice("请联系官方获取试用或商业授权")
+                .placeholder("请输入授权码")
                 .category(TenantConfig.ConfigCategory.BaseConfig)
                 .inputType(TenantConfig.InputType.Textarea)
                 .dataType(TenantConfig.DataType.String)
@@ -808,6 +841,19 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .sort(141)
                 .build());
         tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("docEditAgentId")
+                .description("资料库文档编辑智能体")
+                .value("")
+                .notice("资料库文档编辑智能体")
+                .placeholder("请输入资料库文档编辑智能体Id")
+                .category(TenantConfig.ConfigCategory.AgentSetting)
+                .inputType(TenantConfig.InputType.Input)
+                .dataType(TenantConfig.DataType.Number)
+                .minHeight(100)
+                .required(false)
+                .sort(142)
+                .build());
+        tenantConfigDefaultList.add(TenantConfig.builder()
                 .name("officialPluginIds")
                 .description("官方插件")
                 .value("")
@@ -861,9 +907,9 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .build());
         tenantConfigDefaultList.add(TenantConfig.builder()
                 .name("userComputerDefaultSkillIds")
-                .description("智能体电脑客户端初始化技能列表")
+                .description("默认技能列表")
                 .value("")
-                .notice("智能体电脑客户端初始化技能列表")
+                .notice("智能体电脑默认技能列表技能列表")
                 .placeholder("请输入skillId（在浏览器地址栏查看），多个用英文逗号隔开")
                 .category(TenantConfig.ConfigCategory.AgentSetting)
                 .inputType(TenantConfig.InputType.Textarea)
@@ -871,6 +917,19 @@ public class TenantConfigServiceImpl extends ServiceImpl<TenantConfigMapper, Ten
                 .minHeight(100)
                 .required(false)
                 .sort(148)
+                .build());
+        tenantConfigDefaultList.add(TenantConfig.builder()
+                .name("defaultIMAgentConfig")
+                .description("消息会话默认智能体配置")
+                .value("")
+                .notice("消息会话默认智能体配置")
+                .placeholder("请输入消息会话默认智能体配置，示例 [{\"agentId\": 123, \"defaultMessage\": \"\"}]")
+                .category(TenantConfig.ConfigCategory.AgentSetting)
+                .inputType(TenantConfig.InputType.Textarea)
+                .dataType(TenantConfig.DataType.String)
+                .minHeight(100)
+                .required(false)
+                .sort(149)
                 .build());
         tenantConfigDefaultList.add(TenantConfig.builder()
                 .name("sandboxConfig")

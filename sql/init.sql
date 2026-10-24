@@ -35,7 +35,7 @@ CREATE TABLE `agent_component_config`
     `fallback_msg`  text COMMENT '异常时兜底内容',
     `modified`      datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体组件配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='智能体组件配置';
 
 -- --------------------------------------------------------
 
@@ -72,7 +72,7 @@ CREATE TABLE `agent_config`
     `hide_desktop`          tinyint(1) NOT NULL DEFAULT '0' COMMENT '远程桌面展示控制：0 不隐藏；1 隐藏',
     `type`                  varchar(32) NOT NULL DEFAULT 'ChatBot' COMMENT '智能体类型',
     `expand_page_area`      tinyint(4) NOT NULL DEFAULT '0' COMMENT '默认展开页面区域'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -91,7 +91,7 @@ CREATE TABLE `agent_temp_chat`
     `expire`        datetime             DEFAULT NULL,
     `modified`      datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -108,7 +108,7 @@ CREATE TABLE `card`
     `args`      json                 DEFAULT NULL COMMENT '卡片参数',
     `modified`  datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -140,13 +140,13 @@ CREATE TABLE `config_history`
     `_tenant_id`  bigint(20) NOT NULL,
     `op_user_id`  bigint(20) DEFAULT NULL COMMENT '操作用户',
     `target_id`   bigint(20) NOT NULL COMMENT '目标对象ID',
-    `target_type` enum('Agent','Plugin','Workflow','Skill') NOT NULL COMMENT '目标对象类型',
+    `target_type` VARCHAR(32) NOT NULL COMMENT '目标对象类型',
     `type`        varchar(64) NOT NULL COMMENT '历史记录类型',
     `config`      json                 DEFAULT NULL COMMENT '当时的配置',
     `description` varchar(255)         DEFAULT NULL COMMENT '变更描述',
     `modified`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -164,7 +164,7 @@ CREATE TABLE `content_i18n`
     `content`   mediumtext COMMENT '具体内容',
     `modified`  datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='内容国际化表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='内容国际化表';
 
 -- --------------------------------------------------------
 
@@ -192,7 +192,7 @@ CREATE TABLE `conversation`
     `sandbox_session_id` varchar(64)           DEFAULT NULL COMMENT '保存沙箱agent返回的session_id',
     `modified`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`            datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会话表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='会话表';
 
 -- --------------------------------------------------------
 
@@ -242,7 +242,7 @@ CREATE TABLE `custom_field_definition`
     `yn`                tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效',
     `system_field_flag` tinyint(4) NOT NULL DEFAULT '-1' COMMENT '是否系统字段;1:系统字段;-1:否',
     `field_str_len`     int(11) DEFAULT NULL COMMENT '字符串字段长度,可空,比如字符串,可以指定长度使用'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义字段定义';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='自定义字段定义';
 
 -- --------------------------------------------------------
 
@@ -274,7 +274,7 @@ CREATE TABLE `custom_page_build`
     `modified_id`          bigint(20) DEFAULT NULL COMMENT '最后修改人ID',
     `modified_name`        varchar(64)       DEFAULT NULL COMMENT '最后修改人',
     `yn`                   tinyint(4) NOT NULL DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户项目构建管理';
 
 -- --------------------------------------------------------
 
@@ -309,7 +309,7 @@ CREATE TABLE `custom_page_config`
     `modified_id`           bigint(20) DEFAULT NULL COMMENT '最后修改人ID',
     `modified_name`         varchar(64)           DEFAULT NULL COMMENT '最后修改人',
     `yn`                    tinyint(4) NOT NULL DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户页面配置';
 
 -- --------------------------------------------------------
 
@@ -332,7 +332,7 @@ CREATE TABLE `custom_page_conversation`
     `modified_id`   bigint(20) DEFAULT NULL COMMENT '修改者ID',
     `modified_name` varchar(255)      DEFAULT NULL COMMENT '修改者名称',
     `yn`            int(11) NOT NULL DEFAULT '1' COMMENT '是否有效 1:有效 -1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='自定义页面会话记录表';
 
 -- --------------------------------------------------------
 
@@ -374,7 +374,7 @@ CREATE TABLE `custom_table_definition`
     `modified_id`       bigint(20) DEFAULT NULL COMMENT '最后修改人id',
     `modified_name`     varchar(64)          DEFAULT NULL COMMENT '最后修改人',
     `yn`                tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='自定义数据表定义';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='自定义数据表定义';
 
 -- --------------------------------------------------------
 
@@ -417,7 +417,7 @@ CREATE TABLE `eco_market_client_config`
     `tenant_enabled`    tinyint(4) DEFAULT '0' COMMENT '是否租户自动启用插件,1:租户自动启用;0:非租户自动启用;默认:0',
     `page_zip_url`      varchar(500)          DEFAULT NULL COMMENT '页面压缩包地址',
     `target_sub_type`   varchar(32)           DEFAULT NULL COMMENT '子类型'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生态市场配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='生态市场配置';
 
 -- --------------------------------------------------------
 
@@ -460,7 +460,7 @@ CREATE TABLE `eco_market_client_publish_config`
     `tenant_enabled`    tinyint(4) DEFAULT '0' COMMENT '是否租户自动启用插件,1:租户自动启用;0:非租户自动启用;默认:0',
     `page_zip_url`      varchar(500)          DEFAULT NULL COMMENT '页面压缩包地址',
     `target_sub_type`   varchar(32)           DEFAULT NULL COMMENT '子类型'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生态市场,客户端,已发布配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='生态市场,客户端,已发布配置';
 
 -- --------------------------------------------------------
 
@@ -481,7 +481,7 @@ CREATE TABLE `eco_market_client_secret`
     `creator_name`  varchar(64)           DEFAULT NULL COMMENT '创建人',
     `modified`      datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`            tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='生态市场,客户端端配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='生态市场,客户端端配置';
 
 -- --------------------------------------------------------
 
@@ -513,7 +513,7 @@ CREATE TABLE `knowledge_config`
     `fulltext_sync_status`   tinyint(4) DEFAULT '0' COMMENT '全文检索同步状态: 0-未同步, 1-同步中, 2-已同步, -1-同步失败',
     `fulltext_sync_time`     datetime             DEFAULT NULL COMMENT '全文检索最后同步时间',
     `fulltext_segment_count` bigint(20) DEFAULT '0' COMMENT '已同步到全文检索的分段数量'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='知识库表';
 
 -- --------------------------------------------------------
 
@@ -543,7 +543,7 @@ CREATE TABLE `knowledge_document`
     `file_content`  longtext COMMENT '自定义文本内容,自定义添加会有',
     `data_type`     tinyint(4) NOT NULL DEFAULT '1' COMMENT '文件类型,1:URL访问文件;2:自定义文本内容',
     `file_size`     bigint(20) DEFAULT '0' COMMENT '件大小,单位字节byte'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库-原始文档表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='知识库-原始文档表';
 
 -- --------------------------------------------------------
 
@@ -569,7 +569,7 @@ CREATE TABLE `knowledge_qa_segment`
     `modified_id`   bigint(20) DEFAULT NULL COMMENT '最后修改人id',
     `modified_name` varchar(64)       DEFAULT NULL COMMENT '最后修改人',
     `yn`            tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='问答表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='问答表';
 
 -- --------------------------------------------------------
 
@@ -596,7 +596,7 @@ CREATE TABLE `knowledge_raw_segment`
     `qa_status`            tinyint(4) DEFAULT '-1' COMMENT '-1:待生成问答;1:已生成问答;',
     `fulltext_sync_status` tinyint(4) DEFAULT '0' COMMENT '全文检索同步状态: 0-未同步, 1-已同步',
     `fulltext_sync_time`   datetime          DEFAULT NULL COMMENT '全文检索同步时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='原始分段（也称chunk）表，这些信息待生成问答后可以不再保存';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='原始分段（也称chunk）表，这些信息待生成问答后可以不再保存';
 
 -- --------------------------------------------------------
 
@@ -623,7 +623,7 @@ CREATE TABLE `knowledge_task`
     `creator_name`  varchar(64)           DEFAULT NULL COMMENT '创建人',
     `modified`      datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`            tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库-定时任务';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='知识库-定时任务';
 
 -- --------------------------------------------------------
 
@@ -650,7 +650,7 @@ CREATE TABLE `knowledge_task_history`
     `creator_name`  varchar(64)           DEFAULT NULL COMMENT '创建人',
     `modified`      datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`            tinyint(4) DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库-定时任务-历史';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='知识库-定时任务-历史';
 
 -- --------------------------------------------------------
 
@@ -677,7 +677,7 @@ CREATE TABLE `mcp_config`
     `deployed`        datetime             DEFAULT NULL COMMENT '部署时间',
     `modified`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`         datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -691,14 +691,14 @@ CREATE TABLE `memory_unit`
     `_tenant_id`   bigint(20) NOT NULL COMMENT '租户ID',
     `user_id`      bigint(20) NOT NULL COMMENT '用户ID',
     `agent_id`     bigint(20) DEFAULT NULL COMMENT '代理ID',
-    `category`     varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '一级分类',
-    `sub_category` varchar(100) COLLATE utf8mb4_unicode_ci         DEFAULT NULL COMMENT '二级分类',
+    `category`     varchar(50) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '一级分类',
+    `sub_category` varchar(100) COLLATE utf8mb4_0900_ai_ci         DEFAULT NULL COMMENT '二级分类',
     `content_json` json                                            DEFAULT NULL COMMENT '内容JSON',
     `is_sensitive` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否敏感信息(0:否 1:是)',
-    `status`       enum('active','archived','deleted') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active' COMMENT '状态',
+    `status`       enum('active','archived','deleted') COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'active' COMMENT '状态',
     `created`      datetime                               NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`     datetime                                        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='记忆单元表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='记忆单元表';
 
 -- --------------------------------------------------------
 
@@ -712,10 +712,10 @@ CREATE TABLE `memory_unit_tag`
     `_tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
     `user_id`    bigint(20) NOT NULL COMMENT '用户ID',
     `memory_id`  bigint(20) NOT NULL COMMENT '记忆ID',
-    `tag_name`   varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签名称',
+    `tag_name`   varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '标签名称',
     `created`    datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`   datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='记忆单元标签表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='记忆单元标签表';
 
 -- --------------------------------------------------------
 
@@ -748,7 +748,7 @@ CREATE TABLE `model_config`
     `created`            datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `enabled`            tinyint(4) DEFAULT NULL COMMENT '启用状态',
     `access_control`     tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否管控'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -765,7 +765,7 @@ CREATE TABLE `notify_message`
     `content`    mediumtext  NOT NULL COMMENT '消息内容',
     `modified`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -782,7 +782,37 @@ CREATE TABLE `notify_message_user`
     `read_status` enum('Read','Unread') NOT NULL DEFAULT 'Unread' COMMENT '已读状态',
     `modified`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`     datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `oauth2_scope_apply`
+--
+
+CREATE TABLE `oauth2_scope_apply`
+(
+    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`    bigint(20) NOT NULL COMMENT '商户ID',
+    `project_id`    bigint(20) NOT NULL COMMENT '统一项目ID（user_project 主键）',
+    `project_type`  varchar(16) NOT NULL COMMENT '项目类型：ThirdApp / UserApp',
+    `apply_user_id` bigint(20) NOT NULL COMMENT '申请人用户ID',
+    `old_scopes`    varchar(512) DEFAULT NULL COMMENT '申请时项目已生效的 scope（逗号分隔）',
+    `scopes`        varchar(512) NOT NULL COMMENT '申请的目标 scope（逗号分隔）',
+    `status`        varchar(16) NOT NULL DEFAULT 'Pending' COMMENT '状态：Pending 待审核 / Approved 已通过 / Rejected 已拒绝',
+    `reviewer_id`   bigint(20) DEFAULT NULL COMMENT '审核人用户ID',
+    `reject_reason` varchar(512) DEFAULT NULL COMMENT '拒绝原因',
+    `reviewed_at`   datetime DEFAULT NULL COMMENT '审核时间',
+    `created`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`      datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    -- pending_slot：仅 Pending 行等于 project_id，其余为 NULL——配合唯一键在数据库层保证
+    -- 「同一项目同一时刻至多一条待审核申请」，并发提交的第二条会被唯一键拒绝
+    `pending_slot`  bigint(20) GENERATED ALWAYS AS (IF(`status` = 'Pending', `project_id`, NULL)) STORED,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_pending_slot` (`pending_slot`),
+    KEY `idx_tenant_status` (`_tenant_id`, `status`),
+    KEY `idx_tenant_project` (`_tenant_id`, `project_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT = 'OAuth2 scope 范围变更申请';
 
 -- --------------------------------------------------------
 
@@ -814,7 +844,7 @@ CREATE TABLE `pf_retry_data`
     `yn`              tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效',
     `ext`             longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT '扩展信息',
     `_tenant_id`      bigint(20) NOT NULL DEFAULT '-1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='重试上报数据';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='重试上报数据';
 
 -- --------------------------------------------------------
 
@@ -837,7 +867,7 @@ CREATE TABLE `plugin_config`
     `config`         json                 DEFAULT NULL COMMENT '插件配置',
     `modified`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -852,7 +882,7 @@ CREATE TABLE `published`
     `space_id`        bigint(20) DEFAULT NULL COMMENT '空间ID',
     `user_id`         bigint(20) DEFAULT NULL COMMENT '发布者ID',
     `target_id`       bigint(20) NOT NULL COMMENT '发布目标对象ID',
-    `target_type`     enum('Agent','Plugin','Workflow','Skill') NOT NULL COMMENT '发布类型',
+    `target_type`     VARCHAR(32) NOT NULL COMMENT '发布类型',
     `target_sub_type` varchar(32) NOT NULL DEFAULT 'Single',
     `name`            varchar(64) NOT NULL COMMENT '发布名称',
     `description`     text COMMENT '描述信息',
@@ -867,7 +897,7 @@ CREATE TABLE `published`
     `only_template`   tinyint(4) NOT NULL DEFAULT '0' COMMENT '仅展示模板',
     `modified`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`         datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发布';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='发布';
 
 -- --------------------------------------------------------
 
@@ -880,12 +910,12 @@ CREATE TABLE `published_statistics`
     `id`          bigint(20) NOT NULL,
     `_tenant_id`  bigint(20) NOT NULL DEFAULT '-1' COMMENT '商户ID',
     `target_id`   bigint(20) NOT NULL COMMENT '目标统计对象ID',
-    `target_type` enum('Agent','Plugin','Workflow','Skill') NOT NULL COMMENT '目标对象类型',
+    `target_type` VARCHAR(32) NOT NULL COMMENT '目标对象类型',
     `name`        varchar(32) NOT NULL COMMENT '统计名称',
     `value`       bigint(20) NOT NULL DEFAULT '0' COMMENT '统计值',
     `modified`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -899,7 +929,7 @@ CREATE TABLE `publish_apply`
     `_tenant_id`      bigint(20) NOT NULL,
     `space_id`        bigint(20) DEFAULT NULL COMMENT '空间ID',
     `apply_user_id`   bigint(20) NOT NULL COMMENT '申请用户ID',
-    `target_type`     enum('Agent','Plugin','Workflow','Skill') NOT NULL COMMENT '审核目标类型',
+    `target_type`     VARCHAR(32) NOT NULL COMMENT '审核目标类型',
     `target_id`       bigint(20) NOT NULL,
     `name`            varchar(64) NOT NULL COMMENT '发布名称',
     `description`     text COMMENT '描述信息',
@@ -915,7 +945,7 @@ CREATE TABLE `publish_apply`
     `modified`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`         datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `target_sub_type` varchar(32)          DEFAULT NULL COMMENT '子类型'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -927,11 +957,11 @@ CREATE TABLE `sandbox_config`
 (
     `id`           bigint(20) NOT NULL COMMENT '主键ID',
     `_tenant_id`   bigint(20) NOT NULL COMMENT '租户id',
-    `scope`        varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置范围：global-全局配置 user-个人配置',
+    `scope`        varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '配置范围：global-全局配置 user-个人配置',
     `user_id`      bigint(20) DEFAULT NULL COMMENT '用户ID（scope为user时必填）',
     `agent_id`     bigint(20) DEFAULT NULL COMMENT '智能体电脑绑定的agentId',
-    `name`         varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置名称（用于界面显示）',
-    `config_key`   varchar(100) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '唯一标识',
+    `name`         varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '配置名称（用于界面显示）',
+    `config_key`   varchar(100) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '唯一标识',
     `config_value` json                                    NOT NULL COMMENT '配置值（JSON格式存储）',
     `server_info`  json                                             DEFAULT NULL COMMENT '内部访问信息',
     `description`  text COMMENT '描述信息',
@@ -939,7 +969,7 @@ CREATE TABLE `sandbox_config`
     `max_agent`    int(11) NOT NULL DEFAULT '5' COMMENT '最大可以开多少个agent并行执行（个人客户端有效）',
     `created`      timestamp                               NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`     timestamp                               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -953,12 +983,12 @@ CREATE TABLE `sandbox_proxy`
     `_tenant_id`   bigint(20) NOT NULL DEFAULT '1' COMMENT '租户ID',
     `user_id`      bigint(20) NOT NULL COMMENT '用户ID',
     `sandbox_id`   bigint(20) NOT NULL COMMENT '沙盒ID',
-    `proxy_key`    varchar(64) COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '代理键',
-    `backend_host` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '后端主机地址',
+    `proxy_key`    varchar(64) COLLATE utf8mb4_0900_ai_ci  NOT NULL COMMENT '代理键',
+    `backend_host` varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '后端主机地址',
     `backend_port` int(11) NOT NULL COMMENT '后端端口',
     `modified`     datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`      datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='临时代理配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='临时代理配置表';
 
 -- --------------------------------------------------------
 
@@ -987,7 +1017,7 @@ CREATE TABLE `schedule_task`
     `error`            text COMMENT '错误信息',
     `modified`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务调度表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='任务调度表';
 
 -- --------------------------------------------------------
 
@@ -998,21 +1028,21 @@ CREATE TABLE `schedule_task`
 CREATE TABLE `skill_config`
 (
     `id`             bigint(20) NOT NULL COMMENT '主键ID',
-    `name`           varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '技能名称',
-    `description`    text COLLATE utf8mb4_unicode_ci COMMENT '技能描述',
-    `icon`           varchar(500) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '技能图标',
-    `files`          longtext COLLATE utf8mb4_unicode_ci COMMENT '内容',
-    `publish_status` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Developing' COMMENT '发布状态',
+    `name`           varchar(255) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '技能名称',
+    `description`    text COLLATE utf8mb4_0900_ai_ci COMMENT '技能描述',
+    `icon`           varchar(500) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '技能图标',
+    `files`          longtext COLLATE utf8mb4_0900_ai_ci COMMENT '内容',
+    `publish_status` varchar(100) COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'Developing' COMMENT '发布状态',
     `_tenant_id`     bigint(20) NOT NULL COMMENT '租户ID',
     `space_id`       bigint(20) DEFAULT NULL COMMENT '空间ID',
     `created`        datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `creator_id`     bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator_name`   varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '创建人',
+    `creator_name`   varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '创建人',
     `modified`       datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `modified_id`    bigint(20) DEFAULT NULL COMMENT '最后修改人ID',
-    `modified_name`  varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '最后修改人',
+    `modified_name`  varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '最后修改人',
     `yn`             tinyint(4) NOT NULL DEFAULT '1' COMMENT '逻辑标记,1:有效;-1:无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='技能配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='技能配置';
 
 -- --------------------------------------------------------
 
@@ -1034,7 +1064,7 @@ CREATE TABLE `space`
     `yn`              tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除，1为删除',
     `modified`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
     `created`         datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='团队空间';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='团队空间';
 
 -- --------------------------------------------------------
 
@@ -1051,7 +1081,7 @@ CREATE TABLE `space_user`
     `role`       enum('Owner','Admin','User') NOT NULL DEFAULT 'User' COMMENT '空间角色',
     `modified`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
     `created`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='空间人员';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='空间人员';
 
 -- --------------------------------------------------------
 
@@ -1068,7 +1098,7 @@ CREATE TABLE `system_config`
     `input_type`  varchar(16)           DEFAULT NULL,
     `description` varchar(255) NOT NULL,
     `created`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统全局配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统全局配置';
 
 -- --------------------------------------------------------
 
@@ -1085,6 +1115,8 @@ CREATE TABLE `sys_data_permission`
     `max_space_count`                 int(11) DEFAULT NULL COMMENT '可创建工作空间数量，-1 表示不限制',
     `max_agent_count`                 int(11) DEFAULT NULL COMMENT '可创建智能体数量，-1 表示不限制',
     `max_page_app_count`              int(11) DEFAULT NULL COMMENT '可创建网页应用数量，-1 表示不限制',
+    `max_user_app_count`              int(11) DEFAULT NULL COMMENT '可创建全栈应用数量，-1 表示不限制',
+    `user_app_idle_timeout_seconds`   int(11) DEFAULT NULL COMMENT '全栈应用闲置回收超时(秒)，-1 表示不限制（沿用下游默认），0 表示不回收（常驻）',
     `max_knowledge_count`             int(11) DEFAULT NULL COMMENT '可创建知识库数量，-1 表示不限制',
     `knowledge_storage_limit_gb`      decimal(10, 3)                         DEFAULT NULL COMMENT '知识库存储空间上限(GB)，-1 表示不限制',
     `max_data_table_count`            int(11) DEFAULT NULL COMMENT '可创建数据表数量，-1 表示不限制',
@@ -1100,13 +1132,13 @@ CREATE TABLE `sys_data_permission`
     `page_daily_prompt_limit`         int(11) DEFAULT NULL COMMENT '页面应用每天对话次数，-1表示不限制',
     `_tenant_id`                      bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`                      bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`                         varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`                         varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`                         datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`                     bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`                        varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`                        varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`                        datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`                              tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据权限';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据权限';
 
 -- --------------------------------------------------------
 
@@ -1118,22 +1150,22 @@ CREATE TABLE `sys_group`
 (
     `id`             bigint(20) NOT NULL COMMENT 'ID',
     `parent_id`      bigint(20) DEFAULT NULL COMMENT '父节点 ID',
-    `code`           varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '编码',
-    `name`           varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '名称',
-    `description`    varchar(512) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '描述',
+    `code`           varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '编码',
+    `name`           varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '名称',
+    `description`    varchar(512) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '描述',
     `max_user_count` int(11) DEFAULT NULL COMMENT '最大用户数',
     `source`         tinyint(4) NOT NULL COMMENT '来源：1-系统内置，2-用户自定义，对应 SourceEnum',
     `status`         tinyint(4) NOT NULL COMMENT '状态：1-启用，0-禁用',
     `sort_index`     int(11) DEFAULT NULL COMMENT '排序',
     `_tenant_id`     bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`     bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`        varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '创建人',
+    `creator`        varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '创建人',
     `created`        datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`    bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`       varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '修改人',
+    `modifier`       varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '修改人',
     `modified`       datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`             tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户组';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户组';
 
 -- --------------------------------------------------------
 
@@ -1150,13 +1182,13 @@ CREATE TABLE `sys_group_menu`
     `resource_tree_json` json                                   DEFAULT NULL COMMENT '资源树JSON（包含每个节点的绑定类型）',
     `_tenant_id`         bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`         bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`            varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`            varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`            datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`        bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`           varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`           varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`           datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`                 tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户组和菜单关联';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户组和菜单关联';
 
 -- --------------------------------------------------------
 
@@ -1168,24 +1200,24 @@ CREATE TABLE `sys_menu`
 (
     `id`          bigint(20) NOT NULL COMMENT '菜单ID',
     `parent_id`   bigint(20) DEFAULT NULL COMMENT '父级ID',
-    `code`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源码，唯一标识',
-    `name`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单名称',
-    `description` varchar(512) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '描述',
+    `code`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '资源码，唯一标识',
+    `name`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '菜单名称',
+    `description` varchar(512) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '描述',
     `source`      tinyint(4) NOT NULL COMMENT '来源，对应 SourceEnum',
-    `path`        varchar(500) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '访问路径/路由地址',
+    `path`        varchar(500) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '访问路径/路由地址',
     `open_type`   tinyint(4) DEFAULT '1' COMMENT '打开方式',
-    `icon`        varchar(500) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '图标',
+    `icon`        varchar(500) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '图标',
     `sort_index`  int(11) DEFAULT NULL COMMENT '排序',
     `status`      tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：1-启用，0-禁用',
     `_tenant_id`  bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`  bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`     varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '创建人',
+    `creator`     varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '创建人',
     `created`     datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id` bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`    varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '修改人',
+    `modifier`    varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '修改人',
     `modified`    datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`          tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='菜单';
 
 -- --------------------------------------------------------
 
@@ -1201,13 +1233,13 @@ CREATE TABLE `sys_menu_resource`
     `resource_bind_type` tinyint(4) NOT NULL DEFAULT '0' COMMENT '资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定',
     `_tenant_id`         bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`         bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`            varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`            varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`            datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`        bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`           varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`           varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`           datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`                 tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单资源关联';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='菜单资源关联';
 
 -- --------------------------------------------------------
 
@@ -1233,7 +1265,7 @@ CREATE TABLE `sys_operator_log`
     `modified`        timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
     `_tenant_id`      bigint(20) NOT NULL COMMENT '租户ID',
     `yn`              tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志';
 
 -- --------------------------------------------------------
 
@@ -1245,24 +1277,24 @@ CREATE TABLE `sys_resource`
 (
     `id`          bigint(20) NOT NULL COMMENT '资源ID',
     `parent_id`   bigint(20) DEFAULT NULL COMMENT '父级ID',
-    `code`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '编码',
-    `name`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '名称',
-    `description` varchar(512) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '描述',
+    `code`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '编码',
+    `name`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '名称',
+    `description` varchar(512) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '描述',
     `source`      tinyint(4) NOT NULL COMMENT '来源，对应 SourceEnum',
     `type`        tinyint(4) NOT NULL COMMENT '类型，对应 ResourceTypeEnum',
-    `path`        varchar(500) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '访问路径',
-    `icon`        varchar(500) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '图标',
+    `path`        varchar(500) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '访问路径',
+    `icon`        varchar(500) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '图标',
     `sort_index`  int(11) DEFAULT NULL COMMENT '排序',
     `status`      tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态：1-启用，0-禁用',
     `_tenant_id`  bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`  bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`     varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '创建人',
+    `creator`     varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '创建人',
     `created`     datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id` bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`    varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '修改人',
+    `modifier`    varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '修改人',
     `modified`    datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`          tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资源';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='资源';
 
 -- --------------------------------------------------------
 
@@ -1273,21 +1305,21 @@ CREATE TABLE `sys_resource`
 CREATE TABLE `sys_role`
 (
     `id`          bigint(20) NOT NULL COMMENT '角色ID',
-    `code`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '编码',
-    `name`        varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '名称',
-    `description` varchar(512) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '描述',
+    `code`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '编码',
+    `name`        varchar(128) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '名称',
+    `description` varchar(512) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '描述',
     `source`      tinyint(4) NOT NULL COMMENT '来源，对应 SourceEnum',
     `status`      tinyint(4) NOT NULL COMMENT '状态：1-启用，0-禁用',
     `sort_index`  int(11) DEFAULT NULL COMMENT '排序',
     `_tenant_id`  bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`  bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`     varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '创建人',
+    `creator`     varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '创建人',
     `created`     datetime                                NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id` bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`    varchar(64) COLLATE utf8mb4_unicode_ci           DEFAULT NULL COMMENT '修改人',
+    `modifier`    varchar(64) COLLATE utf8mb4_0900_ai_ci           DEFAULT NULL COMMENT '修改人',
     `modified`    datetime                                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`          tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色';
 
 -- --------------------------------------------------------
 
@@ -1304,13 +1336,13 @@ CREATE TABLE `sys_role_menu`
     `resource_tree_json` json                                   DEFAULT NULL COMMENT '资源树JSON（包含每个节点的绑定类型）',
     `_tenant_id`         bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`         bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`            varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`            varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`            datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`        bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`           varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`           varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`           datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`                 tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色和菜单关联';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色和菜单关联';
 
 -- --------------------------------------------------------
 
@@ -1327,13 +1359,13 @@ CREATE TABLE `sys_subject_permission`
     `target_id`    bigint(20) NOT NULL COMMENT '目标ID（角色/用户组ID）',
     `_tenant_id`   bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`   bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`      varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`      varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`      datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id`  bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`     varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`     varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`     datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`           tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主体访问权限';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='主体访问权限';
 
 -- --------------------------------------------------------
 
@@ -1348,13 +1380,13 @@ CREATE TABLE `sys_user_group`
     `group_id`    bigint(20) NOT NULL COMMENT '组ID',
     `_tenant_id`  bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`  bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`     varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`     varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`     datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id` bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`    varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`    varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`    datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`          tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户和组关联';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户和组关联';
 
 -- --------------------------------------------------------
 
@@ -1369,13 +1401,13 @@ CREATE TABLE `sys_user_role`
     `role_id`     bigint(20) NOT NULL COMMENT '角色ID',
     `_tenant_id`  bigint(20) NOT NULL COMMENT '租户ID',
     `creator_id`  bigint(20) DEFAULT NULL COMMENT '创建人ID',
-    `creator`     varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建人',
+    `creator`     varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '创建人',
     `created`     datetime NOT NULL                      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modifier_id` bigint(20) DEFAULT NULL COMMENT '修改人ID',
-    `modifier`    varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '修改人',
+    `modifier`    varchar(64) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '修改人',
     `modified`    datetime                               DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `yn`          tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效；1：有效，-1：无效'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户和角色关联';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户和角色关联';
 
 -- --------------------------------------------------------
 
@@ -1393,7 +1425,7 @@ CREATE TABLE `tenant`
     `version`     varchar(64)  NOT NULL DEFAULT '1.0.1',
     `modified`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1417,7 +1449,7 @@ CREATE TABLE `tenant_config`
     `required`    varchar(8)   NOT NULL DEFAULT 'true',
     `sort`        int(10) NOT NULL DEFAULT '0',
     `created`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1436,7 +1468,7 @@ CREATE TABLE `tool`
     `dto_clazz`     varchar(255) NOT NULL DEFAULT '' COMMENT 'DTO类',
     `modified`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1461,7 +1493,7 @@ CREATE TABLE `user`
     `last_login_time` datetime              DEFAULT NULL COMMENT '最后登录时间',
     `created`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`        datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';
 
 -- --------------------------------------------------------
 
@@ -1480,7 +1512,7 @@ CREATE TABLE `user_access_key`
     `config`      json                 DEFAULT NULL COMMENT '其他配置',
     `modified`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1498,7 +1530,7 @@ CREATE TABLE `user_agent_sort`
     `agent_sort_config` json                 DEFAULT NULL COMMENT '分类下智能体排序配置',
     `modified`          datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`           datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1511,13 +1543,13 @@ CREATE TABLE `user_metric`
     `id`          bigint(20) NOT NULL,
     `_tenant_id`  bigint(20) DEFAULT NULL,
     `user_id`     bigint(20) NOT NULL COMMENT '用户ID',
-    `biz_type`    varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务类型',
-    `period_type` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '时段类型: YEAR, MONTH, DAY, HOUR',
-    `period`      varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '时段值: 2026, 202601, 20260129, 2026012912',
+    `biz_type`    varchar(64) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '业务类型',
+    `period_type` varchar(16) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '时段类型: YEAR, MONTH, DAY, HOUR',
+    `period`      varchar(16) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '时段值: 2026, 202601, 20260129, 2026012912',
     `value`       decimal(20, 2)                         NOT NULL DEFAULT '0.00' COMMENT '计量值',
     `modified`    datetime                                        DEFAULT NULL,
     `created`     datetime                                        DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1530,11 +1562,11 @@ CREATE TABLE `user_req`
     `id`         bigint(20) NOT NULL COMMENT '主键ID',
     `_tenant_id` bigint(20) NOT NULL DEFAULT '1' COMMENT '商户ID',
     `user_id`    bigint(20) NOT NULL COMMENT '用户ID',
-    `dt`         varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '日期 YYYYMMDD',
+    `dt`         varchar(16) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '日期 YYYYMMDD',
     `req_count`  int(11) NOT NULL DEFAULT '1' COMMENT '请求次数',
     `created`    datetime                               NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`   datetime                                        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户每日请求统计表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户每日请求统计表';
 
 -- --------------------------------------------------------
 
@@ -1550,7 +1582,7 @@ CREATE TABLE `user_request`
     `uri`        varchar(5000)     DEFAULT NULL COMMENT '请求地址',
     `created`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`   datetime          DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请求记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='请求记录表';
 
 -- --------------------------------------------------------
 
@@ -1561,16 +1593,16 @@ CREATE TABLE `user_request`
 CREATE TABLE `user_share`
 (
     `id`         bigint(20) NOT NULL,
-    `share_key`  varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '唯一key',
+    `share_key`  varchar(64) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '唯一key',
     `_tenant_id` bigint(20) NOT NULL COMMENT '租户id',
     `user_id`    bigint(20) NOT NULL COMMENT '用户id',
-    `type`       varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分享类型',
-    `target_id`  varchar(64) COLLATE utf8mb4_unicode_ci          DEFAULT NULL COMMENT '类型可能存在的id',
+    `type`       varchar(64) COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '分享类型',
+    `target_id`  varchar(64) COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT '类型可能存在的id',
     `content`    json                                            DEFAULT NULL COMMENT '分享内容',
     `expire`     datetime                                        DEFAULT NULL COMMENT '过期时间',
     `modified`   datetime                               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`    datetime                               NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1589,7 +1621,7 @@ CREATE TABLE `user_target_relation`
     `extra`       json                 DEFAULT NULL,
     `modified`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与目标对象关系表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户与目标对象关系表';
 
 -- --------------------------------------------------------
 
@@ -1612,7 +1644,7 @@ CREATE TABLE `workflow_config`
     `ext`            json                  DEFAULT NULL,
     `modified`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`        datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1637,7 +1669,7 @@ CREATE TABLE `workflow_node_config`
     `inner_end_node_id`   bigint(20) DEFAULT NULL COMMENT '循环节点内部结束节点',
     `modified`            datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created`             datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体组件配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='智能体组件配置';
 
 --
 -- 转储表的索引
@@ -1680,7 +1712,7 @@ ALTER TABLE `category`
 --
 ALTER TABLE `config_history`
     ADD PRIMARY KEY (`id`),
-  ADD KEY `target_id` (`target_id`);
+  ADD KEY `target_id` (`target_type`, `target_id`);
 
 --
 -- 表的索引 `content_i18n`
@@ -1884,7 +1916,7 @@ ALTER TABLE `plugin_config`
 --
 ALTER TABLE `published`
     ADD PRIMARY KEY (`id`),
-  ADD KEY `target_id` (`target_id`);
+  ADD KEY `idx_target_id` (`target_id`);
 
 --
 -- 表的索引 `published_statistics`
@@ -2592,7 +2624,7 @@ CREATE TABLE `im_channel_config`
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_channel_target` (`channel`,`target_type`,`target_id`,`yn`),
     KEY             `idx_tenant_space_channel_target` (`_tenant_id`,`space_id`,`channel`,`target_type`)
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COMMENT='IM 渠道配置';
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='IM 渠道配置';
 CREATE TABLE `im_session`
 (
     `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2609,7 +2641,7 @@ CREATE TABLE `im_session`
     `update_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_channel_target_session_key_agent_id` (`channel`,`target_type`,`session_key`,`agent_id`,`_tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=70 DEFAULT CHARSET=utf8mb4 COMMENT='IM会话表';
+) ENGINE=InnoDB AUTO_INCREMENT=70 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='IM会话表';
 
 
 ALTER TABLE `user_access_key`
@@ -2645,7 +2677,7 @@ CREATE TABLE `i18n_lang`
     `created`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
     KEY          `idx_tenant` (`_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='语言表';
 
 -- i18n_config
 CREATE TABLE `i18n_config`
@@ -2664,7 +2696,7 @@ CREATE TABLE `i18n_config`
     `created`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_lang_key` (`_tenant_id`, `lang`, `type`, `side`, `field_key`, `module`, `data_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='多语言表';
 
 -- 数据库架构差异SQL
 -- 生成时间: 2026-05-08 10:33:10 UTC
@@ -2695,7 +2727,7 @@ CREATE TABLE `file_record`
     KEY              `idx_storage_type` (`storage_type`),
     KEY              `idx_target` (`target_type`, `target_id`),
     KEY              `idx_tenant_user` (`_tenant_id`, `user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文件记录表';
 
 -- 修改表: publish_apply
 ALTER TABLE `publish_apply`
@@ -2718,6 +2750,8 @@ ALTER TABLE `custom_page_conversation`
     ADD COLUMN `role` VARCHAR(32) COMMENT '消息发送者角色';
 ALTER TABLE `custom_page_conversation`
     ADD COLUMN `request_id` VARCHAR(64) COMMENT '请求ID';
+ALTER TABLE `custom_page_conversation`
+    ADD KEY `idx_project_request_role` (`project_id`, `request_id`, `role`);
 
 -- 修改表: published
 ALTER TABLE `published`
@@ -2730,6 +2764,10 @@ ALTER TABLE `sandbox_config`
     ADD COLUMN `bind_info` JSON COMMENT '关系绑定';
 ALTER TABLE `sandbox_config`
     ADD COLUMN `isolation` VARCHAR(16) COMMENT '隔离策略，仅页面开发有效';
+ALTER TABLE `sandbox_config`
+    ADD COLUMN `device_id` VARCHAR(128) DEFAULT NULL COMMENT '客户端设备ID（前端真实 deviceId）' AFTER `user_id`;
+ALTER TABLE `sandbox_config`
+    ADD UNIQUE KEY `uk_user_device` (`user_id`, `device_id`);
 
 -- 修改表: skill_config
 ALTER TABLE `skill_config`
@@ -2757,7 +2795,7 @@ CREATE TABLE `bill_withdraw_application`
     KEY             `idx_status` (`status`),
     KEY             `idx_tenant_id` (`_tenant_id`),
     KEY             `idx_user_id` (`user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='提现申请表';
 
 -- Added table: pay_developer_account
 CREATE TABLE `pay_developer_account`
@@ -2779,7 +2817,7 @@ CREATE TABLE `pay_developer_account`
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tenant_user` (`_tenant_id`, `user_id`),
     KEY                       `idx_user` (`user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付-开发者账户信息';
 
 -- Added table: subscription_plan
 CREATE TABLE `subscription_plan`
@@ -2805,7 +2843,7 @@ CREATE TABLE `subscription_plan`
     `modified`         DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY                `idx_plan_biz` (`biz_type`, `_tenant_id`, `biz_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订阅计划表';
 
 -- Added table: model_price_tier
 CREATE TABLE `model_price_tier`
@@ -2821,7 +2859,7 @@ CREATE TABLE `model_price_tier`
     `modified`       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_model_context` (`model_id`, `context_length`, `_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模型阶梯价格配置';
 
 -- Added table: user_credit
 CREATE TABLE `user_credit`
@@ -2848,7 +2886,7 @@ CREATE TABLE `user_credit`
     KEY             `idx_user_expire` (`user_id`, `expire_time`),
     KEY             `idx_user_id` (`user_id`),
     KEY             `idx_user_type` (`user_id`, `credit_type`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户积分表';
 
 -- Added table: credit_package
 CREATE TABLE `credit_package`
@@ -2865,7 +2903,7 @@ CREATE TABLE `credit_package`
     `created`       DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modified`      DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='积分套餐表';
 
 -- Added table: bill_resource_stat
 CREATE TABLE `bill_resource_stat`
@@ -2891,7 +2929,7 @@ CREATE TABLE `bill_resource_stat`
     KEY                  `idx_dt` (`dt`),
     KEY                  `idx_target` (`target_type`, `target_id`),
     KEY                  `idx_tenant_user_dt` (`_tenant_id`, `user_id`, `dt`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='资源统计表';
 
 -- Added table: bill_order
 CREATE TABLE `bill_order`
@@ -2913,7 +2951,7 @@ CREATE TABLE `bill_order`
     KEY            `idx_pay_status` (`_tenant_id`, `pay_status`),
     KEY            `idx_tenant_id` (`_tenant_id`, `biz_type`),
     KEY            `idx_user_id` (`user_id`, `biz_type`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订单表';
 
 -- Added table: bill_daily_revenue
 CREATE TABLE `bill_daily_revenue`
@@ -2930,7 +2968,7 @@ CREATE TABLE `bill_daily_revenue`
     UNIQUE KEY `uk_user_dt` (`_tenant_id`, `user_id`, `dt`),
     KEY          `idx_status` (`status`),
     KEY          `idx_user_id` (`user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='每日收益表';
 
 -- Added table: pricing_config
 CREATE TABLE `pricing_config`
@@ -2948,7 +2986,7 @@ CREATE TABLE `pricing_config`
     `modified`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_target` (`target_type`, `target_id`, `_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务定价配置';
 
 -- Added table: bill_withdraw_revenue_ref
 CREATE TABLE `bill_withdraw_revenue_ref`
@@ -2960,7 +2998,7 @@ CREATE TABLE `bill_withdraw_revenue_ref`
     PRIMARY KEY (`id`),
     KEY              `idx_application_id` (`application_id`),
     KEY              `idx_revenue_id` (`revenue_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='提现-收益关联表';
 
 -- Added table: bill_withdraw_config
 CREATE TABLE `bill_withdraw_config`
@@ -2975,7 +3013,7 @@ CREATE TABLE `bill_withdraw_config`
     `modified`      DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_tenant_id` (`_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='提现配置表';
 
 -- Added table: credit_flow
 CREATE TABLE `credit_flow`
@@ -2997,7 +3035,7 @@ CREATE TABLE `credit_flow`
     KEY              `idx_biz_no` (`biz_no`),
     KEY              `idx_created` (`created`),
     KEY              `idx_user_id` (`user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='积分流水表';
 
 -- Added table: bill_order_item
 CREATE TABLE `bill_order_item`
@@ -3015,7 +3053,7 @@ CREATE TABLE `bill_order_item`
     `modified`    DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     KEY           `idx_order_id` (`order_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订单明细表';
 
 -- Added table: trial_record
 CREATE TABLE `trial_record`
@@ -3030,7 +3068,7 @@ CREATE TABLE `trial_record`
     `modified`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_target` (`user_id`, `target_type`, `target_id`, `_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='试用次数记录';
 
 -- Added table: user_subscription
 CREATE TABLE `user_subscription`
@@ -3057,7 +3095,7 @@ CREATE TABLE `user_subscription`
     KEY               `idx_next_reset_time` (`next_reset_time`),
     KEY               `idx_plan_id` (`plan_id`),
     KEY               `idx_user_biz` (`user_id`, `biz_type`, `biz_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户订阅记录表';
 
 -- Added table: model_provider
 CREATE TABLE `model_provider`
@@ -3072,7 +3110,7 @@ CREATE TABLE `model_provider`
     `modified`   DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     KEY          `idx_tenant_id` (`_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模型提供商表';
 
 -- Added table: pay_order
 CREATE TABLE `pay_order`
@@ -3100,7 +3138,7 @@ CREATE TABLE `pay_order`
     PRIMARY KEY (`id`),
     KEY                        `idx_tenant_biz_id` (`_tenant_id`, `biz_order_no`, `id`),
     KEY                        `idx_tenant_gateway` (`_tenant_id`, `gateway_payment_order_no`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='平台支付订单';
 
 -- Added table: bill_revenue_detail
 CREATE TABLE `bill_revenue_detail`
@@ -3127,7 +3165,7 @@ CREATE TABLE `bill_revenue_detail`
     KEY           `idx_target` (`target_type`, `target_id`),
     KEY           `idx_type` (`type`),
     KEY           `idx_user_id` (`user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='收益明细表';
 
 -- Modified table: publish_apply
 ALTER TABLE `publish_apply`
@@ -3153,7 +3191,7 @@ CREATE TABLE `document_parse_status_record`
     `execute_error_logs` VARCHAR(800) COMMENT '执行的异常日志',
     `_tenant_id`         BIGINT,
     PRIMARY KEY (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Added table: document_parse_status
 CREATE TABLE `document_parse_status`
@@ -3169,7 +3207,7 @@ CREATE TABLE `document_parse_status`
     PRIMARY KEY (`id`),
     KEY             `idx_document_id` (`document_id`),
     KEY             `idx_kb_id` (`kb_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档三元组解析状态表';
 
 -- Modified table: user
 ALTER TABLE `user` MODIFY COLUMN `status` VARCHAR (16) NOT NULL DEFAULT 'Enabled' COMMENT '状态，启用或禁用';
@@ -3207,7 +3245,7 @@ CREATE TABLE `cm_content`
     KEY                 `idx_carousel` (`_tenant_id`, `is_carousel`),
     KEY                 `idx_category` (`_tenant_id`, `category_id`),
     KEY                 `idx_tenant` (`_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='内容管理';
 
 -- Added table: cm_category
 CREATE TABLE `cm_category`
@@ -3221,17 +3259,17 @@ CREATE TABLE `cm_category`
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_tenant_code` (`_tenant_id`, `code`),
     KEY          `idx_tenant` (`_tenant_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='内容分类';
 
 -- Added table: target_recommend
 CREATE TABLE `target_recommend`
 (
     `id`            BIGINT      NOT NULL AUTO_INCREMENT,
     `_tenant_id`    BIGINT      NOT NULL DEFAULT 1 COMMENT '商户ID',
-    `target_type`   VARCHAR(32) NOT NULL COMMENT '目标类型: Agent, PageApp, Skill, Plugin, Workflow',
+    `target_type`   VARCHAR(32) NOT NULL COMMENT '目标类型',
     `target_id`     BIGINT      NOT NULL COMMENT '目标对象ID',
     `rec_type`      VARCHAR(32) NOT NULL COMMENT '推荐类型: Home, Official, ChatBoxNav',
-    `function_type` VARCHAR(32) COMMENT '功能类型: AgentDev, PageAppDev, SkillDev, PluginDev, Chat',
+    `function_type` VARCHAR(32) COMMENT '功能类型: AgentDev, PageAppDev, SkillDev, PluginDev, UserAppDev, NormalProjectDev, Chat',
     `label`         VARCHAR(128) COMMENT '标签名称',
     `icon`          VARCHAR(512) COMMENT '图标',
     `placeholder`   TEXT COMMENT '默认内容, JSON数组格式',
@@ -3240,7 +3278,7 @@ CREATE TABLE `target_recommend`
     `created`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY             `idx_tenant_rec_type` (`_tenant_id`, `rec_type`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='推荐管理表';
 
 -- Added table: eco_market_import_record
 CREATE TABLE `eco_market_import_record`
@@ -3257,7 +3295,7 @@ CREATE TABLE `eco_market_import_record`
     PRIMARY KEY (`id`),
     KEY             `idx_tenant_space` (`_tenant_id`, `space_id`, `target_type`),
     KEY             `idx_tenant_user` (`_tenant_id`, `user_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Added table: resource_group_relation
 CREATE TABLE `resource_group_relation`
@@ -3272,7 +3310,7 @@ CREATE TABLE `resource_group_relation`
     PRIMARY KEY (`id`),
     KEY           `idx_group_id` (`group_id`),
     KEY           `idx_target` (`target_type`, `target_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资源分组关联表';
 
 -- Added table: resource_group
 CREATE TABLE `resource_group`
@@ -3290,7 +3328,7 @@ CREATE TABLE `resource_group`
     `modified`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`),
     KEY           `idx_space_id` (`space_id`, `type`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资源分组表';
 
 -- Modified table: agent_component_config
 ALTER TABLE `agent_component_config`
@@ -3337,6 +3375,16 @@ ALTER TABLE `conversation`
     ADD COLUMN `icon` VARCHAR(500) COMMENT '会话主题图标';
 ALTER TABLE `conversation`
     ADD COLUMN `dev_space_id` BIGINT COMMENT '开发所在的空间ID';
+ALTER TABLE `conversation`
+    ADD COLUMN `file_workspace_path` VARCHAR(512) COMMENT '文件访问路径';
+ALTER TABLE `conversation`
+    ADD COLUMN `agent_workspace_path` VARCHAR(512) COMMENT 'agent 执行路径';
+ALTER TABLE `conversation`
+    ADD COLUMN `pinned` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '置顶标记：1=置顶';
+ALTER TABLE `conversation`
+    ADD COLUMN `archived` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '归档标记：1=归档';
+ALTER TABLE `conversation`
+    ADD KEY `idx_dev_target` (`dev_target_type`, `dev_target_id`);
 
 -- Modified table: pricing_config
 ALTER TABLE `pricing_config` MODIFY COLUMN `price` DECIMAL (20,6) COMMENT '价格（单次、买断、包月时有效）';
@@ -3388,7 +3436,778 @@ CREATE TABLE `knowledge_recall_verification`
     PRIMARY KEY (`id`),
     KEY               `idx_id_kb_id_index` (`space_id`, `kb_id`),
     KEY               `idx_kb_id` (`kb_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='知识库-原始文档表';
 
-ALTER TABLE sys_data_permission
-    ADD COLUMN agent_computer_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '智能体电脑存储上限(GB)，-1 表示不限制', ADD COLUMN page_app_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '网页应用存储上限(GB)，-1 表示不限制';
+-- 注：agent_computer_storage_limit_gb / page_app_storage_limit_gb 已包含在上方 CREATE TABLE 中，
+-- 重复 ADD 会导致 1060 Duplicate column name，故此处移除（2026-10-24）
+-- ALTER TABLE sys_data_permission
+--     ADD COLUMN agent_computer_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '智能体电脑存储上限(GB)，-1 表示不限制', ADD COLUMN page_app_storage_limit_gb DECIMAL(10, 3) NULL DEFAULT NULL COMMENT '网页应用存储上限(GB)，-1 表示不限制';
+
+-- UserApp 用户自定义应用项目表
+CREATE TABLE `userapp`
+(
+    `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`          bigint(20) NOT NULL COMMENT '商户ID',
+    `space_id`            bigint(20) NOT NULL COMMENT '空间ID',
+    `creator_id`          bigint(20) NOT NULL COMMENT '创建人用户ID',
+    `name`                varchar(128) NOT NULL COMMENT '应用名称',
+    `description`         varchar(512)          DEFAULT NULL COMMENT '应用描述',
+    `icon`                varchar(500)          DEFAULT NULL COMMENT '应用图标',
+    `cover_img`           varchar(500)          DEFAULT NULL COMMENT '封面图片',
+    `sandbox_id`          bigint(20)             DEFAULT NULL COMMENT '沙盒ID',
+    `sandbox_type`        varchar(16)  NOT NULL DEFAULT 'Cloud' COMMENT '沙箱类型',
+    `deploy_type`         varchar(16)  NOT NULL COMMENT '发布部署目标：Platform/Private',
+    `deploy_server_id`    bigint(20) NOT NULL COMMENT '部署目标服务器ID',
+    `repo_slug_id`        varchar(64)           DEFAULT NULL COMMENT '资料库协作目录ID',
+    `plan_slug_id`        varchar(64)           DEFAULT NULL COMMENT '项目计划表ID',
+    `dev_agent_id`        bigint(20)            DEFAULT NULL COMMENT '开发关联智能体ID',
+    `prod_deployed`       tinyint(1) NOT NULL DEFAULT '0' COMMENT '生产部署标记：1=已部署',
+    `prod_running`        tinyint(1) NOT NULL DEFAULT '0' COMMENT '生产运行状态：1=运行中，0=已停止',
+    `prod_release_id`     varchar(64)           DEFAULT NULL COMMENT '当前生产部署的版本号',
+    `publish_status`      varchar(32) NOT NULL DEFAULT 'Developing' COMMENT '发布状态',
+    `build_versions`      json                  DEFAULT NULL COMMENT '构建版本记录',
+    `dev_db_username`     varchar(128)          DEFAULT NULL COMMENT '开发环境数据库账号',
+    `dev_db_password`     varchar(512)          DEFAULT NULL COMMENT '开发环境数据库密码',
+    `prod_db_username` varchar(128)          DEFAULT NULL COMMENT '生产环境数据库账号',
+    `prod_db_password` varchar(512)          DEFAULT NULL COMMENT '生产环境数据库密码',
+    `pre_delete_time`     datetime               DEFAULT NULL COMMENT '预删除时间',
+    `created`             datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`            datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_tenant_creator` (`_tenant_id`, `creator_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户自建应用';
+
+CREATE TABLE `user_private_server`
+(
+    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`         bigint(20) NOT NULL COMMENT '商户ID',
+    `owner_user_id`      bigint(20) NOT NULL COMMENT '登记用户（属主）',
+    `name`               varchar(128) NOT NULL COMMENT '服务器名称',
+    `scheme`             varchar(8) NOT NULL DEFAULT 'http' COMMENT '协议：http/https',
+    `host`               varchar(255) NOT NULL COMMENT '服务器地址（IP或域名）',
+    `server_info`        varchar(512) NOT NULL COMMENT '服务配置信息',
+    `api_key`            varchar(128) NOT NULL DEFAULT '' COMMENT '平台与私服通信密钥',
+    `status`             varchar(16) NOT NULL COMMENT '状态：Unverified/Online/Offline',
+    `version`            varchar(32) DEFAULT NULL COMMENT '私服容器版本',
+    `last_health_check`  datetime DEFAULT NULL COMMENT '最近健康检查时间',
+    `created`            datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`           datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_owner_host` (`_tenant_id`, `owner_user_id`, `host`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户私有服务器';
+
+CREATE TABLE `userapp_task`
+(
+    `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`        bigint(20) NOT NULL COMMENT '商户ID',
+    `app_id`            bigint(20) NOT NULL COMMENT '应用ID',
+    `user_id`           bigint(20) NOT NULL COMMENT '任务所属用户ID（应用所有者）',
+    `task_type`         varchar(16) NOT NULL COMMENT '任务类型',
+    `task_id`           varchar(64)          DEFAULT NULL COMMENT '下游任务ID（受理成功后回填）',
+    `status`            varchar(16) NOT NULL COMMENT '任务状态',
+    `error`             varchar(1024)        DEFAULT NULL COMMENT '失败原因',
+    `sandbox_id`      varchar(32)          DEFAULT NULL COMMENT '执行任务的沙箱ID',
+    `active_guard`      varchar(64)          DEFAULT NULL COMMENT '活跃任务槽位键：pending/running 时为 "<app_id>:<守卫组>"，终态置 NULL',
+    `git_commit`        varchar(64)          DEFAULT NULL COMMENT '构建时git commit',
+    `created`           datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`          datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_task_id` (`task_id`),
+    UNIQUE KEY `uk_active_guard` (`active_guard`),
+    KEY `idx_app` (`app_id`),
+    KEY `idx_tenant_user` (`_tenant_id`, `user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户自建应用任务';
+
+CREATE TABLE `userapp_domain`
+(
+    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id` bigint(20) NOT NULL COMMENT '商户ID',
+    `app_id`     bigint(20) NOT NULL COMMENT '应用ID',
+    `domain`     varchar(255) NOT NULL COMMENT '绑定的自有域名',
+    `domain_type` varchar(16) NOT NULL DEFAULT 'Custom' COMMENT '域名类型：Dev 平台分配开发域名；Prod 平台分配生产域名；Custom 用户自行绑定',
+    `created`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_domain` (`domain`),
+    KEY `idx_tenant_app` (`_tenant_id`, `app_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户自建应用域名绑定';
+
+CREATE TABLE `user_project`
+(
+    `id`           bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`   bigint(20) NOT NULL COMMENT '商户ID',
+    `space_id`     bigint(20) NOT NULL COMMENT '空间ID',
+    `creator_id`   bigint(20) NOT NULL COMMENT '创建人用户ID',
+    `name`         varchar(128) NOT NULL COMMENT '项目名称',
+    `description`  varchar(512)          DEFAULT NULL COMMENT '项目描述',
+    `icon`         varchar(500)          DEFAULT NULL COMMENT '项目图标',
+    `project_type` varchar(16) NOT NULL COMMENT '项目类型',
+    `ref_id`       bigint(20)            DEFAULT NULL COMMENT '引用表记录ID',
+    `sandbox_id`   bigint(20)            DEFAULT NULL COMMENT '沙盒ID',
+    `sandbox_type`  varchar(16) NOT NULL DEFAULT 'Cloud' COMMENT '沙箱类型',
+    `repo_slug_id`  varchar(64)          DEFAULT NULL COMMENT '资料库协作目录ID',
+    `plan_slug_id`  varchar(64)          DEFAULT NULL COMMENT '项目计划表ID',
+    `dev_agent_id`  bigint(20)           DEFAULT NULL COMMENT '开发关联智能体ID',
+    `pinned`        tinyint(1) NOT NULL DEFAULT 0 COMMENT '置顶标记：1=置顶',
+    `archived`      tinyint(1) NOT NULL DEFAULT 0 COMMENT '归档标记：1=归档',
+    `name_defined`         tinyint(1) NOT NULL DEFAULT 0 COMMENT '名称是否已定制：1=显式命名；0=默认名兜底',
+    `oauth_client_id` VARCHAR(64)        DEFAULT NULL COMMENT 'OAuth2 Client ID（平台生成）',
+    `oauth_client_secret` VARCHAR(512)   DEFAULT NULL COMMENT 'OAuth2 Client Secret（AES/GCM 密文）',
+    `homepage_url`  VARCHAR(512)         DEFAULT NULL COMMENT '应用主页地址',
+    `redirect_uri`  VARCHAR(512)         DEFAULT NULL COMMENT 'OAuth2 回调地址',
+    `oauth_scope`   VARCHAR(512)         DEFAULT NULL COMMENT '允许申请的 scope（逗号分隔，为空取平台默认）',
+    `oauth_enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'OAuth2 接入是否启用：1 启用；0 停用（停用后该客户端全部授权请求与令牌校验失败）',
+    `publish_status` VARCHAR(32) NOT NULL DEFAULT 'Developing' COMMENT '发布状态',
+    `created`      datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`     datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_ref` (`project_type`, `ref_id`),
+    UNIQUE KEY `uk_oauth_client_id` (`oauth_client_id`),
+    KEY `idx_tenant_space` (`_tenant_id`, `space_id`),
+    KEY `idx_tenant_creator` (`_tenant_id`, `creator_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户项目（跨类型统一登记，支持分页查询）';
+
+CREATE TABLE `user_project_workspace`
+(
+    `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `_tenant_id`          bigint(20) NOT NULL COMMENT '商户ID',
+    `user_id`             bigint(20) NOT NULL COMMENT '用户ID',
+    `project_type`        varchar(32) NOT NULL COMMENT '项目类型',
+    `project_id`          bigint(20) NOT NULL COMMENT '项目ID',
+    `file_workspace_path` varchar(512) NULL DEFAULT NULL COMMENT '用户级文件工作目录',
+    `agent_workspace_path` varchar(512) NULL DEFAULT NULL COMMENT '用户级 agent 执行路径',
+    `sandbox_id`          bigint(20) NOT NULL COMMENT '沙箱ID（目录所在机器）',
+    `created`             datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`            datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_project` (`user_id`, `project_type`, `project_id`),
+    KEY `idx_sandbox_path` (`sandbox_id`, `file_workspace_path`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户项目目录绑定';
+
+CREATE TABLE `user_config`
+(
+    `id`           bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `_tenant_id`   bigint(20) NOT NULL COMMENT '租户ID',
+    `user_id`      bigint(20) NOT NULL COMMENT '用户ID',
+    `config_key`   varchar(128) NOT NULL COMMENT '配置项 key',
+    `config_value` json                  DEFAULT NULL COMMENT '配置项值（任意 JSON：标量/对象/数组）',
+    `description`  varchar(255)          DEFAULT NULL COMMENT '备注，便于排查',
+    `modified`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `created`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_id_config_key` (`user_id`, `config_key`, `_tenant_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户个人 key-value 配置表';
+
+-- feat-0901: 敏感词管控
+CREATE TABLE `sensitive_word`
+(
+    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `_tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+    `word`       varchar(255) NOT NULL COMMENT '敏感词（包含匹配存明文，正则匹配存表达式）',
+    `category`   varchar(32) NOT NULL COMMENT '分类：ILLEGAL-违法违禁、ADVERTISING-广告导流、PRIVACY_LEAK-隐私泄露、COMPETITOR-竞品词',
+    `match_type` varchar(32) NOT NULL DEFAULT 'CONTAIN' COMMENT '匹配方式：CONTAIN-包含、REGEX-正则',
+    `action`     varchar(32) NOT NULL DEFAULT 'REPLACE' COMMENT '触发策略：DISCONNECT-断开连接、REPLACE-替换',
+    `replace_char` varchar(32) NULL COMMENT '替换字符（触发策略为REPLACE时生效，为空默认*）',
+    `status`     tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：1-启用、0-禁用',
+    `modified`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `created`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_tenant_word` (`_tenant_id`, `word`) USING BTREE,
+    KEY `idx_tenant_status` (`_tenant_id`, `status`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='敏感词管控表';
+
+CREATE TABLE `auth_idp_config`
+(
+    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `_tenant_id`    bigint(20) NOT NULL COMMENT '租户ID',
+    `type`          varchar(32) NOT NULL COMMENT '类型：CAS、OAUTH2、WECHAT',
+    `name`          varchar(64) NOT NULL COMMENT '配置名称',
+    `icon`          varchar(255) DEFAULT NULL COMMENT '登录图标',
+    `enabled`       tinyint(4) NOT NULL DEFAULT 0 COMMENT '状态：1-启用、0-停用',
+    `auto_redirect` tinyint(4) NOT NULL DEFAULT 0 COMMENT '未登录自动跳转：1-是',
+    `auto_register_bind` tinyint(4) NOT NULL DEFAULT 0 COMMENT '自动注册/绑定：1-是（免用户选择），0-否（由用户选择）',
+    `config`        text NOT NULL COMMENT '类型相关配置 JSON',
+    `sort`          int(11) NOT NULL DEFAULT 0 COMMENT '排序',
+    `created`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`      datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_tenant_enabled` (`_tenant_id`, `enabled`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='外部登录方式配置表';
+
+CREATE TABLE `user_auth_identity`
+(
+    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `_tenant_id`         bigint(20) NOT NULL COMMENT '租户ID',
+    `user_id`            bigint(20) NOT NULL COMMENT '平台用户ID',
+    `idp_id`             bigint(20) NOT NULL COMMENT '身份源配置ID',
+    `idp_type`           varchar(32) NOT NULL COMMENT '身份源类型',
+    `external_id`        varchar(128) NOT NULL COMMENT '外部稳定标识：CAS user / OAuth2 sub·unionId / 微信 unionid(优先)或 openid',
+    `union_id`           varchar(128) DEFAULT NULL COMMENT '微信 unionid，跨应用（扫码/公众号/小程序）识别同一人',
+    `external_user_name` varchar(128) DEFAULT NULL COMMENT '外部用户名',
+    `raw_profile`        text COMMENT '最近一次资料快照',
+    `last_login_time`    datetime DEFAULT NULL COMMENT '该身份最近登录时间',
+    `created`            datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `modified`           datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_tenant_idp_ext` (`_tenant_id`, `idp_id`, `external_id`) USING BTREE,
+    KEY `idx_user` (`user_id`) USING BTREE,
+    KEY `idx_tenant_union` (`_tenant_id`, `union_id`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT ='用户外部身份绑定表';
+
+-- ============================================================
+-- 2026-10-24 补齐：与 agent_platform_test 结构对齐
+-- 缺失表 21 张；缺失字段 14 个；类型/可空/默认值调整 44 处；缺失索引 17 个
+-- ============================================================
+
+-- ---------- 1. 缺失字段 ----------
+ALTER TABLE `agent_component_config` ADD COLUMN `user_id` bigint DEFAULT NULL COMMENT '关联用户ID' AFTER `description`;
+ALTER TABLE `category` ADD COLUMN `icon` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '分类图标地址' AFTER `description`;
+ALTER TABLE `model_config` ADD COLUMN `tag` varchar(64) DEFAULT NULL COMMENT '模型标签' AFTER `description`;
+ALTER TABLE `model_config` ADD COLUMN `cost` varchar(32) NOT NULL DEFAULT '1.00' COMMENT '计费倍率' AFTER `tag`;
+ALTER TABLE `model_config` ADD COLUMN `tag_color` varchar(32) DEFAULT NULL COMMENT '模型标签颜色（如 #FF5733）' AFTER `cost`;
+ALTER TABLE `user` ADD COLUMN `account_type` varchar(16) NOT NULL DEFAULT 'user' COMMENT '账号类型：user-自然人；agent-智能体身份；group-群代理身份' AFTER `_tenant_id`;
+ALTER TABLE `user` ADD COLUMN `principal_ref_id` varchar(128) DEFAULT NULL COMMENT '身份关联标识：account_type=agent 时为 agent id；=group 时为 channel:sessionKey' AFTER `account_type`;
+ALTER TABLE `user_target_relation` ADD COLUMN `target_sub_type` varchar(32) DEFAULT NULL COMMENT '目标子类型：ChatBot 对话智能体 / TaskAgent 任务型智能体 / PageApp 网页应用' AFTER `type`;
+ALTER TABLE `cm_content` ADD COLUMN `path` varchar(128) DEFAULT NULL COMMENT '文章访问路径，租户内唯一，为空表示不启用 path 访问' AFTER `is_home_show`;
+ALTER TABLE `cm_content` ADD COLUMN `sort` int NOT NULL DEFAULT '0' COMMENT '排序值，越小越靠前' AFTER `path`;
+ALTER TABLE `cm_category` ADD COLUMN `sort` int NOT NULL DEFAULT '0' COMMENT '排序值，越小越靠前' AFTER `code`;
+ALTER TABLE `target_recommend` ADD COLUMN `category` varchar(32) DEFAULT NULL COMMENT '分类' AFTER `function_type`;
+ALTER TABLE `target_recommend` ADD COLUMN `prompts` json DEFAULT NULL COMMENT '可选提示词列表, JSON对象数组: [{title,content,icon}]' AFTER `placeholder`;
+ALTER TABLE `user_project` ADD COLUMN `redirect_uris` text COMMENT 'OAuth2 补充回调地址（JSON 数组，不含主地址 redirect_uri）' AFTER `redirect_uri`;
+
+-- ---------- 2. 类型 / 可空 / 默认值对齐 ----------
+-- type
+ALTER TABLE `agent_config` MODIFY COLUMN `description` varchar(2000) DEFAULT NULL COMMENT 'Agent描述';
+-- type
+ALTER TABLE `agent_config` MODIFY COLUMN `system_prompt` mediumtext COMMENT '系统提示词';
+-- type
+ALTER TABLE `agent_config` MODIFY COLUMN `opening_chat_msg` mediumtext COMMENT '首次打开聊天框自动回复消息';
+-- extra
+ALTER TABLE `custom_page_build` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- type
+ALTER TABLE `custom_page_config` MODIFY COLUMN `description` varchar(255) DEFAULT NULL COMMENT '项目描述';
+-- extra
+ALTER TABLE `custom_page_config` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `custom_page_conversation` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- type
+ALTER TABLE `knowledge_config` MODIFY COLUMN `name` varchar(128) NOT NULL COMMENT '知识库名称';
+-- null
+ALTER TABLE `model_config` MODIFY COLUMN `type` varchar(64) DEFAULT NULL COMMENT '模型类型';
+-- default
+ALTER TABLE `model_config` MODIFY COLUMN `max_tokens` int NOT NULL DEFAULT '4096' COMMENT '输出token上限';
+-- null
+ALTER TABLE `model_config` MODIFY COLUMN `api_protocol` varchar(64) NOT NULL COMMENT '模型接口协议';
+-- default
+ALTER TABLE `model_config` MODIFY COLUMN `enabled` tinyint DEFAULT '1' COMMENT '启用状态';
+-- extra
+ALTER TABLE `oauth2_scope_apply` MODIFY COLUMN `pending_slot` bigint GENERATED ALWAYS AS (if((`status` = _utf8mb4'Pending'),`project_id`,NULL)) STORED;
+-- type
+ALTER TABLE `sandbox_config` MODIFY COLUMN `description` varchar(500) DEFAULT NULL COMMENT '配置描述';
+-- type
+ALTER TABLE `space` MODIFY COLUMN `name` varchar(64) NOT NULL COMMENT '空间名称';
+-- type
+ALTER TABLE `space` MODIFY COLUMN `description` varchar(255) DEFAULT NULL COMMENT '空间介绍';
+-- type
+ALTER TABLE `space` MODIFY COLUMN `type` enum('Personal','Team','Class','Group','DM') NOT NULL DEFAULT 'Team' COMMENT '空间类型：Personal-个人；Team-团队；Class-班级；Group-群组；DM-私聊';
+-- extra
+ALTER TABLE `i18n_lang` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `i18n_config` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `file_record` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_withdraw_application` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `pay_developer_account` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+-- extra
+ALTER TABLE `subscription_plan` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `model_price_tier` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `user_credit` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `credit_package` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `bill_resource_stat` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_order` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_daily_revenue` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `pricing_config` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_withdraw_config` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_order_item` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `trial_record` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `user_subscription` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `model_provider` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `pay_order` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `bill_revenue_detail` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `document_parse_status` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+-- extra
+ALTER TABLE `cm_content` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `cm_category` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `target_recommend` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+-- extra
+ALTER TABLE `resource_group_relation` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `resource_group` MODIFY COLUMN `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间';
+-- extra
+ALTER TABLE `knowledge_recall_verification` MODIFY COLUMN `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间';
+
+-- ---------- 3. 缺失索引 ----------
+ALTER TABLE `agent_component_config` ADD KEY `idx_user_target` (`user_id`,`type`,`target_id`) USING BTREE;
+ALTER TABLE `conversation` ADD FULLTEXT KEY `ft_topic` (`topic`) /*!50100 WITH PARSER `ngram` */;
+ALTER TABLE `conversation` ADD KEY `idx_user_pin_mod` (`user_id`,`pinned`,`modified`);
+ALTER TABLE `custom_page_build` ADD KEY `idx_dev_running_yn` (`dev_running`,`yn`);
+ALTER TABLE `custom_page_build` ADD KEY `idx_project_yn` (`project_id`,`yn`);
+ALTER TABLE `custom_page_conversation` ADD KEY `idx_project_yn_created` (`project_id`,`yn`,`created`);
+ALTER TABLE `knowledge_qa_segment` ADD KEY `idex_created_has_embedding_index` (`created`,`has_embedding`);
+ALTER TABLE `knowledge_raw_segment` ADD KEY `idx_created_qa_status_index` (`created`,`qa_status`);
+ALTER TABLE `notify_message_user` ADD KEY `idx_user_read_status` (`user_id`,`read_status`);
+ALTER TABLE `published` ADD KEY `idx_space_id` (`space_id`) USING BTREE;
+ALTER TABLE `published` ADD KEY `idx_tenant_target_type` (`_tenant_id`,`target_type`,`category`) USING BTREE;
+ALTER TABLE `publish_apply` ADD KEY `idx_publish_status` (`_tenant_id`,`publish_status`);
+ALTER TABLE `tenant` ADD UNIQUE KEY `uk_domain` (`domain`);
+ALTER TABLE `user` ADD UNIQUE KEY `uk_tenant_account_ref` (`_tenant_id`,`account_type`,`principal_ref_id`);
+ALTER TABLE `user_target_relation` ADD KEY `idx_user_type_subtype_modified` (`user_id`,`target_type`,`type`,`target_sub_type`,`modified`);
+ALTER TABLE `cm_content` ADD UNIQUE KEY `idx_tenant_path` (`_tenant_id`,`path`);
+ALTER TABLE `user_private_server` ADD KEY `idx_tenant_owner` (`_tenant_id`,`owner_user_id`);
+
+-- ---------- 3.1 索引改名（列相同） ----------
+-- published.target_id -> idx_target_id [target_id]
+
+-- ---------- 4. 缺失表 ----------
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_action`
+-- --------------------------------------------------------
+CREATE TABLE `connector_action` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `provider_service` varchar(64) NOT NULL COMMENT '所属provider service',
+  `action_key` varchar(128) NOT NULL COMMENT '动作标识 create_issue',
+  `name` varchar(128) DEFAULT NULL COMMENT '动作名称',
+  `description` text COMMENT '动作描述（供检索与LLM指南）',
+  `tags` json DEFAULT NULL COMMENT 'action能力域分组（几百action的收敛关键）',
+  `input_args` json DEFAULT NULL COMMENT '输入参数Arg树',
+  `output_args` json DEFAULT NULL COMMENT '输出参数Arg树',
+  `exec_type` varchar(16) NOT NULL DEFAULT 'DECLARATIVE' COMMENT 'DECLARATIVE/CUSTOM',
+  `exec_ref` varchar(255) DEFAULT NULL COMMENT 'CUSTOM时的实现类名（懒加载）',
+  `http_spec` json DEFAULT NULL COMMENT 'method/path/参数映射/响应抽取规则',
+  `managed_by` varchar(16) NOT NULL DEFAULT 'system' COMMENT '重导入时user标记进手工保护区',
+  `deprecated` tinyint(1) DEFAULT '0' COMMENT '弃用标记：不删、停新绑定、执行带告警',
+  `status` varchar(16) DEFAULT 'enabled' COMMENT 'enabled/disabled',
+  `modified` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_action` (`provider_service`,`action_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器动作目录';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_connection`
+-- --------------------------------------------------------
+CREATE TABLE `connector_connection` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户ID',
+  `space_id` bigint NOT NULL COMMENT '空间ID',
+  `user_id` bigint NOT NULL COMMENT '归属用户（个人连接）',
+  `provider_service` varchar(64) NOT NULL COMMENT 'provider service',
+  `name` varchar(64) NOT NULL COMMENT '用户起的别名',
+  `status` varchar(16) NOT NULL DEFAULT 'active' COMMENT 'active/expired/error/disconnected',
+  `enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '用户启用开关：1启用/0停用。停用仅停止被解析执行，凭证保留',
+  `profile` json DEFAULT NULL COMMENT 'accountId/displayName/avatar，唯一可暴露给LLM的信息',
+  `granted_scopes` json DEFAULT NULL COMMENT '已授权scope列表',
+  `credential_id` bigint NOT NULL COMMENT '凭证行ID',
+  `oauth_meta` json DEFAULT NULL COMMENT 'refresh到期/revision等',
+  `modified` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_provider` (`user_id`,`provider_service`),
+  KEY `idx_credential` (`credential_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器用户连接（授权实例）';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_credential`
+-- --------------------------------------------------------
+CREATE TABLE `connector_credential` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `cred_type` varchar(32) NOT NULL COMMENT 'api_key/oauth2_token/bearer/custom_fields',
+  `ciphertext` text NOT NULL COMMENT 'enc:v1:{salt}:{iv}:{tag}:{data} AES-256-GCM',
+  `expires_at` datetime DEFAULT NULL COMMENT '凭证过期时间（OAuth access_token）',
+  `revision` bigint NOT NULL DEFAULT '0' COMMENT '每次刷新+1，乐观锁防并发覆盖',
+  `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器凭证保险库（加密）';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_oauth_config`
+-- --------------------------------------------------------
+CREATE TABLE `connector_oauth_config` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `provider_service` varchar(64) NOT NULL COMMENT 'provider service',
+  `scope_type` varchar(16) DEFAULT 'platform' COMMENT 'platform官方App/byo用户自带',
+  `owner_id` bigint NOT NULL DEFAULT '0' COMMENT '0=平台公共App；byo时为用户id',
+  `client_id` varchar(255) NOT NULL COMMENT 'OAuth client_id',
+  `client_secret_enc` text NOT NULL COMMENT 'client_secret 加密存储（enc:v1:）',
+  `auth_url` varchar(512) DEFAULT NULL COMMENT '授权端点',
+  `token_url` varchar(512) DEFAULT NULL COMMENT 'token交换端点',
+  `scopes` json DEFAULT NULL COMMENT '申请的scope列表',
+  `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_provider_scope` (`provider_service`,`scope_type`,`owner_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器OAuth App配置';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_oauth_state`
+-- --------------------------------------------------------
+CREATE TABLE `connector_oauth_state` (
+  `state_hash` char(64) NOT NULL COMMENT 'state的SHA-256哈希',
+  `provider_service` varchar(64) NOT NULL COMMENT 'provider service',
+  `user_id` bigint NOT NULL COMMENT '发起授权的用户',
+  `space_id` bigint NOT NULL DEFAULT '0' COMMENT '发起授权的空间',
+  `pkce_verifier_enc` text COMMENT 'PKCE verifier 加密存储',
+  `redirect_target` varchar(512) DEFAULT NULL COMMENT '完成页回跳目标',
+  `consumed` tinyint(1) DEFAULT '0' COMMENT '是否已原子消费',
+  `expires_at` datetime NOT NULL COMMENT '15分钟TTL',
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`state_hash`),
+  KEY `idx_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器OAuth state（一次性）';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_provider`
+-- --------------------------------------------------------
+CREATE TABLE `connector_provider` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户ID',
+  `space_id` bigint NOT NULL DEFAULT '0' COMMENT '空间ID，0=官方/全局可见',
+  `service` varchar(64) NOT NULL COMMENT '唯一标识 github/feishu',
+  `display_name` varchar(128) NOT NULL COMMENT '展示名称',
+  `description` varchar(512) DEFAULT NULL COMMENT '连接器介绍',
+  `icon` varchar(255) DEFAULT NULL COMMENT 'icon图片地址',
+  `category` varchar(64) DEFAULT NULL COMMENT '分类',
+  `tags` json DEFAULT NULL COMMENT '能力域分组标签，检索/展示过滤用',
+  `auth_type` varchar(32) NOT NULL COMMENT 'api_key/oauth2/bearer/custom/no_auth',
+  `base_url` varchar(512) DEFAULT NULL COMMENT '服务基础地址',
+  `auth_config` json DEFAULT NULL COMMENT 'key注入位置/OAuth端点/scopes',
+  `oauth_app_mode` varchar(20) NOT NULL DEFAULT 'platform' COMMENT 'OAuth App模式',
+  `source` varchar(32) NOT NULL DEFAULT 'nuwax' COMMENT 'open_connector/nuwax/market',
+  `provider_version` varchar(64) DEFAULT NULL COMMENT '上游目录版本，重导入diff基线',
+  `managed_by` varchar(16) NOT NULL DEFAULT 'system' COMMENT 'system导入生成/user手工创建或修改(保护区)',
+  `proxy_enabled` tinyint(1) DEFAULT '0' COMMENT '是否允许通用代理兜底(长尾路径)',
+  `status` varchar(16) DEFAULT 'enabled' COMMENT 'enabled/disabled',
+  `modified` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_service` (`service`),
+  KEY `idx_tenant_space` (`_tenant_id`,`space_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器提供商目录';
+
+-- --------------------------------------------------------
+-- 表的结构 `connector_run_log`
+-- --------------------------------------------------------
+CREATE TABLE `connector_run_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
+  `space_id` bigint DEFAULT NULL COMMENT '空间ID',
+  `user_id` bigint DEFAULT NULL COMMENT '执行用户',
+  `connection_id` bigint DEFAULT NULL COMMENT '使用的连接',
+  `action_id` bigint DEFAULT NULL COMMENT '执行的action',
+  `agent_id` bigint DEFAULT NULL COMMENT '来源agent',
+  `status` varchar(16) DEFAULT NULL COMMENT 'success/failed/policy_denied',
+  `redacted_summary` json DEFAULT NULL COMMENT '脱敏后的输入输出摘要',
+  `error_code` varchar(64) DEFAULT NULL COMMENT '错误码',
+  `duration_ms` bigint DEFAULT NULL COMMENT '执行耗时',
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_connection` (`connection_id`,`created`),
+  KEY `idx_created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='连接器执行审计（脱敏）';
+
+-- --------------------------------------------------------
+-- 表的结构 `im_user_binding`
+-- --------------------------------------------------------
+CREATE TABLE `im_user_binding` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `channel` varchar(32) NOT NULL COMMENT '渠道类型',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `im_user_id` varchar(128) NOT NULL COMMENT 'IM侧用户标识',
+  `display_name` varchar(128) DEFAULT NULL,
+  `channel_config_id` bigint DEFAULT NULL COMMENT 'im_channel_config.id',
+  `source` varchar(32) DEFAULT NULL COMMENT 'oauth_app/oauth_web/im_session/admin',
+  `_tenant_id` bigint NOT NULL,
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_user_channel` (`_tenant_id`,`user_id`,`channel`),
+  UNIQUE KEY `uk_tenant_channel_im` (`_tenant_id`,`channel`,`im_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='IM用户身份绑定';
+
+-- --------------------------------------------------------
+-- 表的结构 `pay_open_notify_task`
+-- --------------------------------------------------------
+CREATE TABLE `pay_open_notify_task` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `order_id` bigint DEFAULT NULL COMMENT 'pay_order 主键',
+  `gateway_order_no` varchar(64) NOT NULL COMMENT '网关支付订单号',
+  `biz_order_no` varchar(128) NOT NULL COMMENT '业务订单号 OPEN_{appId}_{outTradeNo}',
+  `open_project_id` varchar(32) DEFAULT NULL COMMENT '接入应用 user_project 主键',
+  `notify_url` varchar(512) NOT NULL COMMENT '三方通知地址',
+  `payload` text COMMENT '待发送报文 JSON',
+  `sign_key_snapshot` varchar(128) DEFAULT NULL COMMENT '签名密钥快照（下单AK）',
+  `status` varchar(16) NOT NULL DEFAULT 'NOTIFY_WAIT_PAY' COMMENT 'NOTIFY_WAIT_PAY/NOTIFY_RETRY/NOTIFY_SUCCESS/NOTIFY_FAILED/NOTIFY_CANCELED',
+  `retry_count` int NOT NULL DEFAULT '0' COMMENT '已重试次数',
+  `next_retry_time` datetime DEFAULT NULL COMMENT '下次重试时间',
+  `last_error` varchar(512) DEFAULT NULL COMMENT '最近一次错误',
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_gateway_order_no` (`gateway_order_no`),
+  KEY `idx_status_retry` (`status`,`next_retry_time`),
+  KEY `idx_tenant` (`_tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='开放支付 webhook 通知任务';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_attachment`
+-- --------------------------------------------------------
+CREATE TABLE `repo_attachment` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `space_id` bigint NOT NULL COMMENT '所属空间ID',
+  `page_id` bigint DEFAULT NULL COMMENT '关联页面ID，null=空间级附件',
+  `user_id` bigint NOT NULL COMMENT '上传人ID',
+  `file_key` varchar(700) NOT NULL COMMENT 'file 模块 FileRecord.fileKey',
+  `file_name` varchar(500) NOT NULL COMMENT '文件名',
+  `mime` varchar(100) NOT NULL COMMENT 'MIME类型',
+  `size` bigint NOT NULL COMMENT '文件大小（字节）',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_page` (`_tenant_id`,`page_id`),
+  KEY `idx_space` (`_tenant_id`,`space_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档附件映射表';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_comment`
+-- --------------------------------------------------------
+CREATE TABLE `repo_comment` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `page_id` bigint NOT NULL COMMENT '页面ID',
+  `user_id` bigint NOT NULL COMMENT '评论人ID',
+  `parent_id` bigint DEFAULT NULL COMMENT '父评论ID（一层回复），null=顶层评论',
+  `content` json NOT NULL COMMENT '评论富文本JSON',
+  `mentions` json DEFAULT NULL COMMENT '被提及user_id列表 → NotifyMessage 站内通知',
+  `resolved` tinyint NOT NULL DEFAULT '0' COMMENT '0未解决 1已解决',
+  `anchor` json DEFAULT NULL COMMENT '评论锚点：选中文本定位信息（局部文字评论），页面级评论为NULL',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_page` (`_tenant_id`,`page_id`,`resolved`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档评论表';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_doc_edit_conversation`
+-- --------------------------------------------------------
+CREATE TABLE `repo_doc_edit_conversation` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `user_id` bigint NOT NULL COMMENT '编辑用户ID',
+  `page_id` bigint NOT NULL COMMENT '文档页面ID（repo_page.id）',
+  `slug_id` varchar(16) NOT NULL COMMENT '文档短链ID（冗余落库）',
+  `edit_conversation_id` bigint NOT NULL COMMENT 'AI 编辑会话ID（agent conversation.id）',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_page` (`_tenant_id`,`user_id`,`page_id`),
+  KEY `idx_page` (`_tenant_id`,`page_id`,`yn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档 AI 编辑会话映射表（用户×文档 → AI 编辑会话）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_page`
+-- --------------------------------------------------------
+CREATE TABLE `repo_page` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `space_id` bigint NOT NULL COMMENT '所属空间（平台 space 表）',
+  `parent_id` bigint DEFAULT NULL COMMENT '父页面ID，null=根节点',
+  `title` varchar(500) NOT NULL DEFAULT '' COMMENT '标题',
+  `slug_id` varchar(16) NOT NULL COMMENT '短链ID（对外路由使用）',
+  `position` varchar(64) NOT NULL COMMENT '同级排序（fractional index）',
+  `page_type` varchar(16) NOT NULL DEFAULT 'doc' COMMENT '页面类型：doc富文本 sheet表格',
+  `content_snapshot` json DEFAULT NULL COMMENT 'ProseMirror JSON 快照',
+  `media_size` bigint NOT NULL DEFAULT '0' COMMENT '正文媒体字节数(图片/附件/视频/音频)',
+  `html_snapshot` mediumtext COMMENT '渲染HTML快照：只读/搜索/导出',
+  `ydoc_state` longblob COMMENT 'Yjs二进制，CRDT唯一权威源（Sidecar 直读直写）',
+  `creator_id` bigint NOT NULL COMMENT '创建人ID',
+  `last_editor_id` bigint NOT NULL COMMENT '最后编辑人ID',
+  `edited_at` datetime DEFAULT NULL COMMENT '最后编辑时间',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `source_ext` varchar(16) DEFAULT NULL COMMENT '导入源文件扩展名（需求2）',
+  `editor_ids` varchar(2048) DEFAULT NULL COMMENT '历史编辑者ID JSON数组（需求5）',
+  `acl_enabled` tinyint NOT NULL DEFAULT '0' COMMENT '文档级按人权限开关（需求7）',
+  `original_file_key` varchar(512) DEFAULT NULL COMMENT '导入时原件的文件 key（原始数据导出）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_slug` (`_tenant_id`,`slug_id`),
+  KEY `idx_tree` (`_tenant_id`,`space_id`,`parent_id`,`position`),
+  KEY `idx_space` (`_tenant_id`,`space_id`,`yn`),
+  KEY `idx_slug_id` (`slug_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档页面表';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_page_acl`
+-- --------------------------------------------------------
+CREATE TABLE `repo_page_acl` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL,
+  `page_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `perm_bits` int NOT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `yn` tinyint NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_page_user` (`page_id`,`user_id`,`yn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档级按人权限（需求7）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_page_favorite`
+-- --------------------------------------------------------
+CREATE TABLE `repo_page_favorite` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `user_id` bigint NOT NULL COMMENT '收藏人ID',
+  `page_id` bigint NOT NULL COMMENT '页面ID',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_page` (`_tenant_id`,`user_id`,`page_id`),
+  KEY `idx_user` (`_tenant_id`,`user_id`,`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档收藏表';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_page_version`
+-- --------------------------------------------------------
+CREATE TABLE `repo_page_version` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `page_id` bigint NOT NULL COMMENT '页面ID',
+  `ydoc_snapshot` longblob NOT NULL COMMENT '该版本的 Yjs 二进制快照',
+  `html` mediumtext COMMENT '该版本渲染HTML快照',
+  `editor_id` bigint NOT NULL COMMENT '产生该版本的编辑人ID',
+  `reason` varchar(20) NOT NULL DEFAULT 'autosave' COMMENT 'autosave/manual/restore',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_page` (`_tenant_id`,`page_id`,`created`),
+  KEY `idx_page_reason` (`page_id`,`reason`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档版本快照表';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_page_visit`
+-- --------------------------------------------------------
+CREATE TABLE `repo_page_visit` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `page_id` bigint NOT NULL,
+  `link_id` bigint DEFAULT NULL COMMENT '来源分享链接ID（通过链接访问时写入；正常访问覆盖为NULL）',
+  `last_visited_at` datetime NOT NULL,
+  `created` datetime NOT NULL,
+  `modified` datetime NOT NULL,
+  `yn` tinyint NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_page` (`user_id`,`page_id`),
+  KEY `idx_user_time` (`user_id`,`last_visited_at`),
+  KEY `idx_link_id` (`link_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档访问记录（门户最近访问）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_share`
+-- --------------------------------------------------------
+CREATE TABLE `repo_share` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL,
+  `page_id` bigint NOT NULL,
+  `target_space_id` bigint NOT NULL,
+  `perm_bits` int NOT NULL,
+  `created_by` bigint NOT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `yn` tinyint NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_page_space` (`page_id`,`target_space_id`,`yn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档分享到工作空间（需求4）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_share_link`
+-- --------------------------------------------------------
+CREATE TABLE `repo_share_link` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL,
+  `page_id` bigint NOT NULL,
+  `token` varchar(40) COLLATE utf8mb4_general_ci NOT NULL,
+  `access_type` varchar(16) COLLATE utf8mb4_general_ci NOT NULL COMMENT 'login|public',
+  `created_by` bigint NOT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `yn` tinyint NOT NULL DEFAULT '1',
+  `allow_comment` tinyint NOT NULL DEFAULT '1' COMMENT '链接分享是否允许评论',
+  `perm_bits` int NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_token` (`token`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档分享链接（需求4，只读）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_share_link_visit`
+-- --------------------------------------------------------
+CREATE TABLE `repo_share_link_visit` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `link_id` bigint NOT NULL COMMENT '分享链接ID',
+  `page_id` bigint NOT NULL COMMENT '页面ID',
+  `user_id` bigint NOT NULL COMMENT '访问用户ID',
+  `visited_at` datetime NOT NULL COMMENT '访问时间',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_link_id` (`link_id`,`visited_at`),
+  KEY `idx_link_user` (`link_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='分享链接访问日志（统计访问次数与访问用户）';
+
+-- --------------------------------------------------------
+-- 表的结构 `repo_share_user`
+-- --------------------------------------------------------
+CREATE TABLE `repo_share_user` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `_tenant_id` bigint NOT NULL COMMENT '租户ID',
+  `page_id` bigint NOT NULL COMMENT '页面ID',
+  `target_user_id` bigint NOT NULL COMMENT '被分享人用户ID',
+  `perm_bits` int NOT NULL COMMENT '权限位（同空间分享语义）',
+  `created_by` bigint NOT NULL COMMENT '分享发起人ID',
+  `link_id` bigint DEFAULT NULL COMMENT '来源分享链接ID（链接访问自动加入与我共享时写入；个人分享覆盖为NULL）',
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `yn` tinyint NOT NULL DEFAULT '1' COMMENT '1有效 0删除（软删）',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_page_user` (`page_id`,`target_user_id`,`yn`),
+  KEY `idx_target_user` (`_tenant_id`,`target_user_id`,`yn`),
+  KEY `idx_link_id` (`link_id`,`yn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档分享给个人表';

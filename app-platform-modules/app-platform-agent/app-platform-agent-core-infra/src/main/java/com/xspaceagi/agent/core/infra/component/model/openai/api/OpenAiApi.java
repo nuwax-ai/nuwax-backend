@@ -16,6 +16,7 @@
 
 package com.xspaceagi.agent.core.infra.component.model.openai.api;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +93,16 @@ public class OpenAiApi {
     public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
 
     private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
+
+    /**
+     * SSE 流空闲超时配置：首包上限（容忍慢 TTFT）与后续 chunk 间隔上限。
+     * 用于检测挂死流（建连成功但服务端不再回数据），超时抛出 TimeoutException 并
+     * 通过取消订阅释放底层 HTTP exchange，避免请求体/响应缓冲永久滞留堆内。
+     * token 持续流动的长对话不受影响。
+     */
+    private static final Duration STREAM_FIRST_CHUNK_TIMEOUT = Duration.ofSeconds(180);
+
+    private static final Duration STREAM_CHUNK_IDLE_TIMEOUT = Duration.ofSeconds(180);
 
     private static final String REQUEST_BODY_NULL_MESSAGE = "The request body can not be null.";
 
@@ -257,6 +268,10 @@ public class OpenAiApi {
                 .bodyValue(chatRequest)
                 .retrieve()
                 .bodyToFlux(String.class)
+                // Idle-timeout guard: no first chunk within 180s, or no new chunk for 60s,
+                // means the SSE stream is hung -> TimeoutException cancels the subscription
+                // and releases the underlying JDK HttpClient exchange.
+                .timeout(Mono.delay(STREAM_FIRST_CHUNK_TIMEOUT), chunk -> Mono.delay(STREAM_CHUNK_IDLE_TIMEOUT))
                 // cancels the flux stream after the "[DONE]" is received.
                 .takeUntil(SSE_DONE_PREDICATE)
                 // filters out the "[DONE]" message.

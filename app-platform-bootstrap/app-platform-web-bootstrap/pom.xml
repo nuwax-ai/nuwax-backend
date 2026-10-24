@@ -60,6 +60,10 @@
         </dependency>
         <dependency>
             <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-userapp-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-sandbox-ui</artifactId>
         </dependency>
         <dependency>
@@ -73,6 +77,14 @@
         <dependency>
             <groupId>com.xspaceagi</groupId>
             <artifactId>app-platform-file-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-connector-ui</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-repo-web</artifactId>
         </dependency>
         <dependency>
             <groupId>com.xspaceagi</groupId>

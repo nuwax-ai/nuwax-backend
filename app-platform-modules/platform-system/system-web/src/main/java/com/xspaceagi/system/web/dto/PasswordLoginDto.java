@@ -22,4 +22,10 @@ public class PasswordLoginDto implements Serializable {
 
     @Schema(description = "验证码参数")
     private String captchaVerifyParam;
+
+    @Schema(description = "图形验证码ID，开启图形验证码时必传")
+    private String captchaId;
+
+    @Schema(description = "图形验证码内容，开启图形验证码时必传")
+    private String captchaCode;
 }

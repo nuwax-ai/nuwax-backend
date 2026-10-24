@@ -26,11 +26,17 @@ public class NotifyMessageDomainServiceImpl implements NotifyMessageDomainServic
     @Override
     @DSTransactional
     public void addNotifyMessage(NotifyMessage notifyMessage, List<Long> userIds) {
+        addNotifyMessage(notifyMessage, userIds, false);
+    }
+
+    @Override
+    @DSTransactional
+    public void addNotifyMessage(NotifyMessage notifyMessage, List<Long> userIds, boolean read) {
         notifyMessageUserService.saveBatch(userIds.stream().map(userId -> {
             NotifyMessageUser notifyMessageUser = new NotifyMessageUser();
             notifyMessageUser.setUserId(userId);
             notifyMessageUser.setNotifyId(notifyMessage.getId());
-            notifyMessageUser.setReadStatus(NotifyMessageUser.ReadStatus.Unread);
+            notifyMessageUser.setReadStatus(read ? NotifyMessageUser.ReadStatus.Read : NotifyMessageUser.ReadStatus.Unread);
             return notifyMessageUser;
         }).collect(Collectors.toList()));
     }

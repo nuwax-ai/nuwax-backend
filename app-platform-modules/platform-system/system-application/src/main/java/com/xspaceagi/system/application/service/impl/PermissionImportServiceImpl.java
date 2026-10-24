@@ -879,6 +879,8 @@ public class PermissionImportServiceImpl implements PermissionImportService {
         entity.setMaxSpaceCount(dp.getMaxSpaceCount());
         entity.setMaxAgentCount(dp.getMaxAgentCount());
         entity.setMaxPageAppCount(dp.getMaxPageAppCount());
+        entity.setMaxUserAppCount(dp.getMaxUserAppCount());
+        entity.setUserAppIdleTimeoutSeconds(dp.getUserAppIdleTimeoutSeconds());
         entity.setMaxKnowledgeCount(dp.getMaxKnowledgeCount());
         entity.setKnowledgeStorageLimitGb(dp.getKnowledgeStorageLimitGb());
         entity.setMaxDataTableCount(dp.getMaxDataTableCount());

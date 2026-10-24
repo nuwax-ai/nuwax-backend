@@ -55,4 +55,9 @@ public class ConversationRpcServiceImpl implements IConversationRpcService {
     public void stopAgent(Long agentId, Long id) {
         sandboxAgentClient.agentStop(id.toString());
     }
+
+    @Override
+    public Long createRepoDocConversation(Long userId, Long agentId, String slugId, String docName) {
+        return conversationApplicationService.createRepoDocConversation(userId, agentId, slugId, docName);
+    }
 }

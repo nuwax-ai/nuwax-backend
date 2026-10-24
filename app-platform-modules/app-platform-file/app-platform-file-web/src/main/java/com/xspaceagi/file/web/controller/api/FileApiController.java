@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
+import static com.xspaceagi.file.web.controller.FileManagementController.checkSvgUploadPermission;
 import static com.xspaceagi.file.web.controller.FileManagementController.toVO;
 
 @Tag(name = "文件上传")
@@ -45,6 +46,9 @@ public class FileApiController {
                                               @RequestParam(value = "targetType", required = false, defaultValue = "Default") String targetType,
                                               @RequestParam(value = "targetId", required = false, defaultValue = "-1") Long targetId,
                                               @RequestParam(value = "metadata", required = false) String metadata) {
+
+        // SVG 可携带脚本，同源内联展示存在存储型 XSS 风险：仅管理员可上传
+        checkSvgUploadPermission(file);
 
         if ("Agent".equals(targetType) && targetId > 0) {
             PublishedPermissionDto publishedPermissionDto = publishApplicationService.hasPermission(Published.TargetType.Agent, targetId);

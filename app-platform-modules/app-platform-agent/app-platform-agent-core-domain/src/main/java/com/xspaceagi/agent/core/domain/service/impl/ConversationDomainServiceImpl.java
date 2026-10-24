@@ -2,12 +2,15 @@ package com.xspaceagi.agent.core.domain.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.xspaceagi.agent.core.adapter.dto.ArchivedFilter;
+import com.xspaceagi.agent.core.adapter.dto.ProjectConversationFilter;
 import com.xspaceagi.agent.core.adapter.repository.ConversationMessageRepository;
 import com.xspaceagi.agent.core.adapter.repository.ConversationRepository;
 import com.xspaceagi.agent.core.adapter.repository.entity.Conversation;
 import com.xspaceagi.agent.core.adapter.repository.entity.ConversationMessage;
 import com.xspaceagi.agent.core.domain.service.ConversationDomainService;
 import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.tenant.thread.TenantFunctions;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -26,7 +29,9 @@ import java.util.stream.Collectors;
 @Service
 public class ConversationDomainServiceImpl implements ConversationDomainService {
 
-    private static final String DEFAULT_TOPIC = "Unnamed conversation";
+    private static final String DEFAULT_TOPIC_EN = "Unnamed conversation";
+
+    private static final String DEFAULT_TOPIC_CN = "未命名会话";
     @Resource
     private ConversationRepository conversationRepository;
 
@@ -38,7 +43,8 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         // 将正在执行中的会话状态改为已完成，避免服务器重启时状态一直展示执行中
         LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Conversation::getTaskStatus, Conversation.ConversationTaskStatus.EXECUTING);
-        queryWrapper.in(Conversation::getType, Conversation.ConversationType.Chat, Conversation.ConversationType.TempChat);
+        queryWrapper.in(Conversation::getType, Conversation.ConversationType.Chat, Conversation.ConversationType.TempChat,
+                Conversation.ConversationType.Development, Conversation.ConversationType.DevDebug, Conversation.ConversationType.Repo);
         Conversation conversation = new Conversation();
         conversation.setTaskStatus(Conversation.ConversationTaskStatus.COMPLETE);
         TenantFunctions.callWithIgnoreCheck(() -> conversationRepository.update(conversation, queryWrapper));
@@ -52,6 +58,8 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
 
     @Override
     public void deleteConversation(Long userId, Long id) {
+        // 先删会话的消息再删会话行，避免消息孤儿残留
+        clearConversationMessages(id);
         //通过用户id和id删除会话
         LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Conversation::getUserId, userId);
@@ -111,12 +119,96 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
     }
 
     @Override
+    public List<Conversation> getConversationListByDevTarget(String devTargetType, Long devTargetId) {
+        if (devTargetType == null || devTargetId == null) {
+            return List.of();
+        }
+        LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Conversation::getDevTargetType, devTargetType);
+        queryWrapper.eq(Conversation::getDevTargetId, devTargetId.toString());
+        queryWrapper.orderByDesc(Conversation::getId);
+        return conversationRepository.list(queryWrapper);
+    }
+
+    @Override
+    public List<Conversation> getConversationListByDevTargets(String devTargetType, List<Long> devTargetIds) {
+        if (devTargetType == null || devTargetIds == null || devTargetIds.isEmpty()) {
+            return List.of();
+        }
+        // dev_target_id 列为 varchar，按字符串比较避免隐式转换
+        List<String> ids = devTargetIds.stream().map(String::valueOf).toList();
+        LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Conversation::getDevTargetType, devTargetType);
+        queryWrapper.in(Conversation::getDevTargetId, ids);
+        queryWrapper.orderByDesc(Conversation::getId);
+        return conversationRepository.list(queryWrapper);
+    }
+
+    @Override
+    public Conversation getLatestConversationByDevTarget(Long userId, String devTargetType, Long devTargetId) {
+        if (userId == null || devTargetType == null || devTargetId == null) {
+            return null;
+        }
+        LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Conversation::getUserId, userId);
+        queryWrapper.eq(Conversation::getDevTargetType, devTargetType);
+        queryWrapper.eq(Conversation::getDevTargetId, devTargetId.toString());
+        queryWrapper.orderByDesc(Conversation::getId);
+        queryWrapper.last("LIMIT 1");
+        return conversationRepository.getOne(queryWrapper);
+    }
+
+    @Override
+    public List<Conversation> getConversationListByIds(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return List.of();
+        }
+        LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Conversation::getId, ids);
+        return TenantFunctions.callWithIgnoreCheck(() -> conversationRepository.list(queryWrapper));
+    }
+
+    @Override
     public List<Conversation> queryConversationList(Long userId, Long agentId, Long lastId, int size, String topic) {
+        return queryConversationList(userId, agentId, lastId, size, topic, com.xspaceagi.agent.core.adapter.dto.ArchivedFilter.ALL);
+    }
+
+    @Override
+    public List<Conversation> queryConversationList(Long userId, Long agentId, Long lastId, int size, String topic,
+                                                    com.xspaceagi.agent.core.adapter.dto.ArchivedFilter archivedFilter) {
+        return queryConversationList(userId, agentId, lastId, size, topic, archivedFilter, null);
+    }
+
+    @Override
+    public List<Conversation> queryConversationList(Long userId, Long agentId, Long lastId, int size, String topic,
+                                                    ArchivedFilter archivedFilter, List<Long> collectedIds) {
+        return queryConversationList(userId, agentId, lastId, size, topic, archivedFilter, collectedIds, null);
+    }
+
+    @Override
+    public List<Conversation> queryConversationList(Long userId, Long agentId, Long lastId, int size, String topic,
+                                                    ArchivedFilter archivedFilter, List<Long> collectedIds,
+                                                    ProjectConversationFilter projectFilter) {
         LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Conversation::getUserId, userId);
         queryWrapper.eq(Conversation::getDevMode, 0);
         queryWrapper.eq(Conversation::getTopicUpdated, 1);
-        queryWrapper.and(wrapper -> wrapper.eq(Conversation::getType, Conversation.ConversationType.Chat).or().in(Conversation::getDevTargetType, List.of("Agent", "PageApp")));
+        // 项目会话过滤（项目会话 = 常规项目/全栈应用开发会话，按 devTargetType 判定）：
+        // ALL 全部（默认）；EXCLUDE 排除项目会话；ONLY 仅项目会话（不再并入普通 Chat）
+        ProjectConversationFilter effectiveProjectFilter = projectFilter == null ? ProjectConversationFilter.ALL : projectFilter;
+        List<String> devTargetTypes = switch (effectiveProjectFilter) {
+            case ONLY -> List.of(ProjectTypeEnum.NormalProject.name(), ProjectTypeEnum.UserApp.name());
+            case EXCLUDE -> List.of(ProjectTypeEnum.Agent.name(), ProjectTypeEnum.PageApp.name());
+            default -> List.of(ProjectTypeEnum.Agent.name(), ProjectTypeEnum.PageApp.name(),
+                    ProjectTypeEnum.UserApp.name(), ProjectTypeEnum.NormalProject.name());
+        };
+        if (effectiveProjectFilter == ProjectConversationFilter.ONLY) {
+            queryWrapper.in(Conversation::getDevTargetType, devTargetTypes);
+        } else {
+            queryWrapper.and(wrapper -> wrapper.eq(Conversation::getType, Conversation.ConversationType.Chat).or().in(Conversation::getDevTargetType, devTargetTypes));
+        }
+        // 收藏过滤：非空集合 = 仅查询这些会话（null 不过滤）
+        queryWrapper.in(CollectionUtils.isNotEmpty(collectedIds), Conversation::getId, collectedIds);
         if (StringUtils.isNotBlank(topic)) {
             queryWrapper.like(Conversation::getTopic, topic);
         }
@@ -127,10 +219,37 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         if (agentId != null) {
             queryWrapper.eq(Conversation::getAgentId, agentId);
         }
+        // 归档过滤：ALL 全部（默认）/ EXCLUDE 排除归档 / ONLY 仅归档（归档管理视图）
+        if (archivedFilter != null) {
+            switch (archivedFilter) {
+                case ONLY -> queryWrapper.eq(Conversation::getArchived, true);
+                case EXCLUDE -> queryWrapper.ne(Conversation::getArchived, true);
+                default -> { /* ALL：不过滤 */ }
+            }
+        }
+        // 置顶排最前，同组内按修改时间倒序
+        queryWrapper.orderByDesc(Conversation::getPinned);
         queryWrapper.orderByDesc(Conversation::getModified);
         queryWrapper.last("LIMIT " + size);
         queryWrapper.select(Conversation.class, info -> !"variables".equals(info.getColumn()));
         return conversationRepository.list(queryWrapper);
+    }
+
+    @Override
+    public List<Conversation> queryLatestConversationList(Long userId, List<Long> agentIds, String topic, Integer limit) {
+        LambdaQueryWrapper<Conversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Conversation::getUserId, userId);
+        queryWrapper.eq(Conversation::getDevMode, 0);
+        queryWrapper.eq(Conversation::getTopicUpdated, 1);
+        queryWrapper.eq(Conversation::getType, Conversation.ConversationType.Chat);
+        queryWrapper.in(CollectionUtils.isNotEmpty(agentIds), Conversation::getAgentId, agentIds);
+        if (StringUtils.isNotBlank(topic)) {
+            queryWrapper.apply("MATCH(topic) AGAINST({0} IN BOOLEAN MODE)", topic);
+        }
+        queryWrapper.orderByDesc(Conversation::getModified);
+        queryWrapper.last("LIMIT " + limit);
+        queryWrapper.select(Conversation.class, info -> !"variables".equals(info.getColumn()));
+        return TenantFunctions.callWithIgnoreCheck(() -> conversationRepository.list(queryWrapper));
     }
 
     @Override
@@ -209,7 +328,8 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
         conversation.setAgentId(agentId);
         conversation.setUserId(RequestContext.get().getUserId());
         conversation.setUid(UUID.randomUUID().toString().replace("-", ""));
-        conversation.setTopic(DEFAULT_TOPIC);
+        // 会话默认名按用户语言取
+        conversation.setTopic("en-US".equalsIgnoreCase(RequestContext.get().getLang()) ? DEFAULT_TOPIC_EN : DEFAULT_TOPIC_CN);
         conversation.setDevMode(0);
         conversation.setTenantId(RequestContext.get().getTenantId());
         conversation.setType(Conversation.ConversationType.Chat);
@@ -248,6 +368,13 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
     }
 
     @Override
+    public boolean clearConversationMessages(Long conversationId) {
+        LambdaQueryWrapper<ConversationMessage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ConversationMessage::getConversationId, conversationId);
+        return conversationMessageRepository.remove(queryWrapper);
+    }
+
+    @Override
     public List<ConversationMessage> queryConversationMessageList(Long conversationId, Long lastId, int size) {
         LambdaQueryWrapper<ConversationMessage> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ConversationMessage::getConversationId, conversationId);
@@ -257,15 +384,6 @@ public class ConversationDomainServiceImpl implements ConversationDomainService 
             lastId = Long.MAX_VALUE;
         }
         queryWrapper.lt(ConversationMessage::getId, lastId);
-        return conversationMessageRepository.list(queryWrapper);
-    }
-
-    @Override
-    public List<ConversationMessage> queryConversationMessageList(Long conversationId, Long minId) {
-        LambdaQueryWrapper<ConversationMessage> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ConversationMessage::getConversationId, conversationId);
-        queryWrapper.orderByDesc(ConversationMessage::getId);
-        queryWrapper.gt(ConversationMessage::getId, minId);
         return conversationMessageRepository.list(queryWrapper);
     }
 

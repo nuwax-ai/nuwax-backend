@@ -38,18 +38,12 @@ public class CollectApplicationServiceImpl implements CollectApplicationService 
         if (publishApplicationService.queryPublishedList(targetType, List.of(targetId)).size() == 0) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentNotPublishedOrOfflineAlt);
         }
-        boolean res = userTargetRelationDomainService.record(userId, targetType, UserTargetRelation.OpType.Collect, targetId);
-        if (res) {
-            publishDomainService.incStatisticsCount(targetType, targetId, PublishedStatistics.Key.COLLECT_COUNT.getKey(), 1L);
-        }
+        doCollect(userId, targetType, targetId);
     }
 
     @Override
     public void unCollect(Long userId, Published.TargetType targetType, Long targetId) {
-        boolean res = userTargetRelationDomainService.unRecord(userId, targetType, UserTargetRelation.OpType.Collect, targetId);
-        if (res) {
-            publishDomainService.incStatisticsCount(targetType, targetId, PublishedStatistics.Key.COLLECT_COUNT.getKey(), -1L);
-        }
+        doUnCollect(userId, targetType, targetId);
     }
 
     @Override
@@ -109,5 +103,80 @@ public class CollectApplicationServiceImpl implements CollectApplicationService 
             }
         }
         return List.of();
+    }
+
+    @Override
+    public void collectNormalProject(Long userId, Long projectId) {
+        // 常规项目不发布，不做发布校验
+        doCollect(userId, Published.TargetType.NormalProject, projectId);
+    }
+
+    @Override
+    public void unCollectNormalProject(Long userId, Long projectId) {
+        doUnCollect(userId, Published.TargetType.NormalProject, projectId);
+    }
+
+    @Override
+    public void collectUserApp(Long userId, Long appId) {
+        // 不做发布校验
+        doCollect(userId, Published.TargetType.UserApp, appId);
+    }
+
+    @Override
+    public void unCollectUserApp(Long userId, Long appId) {
+        doUnCollect(userId, Published.TargetType.UserApp, appId);
+    }
+
+    @Override
+    public void collectThirdApp(Long userId, Long projectId) {
+        // 不做发布校验
+        doCollect(userId, Published.TargetType.ThirdApp, projectId);
+    }
+
+    @Override
+    public void unCollectThirdApp(Long userId, Long projectId) {
+        doUnCollect(userId, Published.TargetType.ThirdApp, projectId);
+    }
+
+    @Override
+    public List<Long> queryCollectedTargetIds(Long userId, Published.TargetType targetType, List<Long> targetIds) {
+        if (userId == null || CollectionUtils.isEmpty(targetIds)) {
+            return List.of();
+        }
+        return userTargetRelationDomainService.queryUserTargetRelationByTargetIds(userId, targetType, UserTargetRelation.OpType.Collect, targetIds)
+                .stream().map(UserTargetRelation::getTargetId).toList();
+    }
+
+    @Override
+    public List<Long> queryAllCollectedTargetIds(Long userId, Published.TargetType targetType) {
+        if (userId == null) {
+            return List.of();
+        }
+        return userTargetRelationDomainService.queryAllCollectionIds(userId, targetType);
+    }
+
+    @Override
+    public void clearCollect(Published.TargetType targetType, Long targetId) {
+        userTargetRelationDomainService.unRecordAll(targetType, UserTargetRelation.OpType.Collect, targetId);
+    }
+
+    /**
+     * 收藏
+     */
+    private void doCollect(Long userId, Published.TargetType targetType, Long targetId) {
+        boolean res = userTargetRelationDomainService.record(userId, targetType, UserTargetRelation.OpType.Collect, targetId);
+        if (res) {
+            publishDomainService.incStatisticsCount(targetType, targetId, PublishedStatistics.Key.COLLECT_COUNT.getKey(), 1L);
+        }
+    }
+
+    /**
+     * 取消收藏
+     */
+    private void doUnCollect(Long userId, Published.TargetType targetType, Long targetId) {
+        boolean res = userTargetRelationDomainService.unRecord(userId, targetType, UserTargetRelation.OpType.Collect, targetId);
+        if (res) {
+            publishDomainService.incStatisticsCount(targetType, targetId, PublishedStatistics.Key.COLLECT_COUNT.getKey(), -1L);
+        }
     }
 }

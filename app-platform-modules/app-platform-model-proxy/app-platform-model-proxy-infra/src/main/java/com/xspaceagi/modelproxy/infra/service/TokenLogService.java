@@ -82,6 +82,7 @@ public class TokenLogService implements TaskExecuteService {
                 String model = jsonObject.getString("model");
                 String responseTime = jsonObject.getString("responseTime");
                 String responseBody = jsonObject.getString("responseBody");
+                String requestHeaders = jsonObject.getString("requestHeaders");
                 //当前只支持anthropic和openai的token记录
                 // responseBody 为对应的sse完整数据
                 long cacheInputTokens = 0L;
@@ -112,15 +113,15 @@ public class TokenLogService implements TaskExecuteService {
                     outputTokens = tokenUsage.completionTokens;
                     content = tokenUsage.content;
                 }
-                if (inputTokens == 0) {
+                if (inputTokens <= 0) {
                     //大致计算输入token
                     inputTokens = TikTokensUtil.tikTokensCount(requestBody);
                 }
-                if (outputTokens == 0) {
+                if (outputTokens <= 0) {
                     outputTokens = TikTokensUtil.tikTokensCount(content);
                 }
                 if (inputTokens > 0) {
-                    userMetricRpcService.incrementMetricAllPeriods(tenantId, userId, BizType.TOKEN_USAGE.getCode(), BigDecimal.valueOf(inputTokens + outputTokens));
+                    userMetricRpcService.incrementMetricAllPeriods(tenantId, userId, BizType.TOKEN_USAGE.getCode(), BigDecimal.valueOf(inputTokens + cacheInputTokens + outputTokens));
                 }
                 if ("true".equalsIgnoreCase(saveLog)) {
                     long spaceId = -1L;
@@ -139,6 +140,7 @@ public class TokenLogService implements TaskExecuteService {
                             .input(requestBody)
                             .createTime(Long.parseLong(responseTime))
                             .output(responseBody)
+                            .processData(requestHeaders)
                             .userId(userId)
                             .userName(userName)
                             .targetType("Model")

@@ -180,36 +180,6 @@ public class CustomPageConversationRepositoryImpl implements ICustomPageConversa
     }
 
     @Override
-    public CustomPageConversationModel findById(Long id) {
-        if (id == null) {
-            return null;
-        }
-        CustomPageConversation entity = customPageConversationService.getById(id);
-        if (entity == null || !YnEnum.Y.getKey().equals(entity.getYn())) {
-            return null;
-        }
-        return customPageConversationTranslator.convertToModel(entity);
-    }
-
-    @Override
-    public boolean updateAssistantContent(Long id, String content, String requestId, UserContext userContext) {
-        if (id == null || content == null || content.isBlank()) {
-            return false;
-        }
-        CustomPageConversation updateEntity = new CustomPageConversation();
-        updateEntity.setId(id);
-        updateEntity.setContent(content);
-        if (requestId != null && !requestId.isBlank()) {
-            updateEntity.setRequestId(requestId);
-        }
-        if (userContext != null) {
-            updateEntity.setModifiedId(userContext.getUserId());
-            updateEntity.setModifiedName(userContext.getUserName());
-        }
-        return customPageConversationService.updateById(updateEntity);
-    }
-
-    @Override
     public boolean updateUserSessionIdByRequestId(Long projectId, String requestId, String sessionId, Long userId) {
         if (projectId == null || requestId == null || requestId.isBlank() || sessionId == null || sessionId.isBlank()
                 || userId == null) {

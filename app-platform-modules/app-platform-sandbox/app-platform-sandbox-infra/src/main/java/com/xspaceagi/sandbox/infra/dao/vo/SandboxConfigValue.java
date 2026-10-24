@@ -30,4 +30,7 @@ public class SandboxConfigValue {
 
     @Schema(description = "最大用户数")
     private Integer maxUsers;
+
+    @Schema(description = "客户端版本")
+    private String version;
 }

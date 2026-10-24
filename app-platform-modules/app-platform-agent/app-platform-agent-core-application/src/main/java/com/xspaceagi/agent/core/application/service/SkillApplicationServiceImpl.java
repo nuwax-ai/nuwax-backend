@@ -33,6 +33,7 @@ import com.xspaceagi.system.application.service.SpaceApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YnEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -181,6 +182,8 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         }
         cleanupSkillStorageFiles(skillId);
         skillDomainService.delete(skillId);
+        // 项目会话随项目删除联动清理（含消息、收藏及云端沙箱工作区）
+        conversationApplicationService.deleteByDevTarget(ProjectTypeEnum.Skill.name(), skillId);
     }
 
     @Override
@@ -598,7 +601,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillMdRequired);
         }
 
-        // 从 SKILL.md 中解析 name 和 description
+        // 从 SKILL.md 中解析 name 和 description（要求标准 frontmatter，缺失即校验失败）
         String nameInMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "name");
         String descriptionInMd = MarkdownExtractUtil.extractFieldValue(skillMdContent, "description");
 
@@ -758,8 +761,10 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
                 userId,
                 skillConfigDto.getSpaceId(),
                 recommendResponse.getTargetId(),
-                Published.TargetType.Skill.name(),
-                skillId
+                ProjectTypeEnum.Skill.name(),
+                skillId,
+                null,
+                null
         ).getId();
 
         boolean hasFiles = CollectionUtils.isNotEmpty(skillConfigDto.getFiles());
@@ -800,7 +805,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
 
         ProjectCreateResultDTO result = new ProjectCreateResultDTO();
         result.setTargetId(skillId.toString());
-        result.setTargetType(Published.TargetType.Skill);
+        result.setTargetType(ProjectTypeEnum.Skill);
         result.setConversationId(devConversationId);
         return result;
     }
@@ -924,7 +929,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         if (userId == null) {
             throw BizException.of(ErrorCodeEnum.UNAUTHORIZED, BizExceptionCodeEnum.userNotLoggedIn);
         }
-        List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Skill, size, 1);
+        List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Skill, size, 1, null);
         if (CollectionUtils.isEmpty(userTargetRelations)) {
             return null;
         }

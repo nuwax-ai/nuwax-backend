@@ -12,6 +12,7 @@
     <artifactId>app-platform-im</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>app-platform-im-sdk</module>
         <module>app-platform-im-web</module>
         <module>app-platform-im-application</module>
         <module>app-platform-im-domain</module>

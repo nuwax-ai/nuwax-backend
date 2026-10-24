@@ -1,8 +1,5 @@
 package com.xspaceagi.knowledge.domain.docparser;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.xspaceagi.agent.core.adapter.application.ModelApplicationService;
 import com.xspaceagi.knowledge.core.spec.utils.Constants;
 import com.xspaceagi.knowledge.domain.model.KnowledgeRawSegmentModel;
 import com.xspaceagi.knowledge.domain.repository.IKnowledgeRawSegmentRepository;
@@ -46,45 +43,13 @@ public class FileParseExtService {
     private IKnowledgeRawSegmentRepository knowledgeRawSegmentRepository;
 
     @Resource
-    private ModelApplicationService modelApplicationService;
-
-    @Resource
     private PdfSegmentationServiceNative pdfSegmentationServiceNative;
 
     @Resource
     private FileParseService fileParseService;
 
-    private String extractAndCleanJson(String rawResult) {
-        if (rawResult == null || rawResult.trim().isEmpty()) {
-            return "[]";
-        }
-
-        // 查找JSON数组的开始和结束
-        int startIndex = rawResult.indexOf('[');
-        int endIndex = rawResult.lastIndexOf(']');
-
-        if (startIndex == -1 || endIndex == -1) {
-            log.warn("No valid JSON array, return empty");
-            return "[]";
-        }
-
-        // 提取JSON部分
-        String jsonContent = rawResult.substring(startIndex, endIndex + 1);
-
-        // 清理常见的格式问题
-        jsonContent = jsonContent.trim();
-
-        // 移除可能的markdown代码块标记
-        jsonContent = jsonContent.replaceAll("```json", "").replaceAll("```", "");
-
-        // 移除多余的空白字符，但保留字符串内部的空格
-        jsonContent = jsonContent.replaceAll("\\s+", " ").trim();
-
-        // 修复可能的JSON格式问题（如缺少逗号等）
-        jsonContent = jsonContent.replaceAll("\\]\\s*\\[", "],[");
-
-        return jsonContent;
-    }
+    @Resource
+    private SmartParsingExtService smartParsingExtService;
 
     public void parseRawTxt(FileParseRequest fileParseRequest,
                             UserContext userContext, String docUrl) {
@@ -96,65 +61,14 @@ public class FileParseExtService {
 
         List<String> segments = new ArrayList<>();
         log.info("Splitting paragraphs...");
-        if(false) {
-            //System.out.println("=====>文章比较小采用ai来进行文章分段");
-            String sysPrompt = "请分析以下文章内容，按照语义逻辑将其划分为不同的一级章节。\n" +
-                    "划分要求：\n" +
-                    "1. 识别文章的主题转换点。\n" +
-                    "2. 忽略无关的过渡句。\n" +
-                    "3. 输出格式为 JSON 数组，每个元素是一个章节的内容。\n" +
-                    "4. 每个章节应该包含该主题下的完整内容。\n" +
-                    "5. 章节划分应该基于内容的逻辑关系和主题连贯性。\n" +
-                    "6. 返回的JSON格式必须正确，不要包含任何额外文本或解释。\n" +
-                    "7. 返回的JSON格式需要去掉换行符号。\n" +
-                    //"7. 返回的JSON格式为：{\"chapters\":[\"2026年寒假假期即将来临，为了让自己度过一个健康、文明、平安、充实的假期，请同学们认真阅读相关注意事项，并遵照执行。\",\"离校同学需登录教育质量管理系统（EQ平台）\"]}。其中chapters为固定对象名称方便后面解析\n" +
-                    "8. 实例：返回的JSON格式为：{\"chapters\":[\"章节一内容1\",\"章节一内容2\"]}。说明：其中chapters为固定对象名称方便后面解析\n" +
-                    //"9. 需要阅读的文章地址为：" + docUrl + "?x="+ UUID.randomUUID().toString().replaceAll("-", "") + "\n" +
-                    //"9.请严格按照文章地址中的内容进行拆分，要求文字需要和文章的文字保持一致。\n" +
-                    //"10.请按原文的内容全部划分之后给我。\n" +
-                    //"11.需要提取文章里面全部的文字，不要有遗漏。\n" +
-                    "9.请按文章中第一级的大章节来划分，章节的划分力度需要粗一点。\n" +
-                    "10.如遇到有大的章节中存在类似一、二、三等大写数字的关键文字，请把一、到二、中间的部分作为一个章节内容存储作为一个元素。\n" +
-                    "11.如果单个章节划分的元素文字小于500字，请合并到下一个章节的元素中，保证每个章节的划分文字需要合理。\n" +
-                    "\n" +
-                    "文章内容：\n" +
-                    "{{text}}";
-            String userPrompt = content;
-            //String userPrompt = "请先提取这篇'" + docUrl + "?x="+ UUID.randomUUID().toString().replaceAll("-", "") + "'文章的全部文字，不要有任何遗漏文字, 然后将文章提取出来的全部文字按章节进行分段，并将分段的结果以JSON格式返回给我";
-            //System.out.println("docUrl:" + docUrl);
+        if(true) {
+            log.info("Using smart parsing service for segmentation");
+            //segments = smartParsingService.segments(content);
+            segments = smartParsingExtService.pageSegments(content, docUrl);
+            log.info("Smart parsing service returned {} segments", segments != null ? segments.size() : 0);
+        }
 
-            Map<String, String> result = modelApplicationService.call(sysPrompt, userPrompt,
-                    new org.springframework.core.ParameterizedTypeReference<Map<String, String>>() {
-                    });
-            //chapters
-            String json = null;
-            if(result.containsKey("chapters")) {
-                json = result.get("chapters");
-            }
-            json = extractAndCleanJson(json);
-            //System.out.println("result:" + json);
-            if(!JSON.isValid(json)) {
-                JSONArray jsonArray = JSONArray.parseArray(json);
-                StringBuilder stringBuilder = new StringBuilder();
-                if(jsonArray !=null && jsonArray.size() > 0) {
-                    for(int i=0; i<jsonArray.size(); i++) {
-                        String str = jsonArray.get(i).toString();
-                        //jsonArray.add(str);
-                        //str = str.replaceAll("\r\n", "\n").replaceAll("\r", "\n").replaceAll("\n", "");
-                        stringBuilder.append(str);
-                        if(stringBuilder.length() > 500) {
-                            segments.add(stringBuilder.toString());
-                            stringBuilder = new StringBuilder();
-                        } else if(i == jsonArray.size() - 1) {
-                            segments.add(stringBuilder.toString());
-                            stringBuilder = new StringBuilder();
-                        }
-                    }
-                }
-            } else {
-                segments.add(result.get("chapters").toString());
-            }
-        } else {
+        if (segments == null || segments.size() == 0) {
             boolean needloadWord = false;
             if(docUrl.indexOf(".docx") != -1 || docUrl.indexOf(".doc") != -1) {
                 try {
@@ -201,7 +115,7 @@ public class FileParseExtService {
                     }
 
                     //pdf没有分出来，就用默认兜底的方式来分
-                    if(segments != null && segments.size() == 1) {
+                    if(segments != null && ( segments.size() == 1 || segments.size() == 0 ) ) {
                         needloadWord = false;
                     }
 
@@ -215,57 +129,6 @@ public class FileParseExtService {
             }
         }
 
-        /*
-        *
-        * segments = semanticSegmentService.segmentByEmbedding(content);
-
-        if(false) {
-            String sysPrompt = "请分析以下文章内容，按照语义逻辑将其划分为不同的章节。\n" +
-                    "要求：\n" +
-                    "1. 识别文章的主题转换点。\n" +
-                    "2. 忽略无关的过渡句。\n" +
-                    "3. 输出格式为 JSON 数组，每个元素是一个章节的内容。\n" +
-                    "4. 每个章节应该包含该主题下的完整内容。\n" +
-                    "5. 章节划分应该基于内容的逻辑关系和主题连贯性。\n" +
-                    "6. 返回的JSON格式必须正确，不要包含任何额外文本或解释。\n" +
-                    "7. 返回的JSON格式需要去掉换行符号。\n" +
-                    //"7. 返回的JSON格式为：{\"chapters\":[\"2026年寒假假期即将来临，为了让自己度过一个健康、文明、平安、充实的假期，请同学们认真阅读相关注意事项，并遵照执行。\",\"离校同学需登录教育质量管理系统（EQ平台）\"]}。其中chapters为固定对象名称方便后面解析\n" +
-                    "8. 实例：返回的JSON格式为：{\"chapters\":[\"章节一内容1\",\"章节一内容2\"]}。说明：其中chapters为固定对象名称方便后面解析\n" +
-                    "9. 需要阅读的文章地址为：" + docUrl + "?x="+ UUID.randomUUID().toString().replaceAll("-", "") + "\n" +
-                    "10.请严格按照文章地址中的内容进行拆分，要求文字需要和文章的文字保持一致。\n" +
-                    "12.请按原文的内容全部划分之后给我。\n" +
-                    "13.需要提取文章里面全部的文字，不要有遗漏。\n" +
-                    "\n" +
-                    "文章内容：\n" +
-                    "{{text}}";
-            //String userPrompt = content;
-            String userPrompt = "请先提取这篇'" + docUrl + "?x="+ UUID.randomUUID().toString().replaceAll("-", "") + "'文章的全部文字，不要有任何遗漏文字, 然后将文章提取出来的全部文字按章节进行分段，并将分段的结果以JSON格式返回给我";
-            System.out.println("docUrl:" + docUrl);
-
-            Map<String, String> result = modelApplicationService.call(sysPrompt, userPrompt,
-                    new org.springframework.core.ParameterizedTypeReference<Map<String, String>>() {
-                    });
-            //chapters
-            String json = null;
-            if(result.containsKey("chapters")) {
-                json = result.get("chapters");
-            }
-            json = extractAndCleanJson(json);
-
-            System.out.println("result:" + json);
-
-            JSONArray jsonArray = JSONArray.parseArray(json);
-            if(jsonArray !=null && jsonArray.size() > 0) {
-                for(int i=0; i<jsonArray.size(); i++) {
-                    String str = jsonArray.get(i).toString();
-                    //jsonArray.add(str);
-                    //str = str.replaceAll("\r\n", "\n").replaceAll("\r", "\n").replaceAll("\n", "");
-                    segments.add(str);
-                }
-            }
-        }
-        *
-        * */
 
         if (segments == null || segments.size() == 0) {
             segmentConfig.setSegment(SegmentEnum.WORDS);
@@ -334,25 +197,6 @@ public class FileParseExtService {
             }
         }
         return newSegmentArray;
-    }
-
-    private List<String> mergeShortSegments(List<String> segments) {
-        List<String> result = new ArrayList<>();
-
-        for (int i = 0; i < segments.size(); i++) {
-            String current = segments.get(i);
-
-            if (current.length() < 100 && i < segments.size() - 1) {
-                String next = segments.get(i + 1);
-                String merged = current + "\n" + next;
-                result.add(merged);
-                i++;
-            } else {
-                result.add(current);
-            }
-        }
-
-        return result;
     }
 
     private List<String> splitByTitles(String text) {
@@ -509,61 +353,6 @@ public class FileParseExtService {
         }
 
         return segments;
-    }
-
-    private List<String> splitByNLP(String text) {
-        List<String> sentences = new ArrayList<>();
-
-        // 按句末标点切分（简单的正则，实际建议用 NLP 库分句）
-        String[] rawSentences = text.split("(?<=[。！？；!?])");
-
-        for (String sentence : rawSentences) {
-            String trimmed = sentence.trim();
-            if (!trimmed.isEmpty()) {
-                sentences.add(trimmed);
-            }
-        }
-
-        return sentences;
-    }
-
-    private List<String> mergeSentencesByLength(List<String> sentences, int minLength, int maxLength) {
-        List<String> result = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-
-        // 按句子合并，确保每个分段在指定长度范围内
-        for (String sentence : sentences) {
-            String potential = current.toString() + sentence;
-
-            if (potential.length() <= maxLength) {
-                current.append(sentence);
-            } else {
-                if (current.length() >= minLength) {
-                    result.add(current.toString());
-                    current = new StringBuilder(sentence);
-                } else {
-                    current.append(sentence);
-                }
-            }
-        }
-
-        // 处理最后一个分段
-        if (current.length() > 0) {
-            if (current.length() < minLength && !result.isEmpty()) {
-                // 最后一个分段过短，尝试与上一个分段合并
-                String last = result.get(result.size() - 1);
-                String merged = last + current.toString();
-                if (merged.length() <= maxLength) {
-                    result.set(result.size() - 1, merged);
-                } else {
-                    result.add(current.toString());
-                }
-            } else {
-                result.add(current.toString());
-            }
-        }
-
-        return result;
     }
 
     //---------------------------------------------------------word文档解析代码----------------------------------------------------------------------------

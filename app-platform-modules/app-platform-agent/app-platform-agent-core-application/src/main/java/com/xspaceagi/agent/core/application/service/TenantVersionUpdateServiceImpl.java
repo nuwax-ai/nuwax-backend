@@ -133,6 +133,24 @@ public class TenantVersionUpdateServiceImpl {
             i18nImportService.updateConfigToTenant(tenant, "1.5");
         });
 
+        tenantVersionUpgradeMap.put("3.0.5", (tenant) -> {
+            permissionImportService.importDiffToTenant(tenant, "1.7");
+
+            i18nImportService.addConfigToTenant(tenant, "1.6");
+            i18nImportService.updateConfigToTenant(tenant, "1.6");
+        });
+
+        tenantVersionUpgradeMap.put("3.0.6", (tenant) -> {
+            permissionImportService.importDiffToTenant(tenant, "1.8");
+
+            i18nImportService.addConfigToTenant(tenant, "1.7");
+            i18nImportService.updateConfigToTenant(tenant, "1.7");
+        });
+
+        tenantVersionUpgradeMap.put("3.0.7", (tenant) -> {
+            permissionImportService.importDiffToTenant(tenant, "1.9");
+        });
+
         new Thread(() -> {
             // Customized content required for version upgrade
             while (true) {

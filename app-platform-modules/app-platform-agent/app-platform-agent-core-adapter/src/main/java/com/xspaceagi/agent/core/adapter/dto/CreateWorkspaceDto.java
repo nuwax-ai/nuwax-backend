@@ -22,13 +22,19 @@ public class CreateWorkspaceDto implements Serializable {
     @Schema(description = "用户ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long userId;
 
+    @Schema(description = "智能体ID", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Long agentId;
+
     @NotNull
     @JsonProperty("cId")
     @Schema(description = "会话ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long cId;
 
-    @Schema(description = "技能ID列表")
+    @Schema(description = "智能体全量技能ID列表")
     private List<Long> skillIds;
+
+    @Schema(description = "更新技能ID列表")
+    private List<Long> updateSkillIds;
 
     @Schema(description = "子代理列表")
     private List<SubagentDto> subagents;

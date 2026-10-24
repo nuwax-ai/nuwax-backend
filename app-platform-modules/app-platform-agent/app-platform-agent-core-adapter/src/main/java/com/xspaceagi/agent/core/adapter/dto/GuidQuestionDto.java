@@ -13,6 +13,9 @@ public class GuidQuestionDto {
     @Schema(description = "问题类型")
     private GuidQuestionType type;
 
+    @Schema(description = "标题")
+    private String title;
+
     @Schema(description = "问题信息")
     private String info;
 

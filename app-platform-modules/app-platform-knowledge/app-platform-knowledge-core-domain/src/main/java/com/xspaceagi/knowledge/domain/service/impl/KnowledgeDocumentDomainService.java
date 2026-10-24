@@ -11,11 +11,14 @@ import com.xspaceagi.knowledge.core.spec.enums.KnowledgeTaskRunTypeEnum;
 import com.xspaceagi.knowledge.core.spec.enums.QaStatusEnum;
 import com.xspaceagi.knowledge.core.spec.enums.RawTextFulltextSyncStatusEnum;
 import com.xspaceagi.knowledge.core.spec.utils.Constants;
+import com.xspaceagi.knowledge.core.spec.utils.DocumentParseBudget;
 import com.xspaceagi.knowledge.core.spec.utils.ThreadTenantUtil;
 import com.xspaceagi.knowledge.domain.docparser.DocParserService;
+import com.xspaceagi.knowledge.domain.docparser.SmartParsingModelUnavailableException;
 import com.xspaceagi.knowledge.domain.dto.EmbeddingStatusDto;
 import com.xspaceagi.knowledge.domain.dto.qa.QAEmbeddingDto;
 import com.xspaceagi.knowledge.domain.dto.task.AutoRecordTask;
+import com.xspaceagi.knowledge.domain.knowledgegraph.service.IKnowledgeGraphDomainExtService;
 import com.xspaceagi.knowledge.domain.model.*;
 import com.xspaceagi.knowledge.domain.repository.*;
 import com.xspaceagi.knowledge.domain.service.IKnowledgeDocumentDomainService;
@@ -41,7 +44,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.concurrent.Future;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +58,9 @@ import static com.xspaceagi.knowledge.core.spec.utils.Prompts.GENERATE_QA_PROMPT
 @Slf4j
 @Service
 public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainService {
+
+    @Resource
+    private DocumentParseBudget documentParseBudget;
 
     @Resource
     private IKnowledgeConfigRepository knowledgeConfigRepository;
@@ -101,6 +109,9 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
     private IKnowledgeFullTextSearchDomainService fullTextSearchDomainService;
     @Autowired
     private IFileAccessService iFileAccessService;
+
+    @Resource
+    private IKnowledgeGraphDomainExtService knowledgeGraphDomainExtService;
 
     @Override
     public KnowledgeDocumentModel queryOneInfoById(Long id) {
@@ -297,21 +308,50 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
     @Override
     public void workRunTaskForRawSegment(KnowledgeDocumentModel model, UserContext userContext, Long docId) {
-        // 分段前，清空该文档已有的 QA 和原始分段，避免重复数据
-        this.knowledgeQaSegmentRepository.deleteByDocumentId(docId);
-        this.knowledgeRawSegmentRepository.deleteByConfigDocumentId(docId);
+        // 解析并发限制: 限制"同时在解析中的文档总字节数",防止批量上传大文件并行解析导致 OOM。
+        // 挂在本方法上,新增/更新/批量/定时重试四条入口(含不经线程池的调度线程重试)全部被覆盖
+        try (DocumentParseBudget.Lease lease = documentParseBudget.acquire(resolveFileSize(model, docId))) {
+            // 分段前，清空该文档已有的 QA 和原始分段，避免重复数据
+            this.knowledgeQaSegmentRepository.deleteByDocumentId(docId);
+            this.knowledgeRawSegmentRepository.deleteByConfigDocumentId(docId);
 
-        var autoRecordTask = AutoRecordTask.builder()
-                .docId(docId)
-                .spaceId(model.getSpaceId())
-                .kbId(model.getKbId())
-                .build();
+            var autoRecordTask = AutoRecordTask.builder()
+                    .docId(docId)
+                    .spaceId(model.getSpaceId())
+                    .kbId(model.getKbId())
+                    .build();
 
-        // 开始分段
-        this.knowledgeTaskDomainService.changeTaskStatus(autoRecordTask, KnowledgeTaskRunTypeEnum.SEGMENT, userContext);
-        this.docParserService.parse(model, userContext);
-        log.info("Doc segmented: kbId={}, docId={}", model.getKbId(), docId);
+            // 开始分段
+            this.knowledgeTaskDomainService.changeTaskStatus(autoRecordTask, KnowledgeTaskRunTypeEnum.SEGMENT, userContext);
+            this.docParserService.parse(model, userContext);
+            log.info("Doc segmented: kbId={}, docId={}", model.getKbId(), docId);
+        } catch (SmartParsingModelUnavailableException e) {
+            // 永久性配置错误(模型不可用): 不重试、不打错误堆栈,直接耗尽重试并把原因写入
+            // knowledge_task.result,由文档状态查询展示给用户(ANALYZE_FAILED + 具体原因);
+            // 存结构化编码而非格式化明文,读取侧按查看者语言渲染(后台线程格式化语言不可控);
+            // 标记后重抛,终止后续 FTS/QA/向量化阶段(避免空分段继续流转),重试选择器因
+            // retry_cnt 已拉满不会再捞取该文档
+            log.warn("Doc parse failed by permanent config error, docId={}, reason={}", docId, e.getMessage());
+            var task = this.knowledgeTaskRepository.queryOneByDocId(docId);
+            if (task != null) {
+                task.setResult(e.encodedResult());
+                task.setRetryCnt(task.getMaxRetryCnt());
+                this.knowledgeTaskRepository.updateInfo(task, userContext);
+            }
+            throw e;
+        }
+    }
 
+    /**
+     * 获取文档字节数用于解析计费。更新接口的入参不带 fileSize,缺失时按主键从库中补查,
+     * 避免更新路径重新解析大文件时按最低计费漏算,削弱并发预算保护
+     */
+    private Long resolveFileSize(KnowledgeDocumentModel model, Long docId) {
+        if (model.getFileSize() != null && model.getFileSize() > 0) {
+            return model.getFileSize();
+        }
+        var dbModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
+        return dbModel == null ? null : dbModel.getFileSize();
     }
 
     @Override
@@ -356,11 +396,50 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 this.self.updateDocumentEmbeddingStatus(docId, userContext);
 
             }
+            case GRAPH -> {
+                // 开始生成QA的向量化
+                this.self.generateGraphDomain(docId, userContext);
+            }
             default -> {
                 log.info("No retry needed, docId={}", docId);
             }
         }
 
+    }
+
+    public void generateGraphDomain(Long docId, UserContext userContext) {
+        var docModel = this.knowledgeDocumentRepository.queryOneInfoById(docId);
+        if (Objects.isNull(docModel)) {
+            log.warn("Document not found, docId={}", docId);
+            throw KnowledgeException.build(BizExceptionCodeEnum.resourceDataNotFound);
+        }
+
+        //knowledgeGraphDomainExtService.generateKnowledgeGraph(docId, userContext);
+        try {
+            Long taskId = knowledgeGraphDomainExtService.syncTaskGraphTriple();
+
+            var autoRecordTask = AutoRecordTask.builder()
+                    .docId(docId)
+                    .spaceId(docModel.getSpaceId())
+                    .kbId(docModel.getKbId())
+                    .build();
+
+            KnowledgeTaskModel entry = new KnowledgeTaskModel();
+            entry.setId(taskId);
+            entry.setModified(LocalDateTime.now());
+            entry.setName(KnowledgeTaskRunTypeEnum.SUCCESS.getDesc());
+            entry.setType(KnowledgeTaskRunTypeEnum.SUCCESS.getType());
+
+            knowledgeTaskRepository.updateInfo(entry, userContext);
+
+            /*
+            this.knowledgeTaskDomainService.changeTaskStatus(autoRecordTask, KnowledgeTaskRunTypeEnum.SUCCESS,
+                    userContext);*/
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -502,6 +581,11 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 modelId = tenantConfig.getDefaultKnowledgeModelId();
             }
         }
+        // 预检知识库模型可用性: 配置悬空(模型已删除)时快速失败并携带模型ID,
+        // 由重试路径把结构化原因持久化到任务结果,供文档状态查询按查看者语言展示给用户
+        if (modelId == null || modelApplicationService.queryModelConfigById(modelId) == null) {
+            throw new SmartParsingModelUnavailableException(BizExceptionCodeEnum.agentModelConfigMissing, modelId);
+        }
         // 转义用户文本中的花括号,不然导致问题: ST模板引擎默认使用{}作为定界符，若用户输入包含未转义的{或}符号会破坏模板结构
         String userText = text.replace("{", "\\{").replace("}", "\\}");
         // 调用大模型,生成问答
@@ -589,6 +673,23 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                 } catch (Exception e) {
                     log.error("QA gen failed, rawId={}, reason:", rawId, e);
                     segment.setQaStatus(QaStatusEnum.PENDING.getCode());
+                    // 持久化失败原因到 knowledge_task.result: QA失败在此被捕获且不上抛,
+                    // 重试耗尽后由文档状态查询展示给用户。模型不可用类异常存结构化编码
+                    // (读取侧按查看者语言渲染,后台线程格式化语言不可控),其余存原始消息,
+                    // 均替代通用文案"重试次数达到最大值"
+                    try {
+                        var task = this.knowledgeTaskRepository.queryOneByDocId(docId);
+                        if (task != null) {
+                            String result = (e instanceof SmartParsingModelUnavailableException unavailable)
+                                    ? unavailable.encodedResult() : e.getMessage();
+                            if (result != null) {
+                                task.setResult(result);
+                                this.knowledgeTaskRepository.updateInfo(task, userContext);
+                            }
+                        }
+                    } catch (Exception ignore) {
+                        // 原因记录失败不影响主流程
+                    }
                 }
                 // 更新每个分段的问答生成状态
                 var updateStatueSegmentList = Lists.newArrayList(segment);
@@ -638,9 +739,9 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
 
     @Override
     public void generateEmbeddingsByQaSegment(List<KnowledgeQaSegmentModel> segments, UserContext userContext) {
-        // 按照文档id,进行分组处理
-        Map<Long, List<KnowledgeQaSegmentModel>> docIdGroup = segments.stream()
-                .collect(Collectors.groupingBy(KnowledgeQaSegmentModel::getDocId));
+        if (CollectionUtils.isEmpty(segments)) {
+            return;
+        }
 
         var kbIds = segments.stream().map(KnowledgeQaSegmentModel::getKbId).distinct().toList();
         var knowledgeConfigList = this.knowledgeConfigRepository.queryListByIds(kbIds);
@@ -650,59 +751,90 @@ public class KnowledgeDocumentDomainService implements IKnowledgeDocumentDomainS
                         (a, b) -> a));
 
         // 查询问答对应的分段列表
-        var rawIds = segments.stream().map(KnowledgeQaSegmentModel::getRawId).toList();
+        var rawIds = segments.stream().map(KnowledgeQaSegmentModel::getRawId).filter(Objects::nonNull).toList();
         var rawList = this.knowledgeRawSegmentRepository.queryListInfoByIds(rawIds);
         var rawByRawIdMap = rawList.stream()
                 .collect(Collectors.toMap(KnowledgeRawSegmentModel::getId, Function.identity(), (a, b) -> a));
 
+        // 按 kbId 分组,每个知识库一个并发任务(同库串行写避免 collection 竞争,跨库并发提速)
+        Map<Long, List<KnowledgeQaSegmentModel>> kbIdGroup = segments.stream()
+                .collect(Collectors.groupingBy(KnowledgeQaSegmentModel::getKbId));
+
+        var executor = this.threadTenantUtil.obtainEmbeddingExecutor();
+        List<Future<?>> futures = new ArrayList<>();
+        for (Map.Entry<Long, List<KnowledgeQaSegmentModel>> entry : kbIdGroup.entrySet()) {
+            Long kbId = entry.getKey();
+            List<KnowledgeQaSegmentModel> kbSegments = entry.getValue();
+            Long embeddingModelId = kbId2EmbeddingModelIdMap.get(kbId);
+            // submit 会自动包 TenantRunnable,传播当前线程的租户上下文
+            futures.add(executor.submit(() ->
+                    embedSegmentsForKb(kbSegments, embeddingModelId, rawByRawIdMap, userContext)));
+        }
+
+        // 等待全部完成,聚合异常(保持原"有失败即抛"语义)
+        List<Exception> errors = new ArrayList<>();
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                log.error("向量化任务失败", e);
+                errors.add(e);
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw KnowledgeException.build(BizExceptionCodeEnum.knowledgeVectorizationFailed,
+                    "批量向量化有 " + errors.size() + " 个知识库任务失败");
+        }
+    }
+
+    /**
+     * 单个知识库内向量化(同库串行,避免同 collection 并发写竞争):按文档分组,每文档按 BATCH_SIZE 批量 embedding + 写 Milvus + 更新状态。
+     */
+    private void embedSegmentsForKb(List<KnowledgeQaSegmentModel> kbSegments, Long embeddingModelId,
+            Map<Long, KnowledgeRawSegmentModel> rawByRawIdMap, UserContext userContext) {
+        // 该 kb 内按 docId 分组,逐文档串行处理
+        Map<Long, List<KnowledgeQaSegmentModel>> docIdGroup = kbSegments.stream()
+                .collect(Collectors.groupingBy(KnowledgeQaSegmentModel::getDocId));
+        int failCount = 0;
         for (Map.Entry<Long, List<KnowledgeQaSegmentModel>> entry : docIdGroup.entrySet()) {
             Long docId = entry.getKey();
-            var embeddingModelId = entry.getValue().stream()
-                    .map(KnowledgeQaSegmentModel::getKbId).distinct()
-                    .findFirst().map(kbId2EmbeddingModelIdMap::get).orElse(null);
-            var document = this.knowledgeDocumentRepository.queryOneInfoById(docId);
-            if (Objects.isNull(document)) {
-                log.info("Document not found, skip, docId={}", docId);
-                continue;
-            }
-            if (log.isDebugEnabled()) {
-                log.debug("Process doc, docId={}, segmentCount={}", docId, entry.getValue().size());
-            }
-            var batches = Lists.partition(entry.getValue(), Constants.BATCH_SIZE);
-
-            // 批量处理每个批次
-            for (List<KnowledgeQaSegmentModel> batch : batches) {
-                List<QAEmbeddingDto> qaEmbeddingDtos = new ArrayList<>();
-                for (KnowledgeQaSegmentModel segment : batch) {
-
-                    var rawId = segment.getRawId();
-                    var rawModel = rawByRawIdMap.get(rawId);
-                    String rawText = null;
-                    if (Objects.nonNull(rawModel)) {
-                        // 记录问答对应的原始分段文本
-                        rawText = rawModel.getRawTxt();
+            // per-doc 容错:单个 doc 向量化失败不影响同库其他 doc,失败的靠定时任务下轮兜底
+            try {
+                var document = this.knowledgeDocumentRepository.queryOneInfoById(docId);
+                if (Objects.isNull(document)) {
+                    log.info("Document not found, skip, docId={}", docId);
+                    continue;
+                }
+                if (log.isDebugEnabled()) {
+                    log.debug("Process doc, docId={}, segmentCount={}", docId, entry.getValue().size());
+                }
+                var batches = Lists.partition(entry.getValue(), Constants.BATCH_SIZE);
+                for (List<KnowledgeQaSegmentModel> batch : batches) {
+                    List<QAEmbeddingDto> qaEmbeddingDtos = new ArrayList<>();
+                    for (KnowledgeQaSegmentModel segment : batch) {
+                        var rawId = segment.getRawId();
+                        var rawModel = rawByRawIdMap.get(rawId);
+                        String rawText = Objects.nonNull(rawModel) ? rawModel.getRawTxt() : null;
+                        qaEmbeddingDtos.add(QAEmbeddingDto.convertFromModelOnly(segment, rawText));
                     }
-                    QAEmbeddingDto qaEmbeddingDto = QAEmbeddingDto.convertFromModelOnly(segment, rawText);
-                    qaEmbeddingDtos.add(qaEmbeddingDto);
+                    // 批量查询,进行向量化
+                    List<String> questions = batch.stream().map(KnowledgeQaSegmentModel::getQuestion).toList();
+                    List<float[]> embeddings = modelApplicationService.embeddings(questions, embeddingModelId);
+                    for (int i = 0; i < qaEmbeddingDtos.size(); i++) {
+                        qaEmbeddingDtos.get(i).setEmbeddings(QAEmbeddingDto.convertToBigDecimalList(embeddings.get(i)));
+                    }
+                    vectorDBService.addEmbeddingQaForBatch(qaEmbeddingDtos, false);
+                    // update hasEmbedding
+                    var qaIds = batch.stream().map(KnowledgeQaSegmentModel::getId).toList();
+                    this.knowledgeQaSegmentRepository.batchChangeEmbeddingStatus(qaIds, Boolean.TRUE, userContext);
                 }
-                // 批量查询,进行向量化
-                List<String> questions = batch.stream().map(KnowledgeQaSegmentModel::getQuestion)
-                        .toList();
-
-                List<float[]> embeddings = modelApplicationService.embeddings(questions, embeddingModelId);
-                for (int i = 0; i < qaEmbeddingDtos.size(); i++) {
-                    List<BigDecimal> embeddingRes = QAEmbeddingDto.convertToBigDecimalList(embeddings.get(i));
-                    qaEmbeddingDtos.get(i).setEmbeddings(embeddingRes);
-                }
-                vectorDBService.addEmbeddingQaForBatch(qaEmbeddingDtos, false);
-                // update hasEmbedding
-                var qaIds = batch.stream()
-                        .map(KnowledgeQaSegmentModel::getId)
-                        .toList();
-
-                this.knowledgeQaSegmentRepository.batchChangeEmbeddingStatus(qaIds, Boolean.TRUE, userContext);
-
+            } catch (Exception e) {
+                failCount++;
+                log.error("文档向量化失败,跳过该文档, docId={}", docId, e);
             }
+        }
+        if (failCount > 0) {
+            log.warn("知识库内部分文档向量化失败, 失败文档数={}, 总文档数={}", failCount, docIdGroup.size());
         }
     }
 

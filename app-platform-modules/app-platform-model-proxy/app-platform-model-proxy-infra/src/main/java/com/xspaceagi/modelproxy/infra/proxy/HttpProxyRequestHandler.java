@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.security.InvalidParameterException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -46,6 +47,9 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
     private String currentBackendModel;
     private String currentBackendUrl;
     private TraceContext traceContext;
+    private BackendModelDto backendModelDto;
+    // 暂存当前请求，等请求数据接收完毕（LastHttpContent）后再连接后端并转发
+    private DefaultHttpRequest storedRequest;
     private volatile Map<String, String> requestContext;
     private final ModelProxyServer modelProxyServer;
 
@@ -79,13 +83,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof HttpRequest) {
             DefaultHttpRequest request = (DefaultHttpRequest) msg;
-            String host = request.headers().get("Host");
 
-            // 使用局部变量存储目标连接信息，避免修改全局共享的 httpReverseProxyInfo
-            String targetIp;
-            String targetHost;
-            int targetPort;
-            String targetScheme;
             logger.debug("uri {}, headers {}", request.uri(), request.headers());
             String traceId = request.headers().get("trace-id");
             //从header里通过x-api-key或Authorization获取apiKey
@@ -103,7 +101,6 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             // 记录请求基本信息
             logRequestBasicInfo(request, currentAccessKey);
 
-            BackendModelDto backendModelDto;
             try {
                 // 获取代理配置并校验key是否合法或可用
                 if (modelApiProxyConfigService == null) {
@@ -139,21 +136,6 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
 
                 // 临时修改为info打印日志观察
                 URL url = new URL(backendModelDto.getBaseUrl());
-                String ip = resolveDns(url.getHost());
-                String newScheme = url.getProtocol() + "://";
-                int port = url.getPort();
-                if (port == -1) {
-                    if (newScheme.startsWith("https")) {
-                        port = 443;
-                    } else {
-                        port = 80;
-                    }
-                }
-                // 使用局部变量存储目标连接信息，避免污染全局对象
-                targetScheme = newScheme;
-                targetIp = ip;
-                targetHost = url.getHost();
-                targetPort = port;
                 request.setUri(url.getPath() + replaceModelPrefix(request.uri(), url.getPath()));
                 request.headers().set("Host", url.getHost());
                 //认证信息替换
@@ -189,90 +171,13 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             if (request.headers().get("X-Real-IP") == null) {
                 request.headers().set("X-Real-IP", remoteIp);
             }
-            // 检查 targetChannel 是否健康，如果不健康则清理并重新连接
-            if (targetChannel == null || !isTargetChannelHealthy()) {
-                if (targetChannel != null && !isTargetChannelHealthy()) {
-                    logger.warn("Detected stale targetChannel for host {}, cleaning up and reconnecting", host);
-                    cleanupTargetChannel();
-                }
-                ctx.channel().config().setOption(ChannelOption.AUTO_READ, false);
-                Bootstrap clientBootstrap;
-                if (targetScheme.equals("https://")) {
-                    clientBootstrap = modelProxyServer.createHttpsClientBootstrap(targetHost, targetPort);
-                } else {
-                    clientBootstrap = modelProxyServer.createClientBootstrap();
-                }
-                logger.debug("Connecting to backend {}:{} for host {}, channel {}", targetIp, targetPort, host, ctx.channel());
-                clientBootstrap.connect(targetIp, targetPort).addListener((ChannelFutureListener) future -> {
-                    // 连接后端服务器成功
-                    if (future.isSuccess()) {
-                        synchronized (receivedLastMsgsWhenConnect) {
-                            targetChannel = future.channel();
-                            targetChannel.attr(ModelProxyServer.nextChannelAttributeKey).set(ctx.channel());
-                            ctx.channel().attr(ModelProxyServer.nextChannelAttributeKey).set(targetChannel);
-
-                            // 存储请求上下文信息，用于响应日志记录
-                            targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
-                            targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
-                            targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
-                            targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
-
-                            // 添加关闭监听器，当 targetChannel 关闭时自动清理
-                            targetChannel.closeFuture().addListener((ChannelFutureListener) closeFuture -> {
-                                logger.info("Backend connection closed for host {}, cleaning up targetChannel, channel {}", host, ctx.channel());
-                                synchronized (HttpProxyRequestHandler.this) {
-                                    if (targetChannel == closeFuture.channel()) {
-                                        targetChannel = null;
-                                    }
-                                }
-                            });
-                        }
-                        future.channel().writeAndFlush(msg);
-                        synchronized (receivedLastMsgsWhenConnect) {
-                            Object msg0;
-                            while ((msg0 = receivedLastMsgsWhenConnect.poll()) != null) {
-                                future.channel().writeAndFlush(msg0);
-                            }
-                        }
-                        String connection = request.headers().get("Connection");
-                        String upgrade = request.headers().get("Upgrade");
-                        // 协议升级走原生通道，支持websocket
-                        if ((connection != null && connection.equals("Upgrade")) || (upgrade != null && upgrade.equals("websocket"))) {
-                            ctx.channel().pipeline().remove("httpServerCodec");
-                            future.channel().pipeline().remove("httpClientCodec");
-                        }
-                        ctx.channel().config().setOption(ChannelOption.AUTO_READ, true);
-                    } else {
-                        //清理回收receivedLastMsgsWhenConnect中的msg
-                        synchronized (receivedLastMsgsWhenConnect) {
-                            Object msg0;
-                            while ((msg0 = receivedLastMsgsWhenConnect.poll()) != null) {
-                                ReferenceCountUtil.release(msg0);
-                            }
-                        }
-                        logger.warn("Backend connection failed for host {}, cleaning up targetChannel, channel {}", host, ctx.channel());
-                        ctx.channel().close();
-                    }
-                });
-            } else {
-                // targetChannel 存在且健康，直接使用
-                if (!isTargetChannelHealthy()) {
-                    logger.warn("targetChannel became unhealthy, closing client connection");
-                    ctx.channel().close();
-                    ReferenceCountUtil.release(msg);
-                    return;
-                }
-
-                // 存储请求上下文信息，用于响应日志记录
-                targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
-                targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
-                targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
-                targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
-
-                targetChannel.writeAndFlush(request);
+            // 【调整】不立即建连/转发：暂存请求并入队，等请求数据接收完毕（LastHttpContent）后再统一连接后端并转发
+            storedRequest = request;
+            synchronized (receivedLastMsgsWhenConnect) {
+                receivedLastMsgsWhenConnect.offer(msg);
             }
         } else {
-            // 处理请求体内容 (HttpContent)
+            // 处理请求体内容 (HttpContent)：全部暂存，等接收完毕后再统一连接后端并转发
             if (msg instanceof HttpContent httpContent) {
                 ByteBuf content = httpContent.content();
                 if (content.isReadable()) {
@@ -284,48 +189,99 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                     requestBodyBuffer.writeBytes(bytes);
                 }
 
-                // 如果是最后一个内容块，记录完整的请求体
                 if (msg instanceof LastHttpContent) {
-                    if (requestBodyBuffer.size() > 0) {
+                    // 请求数据接收完毕：解压→校验→按需改写请求体，再重构分块转发
+                    // 默认原样转发原始字节（保证二进制/非 JSON body 无损）
+                    byte[] bodyBytes = requestBodyBuffer.toByteArray();
+                    // 【解压】按 Content-Encoding 解压请求体，使压缩(gzip/br/deflate)的 body 也能被正确解析与改写
+                    // 无 Content-Encoding 时 DecompressUtils 原样返回，不影响明文 body
+                    String contentEncoding = storedRequest != null ? storedRequest.headers().get(HttpHeaderNames.CONTENT_ENCODING) : null;
+                    try {
+                        bodyBytes = DecompressUtils.decompress(bodyBytes, contentEncoding);
+                    } catch (Exception e) {
+                        logger.warn("Failed to decompress request body (Content-Encoding: {}), keep original bytes", contentEncoding);
+                    }
+                    if (bodyBytes.length > 0) {
                         // 统一将字节转换为字符串，确保UTF-8编码正确
-                        String requestBody = requestBodyBuffer.toString(CharsetUtil.UTF_8);
-                        logRequestBody(requestBody);
+                        String requestBody = new String(bodyBytes, CharsetUtil.UTF_8);
                         try {
                             if (JSON.isValidObject(requestBody)) {
                                 JSONObject jsonObject = JSON.parseObject(requestBody);
+                                // 敏感词过滤只作用于内容字段（content/text/instructions 等），
+                                // 不能对整个请求体盲替换：会改写 role/model 等协议字段导致上游反序列化失败
+                                if (modelApiProxyConfigService.enabledSensitiveFilter()){
+                                    // traceContext 为 null 的存量配置用 key 配置的租户兜底，避免 NPE 被误报成敏感词
+                                    Long filterTenantId = traceContext != null ? traceContext.getTenantId() : backendModelDto.getTenantId();
+                                    try {
+                                        SensitiveContentFilter.filter(jsonObject, text -> modelApiProxyConfigService.checkAndReturnNewText(filterTenantId, text));
+                                    } catch (InvalidParameterException e) {
+                                        // 命中断开连接策略
+                                        requestBodyBuffer.reset();
+                                        sendError(ctx, "Your content contains sensitive words", msg, HttpResponseStatus.BAD_REQUEST);
+                                        return;
+                                    } catch (Exception e) {
+                                        // 过滤基础设施故障不能伪装成内容违规，也不能静默放行
+                                        logger.error("Sensitive filter failed, tenantId={}", filterTenantId, e);
+                                        requestBodyBuffer.reset();
+                                        sendError(ctx, "Sensitive filter error", msg, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                                        return;
+                                    }
+                                }
                                 if (jsonObject.getString("model") != null && !jsonObject.getString("model").equalsIgnoreCase(currentBackendModel)) {
+                                    requestBodyBuffer.reset();
                                     sendError(ctx, "Invalid model", msg, HttpResponseStatus.BAD_REQUEST);
                                     return;
                                 }
+
+                                // ===== 请求体改写位置：在此按需修改 jsonObject =====
+                                if ("Anthropic".equals(backendModelDto.getProtocol())) {
+                                    requestBody = setLangAndClearClaudeKeyWords(jsonObject);
+                                } else {
+                                    // 重新序列化改写后的请求体（仅 JSON body 走此路径）
+                                    requestBody = jsonObject.toJSONString();
+                                }
+                                bodyBytes = requestBody.getBytes(CharsetUtil.UTF_8);
                             }
                         } catch (Exception e) {
-                            //ignore
+                            //ignore（解析失败则保持原始请求体不变）
+                            logger.warn("Request body rewrite skipped: {}", e.getMessage(), e);
                         }
+                        logRequestBody(requestBody);
                         ctx.channel().attr(ModelProxyServer.logRequestQueueAttributeKey).get().add(getRequestContext());
                         requestContext = null;
-                        requestBodyBuffer.reset(); // 清空buffer
                     }
-                }
-            }
 
-            if (targetChannel == null) {
-                synchronized (receivedLastMsgsWhenConnect) {
-                    if (targetChannel == null || !isTargetChannelHealthy()) {
-                        receivedLastMsgsWhenConnect.offer(msg);
-                    } else {
-                        targetChannel.writeAndFlush(msg);
-                    }
-                }
-            } else {
-                if (isTargetChannelHealthy()) {
-                    targetChannel.writeAndFlush(msg);
+                    // 将（可能已改写的）完整 body 切块入队，再统一连接后端并转发到目标服务器
+                    enqueueBodyChunks(bodyBytes);
+                    requestBodyBuffer.reset(); // 清空buffer
+
+                    ReferenceCountUtil.release(msg);
+                    connectAndForward(ctx);
+                    storedRequest = null;
                 } else {
-                    cleanupTargetChannel();
-                    ctx.channel().close();
+                    // 中间内容块，内容已拷贝进缓冲区，释放原始对象
                     ReferenceCountUtil.release(msg);
                 }
             }
         }
+    }
+
+    private String setLangAndClearClaudeKeyWords(JSONObject jsonObject) {
+        String requestBody = jsonObject.toJSONString();
+        String lang = backendModelDto.getLang();
+        if (lang == null) {
+            lang = "zh-CN";
+        }
+        requestBody = requestBody.replace("IMPORTANT: this context may or may not be relevant to your tasks. ",
+                "IMPORTANT: this context may or may not be relevant to your tasks. You should use  " + lang + " unless the user explicitly specifies another language for both the thinking (reasoning) process and the response.");
+        requestBody = requestBody.replace("You are Claude Code, Anthropic's official CLI for Claude, running within the Claude Agent SDK.", "You are a highly versatile intelligent agent. You should use  " + lang + " unless the user explicitly specifies another language for both the thinking process and the response.");
+        requestBody = requestBody.replace("Under no circumstances can you say you are Claude or Claude Code.", "");
+        requestBody = requestBody.replace("Claude <noreply@anthropic.com>", "Nuwax <noreply@nuwax.com>");
+        requestBody = requestBody.replace("Generated with [Claude Code](https://claude.com/claude-code)", "Generated with [Nuwax](https://nuwax.com)");
+        requestBody = requestBody.replace("Claude Code", "Nuwax");
+        requestBody = requestBody.replace("claude.ai/code", "nuwax.com");
+        requestBody = requestBody.replace("IMPORTANT: Assist with authorized security testing, defensive security, CTF challenges, and educational contexts. Refuse requests for destructive techniques, DoS attacks, mass targeting, supply chain compromise, or detection evasion for malicious purposes. Dual-use security tools (C2 frameworks, credential testing, exploit development) require clear authorization context: pentesting engagements, CTF competitions, security research, or defensive use cases.", "");
+        return requestBody;
     }
 
     private void sendError(ChannelHandlerContext ctx, String error, Object msg, HttpResponseStatus status) {
@@ -337,6 +293,180 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
             targetChannel.close();
         }
         ReferenceCountUtil.release(msg);
+
+        // 清理已暂存待发的消息，避免引用泄漏
+        Object pending;
+        while ((pending = receivedLastMsgsWhenConnect.poll()) != null) {
+            ReferenceCountUtil.release(pending);
+        }
+    }
+
+    /**
+     * 将接收完毕的请求体切块入队（最后一块为 LastHttpContent）。
+     * body 已完整缓冲，统一设置 Content-Length 并移除 chunked 编码。
+     */
+    private void enqueueBodyChunks(byte[] bytes) {
+        int chunkSize = 65536; // 64KB per chunk
+        synchronized (receivedLastMsgsWhenConnect) {
+            if (bytes.length == 0) {
+                receivedLastMsgsWhenConnect.offer(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER));
+            } else {
+                for (int i = 0; i < bytes.length; i += chunkSize) {
+                    int len = Math.min(chunkSize, bytes.length - i);
+                    ByteBuf chunk = Unpooled.copiedBuffer(bytes, i, len);
+                    if (i + len >= bytes.length) {
+                        receivedLastMsgsWhenConnect.offer(new DefaultLastHttpContent(chunk));
+                    } else {
+                        receivedLastMsgsWhenConnect.offer(new DefaultHttpContent(chunk));
+                    }
+                }
+            }
+        }
+        if (storedRequest != null) {
+            storedRequest.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
+            // body 已解压为明文转发，移除原压缩编码声明，避免后端再次解压导致乱码
+            storedRequest.headers().remove(HttpHeaderNames.CONTENT_ENCODING);
+            storedRequest.headers().set(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
+        }
+    }
+
+    /**
+     * 连接后端并转发所有暂存的消息（HttpRequest + body 分块 + LastHttpContent）。
+     */
+    private void connectAndForward(ChannelHandlerContext ctx) {
+        if (storedRequest == null) {
+            logger.warn("No stored request to forward");
+            return;
+        }
+
+        String backendUrlStr = currentBackendUrl;
+        if (backendUrlStr == null) {
+            sendError(ctx, "Backend URL not configured", storedRequest, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            return;
+        }
+
+        String targetIp;
+        String targetHost;
+        int targetPort;
+        String targetScheme;
+        try {
+            URL url = new URL(backendUrlStr);
+            targetIp = resolveDns(url.getHost());
+            targetScheme = url.getProtocol() + "://";
+            targetPort = url.getPort();
+            if (targetPort == -1) {
+                targetPort = targetScheme.startsWith("https") ? 443 : 80;
+            }
+            targetHost = url.getHost();
+        } catch (Exception e) {
+            sendError(ctx, "Invalid backend URL: " + e.getMessage(), storedRequest, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+            return;
+        }
+
+        // 本次请求的目标 authority，用于与已建连接的绑定信息比对
+        String boundAuthority = targetScheme + targetHost + ":" + targetPort;
+
+        // 已有连接健康则复用：直接转发暂存队列。
+        // ★复用前必须校验连接绑定的 authority 与本次目标一致：
+        //   HTTPS 的 SNI 在建连时已按首个目标 host 写死（ModelProxyServer#createHttpsClientBootstrap），
+        //   跨 host 复用会把请求物理上发到另一家厂商，且改写 Host 头也救不回来（表现为间歇性 404）。
+        if (targetChannel != null && isTargetChannelHealthy()) {
+            String bound = targetChannel.attr(ModelProxyServer.boundAuthorityAttributeKey).get();
+            if (boundAuthority.equals(bound)) {
+                // 存储请求上下文信息，用于响应日志记录
+                targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
+                targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
+                targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
+                targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
+                synchronized (receivedLastMsgsWhenConnect) {
+                    Object msg0;
+                    while ((msg0 = receivedLastMsgsWhenConnect.poll()) != null) {
+                        targetChannel.writeAndFlush(msg0);
+                    }
+                }
+                return;
+            }
+            // 绑定的 host 与本次目标不一致：这条连接在协议层只能服务原 host，必须关闭重建
+            logger.warn("targetChannel bound to [{}] but current request targets [{}], closing and reconnecting. channel {}",
+                    bound, boundAuthority, ctx.channel());
+            Channel mismatched = targetChannel;
+            // ★先解绑、再关闭：这条被弃用的连接在建连成功时把自己的 nextChannelAttributeKey 指向了当前客户端连接
+            //   （见下方建连回调），BackendProxyHandler#channelInactive 会顺着该引用向客户端补一个 CLOSE——
+            //   不解绑就会把客户端连接一并关掉，而客户端对此没有任何过错。
+            //   后端连接本身仍必须关闭：不关会泄漏连接（引用已丢弃、对端要等闲置超时），且它的迟到响应会写回本客户端。
+            mismatched.attr(ModelProxyServer.nextChannelAttributeKey).set(null);
+            cleanupTargetChannel();
+            mismatched.close();
+        } else if (targetChannel != null) {
+            // 清理失效连接，建立新连接
+            logger.warn("Detected stale targetChannel, cleaning up and reconnecting");
+            cleanupTargetChannel();
+        }
+
+        // 在异步连接前捕获所需值，避免回调中访问 storedRequest（调用方在 connectAndForward 返回后会置 null）
+        String capturedHost = storedRequest.headers().get("Host");
+        String capturedConnection = storedRequest.headers().get("Connection");
+        String capturedUpgrade = storedRequest.headers().get("Upgrade");
+
+        ctx.channel().config().setOption(ChannelOption.AUTO_READ, false);
+        Bootstrap clientBootstrap;
+        if (targetScheme.equals("https://")) {
+            clientBootstrap = modelProxyServer.createHttpsClientBootstrap(targetHost, targetPort);
+        } else {
+            clientBootstrap = modelProxyServer.createClientBootstrap();
+        }
+        logger.debug("Connecting to backend {}:{} for host {}, channel {}", targetIp, targetPort, capturedHost, ctx.channel());
+        clientBootstrap.connect(targetIp, targetPort).addListener((ChannelFutureListener) future -> {
+            // 连接后端服务器成功
+            if (future.isSuccess()) {
+                synchronized (receivedLastMsgsWhenConnect) {
+                    targetChannel = future.channel();
+                    // 记录本连接绑定的目标 authority，后续复用前必须比对（见上方复用分支）
+                    targetChannel.attr(ModelProxyServer.boundAuthorityAttributeKey).set(boundAuthority);
+                    targetChannel.attr(ModelProxyServer.nextChannelAttributeKey).set(ctx.channel());
+                    ctx.channel().attr(ModelProxyServer.nextChannelAttributeKey).set(targetChannel);
+
+                    // 存储请求上下文信息，用于响应日志记录
+                    targetChannel.attr(ModelProxyServer.accessKeyAttributeKey).set(currentAccessKey);
+                    targetChannel.attr(ModelProxyServer.backendModelAttributeKey).set(currentBackendModel);
+                    targetChannel.attr(ModelProxyServer.backendUrlAttributeKey).set(currentBackendUrl);
+                    targetChannel.attr(ModelProxyServer.traceContextAttributeKey).set(traceContext);
+
+                    // 添加关闭监听器，当 targetChannel 关闭时自动清理
+                    targetChannel.closeFuture().addListener((ChannelFutureListener) closeFuture -> {
+                        logger.info("Backend connection closed for host {}, cleaning up targetChannel, channel {}", capturedHost, ctx.channel());
+                        synchronized (HttpProxyRequestHandler.this) {
+                            if (targetChannel == closeFuture.channel()) {
+                                targetChannel = null;
+                            }
+                        }
+                    });
+                }
+                // 转发所有暂存的消息（HttpRequest + body 分块 + LastHttpContent）
+                synchronized (receivedLastMsgsWhenConnect) {
+                    Object msg0;
+                    while ((msg0 = receivedLastMsgsWhenConnect.poll()) != null) {
+                        future.channel().writeAndFlush(msg0);
+                    }
+                }
+                // 协议升级走原生通道，支持websocket
+                if ((capturedConnection != null && capturedConnection.equals("Upgrade")) || (capturedUpgrade != null && capturedUpgrade.equals("websocket"))) {
+                    ctx.channel().pipeline().remove("httpServerCodec");
+                    future.channel().pipeline().remove("httpClientCodec");
+                }
+                ctx.channel().config().setOption(ChannelOption.AUTO_READ, true);
+            } else {
+                //清理回收receivedLastMsgsWhenConnect中的msg
+                synchronized (receivedLastMsgsWhenConnect) {
+                    Object msg0;
+                    while ((msg0 = receivedLastMsgsWhenConnect.poll()) != null) {
+                        ReferenceCountUtil.release(msg0);
+                    }
+                }
+                logger.warn("Backend connection failed for host {}, cleaning up targetChannel, channel {}", capturedHost, ctx.channel());
+                ctx.channel().close();
+            }
+        });
     }
 
     @Override

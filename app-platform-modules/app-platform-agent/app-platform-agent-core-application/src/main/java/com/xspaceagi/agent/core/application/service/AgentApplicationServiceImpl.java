@@ -60,7 +60,6 @@ import com.xspaceagi.system.application.service.SysSubjectPermissionApplicationS
 import com.xspaceagi.system.application.service.TenantConfigApplicationService;
 import com.xspaceagi.system.application.service.UserApplicationService;
 import com.xspaceagi.system.application.util.DefaultIconUrlUtil;
-import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.common.TraceContext;
 import com.xspaceagi.system.sdk.permission.IUserDataPermissionRpcService;
 import com.xspaceagi.system.sdk.service.dto.UserDataPermissionDto;
@@ -68,6 +67,7 @@ import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.common.UserContext;
 import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
 import com.xspaceagi.system.spec.enums.PermissionSubjectTypeEnum;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.enums.YesOrNoEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
@@ -171,6 +171,9 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
 
     @Resource
     private FileManagementService fileManagementService;
+
+    @Resource
+    private UserChatBoxConfigService userChatBoxConfigService;
 
     @Override
     @DSTransactional
@@ -287,10 +290,18 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     @Override
     @DSTransactional
     public void delete(Long agentId) {
+        // 删除前捕获配置：调试会话 id（devConversationId）只在配置行上，删除后无从获取
+        AgentConfigDto agentConfigDto = queryById(agentId);
         // 删除智能体，含配置以及发布信息、统计信息、用户收藏点赞信息
         // 删除智能体配置
         agentDomainService.delete(agentId);
         publishApplicationService.deletePublishedApply(Published.TargetType.Agent, agentId);
+        // 项目会话随项目删除联动清理（含消息、收藏及云端沙箱工作区）
+        conversationApplicationService.deleteByDevTarget(ProjectTypeEnum.Agent.name(), agentId);
+        // 开发调试会话不带 devTarget（挂在 agent.devConversationId 上），随项目删除一并清理
+        if (agentConfigDto != null && agentConfigDto.getDevConversationId() != null) {
+            conversationApplicationService.deleteConversationDirect(agentConfigDto.getDevConversationId());
+        }
     }
 
     @Override
@@ -1374,6 +1385,16 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
         agentDetailDto.setAllowPrivateSandbox(agentConfigDto.getAllowPrivateSandbox() == null ? YesOrNoEnum.Y.getKey() : agentConfigDto.getAllowPrivateSandbox());
         agentDetailDto.setAllowChooseMode(agentConfigDto.getAllowChooseMode() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getAllowChooseMode());
         agentDetailDto.setEnableVersionControl(agentConfigDto.getEnableVersionControl() == null ? YesOrNoEnum.N.getKey() : agentConfigDto.getEnableVersionControl());
+        if (agentConfigDto.getExtra() != null && agentConfigDto.getExtra().containsKey("isDeviceAgent")) {
+            agentDetailDto.setAllowAtSkill(YesOrNoEnum.N.getKey());
+            agentDetailDto.setAllowPrivateSandbox(YesOrNoEnum.N.getKey());
+            agentDetailDto.setAllowChooseMode(YesOrNoEnum.N.getKey());
+            agentDetailDto.setEnableVersionControl(YesOrNoEnum.N.getKey());
+        }
+        if (RequestContext.get() != null && RequestContext.get().getUserId() != null) {
+            UserChatBoxConfigService.ChatBoxConfig userAgentChatBoxConfig = userChatBoxConfigService.getUserAgentChatBoxConfig(agentConfigDto.getTenantId(), RequestContext.get().getUserId(), agentId);
+            agentDetailDto.setEnableVersionControl(userAgentChatBoxConfig.getEnableVersionControl() != null ? userAgentChatBoxConfig.getEnableVersionControl() : agentDetailDto.getEnableVersionControl());
+        }
 
         // 是否有权限
         agentDetailDto.setHasPermission(true);
@@ -1727,11 +1748,12 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
             if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Event) {
                 EventBindConfigDto eventBindConfigDto = (EventBindConfigDto) agentComponentConfigDto.getBindConfig();
-                if (eventBindConfigDto == null) {
+                if (eventBindConfigDto == null || eventBindConfigDto.getEventConfigs() == null) {
                     eventBindConfigDto = new EventBindConfigDto();
                     eventBindConfigDto.setEventConfigs(new ArrayList<>());
                 }
                 Map<Long, PageDto> pageDtoMap = new HashMap<>();
+                eventBindConfigDto.getEventConfigs().removeIf(Objects::isNull);
                 eventBindConfigDto.getEventConfigs().stream().map(eventConfig -> {
                     // 事件提示词中的参数定义
                     List<String> required = new ArrayList<>();
@@ -1935,6 +1957,8 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             if (agentComponentConfigDto.getType() == AgentComponentConfig.Type.Variable) {
                 VariableConfigDto variableConfigDto = (VariableConfigDto) agentComponentConfigDto.getBindConfig();
                 if (variableConfigDto != null && variableConfigDto.getVariables() != null) {
+                    // 确保可修改
+                    variableConfigDto.setVariables(new ArrayList<>(variableConfigDto.getVariables()));
                     //variableConfigDto.getVariables()转name为key的map
                     Map<String, Arg> variableMap = variableConfigDto.getVariables().stream().collect(Collectors.toMap(Arg::getName, variableDto -> variableDto, (c1, c2) -> c1));
                     Arg.getSystemVariableArgs().forEach(arg -> {
@@ -2000,15 +2024,19 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     @Override
-    public List<UserAgentDto> queryRecentUseList(Long userId, String kw, Integer size, Integer pageIndex) {
+    public List<UserAgentDto> queryRecentUseList(Long userId, String kw, Integer size, Integer pageIndex, String type) {
         pageIndex = pageIndex == null || pageIndex <= 0 ? 1 : pageIndex;
         List<UserTargetRelation> userTargetRelations;
         if (StringUtils.isNotBlank(kw)) {
-            userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, MAX_QUERY_SIZE, null);
+            userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, MAX_QUERY_SIZE, null, type);
         } else {
-            userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, size, pageIndex);
+            userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, size, pageIndex, type);
         }
+        List<Long> agentIds = userTargetRelations.stream().map(UserTargetRelation::getTargetId).toList();
+        List<ConversationDto> conversations = conversationApplicationService.queryLatestConversationList(userId, agentIds, null, size * 3);
+        Map<Long, List<ConversationDto>> agentConversationsMap = conversations.stream().collect(Collectors.groupingBy(ConversationDto::getAgentId));
         List<UserAgentDto> userAgentList = userTargetRelations.stream().map(userTargetRelation -> {
+            List<ConversationDto> agentConversations = agentConversationsMap.get(userTargetRelation.getTargetId());
             UserAgentDto userAgentDto = new UserAgentDto();
             userAgentDto.setId(userTargetRelation.getId());
             userAgentDto.setUserId(userTargetRelation.getUserId());
@@ -2018,10 +2046,14 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             try {
                 if (userTargetRelation.getExtra() != null && JSON.isValidObject(userTargetRelation.getExtra())) {
                     JSONObject extra = JSON.parseObject(userTargetRelation.getExtra());
-                    userAgentDto.setLastConversationId(extra.getLong("conversationId"));
-                    // 判断会话是否已删除
-                    if (conversationApplicationService.getConversationByCid(userAgentDto.getLastConversationId()) == null) {
-                        userAgentDto.setLastConversationId(null);
+                    if (extra.containsKey("conversationId")) {
+                        userAgentDto.setLastConversationId(extra.getLong("conversationId"));
+                        Set<ConversationDto> collect = agentConversations == null ? new HashSet<>() : agentConversations.stream()
+                                .filter(conversation -> conversation.getId().equals(userAgentDto.getLastConversationId())).collect(Collectors.toSet());
+                        // 判断会话是否已删除
+                        if (collect.isEmpty() && conversationApplicationService.getConversationByCid(userAgentDto.getLastConversationId()) == null) {
+                            userAgentDto.setLastConversationId(null);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -2029,7 +2061,15 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             }
             return userAgentDto;
         }).collect(Collectors.toList());
-        userAgentList = filterOfflineAgent(userAgentList, kw);
+        userAgentList = filterOfflineAgent(userAgentList, kw, false);
+        userAgentList.forEach(userAgentDto -> {
+            List<ConversationDto> agentConversations = agentConversationsMap.get(userAgentDto.getAgentId());
+            userAgentDto.setConversationList(agentConversations);
+            if (CollectionUtils.isNotEmpty(agentConversations)) {
+                userAgentDto.setLastConversationId(agentConversations.get(0).getId());
+                userAgentDto.setDescription(agentConversations.get(0).getTopic());
+            }
+        });
         if (StringUtils.isBlank(kw)) {
             return userAgentList;
         }
@@ -2039,7 +2079,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
 
     @Override
     public List<UserAgentDto> queryRecentUseList(Long userId, Integer size) {
-        List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, size, 1);
+        List<UserTargetRelation> userTargetRelations = userTargetRelationDomainService.queryRecentUseList(userId, Published.TargetType.Agent, size, 1, null);
         return userTargetRelations.stream().map(this::converToUserAgentDto).collect(Collectors.toList());
     }
 
@@ -2071,10 +2111,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     // 过滤已下线的智能体
-    private List<UserAgentDto> filterOfflineAgent(List<UserAgentDto> userAgentList, String kw) {
+    private List<UserAgentDto> filterOfflineAgent(List<UserAgentDto> userAgentList, String kw, boolean returnFullInfo) {
         // 根据userAgentList中的agentId查询已发布的智能体列表
         List<PublishedDto> publishedList = publishApplicationService.queryPublishedList(Published.TargetType.Agent,
-                userAgentList.stream().map(UserAgentDto::getAgentId).collect(Collectors.toList()), kw);
+                userAgentList.stream().map(UserAgentDto::getAgentId).collect(Collectors.toList()), kw, false, returnFullInfo);
         // agentPublishedList转换成Map，key为agentId
         Map<Long, PublishedDto> agentPublishedMap = publishedList.stream()
                 .collect(Collectors.toMap(PublishedDto::getTargetId, publishedDto -> publishedDto, (v1, v2) -> v1));
@@ -2102,7 +2142,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     public List<UserAgentDto> queryCollectionList(Long userId, Integer page, Integer size) {
         List<UserAgentDto> userAgentList = convertUserAgentList(
                 userTargetRelationDomainService.queryCollectionList(userId, Published.TargetType.Agent, page, size));
-        return filterOfflineAgent(userAgentList, null);
+        return filterOfflineAgent(userAgentList, null, true);
     }
 
     @Override
@@ -2212,17 +2252,19 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
     }
 
     @Override
-    public void addOrUpdateRecentUsed(Long userId, Long agentId) {
+    public void addOrUpdateRecentUsed(Long userId, Long agentId, String targetSubType) {
         userTargetRelationDomainService.addOrUpdateRecentUsed(UserTargetRelation.builder().targetType(Published.TargetType.Agent)
-                .targetId(agentId).userId(userId).type(UserTargetRelation.OpType.Conversation).build());
+                .targetId(agentId).userId(userId).type(UserTargetRelation.OpType.Conversation)
+                .targetSubType(targetSubType).build());
     }
 
     @Override
-    public void addOrUpdateRecentUsed(Long userId, Long agentId, Long conversationId) {
+    public void addOrUpdateRecentUsed(Long userId, Long agentId, Long conversationId, String targetSubType) {
         Assert.notNull(conversationId, "conversationId must be non-null");
         userTargetRelationDomainService.addOrUpdateRecentUsed(UserTargetRelation.builder().targetType(Published.TargetType.Agent)
                 .targetId(agentId).userId(userId).type(UserTargetRelation.OpType.Conversation)
-                .extra(JSON.toJSONString(Map.of("conversationId", conversationId))).build());
+                .extra(JSON.toJSONString(Map.of("conversationId", conversationId)))
+                .targetSubType(targetSubType).build());
     }
 
     public void buildProxyMcp(AgentConfigDto agentConfigDto, boolean isDev) {
@@ -2386,19 +2428,10 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
             return List.of();
         }
 
-        List<SpaceDto> spaces = spaceApplicationService.queryListByUserId(userId);
-        SpaceDto space = spaces.stream().filter(spaceDto -> spaceDto.getType() == Space.Type.Personal).findFirst().orElse(null);
-        if (space == null) {
-            return List.of();
-        }
         List<ModelConfigDto> modelConfigDtos = new ArrayList<>();
         UsageScenarioEnum usageScenarioEnum = UsageScenarioEnum.fromString(agentConfigDto.getType());
         if (usageScenarioEnum != null) {
-            ModelQueryDto modelQueryDto = new ModelQueryDto();
-            modelQueryDto.setModelType(ModelTypeEnum.Chat);
-            modelQueryDto.setSpaceId(space.getId());
-            modelQueryDto.setEnabled(YesOrNoEnum.Y.getKey());
-            modelConfigDtos.addAll(modelApplicationService.queryModelConfigList(modelQueryDto));
+            modelConfigDtos.addAll(modelApplicationService.queryAllSpaceModelList(userId));
             modelConfigDtos.removeIf(modelConfigDto -> !modelConfigDto.getUsageScenarios().contains(UsageScenarioEnum.fromString(agentConfigDto.getType())));
             modelConfigDtos.forEach(modelConfigDto -> {
                 modelConfigDto.setApiInfoList(null);
@@ -2447,7 +2480,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 1. A concise project name (no more than 20 characters)
                 2. A one-line project description (no more than 100 characters)
                 3. A minimal SVG icon that visually represents the project
-                
+                                
                 SVG requirements (must match the platform default logo size of 200x200 pixels):
                 - Root element must be: <svg width="200" height="200" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 - The icon must be full-bleed: the first element MUST be a background rect covering the entire canvas: <rect x="0" y="0" width="100" height="100" rx="12" fill="..."/>
@@ -2460,7 +2493,7 @@ public class AgentApplicationServiceImpl implements AgentApplicationService {
                 - Must be a valid, self-contained SVG with no external references
                 - Keep it simple and recognizable at small sizes
                 - The SVG should be visually appealing and professional
-                
+                                
                 Identify the language based on the user's description and respond in the same language for name and description.
                 """;
 

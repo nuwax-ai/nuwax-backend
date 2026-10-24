@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xspaceagi.knowledge.sdk.enums.KnowledgeDocStatueEnum;
 import com.xspaceagi.knowledge.sdk.enums.KnowledgePubStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,6 +45,13 @@ public class KnowledgeDocument {
      * 发布状态
      */
     private KnowledgePubStatusEnum pubStatus;
+
+    /**
+     * 文档状态：1-分析中，2-分析成功，10-分析失败
+     * 注意：此字段不在数据库中，由 KnowledgeDocumentRepository.updateDocumentsStatus() 动态计算
+     */
+    @TableField(exist = false)
+    private KnowledgeDocStatueEnum docStatus;
 
     /**
      * 是否已经生成Q&A

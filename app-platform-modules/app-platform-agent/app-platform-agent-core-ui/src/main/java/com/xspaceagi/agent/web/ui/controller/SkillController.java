@@ -22,6 +22,7 @@ import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.annotation.RequireResource;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.exception.SpacePermissionException;
 import com.xspaceagi.system.spec.utils.I18nUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -466,8 +467,10 @@ public class SkillController {
                         currentUserId,
                         targetSpaceId,
                         recommendResponse.getTargetId(),
-                        Published.TargetType.Skill.name(),
-                        id
+                        ProjectTypeEnum.Skill.name(),
+                        id,
+                        null,
+                        null
                 ).getId();
 
                 // 更新新技能的 devAgentConversationId

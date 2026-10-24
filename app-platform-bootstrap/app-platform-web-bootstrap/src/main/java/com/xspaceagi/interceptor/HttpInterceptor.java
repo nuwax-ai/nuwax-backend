@@ -70,7 +70,7 @@ public class HttpInterceptor implements HandlerInterceptor, ResponseBodyAdvice, 
             response.setHeader("Access-Control-Allow-Origin", origin);
             response.setHeader("Access-Control-Allow-Methods", "HEAD,GET,POST,PUT,DELETE,OPTIONS");
             response.setHeader("Access-Control-Allow-Headers",
-                    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Fragment");
+                    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Fragment, X-Client-Type, X-Api-Key");
             response.setHeader("Access-Control-Allow-Credentials", "true");
         }
         if (request.getMethod().equals("OPTIONS")) {

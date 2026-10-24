@@ -5,7 +5,7 @@
     <!-- 通过 logging.file.path 配置日志输出路径，默认输出到相对路径 logs/ -->
     <springProperty name="logPath" scope="context" source="logging.file.path" defaultValue="logs"/>
     <property name="outPattern"
-              value="[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%X{tid}] [%X{prefix}] - %m%n"/>
+              value="[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%X{tid}] [%X{prefix}] - %m%n%ex"/>
     <property name="maxHistory" value="7"/>
     <property name="charSet" value="UTF-8"/>
 

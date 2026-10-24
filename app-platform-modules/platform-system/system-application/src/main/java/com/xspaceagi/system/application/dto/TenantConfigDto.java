@@ -119,6 +119,7 @@ public class TenantConfigDto implements Serializable {
 
     private Long authExpire;
 
+    private Integer openImageCaptcha;
     private Integer openCaptcha;
     private String captchaAccessKeyId;
     private String captchaAccessKeySecret;
@@ -175,11 +176,16 @@ public class TenantConfigDto implements Serializable {
     private Integer enableDailyGiftCredit;
     @Schema(description = "每日登录赠送积分数")
     private Integer dailyGiftCreditAmount;
-    private boolean isCommercialEdition;
+    private String licenseContent;
+    @Schema(description = "AgentFlow / AgentGroup / 项目（菜单栏）/ 知识图谱、智能分段（知识库）/ 项目&应用/  对话框推荐可选全部类别，aiOSCommercialEdition不等于true时只可选智能体")
+    private boolean aiOSCommercialEdition;
+    @Schema(description = "伙伴、资料库可用，非商业版配置后提示「请联系官方获取试用授权或商业授权」")
+    private boolean workCommercialEdition;
     @Schema(description = "模型API根地址")
     private String baseModelApiUrl;
     private String ecoWebUrl;
-
+    private Long docEditAgentId;
+    private String defaultIMAgentConfig;
     public enum AuthTypeEnum {
         PHONE(1, "手机"),
         CAS(2, "CAS"),

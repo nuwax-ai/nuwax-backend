@@ -23,6 +23,17 @@
             <artifactId>app-platform-im-application</artifactId>
         </dependency>
 
+        <!--
+            沙箱 IM 技能 API（NuwaxImSandboxController）直接用 SDK 里的三个 RPC 接口与 DTO。
+            ★虽然经 im-domain → im-infra 传递依赖也能拿到，仍显式声明：
+            直接使用的类型必须显式依赖，否则哪天 infra 不再依赖 sdk，本模块会以「找不到符号」的形式
+            在别人重构时报错，而没有人会想到问题出在自己的 pom 上。
+        -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-im-sdk</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.xspaceagi</groupId>
             <artifactId>system-spec</artifactId>
@@ -30,6 +41,16 @@
         <dependency>
             <groupId>com.xspaceagi</groupId>
             <artifactId>system-application</artifactId>
+        </dependency>
+
+        <!--
+            NuwaxImSandboxController 直接用 User.ACCOUNT_TYPE_AGENT 这个常量（兜底解析智能体虚拟身份时
+            作为 account_type 的取值）。★虽然经 system-application → system-domain 传递依赖也能拿到，
+            仍按本 pom 上面的同一条纪律显式声明：直接使用的类型必须显式依赖。
+        -->
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-infra</artifactId>
         </dependency>
 
         <dependency>

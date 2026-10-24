@@ -80,7 +80,8 @@ public class ResourcePricingRpcService {
         if (targetType == Published.TargetType.Model) {
             targetTypeEnum = TargetTypeEnum.MODEL;
         }
-        if (targetType == null) {
+        //未支持定价的类型（如UserApp）直接返回空
+        if (targetType == null || targetTypeEnum == null) {
             return List.of();
         }
         return iPricingRpcService.listPricingConfigs(targetTypeEnum, targetIds.stream().map(Object::toString).collect(Collectors.toList()));

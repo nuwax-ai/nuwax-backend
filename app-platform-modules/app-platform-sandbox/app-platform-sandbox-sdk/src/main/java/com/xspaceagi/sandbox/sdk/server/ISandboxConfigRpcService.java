@@ -49,10 +49,18 @@ public interface ISandboxConfigRpcService {
      */
     SandboxConfigRpcDto queryById(Long id);
 
+    /**
+     * 根据ID在当前请求租户上下文内查询配置
+     */
+    SandboxConfigRpcDto queryByIdInTenant(Long id);
+
 
     SandboxGlobalConfigDto getGlobalConfig(Long tenantId);
 
     Long queryUserSelectedSandboxId(Long userId, Long agentId);
+
+    /** 记录用户为某智能体选择的沙箱 */
+    void saveUserSelectedSandboxId(Long userId, Long agentId, Long sandboxId);
 
     /**
      * 选择应用开发沙盒

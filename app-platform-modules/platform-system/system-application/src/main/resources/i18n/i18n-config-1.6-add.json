@@ -1,0 +1,7022 @@
+[
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.connector.description",
+    "fieldValue": "Connector",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.connector.name",
+    "fieldValue": "Connector",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.description",
+    "fieldValue": "Expert · Skills · Connectors",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.name",
+    "fieldValue": "Expert · Skills · Connectors",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.message.description",
+    "fieldValue": "Messages",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.message.name",
+    "fieldValue": "Message",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.description",
+    "fieldValue": "Normal project",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.name",
+    "fieldValue": "Normal project",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.description",
+    "fieldValue": "Nuwa App",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.name",
+    "fieldValue": "Nuwa App",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.official_connector.description",
+    "fieldValue": "Official Connector",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.official_connector.name",
+    "fieldValue": "Official Connector",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.project_dev.description",
+    "fieldValue": "Projects & App",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.project_dev.name",
+    "fieldValue": "Project & App",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.repo.description",
+    "fieldValue": "Repo",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.repo.name",
+    "fieldValue": "Repo",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.description",
+    "fieldValue": "Third-party app",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.name",
+    "fieldValue": "Third-party app",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.description",
+    "fieldValue": "Website app",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.name",
+    "fieldValue": "Website app",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.description",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.name",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.description",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.name",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.description",
+    "fieldValue": "Normal project development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.name",
+    "fieldValue": "Normal project development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.description",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.name",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_create.description",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_create.name",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.description",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.name",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.description",
+    "fieldValue": "Third-party app development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.name",
+    "fieldValue": "Third-party app development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.description",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.name",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.description",
+    "fieldValue": "Publish",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.name",
+    "fieldValue": "Publish",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.third_app_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_create.description",
+    "fieldValue": "Create",
+    "remark": ""
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_create.name",
+    "fieldValue": "Create",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.description",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.name",
+    "fieldValue": "Delete",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.description",
+    "fieldValue": "Deploy",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.name",
+    "fieldValue": "Deploy",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.description",
+    "fieldValue": "Website app development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.name",
+    "fieldValue": "Website app development module",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.description",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.name",
+    "fieldValue": "Edit",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.description",
+    "fieldValue": "Publish",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.name",
+    "fieldValue": "Publish",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_query.description",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.PermissionResource.user_app_query.name",
+    "fieldValue": "Query",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Published.TargetType.ThirdApp",
+    "fieldValue": "Third-party app",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Published.TargetType.UserApp",
+    "fieldValue": "Full-stack application",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.description",
+    "fieldValue": "Whether to enable image captcha",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.notice",
+    "fieldValue": "Whether to enable image captcha. When enabled, operations such as login require an image captcha. It works\nindependently of the Aliyun captcha.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.placeholder",
+    "fieldValue": "1: Enable, 0: Disable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Verify.Captcha.NotOpen",
+    "fieldValue": "Image captcha is not enabled",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Backend.Verify.Captcha.TooFrequent",
+    "fieldValue": "Too many requests, please try again later",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "AccountManagement",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.AccountManagement.title",
+    "fieldValue": "Account Management",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.accountLogin",
+    "fieldValue": "Account login",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.back",
+    "fieldValue": "Back",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.domainValidateFailed",
+    "fieldValue": "Domain verification failed. Check the domain or network.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.domainValidateSuccess",
+    "fieldValue": "Connected",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.enterpriseLogin",
+    "fieldValue": "Enterprise login",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.getVerificationCode",
+    "fieldValue": "Get code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.inputAccount",
+    "fieldValue": "Phone / email / username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.inputDomain",
+    "fieldValue": "Enter domain",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.inputPhoneEmailUsername",
+    "fieldValue": "Enter phone/email/username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.invalidAccountWhitespace",
+    "fieldValue": "Email or username cannot contain spaces",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.invalidDomain",
+    "fieldValue": "Enter a valid HTTP or HTTPS domain",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.loginOrRegister",
+    "fieldValue": "Log in / Sign up",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.personalLoginSwitched",
+    "fieldValue": "Switched to Personal",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.phoneLogin",
+    "fieldValue": "Phone login",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Auth.switchPersonalLogin",
+    "fieldValue": "Switch to Nuwax Personal",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Chat.viewTaskDetails",
+    "fieldValue": "View task details",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ConversationSearch",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.ConversationSearch.placeholder",
+    "fieldValue": "Search conversations",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FilePreview",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.FilePreview.shareFallbackCopied",
+    "fieldValue": "System share unavailable, link copied",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FileTree",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.FileTree.zipSavedContentApp",
+    "fieldValue": "ZIP file saved successfully!\n\nFile Name: {fileName}\nSaved Location:\n{filePath}\n\nTip: The file is saved in the system Download folder. You can find it in your File Manager or tap \"Open\" to view it directly.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccount",
+    "fieldValue": "Close Account",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountConfirm",
+    "fieldValue": "Once your account is closed, all information will be removed and cannot be recovered. To confirm, type \"{phrase}\" in the field below.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmBtn",
+    "fieldValue": "Close",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmPhrase",
+    "fieldValue": "Confirm Closure",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountFailed",
+    "fieldValue": "Failed to close account. Please try again later.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountSuccess",
+    "fieldValue": "Account closed",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.deleteAccountTypeMismatch",
+    "fieldValue": "Type \"{phrase}\" in the field to continue.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Header.logoutConfirm",
+    "fieldValue": "Are you sure you want to sign out?",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Home.pullToOpenDefaultAgent",
+    "fieldValue": "Pull down to open the default agent",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Home.releaseToOpenDefaultAgent",
+    "fieldValue": "Release to open agent details",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ImagePreview",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.ImagePreview.savedToAlbum",
+    "fieldValue": "Saved to album.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.about",
+    "fieldValue": "About",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.aboutUs",
+    "fieldValue": "About Us",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.account",
+    "fieldValue": "Account",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.alreadyLatest",
+    "fieldValue": "You are currently on the latest version.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.checkUpdate",
+    "fieldValue": "Check for Updates",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.checkUpdateFailed",
+    "fieldValue": "Unable to check for updates. Try again later.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.contactUs",
+    "fieldValue": "Contact us",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.helpFeedback",
+    "fieldValue": "Help & Feedback",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.newVersion",
+    "fieldValue": "New Version",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.newVersionAvailable",
+    "fieldValue": "A new version is available",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.openUpdateFailed",
+    "fieldValue": "Unable to open the update link",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.privacyAgreement",
+    "fieldValue": "Privacy Policy",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Mine.updateNow",
+    "fieldValue": "Update",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "Device Purchase",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.receiverAddress",
+    "fieldValue": "Shipping Address",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.receiverName",
+    "fieldValue": "Recipient",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MyOrders.receiverPhone",
+    "fieldValue": "Phone Number",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payChecking",
+    "fieldValue": "Checking payment result",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payCloseDialog",
+    "fieldValue": "Close",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payClosedTip",
+    "fieldValue": "The order failed or was closed. Please place the order again.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmDone",
+    "fieldValue": "I have paid",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmLater",
+    "fieldValue": "Close",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipAlipay",
+    "fieldValue": "Complete the payment in Alipay, then tap \"I have paid\" to check your order status.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipWechat",
+    "fieldValue": "Complete the payment in WeChat, then tap \"I have paid\" to check your order status.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTitle",
+    "fieldValue": "Payment confirmation",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTip",
+    "fieldValue": "We have not seen a successful payment yet. If you have already paid, wait a few seconds and try again.",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTitle",
+    "fieldValue": "No payment result yet",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.MySubscriptions.payRetryCheck",
+    "fieldValue": "Check again",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.avatarInvalidType",
+    "fieldValue": "Select a JPG, JPEG, PNG, or SVG image",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.avatarTooLarge",
+    "fieldValue": "Image must be smaller than 2 MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.avatarUpdated",
+    "fieldValue": "Avatar updated",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.avatarUploadFailed",
+    "fieldValue": "Avatar upload failed",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.confirmPassword",
+    "fieldValue": "Confirm password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.confirmResetPassword",
+    "fieldValue": "Confirm",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.dynamicCode",
+    "fieldValue": "Dynamic verification code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.editProfile",
+    "fieldValue": "Edit profile",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.inputConfirmPassword",
+    "fieldValue": "Enter the new password again",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.inputNewPassword",
+    "fieldValue": "Enter a new password (at least 6 characters)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.inputNickName",
+    "fieldValue": "Enter nickname",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.inputUserName",
+    "fieldValue": "Enter username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.inputVerificationCode",
+    "fieldValue": "Enter verification code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.newPassword",
+    "fieldValue": "New password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.nickName",
+    "fieldValue": "Nickname",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.resetPassword",
+    "fieldValue": "Reset password",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.save",
+    "fieldValue": "Save",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.saveFailed",
+    "fieldValue": "Save failed",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.saveSuccess",
+    "fieldValue": "Saved",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.sendCodeFailed",
+    "fieldValue": "Failed to send verification code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.sendVerificationCode",
+    "fieldValue": "Send code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.userNameRequired",
+    "fieldValue": "Enter username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.verificationCode",
+    "fieldValue": "Verification code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.verificationCodeInvalid",
+    "fieldValue": "Enter the 6-digit verification code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Profile.verificationTargetMissing",
+    "fieldValue": "No phone number or email is available for verification",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Provision.Entry.scanQrDesc",
+    "fieldValue": "Make sure Bluetooth and Wi-Fi are on, then scan the device QR code",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Provision.Error.deviceNotFound",
+    "fieldValue": "Target device not found. Make sure Bluetooth provisioning mode is active and retry",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Provision.Error.locationOff",
+    "fieldValue": "No device found. This phone may not receive Bluetooth advertisements while location services are off; turn them on and retry",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Provision.Error.networkError",
+    "fieldValue": "Network error, please check your connection and retry",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Provision.Scan.openLocation",
+    "fieldValue": "Turn on location",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.SystemMessages.empty",
+    "fieldValue": "No system messages",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.SystemMessages.title",
+    "fieldValue": "System Messages",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.agentPlugin",
+    "fieldValue": "Agent Plugin",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.buyNow",
+    "fieldValue": "Buy",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearMessages",
+    "fieldValue": "Clear Conversation History",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirm",
+    "fieldValue": "Conversation history cannot be recovered after clearing. Continue?",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirmBtn",
+    "fieldValue": "Clear",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearMessagesFailed",
+    "fieldValue": "Failed to clear, please try again later",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearMessagesSuccess",
+    "fieldValue": "Conversation history cleared",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.clearingMessages",
+    "fieldValue": "Clearing...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deleteDevice",
+    "fieldValue": "Delete Device",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirm",
+    "fieldValue": "Are you sure you want to delete this device?",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirmTitle",
+    "fieldValue": "Tip",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deleteDeviceFailed",
+    "fieldValue": "Delete failed, please try again later",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deleteDeviceSuccess",
+    "fieldValue": "Delete succeeded",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deletingDevice",
+    "fieldValue": "Deleting...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceIconInvalidType",
+    "fieldValue": "Please choose a JPG, JPEG, PNG, or SVG image",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceIconTooLarge",
+    "fieldValue": "Image size must not exceed 2MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceIconUpdated",
+    "fieldValue": "Device icon updated",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceIconUploadFailed",
+    "fieldValue": "Failed to upload device icon",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceNamePlaceholder",
+    "fieldValue": "Enter device name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.devicePendingConfirm",
+    "fieldValue": "Pending device confirmation",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceProfileEditTitle",
+    "fieldValue": "Edit Device Profile",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceProfileName",
+    "fieldValue": "Device Name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceProfileUnavailable",
+    "fieldValue": "Device profile is unavailable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdateFailed",
+    "fieldValue": "Failed to update device profile",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdated",
+    "fieldValue": "Device profile updated",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceRole",
+    "fieldValue": "Role",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.deviceRolePlaceholder",
+    "fieldValue": "Enter role settings",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.endMeeting",
+    "fieldValue": "End Meeting",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.endMeetingFailed",
+    "fieldValue": "Failed to end meeting",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.endMeetingSuccess",
+    "fieldValue": "Meeting ended",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.endingMeeting",
+    "fieldValue": "Ending meeting...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.eventEmojiReset",
+    "fieldValue": "Default Emoji",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.orderDeviceInfo",
+    "fieldValue": "Device Information",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.orderPay",
+    "fieldValue": "Order and Pay",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.orderSubmitting",
+    "fieldValue": "Submitting...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.pendingConfirmConfigDisabled",
+    "fieldValue": "Device confirmation is pending; mode and volume controls are unavailable",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.productSub",
+    "fieldValue": "Five-color desktop buddy · Sleep voice · 48h battery",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.receiverAddressPlaceholder",
+    "fieldValue": "State / City / District · Street address",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.receiverNamePlaceholder",
+    "fieldValue": "Enter recipient name",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.receiverPhonePlaceholder",
+    "fieldValue": "Enter phone number",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.startMeeting",
+    "fieldValue": "Start Meeting",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.startMeetingFailed",
+    "fieldValue": "Failed to start meeting",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.startMeetingSuccess",
+    "fieldValue": "Meeting started",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.startingMeeting",
+    "fieldValue": "Starting meeting...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.ttsRate",
+    "fieldValue": "Speech Rate",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreview",
+    "fieldValue": "Preview",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreviewStop",
+    "fieldValue": "Stop",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.wakeWord",
+    "fieldValue": "Wake Word",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Terminal.wakeWordPlaceholder",
+    "fieldValue": "Enter wake word",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ThirdParty",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.ThirdParty.AliyunCaptcha.title",
+    "fieldValue": "Aliyun Captcha",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Voice.autoPlayOff",
+    "fieldValue": "Auto-play disabled",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "Mobile.Voice.autoPlayOn",
+    "fieldValue": "Auto-play enabled",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.MarkdownRenderer.viewTaskDetails",
+    "fieldValue": "View task details",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.ModelSelector.personalSpace",
+    "fieldValue": "Personal Space",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Components.ModelSelector.systemModel",
+    "fieldValue": "System Model",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Layouts",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder",
+    "fieldValue": "Search",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.AppDevChatInput.personalSpace",
+    "fieldValue": "Personal Space",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.AppDevChatInput.systemModel",
+    "fieldValue": "System Model",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGb",
+    "fieldValue": "Agent Computer Storage Limit (GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGbTooltip",
+    "fieldValue": "Agent computer storage limit (GB), -1 means unlimited",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGb",
+    "fieldValue": "Web App Storage Limit (GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGbTooltip",
+    "fieldValue": "Web app storage limit (GB), -1 means unlimited",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.inputAccountPlaceholder",
+    "fieldValue": "Please enter your email or username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.inputAccountRequired",
+    "fieldValue": "Please enter your email or username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernamePlaceholder",
+    "fieldValue": "Please enter email or username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernameRequired",
+    "fieldValue": "Please enter your email or username",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.Login.invalidAccountWhitespace",
+    "fieldValue": "Email or username cannot contain spaces",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "Device Purchase",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverAddress",
+    "fieldValue": "Shipping Address",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverName",
+    "fieldValue": "Recipient",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverPhone",
+    "fieldValue": "Phone Number",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.shippingInfo",
+    "fieldValue": "Shipping Information",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.statusExpired",
+    "fieldValue": "Expired",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed",
+    "fieldValue": "Failed to load computer list",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder",
+    "fieldValue": "Please select a computer",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired",
+    "fieldValue": "Computer is required",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed",
+    "fieldValue": "Failed to switch computer, please try again",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer",
+    "fieldValue": "Select Computer",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.title",
+    "fieldValue": "Convert to Conversational Development",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "en-US",
+    "fieldKey": "PC.Pages.SpaceSkillManage.type.convertToConversation",
+    "fieldValue": "Convert to Conversational Dev",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.connector.description",
+    "fieldValue": "连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.connector.name",
+    "fieldValue": "连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.description",
+    "fieldValue": "专家·技能·连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.name",
+    "fieldValue": "专家·技能·连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.message.description",
+    "fieldValue": "女娲智联",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.message.name",
+    "fieldValue": "女娲智联",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.description",
+    "fieldValue": "常规项目",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.name",
+    "fieldValue": "常规项目",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.description",
+    "fieldValue": "女娲应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.name",
+    "fieldValue": "女娲应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.official_connector.description",
+    "fieldValue": "官方连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.official_connector.name",
+    "fieldValue": "官方连接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.project_dev.description",
+    "fieldValue": "项目&应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.project_dev.name",
+    "fieldValue": "项目&应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.repo.description",
+    "fieldValue": "资料库",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.repo.name",
+    "fieldValue": "资料库",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.description",
+    "fieldValue": "三方应用接入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.name",
+    "fieldValue": "三方应用接入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.description",
+    "fieldValue": "网站应用开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.name",
+    "fieldValue": "网站应用开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.description",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.name",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.description",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.name",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.description",
+    "fieldValue": "常规项目开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.name",
+    "fieldValue": "常规项目开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.description",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.name",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_create.description",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_create.name",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.description",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.name",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.description",
+    "fieldValue": "三方应用开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.name",
+    "fieldValue": "三方应用开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.description",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.name",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.description",
+    "fieldValue": "发布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.name",
+    "fieldValue": "发布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.third_app_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_create.description",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_create.name",
+    "fieldValue": "创建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.description",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.name",
+    "fieldValue": "删除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.description",
+    "fieldValue": "部署",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.name",
+    "fieldValue": "部署",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.description",
+    "fieldValue": "网站应用开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.name",
+    "fieldValue": "网站应用开发模块",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.description",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.name",
+    "fieldValue": "编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.description",
+    "fieldValue": "发布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.name",
+    "fieldValue": "发布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_query.description",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.PermissionResource.user_app_query.name",
+    "fieldValue": "查询",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Published.TargetType.ThirdApp",
+    "fieldValue": "三方应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Published.TargetType.UserApp",
+    "fieldValue": "全栈应用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.description",
+    "fieldValue": "是否开启图形验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.notice",
+    "fieldValue": "是否开启图形验证码，开启后登录等操作需要输入图形验证码，与阿里云验证码相互独立",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.placeholder",
+    "fieldValue": "1:开启,0:关闭",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Verify.Captcha.NotOpen",
+    "fieldValue": "图形验证码未开启",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Backend.Verify.Captcha.TooFrequent",
+    "fieldValue": "请求过于频繁，请稍后再试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "AccountManagement",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.AccountManagement.title",
+    "fieldValue": "账号管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.accountLogin",
+    "fieldValue": "账号登录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.back",
+    "fieldValue": "返回",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.domainValidateFailed",
+    "fieldValue": "域名验证失败，请检查域名或网络后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.domainValidateSuccess",
+    "fieldValue": "连接成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.enterpriseLogin",
+    "fieldValue": "企业版登录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.getVerificationCode",
+    "fieldValue": "获取验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.inputAccount",
+    "fieldValue": "请输入手机号 / 邮箱 / 用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.inputDomain",
+    "fieldValue": "输入域名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.inputPhoneEmailUsername",
+    "fieldValue": "请输入手机号/邮箱/用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.invalidAccountWhitespace",
+    "fieldValue": "邮箱或用户名不能包含空格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.invalidDomain",
+    "fieldValue": "请输入合法的 HTTP 或 HTTPS 域名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.loginOrRegister",
+    "fieldValue": "登录 / 注册",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.personalLoginSwitched",
+    "fieldValue": "已切换为个人版",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.phoneLogin",
+    "fieldValue": "手机号登录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Auth.switchPersonalLogin",
+    "fieldValue": "切换为女娲个人版登录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Chat.viewTaskDetails",
+    "fieldValue": "点击查看任务详情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ConversationSearch",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.ConversationSearch.placeholder",
+    "fieldValue": "搜索会话",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FilePreview",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.FilePreview.shareFallbackCopied",
+    "fieldValue": "系统分享不可用，链接已复制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FileTree",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.FileTree.zipSavedContentApp",
+    "fieldValue": "ZIP文件已保存成功！\n\n文件名：{fileName}\n保存位置：\n{filePath}\n\n提示：文件已保存至系统的「下载/Download」文件夹，可在文件管理中查看，也可点击“打开”直接查看文件。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccount",
+    "fieldValue": "注销账号",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountConfirm",
+    "fieldValue": "注销账号后，全部信息将会被移除，且无法找回。若确认注销，请在下方输入框中输入“{phrase}”。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmBtn",
+    "fieldValue": "注销",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmPhrase",
+    "fieldValue": "确认注销",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountFailed",
+    "fieldValue": "注销失败，请稍后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountSuccess",
+    "fieldValue": "账号已注销",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.deleteAccountTypeMismatch",
+    "fieldValue": "请在输入框中输入“{phrase}”",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Header.logoutConfirm",
+    "fieldValue": "确认退出登录吗？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Home.pullToOpenDefaultAgent",
+    "fieldValue": "继续下拉进入默认智能体",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Home.releaseToOpenDefaultAgent",
+    "fieldValue": "松开进入智能体详情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ImagePreview",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.ImagePreview.savedToAlbum",
+    "fieldValue": "已保存至相册",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.about",
+    "fieldValue": "关于",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.aboutUs",
+    "fieldValue": "关于我们",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.account",
+    "fieldValue": "账户",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.alreadyLatest",
+    "fieldValue": "当前已是最新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.checkUpdate",
+    "fieldValue": "检查更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.checkUpdateFailed",
+    "fieldValue": "检查更新失败，请稍后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.contactUs",
+    "fieldValue": "联系我们",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.helpFeedback",
+    "fieldValue": "帮助与反馈",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.newVersion",
+    "fieldValue": "发现新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.newVersionAvailable",
+    "fieldValue": "发现可用的新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.openUpdateFailed",
+    "fieldValue": "无法打开更新地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.privacyAgreement",
+    "fieldValue": "隐私协议",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Mine.updateNow",
+    "fieldValue": "更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "设备购买",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.receiverAddress",
+    "fieldValue": "收货地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.receiverName",
+    "fieldValue": "收货人",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MyOrders.receiverPhone",
+    "fieldValue": "手机号",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payChecking",
+    "fieldValue": "正在查询支付结果",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payCloseDialog",
+    "fieldValue": "关闭",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payClosedTip",
+    "fieldValue": "订单支付失败或已关闭，请重新下单。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmDone",
+    "fieldValue": "我已支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmLater",
+    "fieldValue": "关闭",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipAlipay",
+    "fieldValue": "请在支付宝中完成支付。支付完成后点击「我已支付」查询订单状态。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipWechat",
+    "fieldValue": "请在微信中完成支付。支付完成后点击「我已支付」查询订单状态。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTitle",
+    "fieldValue": "支付确认",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTip",
+    "fieldValue": "暂未查询到支付成功。若你已完成付款，请稍等几秒后再试。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTitle",
+    "fieldValue": "未查询到支付结果",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.MySubscriptions.payRetryCheck",
+    "fieldValue": "再查一次",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.avatarInvalidType",
+    "fieldValue": "请选择 JPG、JPEG、PNG 或 SVG 格式的图片",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.avatarTooLarge",
+    "fieldValue": "图片大小不能超过 2MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.avatarUpdated",
+    "fieldValue": "头像已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.avatarUploadFailed",
+    "fieldValue": "头像上传失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.confirmPassword",
+    "fieldValue": "确认密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.confirmResetPassword",
+    "fieldValue": "确定修改",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.dynamicCode",
+    "fieldValue": "动态认证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.editProfile",
+    "fieldValue": "编辑资料",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.inputConfirmPassword",
+    "fieldValue": "请再次输入新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.inputNewPassword",
+    "fieldValue": "请输入新密码，至少6位数",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.inputNickName",
+    "fieldValue": "请输入昵称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.inputUserName",
+    "fieldValue": "请输入用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.inputVerificationCode",
+    "fieldValue": "请输入验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.newPassword",
+    "fieldValue": "新密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.nickName",
+    "fieldValue": "昵称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.resetPassword",
+    "fieldValue": "重置密码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.save",
+    "fieldValue": "保存",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.saveFailed",
+    "fieldValue": "保存失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.saveSuccess",
+    "fieldValue": "保存成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.sendCodeFailed",
+    "fieldValue": "验证码发送失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.sendVerificationCode",
+    "fieldValue": "发送验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.userNameRequired",
+    "fieldValue": "请输入用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.verificationCode",
+    "fieldValue": "验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.verificationCodeInvalid",
+    "fieldValue": "请输入6位验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Profile.verificationTargetMissing",
+    "fieldValue": "未找到可接收验证码的手机号或邮箱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Provision.Entry.scanQrDesc",
+    "fieldValue": "确保手机蓝牙和WIFI已打开，扫描设备二维码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Provision.Error.deviceNotFound",
+    "fieldValue": "未发现目标设备，请确认设备处于蓝牙配网模式后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Provision.Error.locationOff",
+    "fieldValue": "未搜索到设备。该机型在系统位置信息关闭时可能收不到蓝牙广播，请开启位置信息后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Provision.Error.networkError",
+    "fieldValue": "网络异常，请检查网络后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Provision.Scan.openLocation",
+    "fieldValue": "开启位置信息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.SystemMessages.empty",
+    "fieldValue": "暂无系统消息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.SystemMessages.title",
+    "fieldValue": "系统消息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.agentPlugin",
+    "fieldValue": "Agent插件",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.buyNow",
+    "fieldValue": "购买",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearMessages",
+    "fieldValue": "清空会话记录",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirm",
+    "fieldValue": "清空后历史会话消息将无法恢复，确定清空？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirmBtn",
+    "fieldValue": "清空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearMessagesFailed",
+    "fieldValue": "清空失败，请稍后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearMessagesSuccess",
+    "fieldValue": "清空成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.clearingMessages",
+    "fieldValue": "清空中…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deleteDevice",
+    "fieldValue": "删除设备",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirm",
+    "fieldValue": "确定要删除设备吗？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirmTitle",
+    "fieldValue": "提示",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deleteDeviceFailed",
+    "fieldValue": "删除失败，请稍后重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deleteDeviceSuccess",
+    "fieldValue": "删除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deletingDevice",
+    "fieldValue": "删除中…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceIconInvalidType",
+    "fieldValue": "请选择 JPG、JPEG、PNG 或 SVG 格式的图片",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceIconTooLarge",
+    "fieldValue": "图片大小不能超过 2MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceIconUpdated",
+    "fieldValue": "设备图标已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceIconUploadFailed",
+    "fieldValue": "设备图标上传失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceNamePlaceholder",
+    "fieldValue": "请输入设备名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.devicePendingConfirm",
+    "fieldValue": "待设备确认",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceProfileEditTitle",
+    "fieldValue": "编辑设备资料",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceProfileName",
+    "fieldValue": "设备名称",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceProfileUnavailable",
+    "fieldValue": "设备资料暂不可编辑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdateFailed",
+    "fieldValue": "设备资料更新失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdated",
+    "fieldValue": "设备资料已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceRole",
+    "fieldValue": "角色设定",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.deviceRolePlaceholder",
+    "fieldValue": "请输入角色设定",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.endMeeting",
+    "fieldValue": "结束会议",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.endMeetingFailed",
+    "fieldValue": "结束会议失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.endMeetingSuccess",
+    "fieldValue": "结束会议成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.endingMeeting",
+    "fieldValue": "结束会议中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.eventEmojiReset",
+    "fieldValue": "默认表情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.orderDeviceInfo",
+    "fieldValue": "设备信息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.orderPay",
+    "fieldValue": "下单支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.orderSubmitting",
+    "fieldValue": "提交中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.pendingConfirmConfigDisabled",
+    "fieldValue": "设备待确认，模式切换和音量调节暂不可用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.productSub",
+    "fieldValue": "五色石桌面玩偶 · 语音哄睡 · 48h续航",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.receiverAddressPlaceholder",
+    "fieldValue": "省 / 市 / 区 · 详细地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.receiverNamePlaceholder",
+    "fieldValue": "请输入收货人姓名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.receiverPhonePlaceholder",
+    "fieldValue": "请输入手机号码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.startMeeting",
+    "fieldValue": "开始会议",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.startMeetingFailed",
+    "fieldValue": "开启会议失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.startMeetingSuccess",
+    "fieldValue": "开启会议成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.startingMeeting",
+    "fieldValue": "开启会议中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.ttsRate",
+    "fieldValue": "语速设置",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreview",
+    "fieldValue": "试听",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreviewStop",
+    "fieldValue": "停止",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.wakeWord",
+    "fieldValue": "唤醒词",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Terminal.wakeWordPlaceholder",
+    "fieldValue": "请输入唤醒词",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ThirdParty",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.ThirdParty.AliyunCaptcha.title",
+    "fieldValue": "阿里云验证码",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Voice.autoPlayOff",
+    "fieldValue": "已关闭自动播报",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "Mobile.Voice.autoPlayOn",
+    "fieldValue": "已开启自动播报",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.MarkdownRenderer.viewTaskDetails",
+    "fieldValue": "点击查看任务详情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.ModelSelector.personalSpace",
+    "fieldValue": "个人空间",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Components.ModelSelector.systemModel",
+    "fieldValue": "系统模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Layouts",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder",
+    "fieldValue": "搜索",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.AppDevChatInput.personalSpace",
+    "fieldValue": "个人空间",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.AppDevChatInput.systemModel",
+    "fieldValue": "系统模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGb",
+    "fieldValue": "智能体电脑存储上限(GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGbTooltip",
+    "fieldValue": "智能体电脑存储上限(GB)，-1表示不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGb",
+    "fieldValue": "网页应用存储上限(GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGbTooltip",
+    "fieldValue": "网页应用存储上限(GB)，-1表示不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Login.inputAccountPlaceholder",
+    "fieldValue": "请输入邮箱或用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Login.inputAccountRequired",
+    "fieldValue": "请输入邮箱或用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernamePlaceholder",
+    "fieldValue": "请输入邮箱或用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernameRequired",
+    "fieldValue": "请输入邮箱或用户名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.Login.invalidAccountWhitespace",
+    "fieldValue": "邮箱或用户名不能包含空格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "设备购买",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverAddress",
+    "fieldValue": "收货地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverName",
+    "fieldValue": "收货人",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverPhone",
+    "fieldValue": "手机号",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.shippingInfo",
+    "fieldValue": "收货信息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.statusExpired",
+    "fieldValue": "已过期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed",
+    "fieldValue": "加载电脑列表失败",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder",
+    "fieldValue": "请选择电脑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired",
+    "fieldValue": "电脑不能为空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed",
+    "fieldValue": "切换电脑失败，请重试",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer",
+    "fieldValue": "选择电脑",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.title",
+    "fieldValue": "转为对话式开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-CN",
+    "fieldKey": "PC.Pages.SpaceSkillManage.type.convertToConversation",
+    "fieldValue": "转为对话式开发",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.connector.description",
+    "fieldValue": "連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.connector.name",
+    "fieldValue": "連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.description",
+    "fieldValue": "專家·技能·連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.expert_skill_connector.name",
+    "fieldValue": "專家·技能·連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.message.description",
+    "fieldValue": "訊息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.message.name",
+    "fieldValue": "訊息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.description",
+    "fieldValue": "一般項目",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.normal_project_dev.name",
+    "fieldValue": "一般項目",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.description",
+    "fieldValue": "女媧應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.nuwa_app.name",
+    "fieldValue": "女媧應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.official_connector.description",
+    "fieldValue": "官方連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.official_connector.name",
+    "fieldValue": "官方連接器",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.project_dev.description",
+    "fieldValue": "項目&應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.project_dev.name",
+    "fieldValue": "項目&應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.repo.description",
+    "fieldValue": "資料庫",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.repo.name",
+    "fieldValue": "資料庫",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.description",
+    "fieldValue": "第三方應用接入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.third_app_dev.name",
+    "fieldValue": "第三方應用接入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.description",
+    "fieldValue": "網站應用開發",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionMenu",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionMenu.user_app_dev.name",
+    "fieldValue": "網站應用開發",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.description",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_create.name",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.description",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_delete.name",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.description",
+    "fieldValue": "常規項目開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_dev.name",
+    "fieldValue": "常規項目開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.description",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_modify.name",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.normal_project_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_create.description",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_create.name",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.description",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_delete.name",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.description",
+    "fieldValue": "三方應用開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_dev.name",
+    "fieldValue": "三方應用開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.description",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_modify.name",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.description",
+    "fieldValue": "發布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_publish.name",
+    "fieldValue": "發布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.third_app_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_create.description",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_create.name",
+    "fieldValue": "創建",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.description",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_delete.name",
+    "fieldValue": "刪除",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.description",
+    "fieldValue": "部署",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_deploy.name",
+    "fieldValue": "部署",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.description",
+    "fieldValue": "網站應用開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_dev.name",
+    "fieldValue": "網站應用開發模塊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.description",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_modify.name",
+    "fieldValue": "編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.description",
+    "fieldValue": "發布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_publish.name",
+    "fieldValue": "發布",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_query.description",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "PermissionResource",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.PermissionResource.user_app_query.name",
+    "fieldValue": "查詢",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Published.TargetType.ThirdApp",
+    "fieldValue": "第三方應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Published",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Published.TargetType.UserApp",
+    "fieldValue": "全棧應用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.description",
+    "fieldValue": "是否開啟圖形驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.notice",
+    "fieldValue": "是否開啟圖形驗證碼，開啟後登入等操作需要輸入圖形驗證碼，與阿里雲驗證碼相互獨立",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "TenantConfig",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.TenantConfig.openImageCaptcha.placeholder",
+    "fieldValue": "1:開啟,0:關閉",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Verify.Captcha.NotOpen",
+    "fieldValue": "圖形驗證碼未開啟",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Backend",
+    "module": "Verify",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Backend.Verify.Captcha.TooFrequent",
+    "fieldValue": "請求過於頻繁，請稍後再試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "AccountManagement",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.AccountManagement.title",
+    "fieldValue": "帳號管理",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.accountLogin",
+    "fieldValue": "帳號登入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.back",
+    "fieldValue": "返回",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.domainValidateFailed",
+    "fieldValue": "網域驗證失敗，請檢查網域或網路後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.domainValidateSuccess",
+    "fieldValue": "連線成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.enterpriseLogin",
+    "fieldValue": "企業版登入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.getVerificationCode",
+    "fieldValue": "取得驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.inputAccount",
+    "fieldValue": "請輸入手機號 / 電子郵件 / 使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.inputDomain",
+    "fieldValue": "輸入網域",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.inputPhoneEmailUsername",
+    "fieldValue": "請輸入手機號/電子郵件/使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.invalidAccountWhitespace",
+    "fieldValue": "郵箱或使用者名稱不能包含空格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.invalidDomain",
+    "fieldValue": "請輸入合法的 HTTP 或 HTTPS 網域",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.loginOrRegister",
+    "fieldValue": "登入 / 註冊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.personalLoginSwitched",
+    "fieldValue": "已切換為個人版",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.phoneLogin",
+    "fieldValue": "手機號登入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Auth",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Auth.switchPersonalLogin",
+    "fieldValue": "切換為女媧個人版登入",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Chat",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Chat.viewTaskDetails",
+    "fieldValue": "點擊查看任務詳情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ConversationSearch",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.ConversationSearch.placeholder",
+    "fieldValue": "搜尋會話",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FilePreview",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.FilePreview.shareFallbackCopied",
+    "fieldValue": "系統分享不可用，連結已複製",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "FileTree",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.FileTree.zipSavedContentApp",
+    "fieldValue": "ZIP檔案已儲存成功！\n\n檔案名：{fileName}\n儲存位置：\n{filePath}\n\n提示：檔案已儲存至系統的「下載/Download」資料夾，可在檔案管理中檢視，也可點擊“開啟”直接檢視檔案。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccount",
+    "fieldValue": "註銷帳號",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountConfirm",
+    "fieldValue": "註銷帳號後，全部資訊將會被移除，且無法找回。若確認註銷，請在下方輸入框中輸入“{phrase}”。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmBtn",
+    "fieldValue": "註銷",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountConfirmPhrase",
+    "fieldValue": "確認註銷",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountFailed",
+    "fieldValue": "註銷失敗，請稍後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountSuccess",
+    "fieldValue": "帳號已註銷",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.deleteAccountTypeMismatch",
+    "fieldValue": "請在輸入框中輸入“{phrase}”",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Header",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Header.logoutConfirm",
+    "fieldValue": "確認退出登入嗎？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Home.pullToOpenDefaultAgent",
+    "fieldValue": "繼續下拉進入預設智慧體",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Home",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Home.releaseToOpenDefaultAgent",
+    "fieldValue": "鬆開進入智慧體詳情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ImagePreview",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.ImagePreview.savedToAlbum",
+    "fieldValue": "已儲存至相簿",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.about",
+    "fieldValue": "關於",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.aboutUs",
+    "fieldValue": "關於我們",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.account",
+    "fieldValue": "帳戶",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.alreadyLatest",
+    "fieldValue": "當前已是最新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.checkUpdate",
+    "fieldValue": "檢查更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.checkUpdateFailed",
+    "fieldValue": "檢查更新失敗，請稍後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.contactUs",
+    "fieldValue": "聯繫我們",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.helpFeedback",
+    "fieldValue": "幫助與反饋",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.newVersion",
+    "fieldValue": "發現新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.newVersionAvailable",
+    "fieldValue": "發現可用的新版本",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.openUpdateFailed",
+    "fieldValue": "無法開啟更新連結",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.privacyAgreement",
+    "fieldValue": "隱私協議",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Mine",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Mine.updateNow",
+    "fieldValue": "更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "設備購買",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.receiverAddress",
+    "fieldValue": "收貨地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.receiverName",
+    "fieldValue": "收貨人",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MyOrders",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MyOrders.receiverPhone",
+    "fieldValue": "手機號",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payChecking",
+    "fieldValue": "正在查詢支付結果",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payCloseDialog",
+    "fieldValue": "關閉",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payClosedTip",
+    "fieldValue": "訂單支付失敗或已關閉，請重新下單。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmDone",
+    "fieldValue": "我已支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmLater",
+    "fieldValue": "關閉",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipAlipay",
+    "fieldValue": "請在支付寶中完成支付。支付完成後點擊「我已支付」查詢訂單狀態。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTipWechat",
+    "fieldValue": "請在微信中完成支付。支付完成後點擊「我已支付」查詢訂單狀態。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payConfirmTitle",
+    "fieldValue": "支付確認",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTip",
+    "fieldValue": "暫未查詢到支付成功。若你已完成付款，請稍等幾秒後再試。",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payNotFoundTitle",
+    "fieldValue": "未查詢到支付結果",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "MySubscriptions",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.MySubscriptions.payRetryCheck",
+    "fieldValue": "再查一次",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.avatarInvalidType",
+    "fieldValue": "請選擇 JPG、JPEG、PNG 或 SVG 格式的圖片",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.avatarTooLarge",
+    "fieldValue": "圖片大小不能超過 2MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.avatarUpdated",
+    "fieldValue": "頭像已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.avatarUploadFailed",
+    "fieldValue": "頭像上傳失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.confirmPassword",
+    "fieldValue": "確認密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.confirmResetPassword",
+    "fieldValue": "確認修改",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.dynamicCode",
+    "fieldValue": "動態認證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.editProfile",
+    "fieldValue": "編輯資料",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.inputConfirmPassword",
+    "fieldValue": "請再次輸入新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.inputNewPassword",
+    "fieldValue": "請輸入新密碼，至少6位數",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.inputNickName",
+    "fieldValue": "請輸入暱稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.inputUserName",
+    "fieldValue": "請輸入使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.inputVerificationCode",
+    "fieldValue": "請輸入驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.newPassword",
+    "fieldValue": "新密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.nickName",
+    "fieldValue": "暱稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.resetPassword",
+    "fieldValue": "重設密碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.save",
+    "fieldValue": "儲存",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.saveFailed",
+    "fieldValue": "儲存失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.saveSuccess",
+    "fieldValue": "儲存成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.sendCodeFailed",
+    "fieldValue": "驗證碼發送失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.sendVerificationCode",
+    "fieldValue": "發送驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.userNameRequired",
+    "fieldValue": "請輸入使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.verificationCode",
+    "fieldValue": "驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.verificationCodeInvalid",
+    "fieldValue": "請輸入6位驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Profile",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Profile.verificationTargetMissing",
+    "fieldValue": "未找到可接收驗證碼的手機號或郵箱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Provision.Entry.scanQrDesc",
+    "fieldValue": "確保手機藍牙和WIFI已打開，掃描設備二維碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Provision.Error.deviceNotFound",
+    "fieldValue": "未發現目標設備，請確認設備處於藍牙配網模式後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Provision.Error.locationOff",
+    "fieldValue": "未搜尋到裝置。此機型在系統位置資訊關閉時可能收不到藍牙廣播，請開啟位置資訊後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Provision.Error.networkError",
+    "fieldValue": "網路異常，請檢查網路後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Provision",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Provision.Scan.openLocation",
+    "fieldValue": "開啟位置資訊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.SystemMessages.empty",
+    "fieldValue": "暫無系統訊息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "SystemMessages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.SystemMessages.title",
+    "fieldValue": "系統訊息",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.agentPlugin",
+    "fieldValue": "Agent外掛",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.buyNow",
+    "fieldValue": "購買",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearMessages",
+    "fieldValue": "清空對話記錄",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirm",
+    "fieldValue": "清空後歷史對話訊息將無法復原，確定清空？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearMessagesConfirmBtn",
+    "fieldValue": "清空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearMessagesFailed",
+    "fieldValue": "清空失敗，請稍後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearMessagesSuccess",
+    "fieldValue": "清空成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.clearingMessages",
+    "fieldValue": "清空中…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deleteDevice",
+    "fieldValue": "刪除設備",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirm",
+    "fieldValue": "確定要刪除設備嗎？",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deleteDeviceConfirmTitle",
+    "fieldValue": "提示",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deleteDeviceFailed",
+    "fieldValue": "刪除失敗，請稍後重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deleteDeviceSuccess",
+    "fieldValue": "刪除成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deletingDevice",
+    "fieldValue": "刪除中…",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceIconInvalidType",
+    "fieldValue": "請選擇 JPG、JPEG、PNG 或 SVG 格式的圖片",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceIconTooLarge",
+    "fieldValue": "圖片大小不能超過 2MB",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceIconUpdated",
+    "fieldValue": "裝置圖示已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceIconUploadFailed",
+    "fieldValue": "裝置圖示上傳失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceNamePlaceholder",
+    "fieldValue": "請輸入裝置名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.devicePendingConfirm",
+    "fieldValue": "待設備確認",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceProfileEditTitle",
+    "fieldValue": "編輯裝置資料",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceProfileName",
+    "fieldValue": "裝置名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceProfileUnavailable",
+    "fieldValue": "裝置資料暫不可編輯",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdateFailed",
+    "fieldValue": "裝置資料更新失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceProfileUpdated",
+    "fieldValue": "裝置資料已更新",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceRole",
+    "fieldValue": "角色設定",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.deviceRolePlaceholder",
+    "fieldValue": "請輸入角色設定",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.endMeeting",
+    "fieldValue": "結束會議",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.endMeetingFailed",
+    "fieldValue": "結束會議失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.endMeetingSuccess",
+    "fieldValue": "結束會議成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.endingMeeting",
+    "fieldValue": "結束會議中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.eventEmojiReset",
+    "fieldValue": "預設表情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.orderDeviceInfo",
+    "fieldValue": "設備資訊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.orderPay",
+    "fieldValue": "下單支付",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.orderSubmitting",
+    "fieldValue": "提交中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.pendingConfirmConfigDisabled",
+    "fieldValue": "設備待確認，模式切換和音量調節暫不可用",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.productSub",
+    "fieldValue": "五色石桌面玩偶 · 語音哄睡 · 48h續航",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.receiverAddressPlaceholder",
+    "fieldValue": "省 / 市 / 區 · 詳細地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.receiverNamePlaceholder",
+    "fieldValue": "請輸入收貨人姓名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.receiverPhonePlaceholder",
+    "fieldValue": "請輸入手機號碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.startMeeting",
+    "fieldValue": "開始會議",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.startMeetingFailed",
+    "fieldValue": "開啟會議失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.startMeetingSuccess",
+    "fieldValue": "開啟會議成功",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.startingMeeting",
+    "fieldValue": "開啟會議中...",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.ttsRate",
+    "fieldValue": "語速設定",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreview",
+    "fieldValue": "試聽",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.ttsVoicePreviewStop",
+    "fieldValue": "停止",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.wakeWord",
+    "fieldValue": "喚醒詞",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Terminal",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Terminal.wakeWordPlaceholder",
+    "fieldValue": "請輸入喚醒詞",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "ThirdParty",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.ThirdParty.AliyunCaptcha.title",
+    "fieldValue": "阿里云驗證碼",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Voice.autoPlayOff",
+    "fieldValue": "已關閉自動播報",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "Mobile",
+    "module": "Voice",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "Mobile.Voice.autoPlayOn",
+    "fieldValue": "已開啟自動播報",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.MarkdownRenderer.viewTaskDetails",
+    "fieldValue": "點擊查看任務詳情",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.ModelSelector.personalSpace",
+    "fieldValue": "個人空間",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Components",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Components.ModelSelector.systemModel",
+    "fieldValue": "系統模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Layouts",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder",
+    "fieldValue": "搜尋",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.AppDevChatInput.personalSpace",
+    "fieldValue": "個人空間",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.AppDevChatInput.systemModel",
+    "fieldValue": "系統模型",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGb",
+    "fieldValue": "智能體電腦儲存上限(GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGbTooltip",
+    "fieldValue": "智能體電腦儲存上限(GB)，-1表示不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGb",
+    "fieldValue": "網頁應用儲存上限(GB)",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGbTooltip",
+    "fieldValue": "網頁應用儲存上限(GB)，-1表示不限制",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputAccountPlaceholder",
+    "fieldValue": "請輸入郵箱或使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputAccountRequired",
+    "fieldValue": "請輸入郵箱或使用者名稱",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernamePlaceholder",
+    "fieldValue": "請輸入郵箱或用戶名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.inputEmailOrUsernameRequired",
+    "fieldValue": "請輸入郵箱或用戶名",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.Login.invalidAccountWhitespace",
+    "fieldValue": "郵箱或使用者名稱不能包含空格",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.bizTypeDeskBuddy",
+    "fieldValue": "設備購買",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverAddress",
+    "fieldValue": "收貨地址",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverName",
+    "fieldValue": "收貨人",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.receiverPhone",
+    "fieldValue": "手機號",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MyOrders.shippingInfo",
+    "fieldValue": "收貨資訊",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.MorePage.MySubscriptions.statusExpired",
+    "fieldValue": "已過期",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed",
+    "fieldValue": "載入電腦清單失敗",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder",
+    "fieldValue": "請選擇電腦",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired",
+    "fieldValue": "電腦不可為空",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed",
+    "fieldValue": "切換電腦失敗，請重試",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer",
+    "fieldValue": "選擇電腦",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.ConvertToConversationModal.title",
+    "fieldValue": "轉為對話式開發",
+    "remark": null
+  },
+  {
+    "type": "System",
+    "side": "PC",
+    "module": "Pages",
+    "dataId": "-1",
+    "lang": "zh-TW",
+    "fieldKey": "PC.Pages.SpaceSkillManage.type.convertToConversation",
+    "fieldValue": "轉為對話式開發",
+    "remark": null
+  }
+]

@@ -9,6 +9,7 @@ import com.xspaceagi.system.infra.dao.entity.Space;
 import com.xspaceagi.system.sdk.permission.SpacePermissionService;
 import com.xspaceagi.system.spec.common.RequestContext;
 import com.xspaceagi.system.spec.dto.ReqResult;
+import com.xspaceagi.system.spec.enums.ProjectTypeEnum;
 import com.xspaceagi.system.spec.exception.BizException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,12 +56,12 @@ public class ProjectController {
             projectCreateDTO.setSpaceId(spaceDto1.getId());
         }
         projectCreateDTO.setCreatorId(RequestContext.get().getUserId());
-        if (StringUtils.isBlank(projectCreateDTO.getName())) {
-            if ("en-US".equalsIgnoreCase(RequestContext.get().getLang())) {
-                projectCreateDTO.setName(DEFAULT_PROJECT_EN_NAME);
-            } else {
-                projectCreateDTO.setName(DEFAULT_PROJECT_CN_NAME);
-            }
+        // 名称缺省：常规项目由 userapp createNormal 统一处理，全栈应用由 userapp create 统一处理
+        if (StringUtils.isBlank(projectCreateDTO.getName())
+                && projectCreateDTO.getTargetType() != ProjectTypeEnum.NormalProject
+                && projectCreateDTO.getTargetType() != ProjectTypeEnum.UserApp) {
+            projectCreateDTO.setName("en-US".equalsIgnoreCase(RequestContext.get().getLang())
+                    ? DEFAULT_PROJECT_EN_NAME : DEFAULT_PROJECT_CN_NAME);
         }
         return ReqResult.success(projectApplicationService.createProject(projectCreateDTO));
     }

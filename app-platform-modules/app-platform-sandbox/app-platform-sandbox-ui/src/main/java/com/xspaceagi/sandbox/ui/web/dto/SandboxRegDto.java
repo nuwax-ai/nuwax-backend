@@ -19,6 +19,9 @@ public class SandboxRegDto {
     @Schema(description = "设备ID")
     private String deviceId;
 
+    @Schema(description = "电脑名称")
+    private String computerName;
+
     @Schema(description = "终端配置信息")
     private SandboxConfigValue sandboxConfigValue;
 }

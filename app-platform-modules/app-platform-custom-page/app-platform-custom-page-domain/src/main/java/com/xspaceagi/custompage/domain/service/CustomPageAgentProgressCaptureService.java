@@ -11,7 +11,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
@@ -40,15 +39,13 @@ import lombok.extern.slf4j.Slf4j;
  * 前端 SSE 不设服务端超时，仅在客户端断开、传输错误或采集终态 {@code complete()} 时关闭；
  * 前端断开后仍保持 Agent 连接直至终态并落库。
  * 实时事件经内存转发给已连接的前端，不从 DB 推送给 SSE。
+ * ASSISTANT 仅在会话终态/流结束时一次性 insert（同 conversation_message），过程中不落库。
  */
 @Slf4j
 @Service
 public class CustomPageAgentProgressCaptureService {
 
     private static final long FRONTEND_ATTACH_POLL_MS = 300L;
-    /** 增量落库：每 N 条可持久化事件或间隔 T 触发一次（终态事件与流结束仍立即落库）。 */
-    private static final int PERSIST_EVERY_N_EVENTS = 20;
-    private static final long PERSIST_INTERVAL_MS = 15_000L;
 
     private final ConcurrentHashMap<String, CaptureContext> activeCaptures = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> sessionStartLocks = new ConcurrentHashMap<>();
@@ -266,7 +263,7 @@ public class CustomPageAgentProgressCaptureService {
             log.warn("[Agent Progress] no capture context found for event, project Id={}, session Id={}, event={}", projectId, sessionId, eventName);
             return;
         }
-        if (!AgentProgressEventUtil.shouldPersist(eventName)) {
+        if (!AgentProgressEventUtil.shouldPersist(eventName, data)) {
             broadcastToEmitters(context, eventName, data);
             return;
         }
@@ -284,24 +281,11 @@ public class CustomPageAgentProgressCaptureService {
             autoGitCommit(context);
         }
         broadcastToEmitters(context, eventName, data);
-        maybePersistIncremental(context);
 
         if (isFinalEvent) {
             log.info("[Agent Progress] terminal event detected, project Id={}, event={}", projectId, eventName);
             persistAssistantConversation(context, true);
         }
-    }
-
-    private void maybePersistIncremental(CaptureContext context) {
-        int eventCount = context.events.size();
-        long now = System.currentTimeMillis();
-        boolean byCount = eventCount > 0 && eventCount % PERSIST_EVERY_N_EVENTS == 0;
-        boolean byInterval = now - context.lastPersistAtMs.get() >= PERSIST_INTERVAL_MS;
-        if (!byCount && !byInterval) {
-            return;
-        }
-        context.lastPersistAtMs.set(now);
-        persistAssistantConversation(context, false);
     }
 
     private void onAgentStreamFinished(Long projectId, String fluxRequestId) {
@@ -322,8 +306,9 @@ public class CustomPageAgentProgressCaptureService {
         }
         sessionStartLocks.remove(captureKey);
         persistAssistantConversation(context, false);
+        // Agent SSE 已结束：无论是否落库/是否含终态事件，都标记本轮完成，避免续采挂死
+        sessionCoordinator.markTurnDone(context.projectId, context.fluxRequestId);
         if (isContextTerminal(context)) {
-            sessionCoordinator.markTurnDone(context.projectId, context.fluxRequestId);
             // 兜底：如果 onAgentEvent 终态时未执行则在此执行
             autoGitCommit(context);
         }
@@ -528,6 +513,20 @@ public class CustomPageAgentProgressCaptureService {
                 }
                 snapshot = new ArrayList<>(context.events);
             }
+            String requestId = StringUtils.isNotBlank(context.fluxRequestId) ? context.fluxRequestId
+                    : context.requestIdRef.get();
+            if (StringUtils.isBlank(requestId)) {
+                log.error("[Agent Progress] skip persist: missing requestId, project Id={}, session Id={}",
+                        context.projectId, context.sessionId);
+                return;
+            }
+            // 与 conversation_message 一致：整轮只 insert 一次，过程中不写库
+            if (!context.dbPersisted.compareAndSet(false, true)) {
+                if (markDoneIfTerminal && isEventsTerminal(snapshot)) {
+                    sessionCoordinator.markTurnDone(context.projectId, requestId);
+                }
+                return;
+            }
             try {
                 AgentProgressContextUtil.runWithUserContext(context.userContext, () -> {
                     CustomPageConversationModel model = new CustomPageConversationModel();
@@ -536,31 +535,25 @@ public class CustomPageAgentProgressCaptureService {
                     model.setContent(JSON.toJSONString(Map.of("events", snapshot)));
                     model.setRole("ASSISTANT");
                     model.setSessionId(context.sessionId);
-                    String requestId = StringUtils.isNotBlank(context.fluxRequestId) ? context.fluxRequestId
-                            : context.requestIdRef.get();
                     model.setRequestId(requestId);
-                    Long assistantRecordId = context.assistantRecordIdRef.get();
-                    if (assistantRecordId != null) {
-                        model.setId(assistantRecordId);
-                    }
-                    ReqResult<Long> result = customPageConversationDomainService.saveOrUpdateAssistantConversation(
+                    ReqResult<Long> result = customPageConversationDomainService.saveAssistantConversation(
                             model, context.userContext);
-                    if (result != null && result.isSuccess() && result.getData() != null) {
-                        context.assistantRecordIdRef.compareAndSet(null, result.getData());
-                    }
                     if (result == null || !result.isSuccess()) {
+                        // 允许流结束兜底再试一次
+                        context.dbPersisted.set(false);
                         String msg = result == null ? "unknown" : result.getMessage();
                         log.error("[Agent Progress] persist assistant failed, project Id={}, request Id={}, error={}",
-                                context.projectId, context.fluxRequestId, msg);
+                                context.projectId, requestId, msg);
                         return;
                     }
                     if (markDoneIfTerminal && isEventsTerminal(snapshot)) {
-                        sessionCoordinator.markTurnDone(context.projectId, context.fluxRequestId);
+                        sessionCoordinator.markTurnDone(context.projectId, requestId);
                     }
                 });
             } catch (Exception e) {
+                context.dbPersisted.set(false);
                 log.error("[Agent Progress] persist assistant conversation failed, project Id={}, request Id={}",
-                        context.projectId, context.fluxRequestId, e);
+                        context.projectId, requestId, e);
             }
         }
     }
@@ -611,8 +604,7 @@ public class CustomPageAgentProgressCaptureService {
         private final List<Map<String, Object>> events = Collections.synchronizedList(new ArrayList<>());
         private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
         private final AtomicReference<String> requestIdRef = new AtomicReference<>();
-        private final AtomicReference<Long> assistantRecordIdRef = new AtomicReference<>();
-        private final AtomicLong lastPersistAtMs = new AtomicLong(0);
+        private final AtomicBoolean dbPersisted = new AtomicBoolean(false);
         private final AtomicBoolean gitCommitted = new AtomicBoolean(false);
 
         private CaptureContext(Long projectId, String sessionId, UserContext userContext, String fluxRequestId) {

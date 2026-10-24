@@ -25,6 +25,6 @@ public class PublishedCategoryDto implements Serializable {
     private List<PublishedCategoryDto> children;
 
     public enum CategoryType {
-        Agent, Plugin, Workflow, Template, Skill, Component, PageApp
+        Agent, Plugin, Workflow, Template, Skill, Component, PageApp, ChatBox, Connector
     }
 }

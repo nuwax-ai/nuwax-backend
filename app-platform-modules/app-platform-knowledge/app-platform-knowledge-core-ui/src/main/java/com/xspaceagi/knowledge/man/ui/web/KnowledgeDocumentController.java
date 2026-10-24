@@ -246,10 +246,15 @@ public class KnowledgeDocumentController extends BaseController {
             List<FileInfoVo> fileInfoVoList = addDto.getFileList();
             if (fileInfoVoList != null) {
                 for (FileInfoVo vo : fileInfoVoList) {
+                    if(vo.getFileSize() == 0) {
+                        throw new BizException("Invalid file content ");
+                    }
                     submitFileSize = submitFileSize + vo.getFileSize();
                 }
             }
         }
+
+
 
         UserDataPermissionDto userDataPermissions = sysDataPermissionApplicationService.getUserDataPermission(userContext.getUserId());
         //System.out.println("=========userDataPermissions>>1");

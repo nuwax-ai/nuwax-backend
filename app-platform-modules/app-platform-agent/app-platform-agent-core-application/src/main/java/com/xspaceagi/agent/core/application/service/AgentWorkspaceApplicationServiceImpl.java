@@ -43,7 +43,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -81,26 +80,43 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
     private GitRpcClient gitRpcClient;
 
     @Override
-    public void createWorkspace(CreateWorkspaceDto createWorkspaceDto) {
-        log.info("[createWorkspace] userId={} cId={} skillIds={}, subagents.size={}  创建工作空间开始",
-                createWorkspaceDto.getUserId(), createWorkspaceDto.getCId(), createWorkspaceDto.getSkillIds(), CollectionUtils.size(createWorkspaceDto.getSubagents()));
+    public SkillPushResultDto createWorkspace(CreateWorkspaceDto createWorkspaceDto) {
+        log.info("[createWorkspace] userId={} agentId={} cId={} skillIds={}, updateSkillIds={}, subagents.size={}  创建工作空间开始",
+                createWorkspaceDto.getUserId(), createWorkspaceDto.getAgentId(), createWorkspaceDto.getCId(),
+                createWorkspaceDto.getSkillIds(), createWorkspaceDto.getUpdateSkillIds(),
+                CollectionUtils.size(createWorkspaceDto.getSubagents()));
         Long userId = createWorkspaceDto.getUserId();
+        Long agentId = createWorkspaceDto.getAgentId();
         Long cId = createWorkspaceDto.getCId();
         List<Long> skillIds = createWorkspaceDto.getSkillIds();
+        List<Long> updateSkillIds = createWorkspaceDto.getUpdateSkillIds() != null ? createWorkspaceDto.getUpdateSkillIds() : Collections.emptyList();
         List<SubagentDto> subagents = createWorkspaceDto.getSubagents();
 
-        if (userId == null || cId == null) {
+        if (userId == null || cId == null || agentId == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentRequiredParamEmpty);
         }
 
-        List<SkillConfigDto> toPushSkills = new ArrayList<>();
-        List<String> skillUrls = new ArrayList<>();
+        Set<Long> updateIdSet = new HashSet<>(updateSkillIds);
+        List<String> skillNames = new ArrayList<>();
+        List<String> updateSkillNames = new ArrayList<>();
+        // 发送失败的技能明细：单个技能失败不阻断流程，最终随返回值带给调用方
+        List<SkillPushResultDto.FailedSkill> failedSkillList = new ArrayList<>();
+
+        // 纯 url 数组：旧 file-server create-workspace-v2 依赖此字段装全技能
+        List<String> allSkillUrls = new ArrayList<>();
+        // name→url：新 FS 按技能名跳过已存在技能的下载；name 与 skill.md 中 name / 目录名一致
+        Map<String, String> skillUrlMap = new LinkedHashMap<>();
+        // url→技能标识（name/description）：下载/推送失败时反查，用于失败明细上报
+        Map<String, SkillIdentity> urlSkillMap = new LinkedHashMap<>();
+        List<SkillConfigDto> allPushSkills = new ArrayList<>();
+
         if (CollectionUtils.isNotEmpty(skillIds)) {
             List<SkillConfig> skillConfigs = skillDomainService.listByIds(skillIds);
             if (CollectionUtils.isNotEmpty(skillConfigs)) {
                 for (SkillConfig skillConfig : skillConfigs) {
                     Published.PublishStatus publishStatus = skillConfig.getPublishStatus();
                     if (publishStatus != Published.PublishStatus.Published) {
+                        // 未发布属于配置问题，调用方处理不了：仅日志提示，不进失败列表
                         log.warn("[createWorkspace] userId={} cId={} skillId={} 技能未发布，跳过", userId, cId, skillConfig.getId());
                         continue;
                     }
@@ -112,11 +128,27 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
                     }
                     String config = publishedDto.getConfig();
                     SkillConfigDto dto = parseSkillConfig(config);
-                    SkillNameUtil.backfillName(dto, iFileAccessService);
+                    SkillNameUtil.backfillNameAndDescription(dto, iFileAccessService);
+                    // 目录名 / 技能名：统一为 skill.md 中的 name（backfillNameAndDescription 写入 enName）
+                    String skillDirName = resolveSkillDirName(dto);
+                    if (StringUtils.isNotBlank(skillDirName)) {
+                        skillNames.add(skillDirName);
+                        if (updateIdSet.contains(skillConfig.getId())) {
+                            updateSkillNames.add(skillDirName);
+                        }
+                    }
 
-                    if (isV2Config(dto)) {
-                        if (StringUtils.isNotBlank(dto.getZipFileUrl())) {
-                            skillUrls.add(iFileAccessService.getFileUrlWithAk(dto.getZipFileUrl(), true));
+                    if (isV2Skill(dto)) {
+                        String url = iFileAccessService.getFileUrlWithAk(dto.getZipFileUrl(), true);
+                        if (StringUtils.isBlank(url)) {
+                            // 签名失败拿到空 url：不入推送列表，直接记失败
+                            failedSkillList.add(failedSkill(skillDirName, dto.getDescription(), dto.getZipFileUrl(), "生成技能 zip 下载地址失败，跳过"));
+                        } else {
+                            allSkillUrls.add(url);
+                            if (StringUtils.isNotBlank(skillDirName)) {
+                                skillUrlMap.put(skillDirName, url);
+                                urlSkillMap.put(url, new SkillIdentity(skillDirName, dto.getDescription()));
+                            }
                         }
                         continue;
                     }
@@ -126,15 +158,9 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
                         continue;
                     }
 
-                    log.info("[createWorkspace] userId={} cId={} skillId={}, skillName={} 技能打包开始", userId, cId, dto.getId(), dto.getName());
-                    toPushSkills.add(dto);
+                    allPushSkills.add(dto);
                 }
             }
-        }
-
-        MultipartFile zipFile = null;
-        if (CollectionUtils.isNotEmpty(toPushSkills) || CollectionUtils.isNotEmpty(subagents)) {
-            zipFile = buildZip(toPushSkills, subagents);
         }
 
         String mcpServersConfig = createWorkspaceDto.getMcpServersConfig() != null ? JSON.toJSONString(createWorkspaceDto.getMcpServersConfig()) : null;
@@ -146,21 +172,34 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             hookScriptsJson = JSON.toJSONString(hookScripts);
         }
 
+        MultipartFile zipFile = null;
+        if (CollectionUtils.isNotEmpty(allPushSkills) || CollectionUtils.isNotEmpty(subagents)) {
+            zipFile = buildZip(allPushSkills, subagents);
+            log.info("[createWorkspace] userId={} cId={} skill/subagent打包完成, skills={}, subagents={}, updateSkillNames={}",
+                    userId, cId, allPushSkills.size(), CollectionUtils.size(subagents), updateSkillNames);
+        }
+
         Map<String, Object> result = null;
         try {
-            result = workspaceRpcClient.createWorkSpaceV2(userId, cId, zipFile, skillUrls, mcpServersConfig, permissionsConfig, hooksConfig, hookScriptsJson);
+            log.info("[createWorkspace] userId={} agentId={} cId={} 调用 createWorkSpaceV2, skillNames={}, updateSkillNames={}, skillUrls={}, skillUrlMap={}",
+                    userId, agentId, cId, skillNames, updateSkillNames, allSkillUrls.size(), skillUrlMap.keySet());
+            result = workspaceRpcClient.createWorkSpaceV2(userId, cId, agentId, zipFile, allSkillUrls, skillUrlMap,
+                    skillNames, updateSkillNames, mcpServersConfig, permissionsConfig, hooksConfig, hookScriptsJson);
         } catch (Exception e) {
-            log.warn("[createWorkspace] userId={} cId={} 调用 createWorkSpaceV2 异常，准备回退到 createWorkSpace", userId, cId, e);
+            log.warn("[createWorkspace] userId={} agentId={} cId={} createWorkSpaceV2 异常，回退 v1", userId, agentId, cId, e);
         }
 
-        boolean v2Success = isSuccess(result);
-        if (!v2Success) {
+        if (!isSuccess(result)) {
             String message = result == null ? "response is null" : String.valueOf(result.getOrDefault("message", "createWorkSpaceV2 failed"));
-            log.warn("[createWorkspace] userId={} cId={} createWorkSpaceV2失败，准备回退。message={}", userId, cId, message);
-
-            MultipartFile fallbackZipFile = buildZipWithSkillUrls(zipFile, skillUrls, false);
+            log.warn("[createWorkspace] userId={} agentId={} cId={} createWorkSpaceV2失败，回退 createWorkSpace。message={}",
+                    userId, agentId, cId, message);
+            MultipartFile fallbackZipFile = buildZipWithSkillUrls(zipFile, allSkillUrls, false, urlSkillMap, failedSkillList);
+            log.info("[createWorkspace] userId={} cId={} 开始调用 file-server createWorkSpaceV1", userId, cId);
             result = workspaceRpcClient.createWorkSpace(userId, cId, fallbackZipFile);
         }
+
+        // 新 FS 单技能失败不阻断整体：从响应 failedSkills（[{name,url,reason}]）合并失败明细
+        collectRemoteFailedSkills(result, urlSkillMap, failedSkillList);
 
         if (result == null) {
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentWorkspaceCreateFailed);
@@ -172,23 +211,46 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             log.error("[createWorkspace] userId={} cId={} 创建工作空间失败, message={}", userId, cId, message);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail, message);
         }
-        log.info("[createWorkspace] userId={} cId={} 创建工作空间成功", userId, cId);
+        if (!failedSkillList.isEmpty()) {
+            log.warn("[createWorkspace] userId={} agentId={} cId={} 创建工作空间成功，但部分技能发送失败, failedSkills={}",
+                    userId, agentId, cId, failedSkillList);
+        }
+        log.info("[createWorkspace] userId={} agentId={} cId={} 创建工作空间成功", userId, agentId, cId);
+        return toSkillPushResult(failedSkillList);
     }
 
     @Override
-    public void addSkillsToWorkspace(AddSkillsToWorkspaceDto addSkillsToWorkspaceDto) {
+    public SkillPushResultDto addSkillsToWorkspace(AddSkillsToWorkspaceDto addSkillsToWorkspaceDto) {
         Long userId = addSkillsToWorkspaceDto.getUserId();
+        Long agentId = addSkillsToWorkspaceDto.getAgentId();
         Long cId = addSkillsToWorkspaceDto.getCId();
+        log.info("[addSkills] userId={} agentId={} cId={} 推送技能开始", userId, agentId, cId);
+
+        if (agentId == null) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentRequiredParamEmpty);
+        }
+
+        // 发送失败的技能明细：技能发送失败不阻断流程，最终随返回值带给调用方
+        List<SkillPushResultDto.FailedSkill> failedSkillList = new ArrayList<>();
         List<SkillConfigDto> oldSkills = new ArrayList<>();
         List<String> skillUrls = new ArrayList<>();
+        // url→技能标识（name/description）：下载/推送失败时反查，用于失败明细上报
+        Map<String, SkillIdentity> urlSkillMap = new LinkedHashMap<>();
         if (CollectionUtils.isNotEmpty(addSkillsToWorkspaceDto.getSkillConfigs())) {
             for (SkillConfigDto skillConfig : addSkillsToWorkspaceDto.getSkillConfigs()) {
-                if (isV2Config(skillConfig)) {
-                    if (StringUtils.isNotBlank(skillConfig.getZipFileUrl())) {
-                        skillUrls.add(iFileAccessService.getFileUrlWithAk(skillConfig.getZipFileUrl(), true));
+                if (isV2Skill(skillConfig)) {
+                    // 与 createWorkspace 对齐：backfill 把 skill.md 的 name/description 写入，失败明细用目录名
+                    SkillNameUtil.backfillNameAndDescription(skillConfig, iFileAccessService);
+                    String url = iFileAccessService.getFileUrlWithAk(skillConfig.getZipFileUrl(), true);
+                    if (StringUtils.isBlank(url)) {
+                        // 签名失败拿到空 url：不入推送列表，直接记失败
+                        failedSkillList.add(failedSkill(resolveSkillDirName(skillConfig), skillConfig.getDescription(), skillConfig.getZipFileUrl(), "生成技能 zip 下载地址失败，跳过"));
+                    } else {
+                        skillUrls.add(url);
+                        urlSkillMap.put(url, new SkillIdentity(resolveSkillDirName(skillConfig), skillConfig.getDescription()));
                     }
                 } else {
-                    SkillNameUtil.backfillName(skillConfig, iFileAccessService);
+                    SkillNameUtil.backfillNameAndDescription(skillConfig, iFileAccessService);
                     oldSkills.add(skillConfig);
                 }
             }
@@ -198,34 +260,50 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
 
         Map<String, Object> result = null;
         try {
-            result = workspaceRpcClient.pushSkillsToWorkspaceV2(userId, cId, baseZipFile, skillUrls);
+            log.info("[addSkills] userId={} agentId={} cId={} 调用 pushSkillsToWorkspaceV2", userId, agentId, cId);
+            result = workspaceRpcClient.pushSkillsToWorkspaceV2(userId, cId, agentId, baseZipFile, skillUrls);
         } catch (Exception e) {
-            log.warn("[addSkills] userId={} cId={} 调用 pushSkillsToWorkspaceV2 异常，准备回退到 pushSkillsToWorkspace", userId, cId, e);
+            log.warn("[addSkills] userId={} agentId={} cId={} pushSkillsToWorkspaceV2 异常，回退 v1",
+                    userId, agentId, cId, e);
         }
-        // 回退老版本接口
+
         if (!isSuccess(result)) {
             String message = result == null ? "response is null" : String.valueOf(result.getOrDefault("message", "pushSkillsToWorkspaceV2 failed"));
-            log.warn("[addSkills] userId={} cId={} pushSkillsToWorkspaceV2失败，准备回退。message={}", userId, cId, message);
-
-            MultipartFile zipFile = buildZipWithSkillUrls(baseZipFile, skillUrls, true);
+            log.warn("[addSkills] userId={} agentId={} cId={} pushSkillsToWorkspaceV2失败，回退 v1。message={}",
+                    userId, agentId, cId, message);
+            MultipartFile zipFile = buildZipWithSkillUrls(baseZipFile, skillUrls, true, urlSkillMap, failedSkillList);
             if (zipFile == null) {
-                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillZipPackFailed);
+                // 没有任何可推送内容（老技能为空且 url 技能全部下载失败），不阻断流程
+                log.error("[addSkills] userId={} cId={} 无可推送技能内容, failedSkills={}", userId, cId, failedSkillList);
+                return toSkillPushResult(failedSkillList);
             }
+            log.info("[addSkills] userId={} cId={} 开始调用 file-server pushSkillsToWorkspaceV1", userId, cId);
             result = workspaceRpcClient.pushSkillsToWorkspace(userId, cId, zipFile);
         }
 
         if (result == null) {
+            // 推送整体失败不阻断流程，本次全部技能记为失败返回给调用方
             log.error("[addSkills] userId={} cId={} 推送技能文件失败，响应为空", userId, cId);
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFilePushFailed);
+            markRemainingSkillsFailed(failedSkillList, oldSkills, urlSkillMap, "推送技能文件失败: 响应为空");
+            return toSkillPushResult(failedSkillList);
         }
         Object successObj = result.get("success");
         if (successObj instanceof Boolean && !(Boolean) successObj) {
             String message = result.getOrDefault("message", "推送技能文件失败").toString();
             log.error("[addSkills] userId={} cId={} 推送技能文件失败, message={}", userId, cId, message);
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillFilePushFailed, message);
+            markRemainingSkillsFailed(failedSkillList, oldSkills, urlSkillMap, "推送技能文件失败: " + message);
+            return toSkillPushResult(failedSkillList);
         }
 
-        log.info("[addSkills] userId={} cId={} 动态增加技能完成", userId, cId);
+        // 新 FS 单技能失败不阻断整体：从响应 failedSkills（[{name,url,reason}]）合并失败明细
+        collectRemoteFailedSkills(result, urlSkillMap, failedSkillList);
+
+        if (!failedSkillList.isEmpty()) {
+            log.warn("[addSkills] userId={} agentId={} cId={} 动态增加技能完成，但部分技能发送失败, failedSkills={}",
+                    userId, agentId, cId, failedSkillList);
+        }
+        log.info("[addSkills] userId={} agentId={} cId={} 动态增加技能完成", userId, agentId, cId);
+        return toSkillPushResult(failedSkillList);
     }
 
     @Override
@@ -752,7 +830,8 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
     /**
      * 获取沙箱工作空间中的 git commit hash（HEAD）
      */
-    private String getGitCommitHash(Long userId, Long cId) {
+    @Override
+    public String getGitCommitHash(Long userId, Long cId) {
         try {
             Map<String, Object> result = gitRpcClient.logTaskAgent(cId, userId, 1, 1, null, null);
             if (result != null) {
@@ -964,7 +1043,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
                         continue;
                     }
 
-                    String skillName = StringUtils.isNotBlank(skill.getEnName()) ? skill.getEnName() : skill.getName();
+                    String skillName = resolveSkillDirName(skill);
                     if (StringUtils.isBlank(skillName)) {
                         continue;
                     }
@@ -1038,6 +1117,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
 
                     String fileName = StringUtils.isNotBlank(subagent.getName())
                             ? subagent.getName()
+                            // subagent 定义约定 frontmatter 必含 name/description，用严格提取
                             : MarkdownExtractUtil.extractFieldValue(subagent.getContent(), "name");
                     if (StringUtils.isBlank(fileName)) {
                         continue;
@@ -1068,13 +1148,7 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
             }
 
             zos.finish();
-            byte[] zipBytes = baos.toByteArray();
-
-            if (zipBytes.length == 0) {
-                return null;
-            }
-
-            return new InMemoryMultipartFile("file", "skills.zip", "application/zip", zipBytes);
+            return new InMemoryMultipartFile("file", "skills.zip", "application/zip", baos.toByteArray());
         } catch (IOException e) {
             log.error("[skill/agent] 打包skill/agent zip失败", e);
             throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillAgentPackFailed);
@@ -1148,6 +1222,124 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         }
     }
 
+    /**
+     * 技能标识（url 反查用）：name/description 优先取 skill.md（backfill 后），取不到时为发布配置值
+     */
+    private record SkillIdentity(String name, String description) {
+    }
+
+    /**
+     * 构建单条失败技能明细
+     */
+    private static SkillPushResultDto.FailedSkill failedSkill(String name, String description, String url, String reason) {
+        return SkillPushResultDto.FailedSkill.builder().name(name).description(description).url(url).reason(reason).build();
+    }
+
+    /**
+     * 构建单条失败技能明细（技能标识可为 null，统一在此处理）
+     */
+    private static SkillPushResultDto.FailedSkill failedSkill(SkillIdentity identity, String url, String reason) {
+        return failedSkill(identity != null ? identity.name() : null, identity != null ? identity.description() : null, url, reason);
+    }
+
+    /**
+     * 构建技能推送返回结果
+     */
+    private static SkillPushResultDto toSkillPushResult(List<SkillPushResultDto.FailedSkill> failedSkillList) {
+        return SkillPushResultDto.builder().failedSkillList(failedSkillList).build();
+    }
+
+    /**
+     * 合并 file-server 响应中的 failedSkills（新 FS 单技能失败不阻断整体时随 success=true 返回）。
+     * FS 只有 url，name/description 用本地 urlSkillMap 反查补全。
+     */
+    private void collectRemoteFailedSkills(Map<String, Object> result, Map<String, SkillIdentity> urlSkillMap,
+                                           List<SkillPushResultDto.FailedSkill> failedSkillList) {
+        if (result == null) {
+            return;
+        }
+        Object remote = result.get("failedSkills");
+        if (!(remote instanceof List)) {
+            return;
+        }
+        for (Object item : (List<?>) remote) {
+            if (!(item instanceof Map)) {
+                continue;
+            }
+            Map<?, ?> failed = (Map<?, ?>) item;
+            String url = failed.get("url") != null ? String.valueOf(failed.get("url")) : null;
+            String name = failed.get("name") != null ? String.valueOf(failed.get("name")) : null;
+            SkillIdentity identity = resolveSkillIdentity(urlSkillMap, url, name);
+            if (StringUtils.isBlank(name) && identity != null) {
+                name = identity.name();
+            }
+            String reason = failed.get("reason") != null ? String.valueOf(failed.get("reason")) : "技能发送失败";
+            failedSkillList.add(failedSkill(name, identity != null ? identity.description() : null, url, reason));
+        }
+    }
+
+    /**
+     * 按 url 精确反查技能标识；查不到时按 name 在本地映射里兜底匹配
+     */
+    private SkillIdentity resolveSkillIdentity(Map<String, SkillIdentity> urlSkillMap, String url, String name) {
+        if (urlSkillMap == null || urlSkillMap.isEmpty()) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(url)) {
+            SkillIdentity identity = urlSkillMap.get(url);
+            if (identity != null) {
+                return identity;
+            }
+        }
+        if (StringUtils.isNotBlank(name)) {
+            for (SkillIdentity identity : urlSkillMap.values()) {
+                if (name.equals(identity.name())) {
+                    return identity;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 整体推送失败时，把尚未记录的技能补录进失败列表（按 url / name 去重，避免与已记录的单技能失败重复）
+     *
+     * @param oldSkills 老格式技能（文件内容直传，无 url），可为 null
+     * @param urlSkillMap 签名 url → 技能标识，可为 null
+     */
+    private void markRemainingSkillsFailed(List<SkillPushResultDto.FailedSkill> failedSkillList,
+                                           List<SkillConfigDto> oldSkills, Map<String, SkillIdentity> urlSkillMap, String reason) {
+        Set<String> recordedUrls = new HashSet<>();
+        Set<String> recordedNames = new HashSet<>();
+        for (SkillPushResultDto.FailedSkill failed : failedSkillList) {
+            if (StringUtils.isNotBlank(failed.getUrl())) {
+                recordedUrls.add(failed.getUrl());
+            }
+            if (StringUtils.isNotBlank(failed.getName())) {
+                recordedNames.add(failed.getName());
+            }
+        }
+        if (urlSkillMap != null) {
+            for (Map.Entry<String, SkillIdentity> entry : urlSkillMap.entrySet()) {
+                // url 是唯一键：同名不同 url 的技能是两个技能，只按 url 去重，不按 name 合并
+                if (recordedUrls.contains(entry.getKey())) {
+                    continue;
+                }
+                failedSkillList.add(failedSkill(entry.getValue(), entry.getKey(), reason));
+            }
+        }
+        if (oldSkills != null) {
+            for (SkillConfigDto skill : oldSkills) {
+                String name = resolveSkillDirName(skill);
+                if (StringUtils.isBlank(name) || recordedNames.contains(name)) {
+                    continue;
+                }
+                recordedNames.add(name);
+                failedSkillList.add(failedSkill(name, skill.getDescription(), null, reason));
+            }
+        }
+    }
+
     private boolean isSuccess(Map<String, Object> result) {
         if (result == null) {
             return false;
@@ -1157,9 +1349,11 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
     }
 
     /**
-     * 回退到 create-workspace 时，将 skillUrls 对应的技能文件下载解压后合并到 zip 的 skills/ 目录下
+     * 回退到 create-workspace 时，将 skillUrls 对应的技能文件下载解压后合并到 zip 的 skills/ 目录下。
+     * 单个技能下载/解压失败不阻断整体打包，记入 failedSkillList 后继续处理其余技能。
      */
-    private MultipartFile buildZipWithSkillUrls(MultipartFile originalZipFile, List<String> skillUrls, boolean appendDynamicLockFile) {
+    private MultipartFile buildZipWithSkillUrls(MultipartFile originalZipFile, List<String> skillUrls, boolean appendDynamicLockFile,
+                                                Map<String, SkillIdentity> urlSkillMap, List<SkillPushResultDto.FailedSkill> failedSkillList) {
         if (CollectionUtils.isEmpty(skillUrls)) {
             return originalZipFile;
         }
@@ -1173,28 +1367,41 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
                 copyZipToOutput(originalZipFile.getBytes(), zos, addedEntries);
             }
 
+            int urlCount = 0;
+            int failedCount = 0;
             for (String skillUrl : skillUrls) {
                 if (StringUtils.isBlank(skillUrl)) {
                     continue;
                 }
-                try (InputStream inputStream = new URL(skillUrl).openStream()) {
-                    byte[] zipBytes = inputStream.readAllBytes();
+                urlCount++;
+                try {
+                    // UrlFile 内部走 HttpClient（带连接/读超时）并兼容 S3 presigned URL，避免裸 openStream 无超时挂死线程
+                    byte[] zipBytes = UrlFile.urlToBytes(skillUrl);
+                    if (zipBytes == null || zipBytes.length == 0) {
+                        throw new IOException("下载技能 zip 为空");
+                    }
                     copySkillZipToSkillsRoot(zipBytes, zos, addedEntries, appendDynamicLockFile);
                 } catch (Exception e) {
-                    log.error("[createWorkspace] 回退打包失败，下载或解压 skillUrl 异常, skillUrl={}", skillUrl, e);
-                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillZipPackFailed);
+                    // 单个技能下载/解压失败（如 403、zip 损坏）只跳过该技能，不阻断整体流程
+                    log.error("[createWorkspace] 回退打包时下载/解压技能 zip 失败，跳过该技能, skillUrl={}", skillUrl, e);
+                    failedCount++;
+                    SkillIdentity identity = urlSkillMap != null ? urlSkillMap.get(skillUrl) : null;
+                    failedSkillList.add(failedSkill(identity, skillUrl, "下载技能 zip 失败: " + e.getMessage()));
                 }
             }
 
-            zos.finish();
-            byte[] zipBytes = baos.toByteArray();
-            if (zipBytes.length == 0) {
+            if (originalZipFile == null && urlCount > 0 && failedCount == urlCount) {
+                // 无基础 zip 且所有 url 技能全部下载失败：无任何技能内容可推，返回 null 让调用方早退
                 return null;
             }
-            return new InMemoryMultipartFile("file", "skills.zip", "application/zip", zipBytes);
+
+            zos.finish();
+            return new InMemoryMultipartFile("file", "skills.zip", "application/zip", baos.toByteArray());
         } catch (IOException e) {
+            // 整体重打包失败：本次所有走 url 的技能记为失败，退回原始 zip 让建工作空间/推送流程继续
             log.error("[createWorkspace] 回退打包失败", e);
-            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.agentSkillZipPackFailed);
+            markRemainingSkillsFailed(failedSkillList, null, urlSkillMap, "回退重新打包失败: " + e.getMessage());
+            return originalZipFile;
         }
     }
 
@@ -1358,7 +1565,18 @@ public class AgentWorkspaceApplicationServiceImpl implements AgentWorkspaceAppli
         return JSON.parseObject(config, SkillConfigDto.class);
     }
 
-    private boolean isV2Config(SkillConfigDto skillConfig) {
+    /**
+     * 技能目录名 / 协议中的技能名：统一为 skill.md frontmatter 的 name。
+     * {@link SkillNameUtil#backfillName} 会把该值写入 enName。
+     */
+    private String resolveSkillDirName(SkillConfigDto skill) {
+        if (skill == null) {
+            return null;
+        }
+        return StringUtils.isNotBlank(skill.getEnName()) ? skill.getEnName() : skill.getName();
+    }
+
+    private boolean isV2Skill(SkillConfigDto skillConfig) {
         return skillConfig != null && StringUtils.isNotBlank(skillConfig.getZipFileUrl());
     }
 

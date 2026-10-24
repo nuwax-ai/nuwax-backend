@@ -147,6 +147,11 @@ public class WorkflowExecutor {
             workflowContext.setWorkflowContextServiceHolder(workflowContextServiceHolder);
         }
         workflowContext.setAgentContext(workflowContext.getCopiedAgentContext());
+        // 移除 value 为空（null 或空字符串）的参数，避免向下游节点传递无效空参数（与 PluginExecutor 保持一致）
+        Map<String, Object> params = workflowContext.getParams();
+        if (params != null) {
+            params.entrySet().removeIf(entry -> entry.getValue() == null || "".equals(entry.getValue()));
+        }
         LogDocument logDocument = buildLogDocument(workflowContext);
         TraceContext traceContext = workflowContext.getTraceContext();
         if (traceContext != null) {

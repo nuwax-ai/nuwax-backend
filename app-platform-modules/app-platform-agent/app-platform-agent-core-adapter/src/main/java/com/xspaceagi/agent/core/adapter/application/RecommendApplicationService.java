@@ -21,6 +21,8 @@ public interface RecommendApplicationService {
 
     List<TargetRecommendResponse> list(String recType, String targetType);
 
+    List<TargetRecommendResponse> list(String recType, String targetType, String category);
+
     void updateSort(Long id, Integer sort);
 
     RecommendHomeResponse getRecommendations();

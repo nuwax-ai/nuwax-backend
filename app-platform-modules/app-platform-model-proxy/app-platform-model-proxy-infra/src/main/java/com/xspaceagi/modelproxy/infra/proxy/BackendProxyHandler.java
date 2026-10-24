@@ -1,25 +1,27 @@
 package com.xspaceagi.modelproxy.infra.proxy;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONWriter;
 import com.xspaceagi.modelproxy.infra.service.TokenLogService;
+import com.xspaceagi.modelproxy.sdk.service.IModelApiProxyConfigService;
 import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.spec.utils.JsonTruncateUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,11 +36,13 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
     private final ByteArrayOutputStream responseBuffer = new ByteArrayOutputStream();
     private volatile Map<String, Object> responseContext;
     private final TokenLogService tokenLogService;
+    private final IModelApiProxyConfigService modelApiProxyConfigService;
     private volatile boolean logPushed = false;
     private String contentEncoding = null;
 
-    public BackendProxyHandler(TokenLogService tokenLogService) {
+    public BackendProxyHandler(TokenLogService tokenLogService, IModelApiProxyConfigService modelApiProxyConfigService) {
         this.tokenLogService = tokenLogService;
+        this.modelApiProxyConfigService = modelApiProxyConfigService;
     }
 
     @Override
@@ -60,6 +64,25 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
                     content.readBytes(bytes);
                     content.resetReaderIndex();
                     responseBuffer.writeBytes(bytes);
+                    if (modelApiProxyConfigService.enabledSensitiveFilter()) {
+                        String data = new String(bytes, Charset.forName("UTF-8"));
+                        TraceContext traceContext = ctx.channel().attr(ModelProxyServer.traceContextAttributeKey).get();
+                        if (StringUtils.isNotBlank(data) && traceContext != null) {
+                            try {
+                                modelApiProxyConfigService.checkAndReturnNewText(traceContext.getTenantId(), data);
+                            } catch (Exception e) {
+                                logger.warn("sensitiveFilter", e);
+                                Channel clientChannel = ctx.channel().attr(ModelProxyServer.nextChannelAttributeKey).get();
+                                if (clientChannel != null) {
+                                    byte[] err = "{\"error\":{\"message\":\"Response content contains sensitive words\"}}".getBytes(Charset.forName("UTF-8"));
+                                    ByteBuf chunk = Unpooled.copiedBuffer(err);
+                                    responseBuffer.writeBytes(err);
+                                    clientChannel.writeAndFlush(new DefaultHttpContent(chunk)).addListener(ChannelFutureListener.CLOSE);
+                                    return;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // 如果是最后一个内容块，立即记录完整的响应体
@@ -161,6 +184,12 @@ public class BackendProxyHandler extends ChannelInboundHandlerAdapter {
             if (channel != null) {
                 Map<String, String> requestContext = channel.attr(ModelProxyServer.logRequestQueueAttributeKey).get().poll();
                 if (requestContext != null) {
+                    String requestBody = requestContext.get("requestBody");
+                    if (JSON.isValid(requestBody)) {
+                        JSONObject jsonObject = JSON.parseObject(requestBody);
+                        JsonTruncateUtil.truncateModelRequest(jsonObject);
+                        requestContext.put("requestBody", jsonObject.toJSONString());
+                    }
                     getResponseContext().putAll(requestContext);
                 }
             }

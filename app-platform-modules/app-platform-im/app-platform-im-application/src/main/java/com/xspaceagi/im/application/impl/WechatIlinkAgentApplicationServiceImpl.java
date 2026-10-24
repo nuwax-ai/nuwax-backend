@@ -1,6 +1,6 @@
 package com.xspaceagi.im.application.impl;
 
-import com.xspaceagi.agent.core.adapter.application.ConversationApplicationService;
+import com.xspaceagi.agent.core.adapter.application.ChatApplicationService;
 import com.xspaceagi.agent.core.adapter.dto.AgentOutputDto;
 import com.xspaceagi.agent.core.adapter.dto.AttachmentDto;
 import com.xspaceagi.agent.core.adapter.dto.ChatMessageDto;
@@ -47,7 +47,7 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
     @Resource
     private TenantConfigApplicationService tenantConfigApplicationService;
     @Resource
-    private ConversationApplicationService conversationApplicationService;
+    private ChatApplicationService chatApplicationService;
 
     @Override
     public Mono<WeworkAgentApplicationService.AgentExecuteResultWithConv> executeAgentWithConv(
@@ -93,7 +93,7 @@ public class WechatIlinkAgentApplicationServiceImpl implements WechatIlinkAgentA
                     tryReqDto.setAttachments(attachments != null ? attachments : new ArrayList<>());
                     tryReqDto.setFrom(ImChannelEnum.WECHAT_ILINK.getCode());
 
-                    Flux<AgentOutputDto> flux = conversationApplicationService.chat(tryReqDto, new HashMap<>(), false);
+                    Flux<AgentOutputDto> flux = chatApplicationService.chat(tryReqDto, new HashMap<>(), false);
 
                     StringBuilder accumulated = new StringBuilder();
                     AtomicReference<AgentExecuteResult> finalRef = new AtomicReference<>();

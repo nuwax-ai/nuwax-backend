@@ -8,4 +8,5 @@ public class CaptchaConfig {
     private Integer openCaptcha;
     private String captchaAccessKeyId;
     private String captchaAccessKeySecret;
+    private Integer openImageCaptcha;
 }

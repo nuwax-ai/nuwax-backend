@@ -91,6 +91,17 @@ public class KnowledgeTaskArchiveAndRetryDomainService implements IKnowledgeTask
 
             } catch (Exception e) {
                 log.error("Auto retry failed, docId={}", docId, e);
+                // 持久化失败原因到 knowledge_task.result: 重试耗尽后由文档状态查询展示给用户,
+                // 替代通用文案"重试次数达到最大值"(典型: 租户知识库模型配置悬空时能看到具体模型ID)
+                try {
+                    var task = this.knowledgeTaskRepository.queryOneByDocId(docId);
+                    if (task != null && e.getMessage() != null) {
+                        task.setResult(e.getMessage());
+                        this.knowledgeTaskRepository.updateInfo(task, userContext);
+                    }
+                } catch (Exception ignore) {
+                    // 原因记录失败不影响重试计数
+                }
             } finally {
                 // 重试次数+1
                 this.knowledgeTaskRepository.incrementRetryCount(item.getId(), userContext);

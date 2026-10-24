@@ -32,6 +32,15 @@ public final class SysDataPermissionConverter {
         }
         validateIntegerStorageLimitGb(dto.getAgentComputerStorageLimitGb(), "Agent computer storage limit");
         validateIntegerStorageLimitGb(dto.getPageAppStorageLimitGb(), "Page app storage limit");
+        validateIdleTimeoutSeconds(dto.getUserAppIdleTimeoutSeconds());
+    }
+
+    /** 仅接受 -1（不限制）或 >= 0（0=常驻）；其余负数属非法输入，静默丢弃会变成策略悄悄变更 */
+    private static void validateIdleTimeoutSeconds(Integer value) {
+        if (value != null && value < -1) {
+            throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
+                    "User app idle timeout seconds must be -1 (unlimited) or >= 0 (0 = never recycle)");
+        }
     }
 
     private static void validateIntegerStorageLimitGb(BigDecimal value, String fieldName) {
@@ -84,6 +93,8 @@ public final class SysDataPermissionConverter {
         entity.setMaxSpaceCount(dto.getMaxSpaceCount() != null ? dto.getMaxSpaceCount() : -1);
         entity.setMaxAgentCount(dto.getMaxAgentCount() != null ? dto.getMaxAgentCount() : -1);
         entity.setMaxPageAppCount(dto.getMaxPageAppCount() != null ? dto.getMaxPageAppCount() : -1);
+        entity.setMaxUserAppCount(dto.getMaxUserAppCount() != null ? dto.getMaxUserAppCount() : -1);
+        entity.setUserAppIdleTimeoutSeconds(dto.getUserAppIdleTimeoutSeconds() != null ? dto.getUserAppIdleTimeoutSeconds() : -1);
         entity.setMaxKnowledgeCount(dto.getMaxKnowledgeCount() != null ? dto.getMaxKnowledgeCount() : -1);
         entity.setKnowledgeStorageLimitGb(dto.getKnowledgeStorageLimitGb() != null ? dto.getKnowledgeStorageLimitGb() : BigDecimal.valueOf(-1L));
         entity.setMaxDataTableCount(dto.getMaxDataTableCount() != null ? dto.getMaxDataTableCount() : -1);
