@@ -57,6 +57,7 @@ import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,6 +102,9 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     private static final String TARGET_TYPE_SKILL_DEV = "skill_dev";
     private static final String TARGET_TYPE_SKILL_PUBLISH_APPLY = "skill_publish_apply";
     private static final String TARGET_TYPE_SKILL_PUBLISHED = "skill_published";
+    // The ZIP EFS flag still forces UTF-8. This charset is only the fallback for
+    // legacy archives without EFS, such as ZIPs created with Windows code page 936.
+    private static final Charset LEGACY_ZIP_ENTRY_NAME_CHARSET = Charset.forName("GBK");
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -381,7 +385,7 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
             // 用于收集有问题的文件信息
             List<String> errorFiles = new ArrayList<>();
 
-            try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream(), StandardCharsets.UTF_8)) {
+            try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream(), LEGACY_ZIP_ENTRY_NAME_CHARSET)) {
                 ZipEntry entry;
                 int entryIndex = 0; // 用于记录条目索引，当无法获取文件名时使用
                 while (true) {
