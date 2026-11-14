@@ -57,6 +57,8 @@ import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
+import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,6 +103,9 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
     private static final String TARGET_TYPE_SKILL_DEV = "skill_dev";
     private static final String TARGET_TYPE_SKILL_PUBLISH_APPLY = "skill_publish_apply";
     private static final String TARGET_TYPE_SKILL_PUBLISHED = "skill_published";
+    // The ZIP EFS flag still forces UTF-8. This charset is only the fallback for
+    // legacy archives without EFS, such as ZIPs created with Windows code page 936.
+    private static final Charset LEGACY_ZIP_ENTRY_NAME_CHARSET = Charset.forName("GBK");
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -376,142 +381,20 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         String skillMdContent = null;
 
         if (isZipLike) {
-            // 用于存储所有条目信息，以便分析顶层目录
-            List<ZipEntryInfo> entryInfos = new ArrayList<>();
-            // 用于收集有问题的文件信息
-            List<String> errorFiles = new ArrayList<>();
-
-            try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream(), StandardCharsets.UTF_8)) {
-                ZipEntry entry;
-                int entryIndex = 0; // 用于记录条目索引，当无法获取文件名时使用
-                while (true) {
-                    try {
-                        entry = zipInputStream.getNextEntry();
-                        if (entry == null) {
-                            break;
-                        }
-                        entryIndex++;
-                    } catch (ZipException e) {
-                        // 处理不支持的 ZIP 压缩方法（如 STORED 方法带 EXT descriptor）
-                        // 记录错误信息，继续处理下一个
-                        entryIndex++;
-                        String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ZipEntryError"), entryIndex, e.getMessage());
-                        errorFiles.add(errorMsg);
-                        log.warn("ZIP 条目解析失败: {}", errorMsg);
-                        continue;
+            List<ZipEntryInfo> entryInfos;
+            try {
+                try {
+                    // Preserve the existing UTF-8 behavior, including legacy archives that omit EFS.
+                    entryInfos = readZipEntries(file, StandardCharsets.UTF_8);
+                } catch (IllegalArgumentException e) {
+                    if (!hasCause(e, MalformedInputException.class)) {
+                        throw e;
                     }
-
-                    String entryName = entry.getName();
-                    // 过滤掉 macOS 系统文件（如 __MACOSX/ 目录、.DS_Store 等）
-                    if (shouldSkipFile(entryName)) {
-                        try {
-                            zipInputStream.closeEntry();
-                        } catch (Exception e) {
-                            log.warn("Failed to close ZIP entry: {}", entryName, e);
-                        }
-                        continue;
-                    }
-
-                    boolean isDirectory = entry.isDirectory();
-                    String content = null;
-
-                    if (!isDirectory) {
-                        try {
-                            // 检查压缩方法，跳过不支持的方法
-                            int method = entry.getMethod();
-                            // ZipEntry.STORED = 0, ZipEntry.DEFLATED = 8
-                            // 如果是不支持的方法，记录错误
-                            if (method != ZipEntry.STORED && method != ZipEntry.DEFLATED) {
-                                String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.UnsupportedCompressionMethod"), entryName, method);
-                                errorFiles.add(errorMsg);
-                                log.warn("不支持的压缩方法: {}", errorMsg);
-                                try {
-                                    zipInputStream.closeEntry();
-                                } catch (Exception e) {
-                                    // 忽略关闭异常
-                                }
-                                continue;
-                            }
-
-                            // 校验单个文件大小（如果 ZIP 元数据中已提供）
-                            long entrySize = entry.getSize();
-                            if (entrySize > MAX_SINGLE_FILE_SIZE) {
-                                try {
-                                    zipInputStream.closeEntry();
-                                } catch (Exception e) {
-                                    // 忽略关闭异常
-                                }
-                                double entrySizeMB = entrySize / (1024.0 * 1024.0);
-                                double maxSizeMB = MAX_SINGLE_FILE_SIZE / (1024.0 * 1024.0);
-                                String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.FileSizeExceeded"), entryName, entrySizeMB, maxSizeMB);
-                                errorFiles.add(errorMsg);
-                                // 文件大小超限是严重错误，继续收集其他错误后统一抛出
-                                continue;
-                            }
-
-                            // 判断是否为文本文件
-                            if (FileTypeUtils.isTextFile(entryName)) {
-                                // 文本文件直接读取
-                                content = readZipEntryContent(zipInputStream);
-                            } else {
-                                // 非文本文件（二进制）转换为 base64
-                                byte[] bytes = readZipEntryBytes(zipInputStream);
-                                content = Base64.getEncoder().encodeToString(bytes);
-                            }
-                        } catch (ZipException e) {
-                            // 处理读取条目内容时的 ZIP 异常，记录错误信息
-                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
-                            errorFiles.add(errorMsg);
-                            log.warn("读取 ZIP 条目内容失败: {}", errorMsg);
-                            try {
-                                zipInputStream.closeEntry();
-                            } catch (Exception ex) {
-                                // 忽略关闭异常
-                            }
-                            continue;
-                        } catch (BizException e) {
-                            // 文件大小超限等业务异常，记录错误信息
-                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
-                            errorFiles.add(errorMsg);
-                            try {
-                                zipInputStream.closeEntry();
-                            } catch (Exception ex) {
-                                // 忽略关闭异常
-                            }
-                            continue;
-                        } catch (Exception e) {
-                            // 其他读取异常，记录错误信息
-                            String errorMsg = String.format(I18nUtil.systemMessage("Skill.Import.ReadFileError"), entryName, e.getMessage());
-                            errorFiles.add(errorMsg);
-                            log.warn("读取 ZIP 条目失败: {}", errorMsg);
-                            try {
-                                zipInputStream.closeEntry();
-                            } catch (Exception ex) {
-                                // 忽略关闭异常
-                            }
-                            continue;
-                        }
-                    }
-
-                    entryInfos.add(new ZipEntryInfo(entryName, isDirectory, content));
-                    try {
-                        zipInputStream.closeEntry();
-                    } catch (Exception e) {
-                        log.warn("Failed to close ZIP entry: {}", entryName, e);
-                    }
+                    // Windows tools may store unflagged names using code page 936.
+                    // Retrying is safe because readZipEntries only builds an in-memory model.
+                    log.info("ZIP entry names are not valid UTF-8; retrying with GBK, file={}", fileName);
+                    entryInfos = readZipEntries(file, LEGACY_ZIP_ENTRY_NAME_CHARSET);
                 }
-
-                // 如果有错误文件，统一抛出异常
-                if (!errorFiles.isEmpty()) {
-                    StringBuilder errorMessage = new StringBuilder(I18nUtil.systemMessage("Skill.Import.ErrorFilesHeader"));
-                    for (int i = 0; i < errorFiles.size(); i++) {
-                        errorMessage.append(String.format("%d. %s\n", i + 1, errorFiles.get(i)));
-                    }
-                    errorMessage.append("\n").append(I18nUtil.systemMessage("Skill.Import.ErrorFilesFooter"));
-                    throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.validationFailedWithDetail,
-                            errorMessage.toString());
-                }
-
             } catch (BizException e) {
                 log.error("Failed to parse skill import file", e);
                 throw e;
@@ -1438,6 +1321,124 @@ public class SkillApplicationServiceImpl implements SkillApplicationService {
         }
 
         return compactDirectoryEntries(new ArrayList<>(currentFiles.values()));
+    }
+
+    private List<ZipEntryInfo> readZipEntries(MultipartFile file, Charset entryNameCharset) throws IOException {
+        List<ZipEntryInfo> entryInfos = new ArrayList<>();
+        List<String> errorFiles = new ArrayList<>();
+
+        try (ZipInputStream zipInputStream = new ZipInputStream(file.getInputStream(), entryNameCharset)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                String entryName = entry.getName();
+
+                if (shouldSkipFile(entryName)) {
+                    closeZipEntry(zipInputStream, entryName);
+                    continue;
+                }
+
+                boolean isDirectory = entry.isDirectory();
+                String content = null;
+                if (!isDirectory) {
+                    try {
+                        int method = entry.getMethod();
+                        if (method != ZipEntry.STORED && method != ZipEntry.DEFLATED) {
+                            String errorMsg = String.format(
+                                    I18nUtil.systemMessage("Skill.Import.UnsupportedCompressionMethod"),
+                                    entryName,
+                                    method);
+                            errorFiles.add(errorMsg);
+                            log.warn("不支持的压缩方法: {}", errorMsg);
+                            closeZipEntry(zipInputStream, entryName);
+                            continue;
+                        }
+
+                        long entrySize = entry.getSize();
+                        if (entrySize > MAX_SINGLE_FILE_SIZE) {
+                            closeZipEntry(zipInputStream, entryName);
+                            double entrySizeMB = entrySize / (1024.0 * 1024.0);
+                            double maxSizeMB = MAX_SINGLE_FILE_SIZE / (1024.0 * 1024.0);
+                            String errorMsg = String.format(
+                                    I18nUtil.systemMessage("Skill.Import.FileSizeExceeded"),
+                                    entryName,
+                                    entrySizeMB,
+                                    maxSizeMB);
+                            errorFiles.add(errorMsg);
+                            continue;
+                        }
+
+                        if (FileTypeUtils.isTextFile(entryName)) {
+                            content = readZipEntryContent(zipInputStream);
+                        } else {
+                            byte[] bytes = readZipEntryBytes(zipInputStream);
+                            content = Base64.getEncoder().encodeToString(bytes);
+                        }
+                    } catch (ZipException e) {
+                        String errorMsg = String.format(
+                                I18nUtil.systemMessage("Skill.Import.ReadFileError"),
+                                entryName,
+                                e.getMessage());
+                        errorFiles.add(errorMsg);
+                        log.warn("读取 ZIP 条目内容失败: {}", errorMsg);
+                        closeZipEntry(zipInputStream, entryName);
+                        continue;
+                    } catch (BizException e) {
+                        String errorMsg = String.format(
+                                I18nUtil.systemMessage("Skill.Import.ReadFileError"),
+                                entryName,
+                                e.getMessage());
+                        errorFiles.add(errorMsg);
+                        closeZipEntry(zipInputStream, entryName);
+                        continue;
+                    } catch (Exception e) {
+                        String errorMsg = String.format(
+                                I18nUtil.systemMessage("Skill.Import.ReadFileError"),
+                                entryName,
+                                e.getMessage());
+                        errorFiles.add(errorMsg);
+                        log.warn("读取 ZIP 条目失败: {}", errorMsg);
+                        closeZipEntry(zipInputStream, entryName);
+                        continue;
+                    }
+                }
+
+                entryInfos.add(new ZipEntryInfo(entryName, isDirectory, content));
+                closeZipEntry(zipInputStream, entryName);
+            }
+        }
+
+        if (!errorFiles.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder(I18nUtil.systemMessage("Skill.Import.ErrorFilesHeader"));
+            for (int i = 0; i < errorFiles.size(); i++) {
+                errorMessage.append(String.format("%d. %s\n", i + 1, errorFiles.get(i)));
+            }
+            errorMessage.append("\n").append(I18nUtil.systemMessage("Skill.Import.ErrorFilesFooter"));
+            throw BizException.of(
+                    ErrorCodeEnum.INVALID_PARAM,
+                    BizExceptionCodeEnum.validationFailedWithDetail,
+                    errorMessage.toString());
+        }
+
+        return entryInfos;
+    }
+
+    private void closeZipEntry(ZipInputStream zipInputStream, String entryName) {
+        try {
+            zipInputStream.closeEntry();
+        } catch (Exception e) {
+            log.warn("Failed to close ZIP entry: {}", entryName, e);
+        }
+    }
+
+    private boolean hasCause(Throwable error, Class<? extends Throwable> causeType) {
+        Throwable current = error;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String readZipEntryContent(ZipInputStream zipInputStream) throws IOException {
